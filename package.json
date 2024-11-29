@@ -1,0 +1,11 @@
+{
+  "name": "tech-post-cast",
+  "version": "0.0.1",
+  "author": "sumihiro3",
+  "license": "MIT",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
