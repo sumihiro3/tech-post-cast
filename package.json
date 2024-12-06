@@ -7,5 +7,12 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "scripts": {
+    "build-all": "yarn build-commons && yarn build-database && yarn build-backend",
+    "build-commons": "yarn workspace @tech-post-cast/commons run build",
+    "build-database": "yarn workspace @tech-post-cast/database run build",
+    "prisma-generate": "yarn workspace @tech-post-cast/database run prisma:generate",
+    "build-backend": "yarn workspace @tech-post-cast/backend run build"
+  }
 }

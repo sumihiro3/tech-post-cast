@@ -11,6 +11,11 @@ export class AppController {
     return this.appService.getHello();
   }
 
+  @Get('health-check')
+  getHealthCheck(): string {
+    return 'OK';
+  }
+
   @Get('post/:postId')
   async getQiitaPost(@Param('postId') postId: string): Promise<QiitaPost> {
     return this.appService.getQiitaPost(postId);
