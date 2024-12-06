@@ -1,0 +1,77 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ヘッドライントピック番組
+model HeadlineTopicProgram {
+  // 今日のヘッドライントピックの一意なID
+  id            String   @id @default(cuid()) @db.VarChar(100)
+  // 今日のヘッドライントピックのタイトル
+  title         String   @db.VarChar(255)
+  // 台本
+  script        String
+  // 今日のヘッドライントピックの音声ファイルURL
+  audioUrl      String   @map("audio_url")
+  // 音声ファイルの長さ（ミリ秒）
+  audioDuration Int      @map("audio_duration")
+  // 画像URL
+  imageUrl      String?  @map("image_url") @db.VarChar(255)
+  // 今日のヘッドライントピックが作成された日時
+  createdAt     DateTime @map("created_at")
+  // 今日のヘッドライントピックの最終更新日時
+  updatedAt     DateTime @map("updated_at")
+
+  // 紹介している投稿の一覧
+  posts QiitaPost[]
+
+  // テーブル名
+  @@map("daily_headline_topics")
+}
+
+// Qiita の記事
+model QiitaPost {
+  // 記事の一意なID Qiita 記事ID を利用する
+  id          String   @id @default(cuid()) @db.VarChar(50)
+  // 記事のタイトル
+  title       String   @db.VarChar(255)
+  // 記事の本文
+  body        String
+  // 記事のURL
+  url         String   @db.VarChar(255)
+  // 記事が作成された日時
+  createdAt   DateTime @map("created_at")
+  // 記事の最終更新日時
+  updatedAt   DateTime @map("updated_at")
+  // 記事記事者のユーザ名
+  authorName  String   @map("author_name") @db.VarChar(50)
+  // 記事記事者のユーザID
+  authorId    String   @map("author_id") @db.VarChar(50)
+  // この記事へのいいねの数
+  likesCount  Int      @default(0) @map("likes_count")
+  // この記事がストックされた数
+  stocksCount Int      @default(0) @map("stocks_count")
+  // 限定共有状態かどうかを表すフラグ
+  private     Boolean  @default(false)
+  // 情報を最新化した日時
+  refreshedAt DateTime @default(now()) @map("refreshed_at")
+  // 要約
+  summary     String?
+
+  // 記事が紹介されているヘッドライントピック番組
+  headlineTopicProgramId String?               @map("headline_topic_program_id")
+  headlineTopicProgram   HeadlineTopicProgram? @relation(fields: [headlineTopicProgramId], references: [id])
+
+  // テーブル名
+  @@map("qiita_posts")
+}

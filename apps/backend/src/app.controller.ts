@@ -1,5 +1,6 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { AppService } from './app.service';
+import { QiitaPost } from '@prisma/client';
 
 @Controller()
 export class AppController {
@@ -8,5 +9,10 @@ export class AppController {
   @Get()
   getHello(): string {
     return this.appService.getHello();
+  }
+
+  @Get('post/:postId')
+  async getQiitaPost(@Param('postId') postId: string): Promise<QiitaPost> {
+    return this.appService.getQiitaPost(postId);
   }
 }
