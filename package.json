@@ -12,7 +12,12 @@
     "build-all": "yarn build-commons && yarn build-database && yarn build-backend",
     "build-commons": "yarn workspace @tech-post-cast/commons run build",
     "build-database": "yarn workspace @tech-post-cast/database run build",
+    "build-backend": "yarn workspace @tech-post-cast/backend run build",
     "prisma-generate": "yarn workspace @tech-post-cast/database run prisma:generate",
-    "build-backend": "yarn workspace @tech-post-cast/backend run build"
+    "test": "yarn test-backend",
+    "test-backend": "yarn workspace @tech-post-cast/backend run test",
+    "test-commons": "yarn workspace @tech-post-cast/commons run test",
+    "test-database": "yarn workspace @tech-post-cast/database run test",
+    "test-infra": "yarn workspace @tech-post-cast/infra run test"
   }
 }

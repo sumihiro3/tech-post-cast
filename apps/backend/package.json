@@ -58,6 +58,10 @@
       "json",
       "ts"
     ],
+    "moduleNameMapper": {
+      "@domains/(.*)": "<rootDir>/domains/$1",
+      "@infrastructure/(.*)": "<rootDir>/infrastructure/$1"
+    },
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {

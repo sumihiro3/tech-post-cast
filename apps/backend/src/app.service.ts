@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { isFullWidthCharacter } from '@tech-post-cast/commons';
 import { QiitaPost } from '@prisma/client';
-import { QiitaPostsRepository } from '@/infrastructure/database/qiita-posts/qiita-posts.repository';
+import { QiitaPostsRepository } from '@infrastructure/database/qiita-posts/qiita-posts.repository';
 
 @Injectable()
 export class AppService {
