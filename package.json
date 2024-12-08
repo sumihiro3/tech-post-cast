@@ -13,6 +13,8 @@
     "build-commons": "yarn workspace @tech-post-cast/commons run build",
     "build-database": "yarn workspace @tech-post-cast/database run build",
     "build-backend": "yarn workspace @tech-post-cast/backend run build",
+    "build-infra": "yarn workspace @tech-post-cast/infra run build",
+    "deploy-infra": "yarn workspace @tech-post-cast/infra run deploy",
     "prisma-generate": "yarn workspace @tech-post-cast/database run prisma:generate",
     "test": "yarn test-backend",
     "test-backend": "yarn workspace @tech-post-cast/backend run test",

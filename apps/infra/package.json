@@ -1,6 +1,7 @@
 {
   "name": "@tech-post-cast/infra",
   "version": "0.1.0",
+  "license": "MIT",
   "bin": {
     "infra": "bin/infra.js"
   },
@@ -8,7 +9,13 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "deploy": "yarn build && yarn cdk:synth && yarn cdk:ls && yarn cdk:diff && yarn cdk:deploy",
+    "cdk:synth": " cdk --profile tech-post-cast --context environment=develop synth TechPostCastStack",
+    "cdk:ls": " cdk --profile tech-post-cast --context environment=develop ls TechPostCastStack",
+    "cdk:diff": " cdk --profile tech-post-cast  --context environment=develop diff TechPostCastStack",
+    "cdk:deploy": " cdk --profile tech-post-cast  --context environment=develop  deploy TechPostCastStack",
+    "cdk:destroy": " cdk --profile tech-post-cast  --context environment=develop destroy TechPostCastStack"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
