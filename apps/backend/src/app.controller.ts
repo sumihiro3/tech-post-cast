@@ -1,9 +1,10 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Logger, Param } from '@nestjs/common';
 import { AppService } from './app.service';
 import { QiitaPost } from '@prisma/client';
 
 @Controller()
 export class AppController {
+  private readonly logger = new Logger(AppController.name);
   constructor(private readonly appService: AppService) {}
 
   @Get()
@@ -13,6 +14,7 @@ export class AppController {
 
   @Get('health-check')
   getHealthCheck(): string {
+    this.logger.debug('health-check called!');
     return 'OK';
   }
 

@@ -22,6 +22,7 @@ export class TechPostCastInfraStack extends cdk.Stack {
         memorySize: 128,
         timeout: cdk.Duration.seconds(10 * 60),
         logRetention: cloudWatchLogs.RetentionDays.ONE_WEEK,
+        tracing: lambda.Tracing.ACTIVE,
       });
     new cdk.CfnOutput(this, 'TechPostCastBackendLambdaArn', {
       value: backendLambda.functionArn,

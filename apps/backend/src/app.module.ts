@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '@tech-post-cast/database';
 import { QiitaPostsRepository } from '@infrastructure/database/qiita-posts/qiita-posts.repository';
+import { CustomLoggerModule } from '@tech-post-cast/commons';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { QiitaPostsRepository } from '@infrastructure/database/qiita-posts/qiita
       isGlobal: true,
       envFilePath: `.env`,
     }),
+    CustomLoggerModule,
     PrismaModule,
   ],
   controllers: [AppController],

@@ -11,5 +11,8 @@
   },
   "devDependencies": {
     "typescript": "^5.1.3"
+  },
+  "dependencies": {
+    "@nestjs/config": "^3.3.0"
   }
 }
