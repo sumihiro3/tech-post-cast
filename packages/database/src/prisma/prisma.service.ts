@@ -8,12 +8,12 @@ export class PrismaService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
-  constructor(config: ConfigService) {
+  constructor(configService: ConfigService) { 
     super({
-      log: ['query'],
+      log: configService.get<boolean>("SHOW_QUERY_LOG") ? ['query'] : [],
       datasources: {
         db: {
-          url: config.get<string>(`DATABASE_URL`),
+          url: configService.get<string>('DATABASE_URL'),
         },
       },
     });

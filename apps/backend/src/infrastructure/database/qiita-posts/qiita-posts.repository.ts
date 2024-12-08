@@ -1,4 +1,4 @@
-import { PrismaService } from '../../../prisma/prisma.service';
+import { PrismaService } from '@tech-post-cast/database';
 import { IQiitaPostsRepository } from '@domains/qiita-posts/qiita-posts.repository.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { QiitaPost } from '@prisma/client';
