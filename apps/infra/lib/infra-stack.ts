@@ -15,6 +15,7 @@ export class TechPostCastInfraStack extends cdk.Stack {
     // Lambda with Docker Image
     const backendLambda = new lambda.DockerImageFunction(this, 'TechPostCastBackendLambda', {
       code: lambda.DockerImageCode.fromImageAsset(dockerfileDir, {
+        file: 'Dockerfile.backend',
         platform: Platform.LINUX_AMD64,
       }),
         functionName: 'TechPostCastBackendLambda',
