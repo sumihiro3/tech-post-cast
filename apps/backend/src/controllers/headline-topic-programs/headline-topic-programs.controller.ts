@@ -5,6 +5,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { HeadlineTopicProgramsService } from './headline-topic-programs.service';
+import { subtractDays } from '@tech-post-cast/commons';
 
 @Controller('headline-topic-programs')
 export class HeadlineTopicProgramsController {
@@ -24,8 +25,9 @@ export class HeadlineTopicProgramsController {
     );
     try {
       // ヘッドライントピック番組を生成する
+      const programDate = subtractDays(new Date(), 7);
       await this.headlineTopicProgramsService.createHeadlineTopicProgram(
-        new Date(),
+        programDate,
       );
     } catch (error) {
       const errorMessage = `ヘッドライントピック番組の生成中にエラーが発生しました`;

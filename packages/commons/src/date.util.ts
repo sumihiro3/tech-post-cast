@@ -169,3 +169,14 @@ export function getCronExpression(date: Date): string {
   const d = dayjs(date).tz(TIME_ZONE_UTC);
   return `cron(${d.minute()} ${d.hour()} ${d.date()} ${d.month() + 1} ? ${d.year()})`;
 }
+
+/**
+ * 指定日付の年月日・曜日での表示文字列を取得する
+ * @param target Date
+ * @returns 日付（年月日、曜日）
+ */
+export function getJapaneseDateStringWithWeekday(target: Date): string {
+  // 日本語での日付表記
+  const date = dayjs(target).format('YYYY年MM月DD日（ddd）');
+  return date;
+}

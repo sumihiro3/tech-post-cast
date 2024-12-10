@@ -1,4 +1,5 @@
 import { QiitaPostApiResponse } from '@/domains/qiita-posts/qiita-posts.entity';
+import { HeadlineTopicProgramMaker } from '@/domains/radio-program/headline-topic-program/headline-topic-program-maker';
 import { QiitaPostsRepository } from '@/infrastructure/database/qiita-posts/qiita-posts.repository';
 import { QiitaPostsApiClient } from '@/infrastructure/external-api/qiita-api/qiita-posts.api.client';
 import { Injectable, Logger } from '@nestjs/common';
@@ -16,6 +17,7 @@ export class HeadlineTopicProgramsService {
   constructor(
     private readonly qiitaPostsRepository: QiitaPostsRepository,
     private readonly qiitaPostsApiClient: QiitaPostsApiClient,
+    private readonly headlineTopicProgramMaker: HeadlineTopicProgramMaker,
   ) {}
 
   /**
@@ -51,16 +53,14 @@ export class HeadlineTopicProgramsService {
       this.logger.debug(`いいね数が多い記事を取得しました`, {
         popularPosts: popularPosts,
       });
-      // TODO いいね数が多い記事を要約する
-      // TODO 「ヘッドライントピック」番組の台本を生成する
-      // TODO 「ヘッドライントピック」番組の台本読み上げ音声ファイルを生成する
-      // TODO // BGM などを組み合わせて「ヘッドライントピック」番組の音声ファイルを生成する
-      // TODO 生成した「ヘッドライントピック」番組の音声ファイルを S3 にアップロードする処理を追加
-      // DB に記事を登録
-      const registeredPosts =
-        await this.qiitaPostsRepository.upsertQiitaPosts(popularPosts);
-      this.logger.debug(`${registeredPosts.length} 件の記事を登録しました`);
-      // TODO DB に「ヘッドライントピック」番組を登録する
+      // 「ヘッドライントピック」番組を生成する
+      const program = await this.headlineTopicProgramMaker.generateProgram(
+        programDate,
+        popularPosts,
+      );
+      this.logger.debug(`「ヘッドライントピック」番組を生成しました`, {
+        program,
+      });
     } catch (error) {
       this.logger.error(`エラーが発生しました`, error);
       // TODO: 独自エラークラスを作成してエラーハンドリングを行う

@@ -10,3 +10,7 @@ services:
     #   - .:/app
     ports:
       - '3000:3000'
+    environment:
+      - NODE_ENV=development
+      - FFMPEG_PATH=/usr/bin/ffmpeg
+      - FFPROBE_PATH=/usr/bin/ffprobe
