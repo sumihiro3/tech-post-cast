@@ -13,6 +13,7 @@ import {
   HeadlineTopicProgramScript,
 } from '.';
 
+import { HeadlineTopicProgramsRepository } from '@/infrastructure/database/headline-topic-programs/headline-topic-programs.repository';
 import {
   PutObjectCommand,
   S3Client,
@@ -30,6 +31,7 @@ export class HeadlineTopicProgramMaker {
     private readonly configService: ConfigService,
     private readonly qiitaPostsRepository: QiitaPostsRepository,
     private readonly openAiApiClient: OpenAiApiClient,
+    private readonly headlineTopicProgramsRepository: HeadlineTopicProgramsRepository,
   ) {
     this.outputDir = this.configService.get<string>(
       'HEADLINE_TOPIC_PROGRAM_TARGET_DIR',
@@ -61,18 +63,26 @@ export class HeadlineTopicProgramMaker {
         script,
         mainAudioPath,
       );
-      // TODO 生成した「ヘッドライントピック」番組の音声ファイルを S3 にアップロードする処理を追加
+      // 生成した「ヘッドライントピック」番組の音声ファイルを S3 にアップロードする処理を追加
       const url = await this.uploadProgramAudioFile(
         generateResult.audioFilePath,
         programDate,
       );
       this.logger.log(`S3 に番組音声ファイルをアップロードしました`, { url });
-      // TODO DB に「ヘッドライントピック」番組を登録する処理を追加
       // DB に記事を登録
-      // const registeredPosts =
-      //   await this.qiitaPostsRepository.upsertQiitaPosts(posts);
-      // this.logger.debug(`${registeredPosts.length} 件の記事を登録しました`);
-      return null;
+      const registeredPosts =
+        await this.qiitaPostsRepository.upsertQiitaPosts(posts);
+      this.logger.debug(`${registeredPosts.length} 件の記事を登録しました`);
+      // DB に「ヘッドライントピック」番組を登録する
+      const program =
+        await this.headlineTopicProgramsRepository.upsertHeadlineTopicProgram(
+          programDate,
+          registeredPosts,
+          generateResult,
+          url,
+        );
+      this.logger.log(`ヘッドライントピック番組を生成しました`, { program });
+      return program;
     } catch (error) {
       const errorMessage = `ヘッドライントピック番組の生成中にエラーが発生しました`;
       this.logger.error(errorMessage, error, error.stack);

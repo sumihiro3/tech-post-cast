@@ -5,6 +5,7 @@ import {
   Post,
   Req,
 } from '@nestjs/common';
+import { getStartOfDay, TIME_ZONE_JST } from '@tech-post-cast/commons';
 import { Request } from 'express';
 import { HeadlineTopicProgramsService } from '../headline-topic-programs/headline-topic-programs.service';
 
@@ -25,7 +26,7 @@ export class EventsController {
   async receiveEvents(@Req() request: Request) {
     this.logger.log('Received event', { request: request.body });
     try {
-      const programDate = new Date();
+      const programDate = getStartOfDay(new Date(), TIME_ZONE_JST);
       this.logger.log(`ヘッドライントピック番組の定期生成を開始します`, {
         programDate,
       });
