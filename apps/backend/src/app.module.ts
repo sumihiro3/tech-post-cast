@@ -6,6 +6,7 @@ import { PrismaModule } from '@tech-post-cast/database';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HeadlineTopicProgramsModule } from './controllers/headline-topic-programs/headline-topic-programs.module';
+import { EventsModule } from './controllers/events/events.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { HeadlineTopicProgramsModule } from './controllers/headline-topic-progra
     CustomLoggerModule,
     PrismaModule,
     HeadlineTopicProgramsModule,
+    EventsModule,
   ],
   controllers: [AppController],
   providers: [AppService, QiitaPostsRepository],

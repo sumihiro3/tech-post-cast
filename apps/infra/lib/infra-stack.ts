@@ -4,6 +4,8 @@ import * as apiGatewayV2Integration from "aws-cdk-lib/aws-apigatewayv2-integrati
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
+import * as events from "aws-cdk-lib/aws-events";
+import * as targets from "aws-cdk-lib/aws-events-targets";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as cloudWatchLogs from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
@@ -78,6 +80,21 @@ export class TechPostCastInfraStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'TechPostCastBackendApiUrl', {
       value: backendGateway.url ?? 'NO URL',
       exportName: 'TechPostCastBackendApiUrl',
+    });
+
+    // EventBridge
+    // EventBridge から BackendLambda へイベント送信する
+    // BackendLambda では、イベントを受けてヘッドライントピック番組を作成する
+    const ruleName = `TechPostCastCreateHeadlineTopicProgramRule`;
+    const rule = new events.Rule(this, ruleName, {
+      ruleName: ruleName,
+      // JST 6:55 に実行
+      schedule: events.Schedule.cron({ minute: '55', hour: '21', day: '*' }),
+      targets: [new targets.LambdaFunction(backendLambda, { retryAttempts: 3 })],
+    });
+    new cdk.CfnOutput(this, `${ruleName}Arn`, {
+      value: rule.ruleArn,
+      exportName: `${ruleName}Arn`,
     });
   }
 }
