@@ -11,6 +11,7 @@
     "test": "jest",
     "cdk": "cdk",
     "deploy": "yarn build && yarn cdk:synth && yarn cdk:ls && yarn cdk:diff && yarn cdk:deploy",
+    "diff": "yarn build && yarn cdk:synth && yarn cdk:ls && yarn cdk:diff",
     "cdk:synth": " cdk --profile tech-post-cast --context environment=develop synth TechPostCastStack",
     "cdk:ls": " cdk --profile tech-post-cast --context environment=develop ls TechPostCastStack",
     "cdk:diff": " cdk --profile tech-post-cast  --context environment=develop diff TechPostCastStack",

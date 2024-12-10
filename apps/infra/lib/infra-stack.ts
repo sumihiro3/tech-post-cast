@@ -1,17 +1,39 @@
 import * as cdk from 'aws-cdk-lib';
-import { Construct } from 'constructs';
-import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as apiGatewayV2Integration from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import * as apiGatewayV2 from "aws-cdk-lib/aws-apigatewayv2";
-import * as cloudWatchLogs from "aws-cdk-lib/aws-logs";
-import * as path from 'path';
+import * as apiGatewayV2Integration from "aws-cdk-lib/aws-apigatewayv2-integrations";
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as cloudWatchLogs from "aws-cdk-lib/aws-logs";
+import * as s3 from "aws-cdk-lib/aws-s3";
+import { Construct } from 'constructs';
+import * as path from 'path';
 
 const dockerfileDir = path.join(__dirname, '../../..');
 
 export class TechPostCastInfraStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    // 番組音声ファイルを保存するS3バケット
+    const audioBucket = new s3.Bucket(this, 'TechPostCastAudioBucket', {
+      bucketName: 'tech-post-cast-program-audio-bucket',
+      versioned: false,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    // CloudFront
+    const distribution = new cloudfront.Distribution(this, 'TechPostCastDistribution', {
+      defaultBehavior: { 
+        origin: origins.S3BucketOrigin.withOriginAccessControl(audioBucket)
+      },
+    });
+    const audioFileUrlPrefix = `https://${distribution.distributionDomainName}`;
+    new cdk.CfnOutput(this, 'TechPostCastDistribution URL', {
+      value: audioFileUrlPrefix
+    });
+
     // Lambda with Docker Image
     const backendLambda = new lambda.DockerImageFunction(this, 'TechPostCastBackendLambda', {
       code: lambda.DockerImageCode.fromImageAsset(dockerfileDir, {
@@ -19,11 +41,22 @@ export class TechPostCastInfraStack extends cdk.Stack {
         platform: Platform.LINUX_AMD64,
       }),
         functionName: 'TechPostCastBackendLambda',
-        memorySize: 128,
+        memorySize: 1024,
         timeout: cdk.Duration.seconds(10 * 60),
         logRetention: cloudWatchLogs.RetentionDays.ONE_WEEK,
         tracing: lambda.Tracing.ACTIVE,
+        environment: {
+          // 環境変数
+          // ffmpeg
+          "FFMPEG_PATH": "/usr/bin/ffmpeg",
+          "FFPROBE_PATH": "/usr/bin/ffprobe",
+          // AWS
+          "PROGRAM_AUDIO_BUCKET_NAME": audioBucket.bucketName,
+          "PROGRAM_AUDIO_FILE_URL_PREFIX": audioFileUrlPrefix,
+        },
       });
+    // Lambda 実行ロール
+    const backendLambdaRole = backendLambda.role!;
     new cdk.CfnOutput(this, 'TechPostCastBackendLambdaArn', {
       value: backendLambda.functionArn,
       exportName: 'TechPostCastBackendLambdaArn',
@@ -32,6 +65,8 @@ export class TechPostCastInfraStack extends cdk.Stack {
       value: backendLambda.functionName,
       exportName: 'TechPostCastBackendLambdaName',
     });
+    // Lambda 実行ロールにS3バケットへのアクセス権限を付与
+    audioBucket.grantReadWrite(backendLambdaRole);
 
     // API Gateway
     const backendGateway = new apiGatewayV2.HttpApi(this, 'TechPostCastBackendApi', {

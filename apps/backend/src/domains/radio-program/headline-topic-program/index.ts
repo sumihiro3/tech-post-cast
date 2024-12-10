@@ -30,12 +30,19 @@ export interface HeadlineTopicProgramScript {
  */
 export interface HeadlineTopicProgramGenerateResult {
   /**
+   * 音声ファイル名
+   */
+  audioFileName: string;
+  /**
    * 音声ファイルのパス
    */
   audioFilePath: string;
-
   /**
    * 長さ（ミリ秒）
    */
   duration: number;
+  /**
+   * 台本
+   */
+  script: HeadlineTopicProgramScript;
 }

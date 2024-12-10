@@ -20,7 +20,7 @@ model HeadlineTopicProgram {
   // 今日のヘッドライントピックのタイトル
   title         String   @db.VarChar(255)
   // 台本
-  script        String
+  script        Json     @db.Json
   // 今日のヘッドライントピックの音声ファイルURL
   audioUrl      String   @map("audio_url")
   // 音声ファイルの長さ（ミリ秒）

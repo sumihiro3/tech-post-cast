@@ -7,7 +7,7 @@ COPY . .
 # 依存ライブラリをインストール
 RUN yarn install --pure-lockfile --non-interactive
 # prisma のスキーマを生成
-RUN yarn prisma-generate
+RUN yarn generate-prisma
 # ソースコードをビルド
 RUN yarn build-all
 
@@ -24,7 +24,7 @@ RUN apt-get -y update && apt-get -y upgrade && apt-get install -y ffmpeg
 
 WORKDIR /app
 
-RUN mkdir -p /app/tmp/headline-topic-programs
+RUN mkdir -p /app/tmp/headline-topic-programs && mkdir -p /tmp/headline-topic-programs
 
 # 依存ライブラリをインストール
 COPY --from=builder /build/node_modules node_modules
@@ -33,7 +33,7 @@ COPY --from=builder /build/apps/backend/dist dist
 # apps/backend の package.json をコンテナー内にコピー
 COPY --from=builder /build/apps/backend/package.json .
 
-COPY --from=builder /build/apps/backend/.env .
+COPY --from=builder /build/apps/backend/.env.docker ./.env
 COPY --from=builder /build/apps/backend/assets assets
 COPY --from=builder /build/apps/backend/tmp/headline-topic-programs tmp/headline-topic-programs
 

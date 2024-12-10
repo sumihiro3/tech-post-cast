@@ -6,21 +6,35 @@ import { ConfigService } from '@nestjs/config';
 import { HeadlineTopicProgram } from '@prisma/client';
 import * as ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
+import { readFile } from 'node:fs/promises';
 import * as path from 'path';
 import {
   HeadlineTopicProgramGenerateResult,
   HeadlineTopicProgramScript,
 } from '.';
 
+import {
+  PutObjectCommand,
+  S3Client,
+  S3ServiceException,
+} from '@aws-sdk/client-s3';
+import { formatDate } from '@tech-post-cast/commons';
+
 @Injectable()
 export class HeadlineTopicProgramMaker {
   private readonly logger = new Logger(HeadlineTopicProgramMaker.name);
+  // 生成したファイルの出力先ディレクトリ
+  private readonly outputDir;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly qiitaPostsRepository: QiitaPostsRepository,
     private readonly openAiApiClient: OpenAiApiClient,
-  ) {}
+  ) {
+    this.outputDir = this.configService.get<string>(
+      'HEADLINE_TOPIC_PROGRAM_TARGET_DIR',
+    );
+  }
 
   /**
    * ヘッドライントピック番組を生成する
@@ -43,8 +57,16 @@ export class HeadlineTopicProgramMaker {
       // 「ヘッドライントピック」番組の台本読み上げ音声ファイルを生成する
       const mainAudioPath = await this.generateMainAudioFile(script);
       // BGM などを組み合わせて「ヘッドライントピック」番組の音声ファイルを生成する
-      const generateResult = await this.generateProgramAudioFile(mainAudioPath);
+      const generateResult = await this.generateProgramAudioFile(
+        script,
+        mainAudioPath,
+      );
       // TODO 生成した「ヘッドライントピック」番組の音声ファイルを S3 にアップロードする処理を追加
+      const url = await this.uploadProgramAudioFile(
+        generateResult.audioFilePath,
+        programDate,
+      );
+      this.logger.log(`S3 に番組音声ファイルをアップロードしました`, { url });
       // TODO DB に「ヘッドライントピック」番組を登録する処理を追加
       // DB に記事を登録
       // const registeredPosts =
@@ -119,11 +141,12 @@ export class HeadlineTopicProgramMaker {
         script,
       },
     );
-    const outputDir = this.configService.get<string>(
-      'HEADLINE_TOPIC_PROGRAM_TARGET_DIR',
-    );
-    const mainAudioPath = `${outputDir}/${Date.now()}_main.mp3`;
+    // 出力先ディレクトリを作成
+    if (!fs.existsSync(this.outputDir)) {
+      fs.mkdirSync(this.outputDir, { recursive: true });
+    }
     // メイン音声ファイルを生成する
+    const mainAudioPath = `${this.outputDir}/${Date.now()}_main.mp3`;
     await this.openAiApiClient.generateHeadlineTopicProgramAudioFile(
       mainAudioPath,
       script,
@@ -134,10 +157,12 @@ export class HeadlineTopicProgramMaker {
 
   /**
    * ヘッドライントピック番組の音声ファイルを生成する
+   * @param script 台本
    * @param mainAudioPath メイン音声ファイルのパス
    * @return ヘッドライントピック番組の生成結果
    */
   async generateProgramAudioFile(
+    script: HeadlineTopicProgramScript,
     mainAudioPath: string,
   ): Promise<HeadlineTopicProgramGenerateResult> {
     this.logger.debug(
@@ -155,10 +180,8 @@ export class HeadlineTopicProgramMaker {
     const endingPath = this.configService.get<string>(
       'HEADLINE_TOPIC_PROGRAM_ENDING_FILE_PATH',
     );
-    const outputDir = this.configService.get<string>(
-      'HEADLINE_TOPIC_PROGRAM_TARGET_DIR',
-    );
-    const outputPath = `${outputDir}/headline-topic-program_${Date.now()}.mp3`;
+    const targetFileName = `headline-topic-program_${Date.now()}.mp3`;
+    const outputPath = `${this.outputDir}/${targetFileName}`;
     // メイン音声やBGMを組み合わせてラジオ番組を作成する
     const duration = await this.mixAudioFiles(
       mainAudioPath,
@@ -167,9 +190,12 @@ export class HeadlineTopicProgramMaker {
       endingPath,
       outputPath,
     );
+    // 生成結果を返却
     const result: HeadlineTopicProgramGenerateResult = {
+      audioFileName: targetFileName,
       audioFilePath: outputPath,
       duration,
+      script,
     };
     this.logger.log(`ラジオ番組を生成しました`, { result });
     return result;
@@ -193,10 +219,7 @@ export class HeadlineTopicProgramMaker {
   ): Promise<number> {
     this.logger.debug(`HeadlineTopicProgramMaker.mixAudioFiles called`);
     this.logger.debug('1. メイン音声と BGM のマージを開始...');
-    const outputDir = this.configService.get<string>(
-      'HEADLINE_TOPIC_PROGRAM_TARGET_DIR',
-    );
-    const mergedMainWithBgmPath = `${outputDir}/merged_main_with_bgm.mp3`;
+    const mergedMainWithBgmPath = `${this.outputDir}/merged_main_with_bgm.mp3`;
     await this.mergeBgmWithMainAudio(
       mainAudioPath,
       bgmPath,
@@ -266,7 +289,7 @@ export class HeadlineTopicProgramMaker {
       const mainAudioDuration = await this.getAudioDuration(mainPath);
 
       // 一時 BGM ループファイル
-      const loopedBgmPath = path.join(__dirname, 'looped_bgm.mp3');
+      const loopedBgmPath = `${this.outputDir}/looped_bgm.mp3`;
 
       // BGM をループしてメイン音声の長さに合わせる
       await new Promise<void>((resolve, reject) => {
@@ -327,7 +350,7 @@ export class HeadlineTopicProgramMaker {
    */
   concatAudioFiles = (files: string[], outputPath: string): Promise<void> => {
     return new Promise((resolve, reject) => {
-      const listFilePath = path.join(__dirname, 'file-list.txt');
+      const listFilePath = `${this.outputDir}/file-list.txt`;
       const fileListContent = files
         .map((file) => `file '${path.resolve(file)}'`)
         .join('\n');
@@ -355,4 +378,65 @@ export class HeadlineTopicProgramMaker {
         });
     });
   };
+
+  /**
+   * 番組音声ファイルを S3 にアップロードする
+   * @param filePath 番組音声ファイルのパス
+   * @param programDate 番組日
+   * @returns アップロードした音声ファイルの URL
+   */
+  async uploadProgramAudioFile(
+    filePath: string,
+    programDate: Date,
+  ): Promise<string> {
+    this.logger.debug(
+      `HeadlineTopicProgramMaker.uploadProgramAudioFile called`,
+      {
+        filePath,
+        programDate,
+      },
+    );
+    const bucketName = this.configService.get<string>(
+      'PROGRAM_AUDIO_BUCKET_NAME',
+    );
+    try {
+      const client = new S3Client({});
+      const dt = formatDate(programDate, 'YYYYMMDD');
+      const programName = 'headline-topic-program';
+      const objectKey = `${programName}/${dt}/${programName}_${dt}.mp3`;
+      const command = new PutObjectCommand({
+        Bucket: bucketName,
+        Key: objectKey,
+        Body: await readFile(filePath),
+      });
+      // S3 にアップロード
+      const response = await client.send(command);
+      const urlPrefix = this.configService.get<string>(
+        'PROGRAM_AUDIO_FILE_URL_PREFIX',
+      );
+      const url = `${urlPrefix}/${objectKey}`;
+      this.logger.log(`S3 に番組音声ファイルをアップロードしました`, {
+        response,
+        url,
+      });
+      return url;
+    } catch (caught) {
+      if (
+        caught instanceof S3ServiceException &&
+        caught.name === 'EntityTooLarge'
+      ) {
+        this.logger.error(
+          `Error from S3 while uploading object to ${bucketName}. \
+  The object was too large. To upload objects larger than 5GB, use the S3 console (160GB max) \
+  or the multipart upload API (5TB max).`,
+        );
+      } else if (caught instanceof S3ServiceException) {
+        this.logger.error(
+          `Error from S3 while uploading object to ${bucketName}.  ${caught.name}: ${caught.message}`,
+        );
+      } else {
+        throw caught;
+      }
+    }
+  }
 }
