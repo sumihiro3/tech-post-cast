@@ -1,11 +1,11 @@
-import { PrismaService } from '@tech-post-cast/database';
+import {
+  IQiitaPostApiResponse,
+  QiitaPostApiResponse,
+} from '@/domains/qiita-posts/qiita-posts.entity';
 import { IQiitaPostsRepository } from '@domains/qiita-posts/qiita-posts.repository.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma, QiitaPost } from '@prisma/client';
-import {
-  QiitaPostApiResponse,
-  IQiitaPostApiResponse,
-} from '@/domains/qiita-posts/qiita-posts.entity';
+import { PrismaService } from '@tech-post-cast/database';
 
 /**
  * IQiitaItemsRepository の実装

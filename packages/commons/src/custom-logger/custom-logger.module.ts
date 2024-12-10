@@ -1,7 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { CustomLoggerMiddleware } from './custom-logger.middleware';
 import { CustomLoggerService } from './custom-logger.service';
-import { ConfigService } from '@nestjs/config';
 
 @Module({
   providers: [{

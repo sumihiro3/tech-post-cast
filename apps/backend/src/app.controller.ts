@@ -1,6 +1,6 @@
 import { Controller, Get, Logger, Param } from '@nestjs/common';
-import { AppService } from './app.service';
 import { QiitaPost } from '@prisma/client';
+import { AppService } from './app.service';
 
 @Controller()
 export class AppController {
