@@ -6,11 +6,6 @@ import {
   Post,
 } from '@nestjs/common';
 import { ApiHeader, ApiOperation } from '@nestjs/swagger';
-import {
-  getStartOfDay,
-  subtractDays,
-  TIME_ZONE_JST,
-} from '@tech-post-cast/commons';
 import { HeadlineTopicCreateRequestDto } from './dto/headline-topic-programs.dto';
 import { HeadlineTopicProgramsService } from './headline-topic-programs.service';
 
@@ -44,11 +39,7 @@ export class HeadlineTopicProgramsController {
     });
     try {
       // ヘッドライントピック番組を生成する
-      const daysAgo = dto.daysAgo ?? 0;
-      const programDate = getStartOfDay(
-        subtractDays(new Date(), daysAgo),
-        TIME_ZONE_JST,
-      );
+      const programDate = dto.getProgramDate();
       this.logger.debug(`ヘッドライントピック番組の生成を開始します`, {
         programDate,
       });

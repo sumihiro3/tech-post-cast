@@ -1,4 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
+import {
+  getStartOfDay,
+  subtractDays,
+  TIME_ZONE_JST,
+} from '@tech-post-cast/commons';
 import { IsNumber, IsOptional, Min } from 'class-validator';
 
 /**
@@ -15,4 +20,17 @@ export class HeadlineTopicCreateRequestDto {
   @Min(0)
   @IsOptional()
   daysAgo?: number;
+
+  /**
+   * 作成する番組の対象日付を取得する
+   * @returns 作成する番組の対象日付（JST）
+   */
+  getProgramDate(): Date {
+    const daysAgo = this.daysAgo ?? 0;
+    const programDate = getStartOfDay(
+      subtractDays(new Date(), daysAgo),
+      TIME_ZONE_JST,
+    );
+    return programDate;
+  }
 }
