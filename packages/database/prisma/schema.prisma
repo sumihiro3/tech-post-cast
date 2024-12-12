@@ -36,7 +36,7 @@ model HeadlineTopicProgram {
   posts QiitaPost[]
 
   // テーブル名
-  @@map("daily_headline_topics")
+  @@map("headline_topic_programs")
 }
 
 // Qiita の記事
