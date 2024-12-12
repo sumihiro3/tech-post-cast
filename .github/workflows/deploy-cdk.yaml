@@ -9,9 +9,9 @@ on:
     types:
       - closed
   # develop ブランチにプッシュされたとき
-  push:
-    branches:
-      - develop
+  # push:
+  #   branches:
+  #     - develop
 
 jobs:
   prepare:
