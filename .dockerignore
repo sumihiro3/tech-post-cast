@@ -2,3 +2,5 @@ node_modules
 cdk.out
 apps/infra
 rest-client
+
+.env

@@ -49,9 +49,15 @@ export class TechPostCastInfraStack extends cdk.Stack {
         tracing: lambda.Tracing.ACTIVE,
         environment: {
           // 環境変数
+          "SHOW_QUERY_LOGS": "true",
           // ffmpeg
           "FFMPEG_PATH": "/usr/bin/ffmpeg",
           "FFPROBE_PATH": "/usr/bin/ffprobe",
+          // ヘッドライントピック番組用音声ファイル
+          "HEADLINE_TOPIC_PROGRAM_TARGET_DIR": "/tmp/headline-topic-programs",
+          "HEADLINE_TOPIC_PROGRAM_BGM_FILE_PATH": "assets/audio/headline-topic-programs/bgm.mp3",
+          "HEADLINE_TOPIC_PROGRAM_OPENING_FILE_PATH": "assets/audio/headline-topic-programs/opening.mp3",
+          "HEADLINE_TOPIC_PROGRAM_ENDING_FILE_PATH": "assets/audio/headline-topic-programs/ending.mp3",       
           // AWS
           "PROGRAM_AUDIO_BUCKET_NAME": audioBucket.bucketName,
           "PROGRAM_AUDIO_FILE_URL_PREFIX": audioFileUrlPrefix,

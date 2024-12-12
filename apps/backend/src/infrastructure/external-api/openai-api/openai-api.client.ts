@@ -191,6 +191,7 @@ export class OpenAiApiClient {
 ## 出力形式
 
 下記のようにJSON形式で出力してください。
+必ず出力内容のJSON形式が正しいか検証してから出力してください。
 
 {
   "title": "{番組タイトル},
