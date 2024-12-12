@@ -10,7 +10,7 @@ on:
       - closed
 
 jobs:
-  prepare:
+  deploy:
       runs-on: ubuntu-24.04
       steps:
         # ブランチ名を表示
