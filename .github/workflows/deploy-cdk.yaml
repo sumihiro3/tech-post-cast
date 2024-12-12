@@ -1,0 +1,58 @@
+name: Deploy by AWS CDK
+
+on:
+  # プルリクエストがクローズされたとき
+  pull_request:
+    branches:
+      - main
+      - develop
+    types:
+      - closed
+
+jobs:
+  prepare:
+      runs-on: ubuntu-24.04
+      steps:
+        # ブランチ名を表示
+        - name: Show branch name
+          run: echo ${{ github.ref_name }}
+        # リポジトリのコードをチェックアウト
+        - name: Checkout
+          uses: actions/checkout@v4
+        # Node.js のセットアップ
+        - name: Setup Node.js
+          uses: actions/setup-node@v4
+          with:
+            node-version: '20.18.1'
+        # .env.backend ファイルの作成
+        # develop ブランチにプッシュされたとき
+        - name: create .env.backend file for develop
+          if: ${{ github.ref_name == 'develop'}}
+          run: echo "${{ secrets.ENVS_DEVELOP }}" > .env.backend
+        # main ブランチにプッシュされたとき
+        - name: create .env.backend file for main
+          if: ${{ github.ref_name == 'main'}}
+          run: echo "${{ secrets.ENVS_MAIN }}" > .env.backend
+        # Yarn のインストール
+        - name: Install Yarn
+          run: npm install -g yarn
+        # 依存関係のインストール
+        - name: Install dependencies
+          run: yarn install
+        # AWS CDK でのデプロイ
+        # develop ブランチにプッシュされたとき
+        - name: Deploy to develop
+          if: ${{ github.ref_name == 'develop'}}
+          run: yarn deploy-infra-for-ci:develop
+          env:
+            AWS_DEFAULT_REGION: 'ap-northeast-1'
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        # main ブランチにプッシュされたとき
+        - name: Deploy to main
+          if: ${{ github.ref_name == 'main'}}
+          run: yarn deploy-infra-for-ci:main
+          env:
+            AWS_DEFAULT_REGION: 'ap-northeast-1'
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

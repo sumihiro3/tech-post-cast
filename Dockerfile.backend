@@ -39,7 +39,7 @@ COPY --from=builder /build/apps/backend/dist dist
 # apps/backend の package.json をコンテナー内にコピー
 COPY --from=builder /build/apps/backend/package.json .
 # apps/backend の .env.docker をコンテナー内にコピー
-COPY --from=builder /build/apps/backend/.env.docker ./.env
+COPY --from=builder /build/.env.backend ./.env
 # apps/backend の assets をコンテナー内にコピー
 COPY --from=builder /build/apps/backend/assets assets
 # yarn workspace 内の共通ライブラリ群（commons database）のビルド結果をコンテナー内にコピー

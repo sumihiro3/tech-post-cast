@@ -1,20 +1,54 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
-import { TechPostCastInfraStack } from '../lib/infra-stack';
+import {
+  developStageConfig,
+  productionStageConfig,
+  StageConfig,
+} from '../config';
+import { TechPostCastBackendStack } from '../lib/backend-stack';
 
 const app = new cdk.App();
-new TechPostCastInfraStack(app, 'TechPostCastStack', {
-  /* If you don't specify 'env', this stack will be environment-agnostic.
-   * Account/Region-dependent features and context lookups will not work,
-   * but a single synthesized template can be deployed anywhere. */
 
-  /* Uncomment the next line to specialize this stack for the AWS Account
-   * and Region that are implied by the current CLI configuration. */
-  // env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
+// 環境名が指定されているかをチェック
+const argEnvironmentKey = 'environment';
+const environmentName = app.node.tryGetContext(argEnvironmentKey);
+if (environmentName === undefined) {
+  throw new Error(
+    `環境名が指定されていません ex) cdk deploy --context ${argEnvironmentKey}=develop`,
+  );
+}
+// 環境別の設定を取得
+const stageConfig = getStageConfig(environmentName);
+console.log(`[${stageConfig.nameJp}] の環境構築を開始します`);
 
-  /* Uncomment the next line if you know exactly what Account and Region you
-   * want to deploy the stack to. */
-  // env: { account: '123456789012', region: 'us-east-1' },
+// 環境構築
+const stack = new TechPostCastBackendStack(
+  app,
+  stageConfig.stackName,
+  {
+    env: { account: '788588148195', region: 'ap-northeast-1' },
+  },
+  stageConfig,
+);
 
-  /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
-});
+// Tag 付け
+cdk.Tags.of(app).add('ServiceName', 'TechPostCast');
+cdk.Tags.of(stack).add('Environment', stageConfig.name);
+
+console.log(`[${stageConfig.nameJp}] の環境構築が完了しました`);
+
+/**
+ * 環境別設定を取得する
+ * @param envName 環境名
+ */
+function getStageConfig(envName: string): StageConfig {
+  console.debug(`getStageConfig: [environment: ${envName}]`);
+  switch (envName) {
+    case 'develop':
+      return developStageConfig;
+    case 'production':
+      return productionStageConfig;
+    default:
+      throw new Error(`指定された環境名 [${envName}] が不正です`);
+  }
+}
