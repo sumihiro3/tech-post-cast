@@ -11,16 +11,22 @@ import * as cloudWatchLogs from 'aws-cdk-lib/aws-logs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 import * as path from 'path';
+import { StageConfig } from '../config';
 
 const dockerfileDir = path.join(__dirname, '../../..');
 
-export class TechPostCastInfraStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+export class TechPostCastBackendStack extends cdk.Stack {
+  constructor(
+    scope: Construct,
+    id: string,
+    props: cdk.StackProps,
+    stage: StageConfig,
+  ) {
     super(scope, id, props);
 
     // 番組音声ファイルを保存するS3バケット
     const audioBucket = new s3.Bucket(this, 'TechPostCastAudioBucket', {
-      bucketName: 'tech-post-cast-program-audio-bucket',
+      bucketName: `tech-post-cast-program-audio-bucket${stage.suffix}`,
       versioned: false,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
@@ -49,7 +55,7 @@ export class TechPostCastInfraStack extends cdk.Stack {
           file: 'Dockerfile.backend',
           platform: Platform.LINUX_AMD64,
         }),
-        functionName: 'TechPostCastBackendLambda',
+        functionName: 'TechPostCastBackendLambda${stage.suffixLarge}',
         memorySize: 1024,
         timeout: cdk.Duration.seconds(10 * 60),
         logRetention: cloudWatchLogs.RetentionDays.ONE_WEEK,
@@ -93,10 +99,10 @@ export class TechPostCastInfraStack extends cdk.Stack {
       'TechPostCastBackendApi',
       {
         defaultIntegration: new apiGatewayV2Integration.HttpLambdaIntegration(
-          `TechPostCastBackendLambdaIntegration`,
+          `TechPostCastBackendLambdaIntegration${stage.suffixLarge}`,
           backendLambda,
         ),
-        apiName: `TechPostCastBackendApi`,
+        apiName: `TechPostCastBackendApi${stage.suffixLarge}`,
       },
     );
     new cdk.CfnOutput(this, 'TechPostCastBackendApiUrl', {
@@ -107,15 +113,19 @@ export class TechPostCastInfraStack extends cdk.Stack {
     // EventBridge
     // EventBridge から BackendLambda へイベント送信する
     // BackendLambda では、イベントを受けてヘッドライントピック番組を作成する
-    const ruleName = `TechPostCastCreateHeadlineTopicProgramRule`;
-    const rule = new events.Rule(this, ruleName, {
-      ruleName: ruleName,
-      // JST 6:55 に実行
-      schedule: events.Schedule.cron({ minute: '55', hour: '21', day: '*' }),
-      targets: [
-        new targets.LambdaFunction(backendLambda, { retryAttempts: 3 }),
-      ],
-    });
+    const ruleName = `TechPostCastCreateHeadlineTopicProgramRule${stage.suffixLarge}`;
+    const rule = new events.Rule(
+      this,
+      `TechPostCastCreateHeadlineTopicProgramRule`,
+      {
+        ruleName: ruleName,
+        // JST 6:55 に実行
+        schedule: events.Schedule.cron({ minute: '55', hour: '21', day: '*' }),
+        targets: [
+          new targets.LambdaFunction(backendLambda, { retryAttempts: 3 }),
+        ],
+      },
+    );
     new cdk.CfnOutput(this, `${ruleName}Arn`, {
       value: rule.ruleArn,
       exportName: `${ruleName}Arn`,
