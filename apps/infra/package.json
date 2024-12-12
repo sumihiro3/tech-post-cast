@@ -20,7 +20,7 @@
     "cdk:synth-for-ci": " cdk --context environment=develop synth TechPostCastStack",
     "cdk:ls-for-ci": " cdk --context environment=develop ls TechPostCastStack",
     "cdk:diff-for-ci": " cdk --context environment=develop diff TechPostCastStack",
-    "cdk:deploy-for-ci": " cdk --all --require-approval=never --context environment=develop  deploy TechPostCastStack",
+    "cdk:deploy-for-ci": " cdk --context environment=develop deploy --require-approval=never TechPostCastStack",
     "cdk:destroy": " cdk --profile tech-post-cast  --context environment=develop destroy TechPostCastStack"
   },
   "devDependencies": {
