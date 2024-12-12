@@ -1,5 +1,4 @@
-import { Controller, Get, Logger, Param } from '@nestjs/common';
-import { QiitaPost } from '@prisma/client';
+import { Controller, Get, Logger } from '@nestjs/common';
 import { AppService } from './app.service';
 
 @Controller()
@@ -16,10 +15,5 @@ export class AppController {
   getHealthCheck(): string {
     this.logger.debug('health-check called!');
     return 'OK';
-  }
-
-  @Get('post/:postId')
-  async getQiitaPost(@Param('postId') postId: string): Promise<QiitaPost> {
-    return this.appService.getQiitaPost(postId);
   }
 }
