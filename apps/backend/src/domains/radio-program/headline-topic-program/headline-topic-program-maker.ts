@@ -413,7 +413,7 @@ export class HeadlineTopicProgramMaker {
       const client = new S3Client({});
       const dt = formatDate(programDate, 'YYYYMMDD');
       const programName = 'headline-topic-program';
-      const objectKey = `${programName}/${dt}/${programName}_${dt}.mp3`;
+      const objectKey = `${programName}/${dt}/${programName}_${programDate.getTime()}.mp3`;
       const command = new PutObjectCommand({
         Bucket: bucketName,
         Key: objectKey,
