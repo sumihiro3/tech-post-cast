@@ -82,13 +82,15 @@ export class TechPostCastBackendStack extends cdk.Stack {
     );
     // Lambda 実行ロール
     const backendLambdaRole = backendLambda.role!;
-    new cdk.CfnOutput(this, 'TechPostCastBackendLambdaArn', {
+    const lambdaArnExportName = `TechPostCastBackendLambdaArn${stage.suffixLarge}`;
+    new cdk.CfnOutput(this, lambdaArnExportName, {
       value: backendLambda.functionArn,
-      exportName: 'TechPostCastBackendLambdaArn',
+      exportName: lambdaArnExportName,
     });
-    new cdk.CfnOutput(this, 'TechPostCastBackendLambdaName', {
+    const lambdaNameExportName = `TechPostCastBackendLambdaName${stage.suffixLarge}`;
+    new cdk.CfnOutput(this, lambdaNameExportName, {
       value: backendLambda.functionName,
-      exportName: 'TechPostCastBackendLambdaName',
+      exportName: lambdaNameExportName,
     });
     // Lambda 実行ロールにS3バケットへのアクセス権限を付与
     audioBucket.grantReadWrite(backendLambdaRole);
@@ -105,9 +107,10 @@ export class TechPostCastBackendStack extends cdk.Stack {
         apiName: `TechPostCastBackendApi${stage.suffixLarge}`,
       },
     );
-    new cdk.CfnOutput(this, 'TechPostCastBackendApiUrl', {
+    const backendApiUrlExportName = `TechPostCastBackendApiUrl${stage.suffixLarge}`;
+    new cdk.CfnOutput(this, backendApiUrlExportName, {
       value: backendGateway.url ?? 'NO URL',
-      exportName: 'TechPostCastBackendApiUrl',
+      exportName: backendApiUrlExportName,
     });
 
     // EventBridge
