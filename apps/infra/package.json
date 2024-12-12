@@ -11,11 +11,13 @@
     "test": "jest",
     "cdk": "cdk",
     "deploy": "yarn build && yarn cdk:synth && yarn cdk:ls && yarn cdk:diff && yarn cdk:deploy",
+    "deploy-all-approve": "yarn build && yarn cdk:synth && yarn cdk:ls && yarn cdk:diff && yarn cdk:deploy-approve",
     "diff": "yarn build && yarn cdk:synth && yarn cdk:ls && yarn cdk:diff",
     "cdk:synth": " cdk --profile tech-post-cast --context environment=develop synth TechPostCastStack",
     "cdk:ls": " cdk --profile tech-post-cast --context environment=develop ls TechPostCastStack",
     "cdk:diff": " cdk --profile tech-post-cast  --context environment=develop diff TechPostCastStack",
     "cdk:deploy": " cdk --profile tech-post-cast  --context environment=develop  deploy TechPostCastStack",
+    "cdk:deploy-approve": " cdk --profile tech-post-cast --all --require-approval=never  --context environment=develop  deploy TechPostCastStack",
     "cdk:destroy": " cdk --profile tech-post-cast  --context environment=develop destroy TechPostCastStack"
   },
   "devDependencies": {
