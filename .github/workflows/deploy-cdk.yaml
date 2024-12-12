@@ -27,8 +27,8 @@ jobs:
         - name: Install dependencies
           run: yarn install
         # AWS CDK でのデプロイ
-        - name: Deploy infrastructure
-          run: yarn deploy-infra-approve
+        - name: Deploy
+          run: yarn deploy-infra-for-ci
           env:
             AWS_DEFAULT_REGION: 'ap-northeast-1'
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
