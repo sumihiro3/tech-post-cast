@@ -35,7 +35,7 @@ export class StageConfig {
         break;
       case 'production':
         s = ``;
-        nJp = ``;
+        nJp = `本番環境`;
         break;
       default:
         const errorMessage = `想定外のステージ名 [name: ${name}] が指定されました。`;
