@@ -55,7 +55,7 @@ export class TechPostCastBackendStack extends cdk.Stack {
           file: 'Dockerfile.backend',
           platform: Platform.LINUX_AMD64,
         }),
-        functionName: 'TechPostCastBackendLambda${stage.suffixLarge}',
+        functionName: `TechPostCastBackendLambda${stage.suffixLarge}`,
         memorySize: 1024,
         timeout: cdk.Duration.seconds(10 * 60),
         logRetention: cloudWatchLogs.RetentionDays.ONE_WEEK,
