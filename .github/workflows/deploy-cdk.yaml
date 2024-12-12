@@ -8,10 +8,6 @@ on:
       - develop
     types:
       - closed
-  # develop ブランチにプッシュされたとき
-  # push:
-  #   branches:
-  #     - develop
 
 jobs:
   prepare:

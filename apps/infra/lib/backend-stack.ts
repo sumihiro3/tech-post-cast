@@ -116,22 +116,29 @@ export class TechPostCastBackendStack extends cdk.Stack {
     // EventBridge
     // EventBridge から BackendLambda へイベント送信する
     // BackendLambda では、イベントを受けてヘッドライントピック番組を作成する
-    const ruleName = `TechPostCastCreateHeadlineTopicProgramRule${stage.suffixLarge}`;
-    const rule = new events.Rule(
-      this,
-      `TechPostCastCreateHeadlineTopicProgramRule`,
-      {
-        ruleName: ruleName,
-        // JST 6:55 に実行
-        schedule: events.Schedule.cron({ minute: '55', hour: '21', day: '*' }),
-        targets: [
-          new targets.LambdaFunction(backendLambda, { retryAttempts: 3 }),
-        ],
-      },
-    );
-    new cdk.CfnOutput(this, `${ruleName}Arn`, {
-      value: rule.ruleArn,
-      exportName: `${ruleName}Arn`,
-    });
+    if (stage.isProduction()) {
+      // 本番環境の場合は、毎日 6:55 (JST) に実行する
+      const ruleName = `TechPostCastCreateHeadlineTopicProgramRule${stage.suffixLarge}`;
+      const rule = new events.Rule(
+        this,
+        `TechPostCastCreateHeadlineTopicProgramRule`,
+        {
+          ruleName: ruleName,
+          // JST 6:55 に実行
+          schedule: events.Schedule.cron({
+            minute: '55',
+            hour: '21',
+            day: '*',
+          }),
+          targets: [
+            new targets.LambdaFunction(backendLambda, { retryAttempts: 3 }),
+          ],
+        },
+      );
+      new cdk.CfnOutput(this, `${ruleName}Arn`, {
+        value: rule.ruleArn,
+        exportName: `${ruleName}Arn`,
+      });
+    }
   }
 }
