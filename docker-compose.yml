@@ -1,7 +1,6 @@
-version: '3.9'
 services:
   backend:
-    container_name: tech-post-cast
+    container_name: backend-container
     image: tech-post-cast-backend
     build: 
       context: .
@@ -13,6 +12,7 @@ services:
     env_file:
       - docker_compose.backend.env
     environment:
+      - PORT=3000
       - NODE_ENV=development
       - SHOW_QUERY_LOGS=true
       # ffmpeg
@@ -23,6 +23,25 @@ services:
       - HEADLINE_TOPIC_PROGRAM_BGM_FILE_PATH=assets/audio/headline-topic-programs/bgm.mp3
       - HEADLINE_TOPIC_PROGRAM_OPENING_FILE_PATH=assets/audio/headline-topic-programs/opening.mp3
       - HEADLINE_TOPIC_PROGRAM_ENDING_FILE_PATH=assets/audio/headline-topic-programs/ending.mp3
+      - HEADLINE_TOPIC_PROGRAM_PICTURE_FILE_PATH=assets/audio/headline-topic-programs/preview.jpg
       # AWS
-      - PROGRAM_AUDIO_BUCKET_NAME=tech-post-cast-program-audio-bucket
-      - PROGRAM_AUDIO_FILE_URL_PREFIX=https://dqfdqsb0m4irp.cloudfront.net
+      - PROGRAM_AUDIO_BUCKET_NAME=tech-post-cast-program-audio-bucket-develop
+      - PROGRAM_AUDIO_FILE_URL_PREFIX=https://d2ohwgmlpn9j5f.cloudfront.net
+  line-bot-backend:
+    container_name: line-bot-backend-container
+    image: tech-post-cast-line-bot-backend
+    build: 
+      context: .
+      dockerfile: Dockerfile.line-bot-backend
+    # volumes:
+    #   - .:/app
+    ports:
+      - '4000:4000'
+    env_file:
+      - docker_compose.backend.env
+    environment:
+      - PORT=4000
+      - NODE_ENV=development
+      - SHOW_QUERY_LOGS=true
+      # AWS
+      - PROGRAM_FILE_URL_PREFIX=https://d2ohwgmlpn9j5f.cloudfront.net

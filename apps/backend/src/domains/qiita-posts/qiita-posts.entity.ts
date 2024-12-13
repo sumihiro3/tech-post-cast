@@ -1,5 +1,3 @@
-import { Logger } from '@nestjs/common';
-
 /**
  * Qiita User 型定義
  */
@@ -125,7 +123,6 @@ export interface IQiitaPostApiResponse {
  * Qiita 記事情報 API レスポンス
  */
 export class QiitaPostApiResponse implements IQiitaPostApiResponse {
-  private logger = new Logger('QiitaPostApiResponse');
   /** 記事の一意なID */
   id: string;
   /** 記事のタイトル */

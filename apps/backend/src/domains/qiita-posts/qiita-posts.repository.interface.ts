@@ -10,7 +10,7 @@ export interface IQiitaPostsRepository {
    * @param id Qiita 記事 ID
    * @returns Qiita 記事
    */
-  findOne(id: string): Promise<QiitaPost>;
+  findOne(id: string): Promise<QiitaPost | null>;
 
   // /**
   //  * 指定期間内に投稿された Qiita 記事を取得する

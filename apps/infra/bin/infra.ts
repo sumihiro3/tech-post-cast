@@ -6,6 +6,7 @@ import {
   StageConfig,
 } from '../config';
 import { TechPostCastBackendStack } from '../lib/backend-stack';
+import { TechPostCastLineBotBackendStack } from '../lib/line-bot-backend-stack';
 
 const app = new cdk.App();
 
@@ -22,18 +23,30 @@ const stageConfig = getStageConfig(environmentName);
 console.log(`[${stageConfig.nameJp}] の環境構築を開始します`);
 
 // 環境構築
-const stack = new TechPostCastBackendStack(
+const env: cdk.Environment = {
+  account: '788588148195',
+  region: 'ap-northeast-1',
+};
+// Backend Stack
+const backendStack = new TechPostCastBackendStack(
   app,
   stageConfig.stackName,
-  {
-    env: { account: '788588148195', region: 'ap-northeast-1' },
-  },
+  { env },
   stageConfig,
+);
+// TODO LINE Bot Backend Stack
+const lineBotBackendStack = new TechPostCastLineBotBackendStack(
+  app,
+  `${stageConfig.stackName}LineBot`,
+  { env },
+  stageConfig,
+  backendStack,
 );
 
 // Tag 付け
 cdk.Tags.of(app).add('ServiceName', 'TechPostCast');
-cdk.Tags.of(stack).add('Environment', stageConfig.name);
+cdk.Tags.of(backendStack).add('Environment', stageConfig.name);
+cdk.Tags.of(lineBotBackendStack).add('Environment', stageConfig.name);
 
 console.log(`[${stageConfig.nameJp}] の環境構築が完了しました`);
 
