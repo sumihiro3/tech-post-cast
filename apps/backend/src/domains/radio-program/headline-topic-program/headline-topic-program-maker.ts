@@ -476,11 +476,14 @@ export class HeadlineTopicProgramMaker {
         .outputOptions([
           '-vcodec libx264', // 動画エンコードに libx264 を使用（高い互換性と品質）
           '-preset ultrafast', // エンコード速度優先のプリセット（ファイルサイズや品質より速度重視）
-          '-threads 4', // エンコード時に使用するスレッド数（4スレッド使用）
+          '-threads 8', // エンコード時に使用するスレッド数（8スレッド使用）
           '-acodec aac', // 音声エンコードに AAC を使用（互換性の高いフォーマット）
           '-ab 320k', // 音声のビットレートを 320kbps に設定（高品質な音声）
           '-ac 2', // 音声チャンネル数をステレオ（2チャンネル）に設定
+          '-b:v 1M', // 映像のビットレートを1Mbpsに設定
+          '-r 24', // フレームレートを24fpsに設定
           '-pix_fmt yuv420p', // ピクセルフォーマットを YUV420 に設定（互換性のため）
+          '-profile:v baseline', // 簡易プロファイルを設定
           '-shortest', // 出力を最短の入力に合わせる（音声または画像の短い方に合わせる）
         ])
         .save(videoFilePath) // エンコード結果を指定したファイルパスに保存
@@ -532,7 +535,7 @@ export class HeadlineTopicProgramMaker {
       const client = new S3Client({});
       const dt = formatDate(programDate, 'YYYYMMDD');
       const programName = 'headline-topic-program';
-      const objectKeyPrefix = `${programName}/${dt}/${programName}_${programDate.getTime()}`;
+      const objectKeyPrefix = `${programName}/${dt}/${programName}_${Date.now()}`;
       const urlPrefix = this.configService.get<string>(
         'PROGRAM_AUDIO_FILE_URL_PREFIX',
       );

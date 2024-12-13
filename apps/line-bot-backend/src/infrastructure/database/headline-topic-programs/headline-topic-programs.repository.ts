@@ -33,7 +33,7 @@ export class HeadlineTopicProgramsRepository
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        updatedAt: 'desc',
       },
     });
     this.logger.debug(`最新のヘッドライントピック番組を取得しました`, {
