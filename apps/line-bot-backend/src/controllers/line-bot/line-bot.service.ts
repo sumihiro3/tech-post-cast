@@ -102,7 +102,7 @@ export class LineBotService {
     const programUrl = latestProgram.audioUrl;
     const flex: FlexMessage = {
       type: 'flex',
-      altText: '最新のヘッドライントピックです',
+      altText: `ヘッドライントピック：${latestProgram.title}`,
       contents: {
         type: 'bubble',
         size: 'mega',
@@ -112,9 +112,10 @@ export class LineBotService {
           contents: [
             {
               type: 'text',
-              text: 'Headline topic',
+              text: latestProgram.title,
               weight: 'bold',
               size: 'xl',
+              wrap: true,
             },
             {
               type: 'text',
