@@ -17,9 +17,7 @@ const LATEST_PROGRAM_MESSAGE = 'program';
 export class LineBotService {
   private readonly logger = new Logger(LineBotService.name);
 
-  constructor(private readonly appConfig: AppConfigService) {
-    //
-  }
+  constructor(private readonly appConfig: AppConfigService) {}
 
   /**
    * Messaging API にアクセスするためのクライアントを生成する
@@ -69,16 +67,6 @@ export class LineBotService {
    */
   createLatestProgramMessage(): (AudioMessage | TextMessage | FlexMessage)[] {
     this.logger.debug(`LineBotService.createLatestProgramMessage() called`);
-    // const text: TextMessage = {
-    //   type: 'text',
-    //   text: '最新の番組情報です',
-    // };
-    // const audio: AudioMessage = {
-    //   type: 'audio',
-    //   originalContentUrl:
-    //     'https://dqfdqsb0m4irp.cloudfront.net/headline-topic-program/20241212/headline-topic-program_20241212.mp3',
-    //   duration: 429715,
-    // };
     const flex: FlexMessage = {
       type: 'flex',
       altText: '最新のヘッドライントピックです',
@@ -105,7 +93,7 @@ export class LineBotService {
         },
         hero: {
           type: 'video',
-          url: 'https://d2ohwgmlpn9j5f.cloudfront.net/headline-topic-program/headline-topic-program_sample-2.mp4',
+          url: 'https://d2ohwgmlpn9j5f.cloudfront.net/headline-topic-program/20241213/headline-topic-program_1734015600000.mp4',
           previewUrl:
             'https://d2ohwgmlpn9j5f.cloudfront.net/headline-topic-program/technology.jpg',
           altContent: {
