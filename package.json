@@ -10,10 +10,12 @@
   ],
   "scripts": {
     "start-backend": "yarn workspace @tech-post-cast/backend run start:dev",
-    "build-all": "yarn build-commons && yarn build-database && yarn build-backend",
+    "start-line-bot-backend": "yarn workspace @tech-post-cast/line-bot-backend run start:dev",
+    "build-all": "yarn build-commons && yarn build-database && yarn build-backend && yarn build-line-bot-backend",
     "build-commons": "yarn workspace @tech-post-cast/commons run build",
     "build-database": "yarn workspace @tech-post-cast/database run build",
     "build-backend": "yarn workspace @tech-post-cast/backend run build",
+    "build-line-bot-backend": "yarn workspace @tech-post-cast/line-bot-backend run build",
     "build-infra": "yarn workspace @tech-post-cast/infra run build",
     "deploy-infra": "yarn workspace @tech-post-cast/infra run deploy",
     "deploy-infra-for-ci:develop": "yarn workspace @tech-post-cast/infra run deploy-for-ci:dev",
