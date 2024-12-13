@@ -85,7 +85,11 @@ export class LineBotService {
     this.logger.debug(`LineBotService.createLatestProgramMessage() called`);
     const latestProgram =
       await this.headlineTopicProgramsRepository.findLatest();
-    if (!latestProgram) {
+    if (
+      !latestProgram ||
+      !latestProgram.videoUrl ||
+      !latestProgram.videoUrl.startsWith('http')
+    ) {
       return [
         {
           type: 'text',

@@ -469,20 +469,19 @@ export class HeadlineTopicProgramMaker {
     return new Promise<void>((resolve, reject) => {
       ffmpeg()
         .input(pictureFilePath)
-        .inputOptions(['-loop 1']) // Loop the image
+        .inputOptions(['-loop 1']) // 画像を無限ループさせる（音声の長さに合わせるため）
         .input(audioFilePath)
         .outputOptions([
-          '-r 30000/1001', // Set frame rate
-          '-vcodec libx264', // Use libx264 for video encoding
-          '-acodec aac', // Use AAC for audio encoding
-          '-strict experimental', // Allow experimental features for AAC
-          '-ab 320k', // Set audio bitrate
-          '-ac 2', // Set audio channels
-          '-ar 48000', // Set audio sample rate
-          '-pix_fmt yuv420p', // Set pixel format
-          '-shortest', // Make the output duration equal to the shortest input
+          '-vcodec libx264', // 動画エンコードに libx264 を使用（高い互換性と品質）
+          '-preset ultrafast', // エンコード速度優先のプリセット（ファイルサイズや品質より速度重視）
+          '-threads 4', // エンコード時に使用するスレッド数（4スレッド使用）
+          '-acodec aac', // 音声エンコードに AAC を使用（互換性の高いフォーマット）
+          '-ab 320k', // 音声のビットレートを 320kbps に設定（高品質な音声）
+          '-ac 2', // 音声チャンネル数をステレオ（2チャンネル）に設定
+          '-pix_fmt yuv420p', // ピクセルフォーマットを YUV420 に設定（互換性のため）
+          '-shortest', // 出力を最短の入力に合わせる（音声または画像の短い方に合わせる）
         ])
-        .save(videoFilePath)
+        .save(videoFilePath) // エンコード結果を指定したファイルパスに保存
         .on('start', (commandLine) => {
           this.logger.debug(`Spawned FFmpeg with command: ${commandLine}`);
         })
