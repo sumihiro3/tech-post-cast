@@ -14,4 +14,8 @@ export class AppConfigService {
   get LineBotChannelAccessToken(): string {
     return this.config.get<string>('LINE_BOT_CHANNEL_ACCESS_TOKEN');
   }
+
+  get ProgramFileUrlPrefix(): string {
+    return this.config.get<string>('PROGRAM_FILE_URL_PREFIX');
+  }
 }

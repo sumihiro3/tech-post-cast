@@ -93,6 +93,9 @@ export class LineBotService {
         },
       ];
     }
+    const programFileUrlPrefix = this.appConfig.ProgramFileUrlPrefix;
+    const previewUrl = `${programFileUrlPrefix}/headline-topic-program/technology.jpg`;
+    const programUrl = `${programFileUrlPrefix}/headline-topic-program/technology.mp3`;
     const flex: FlexMessage = {
       type: 'flex',
       altText: '最新のヘッドライントピックです',
@@ -120,19 +123,18 @@ export class LineBotService {
         hero: {
           type: 'video',
           url: latestProgram.videoUrl,
-          previewUrl:
-            'https://d2ohwgmlpn9j5f.cloudfront.net/headline-topic-program/technology.jpg',
+          previewUrl: previewUrl,
           altContent: {
             type: 'image',
             size: 'full',
             aspectRatio: '1600:1066',
             aspectMode: 'cover',
-            url: 'https://d2ohwgmlpn9j5f.cloudfront.net/headline-topic-program/technology.jpg',
+            url: previewUrl,
           },
           action: {
             type: 'uri',
             label: '詳細はこちら',
-            uri: 'https://google.co.jp/',
+            uri: programUrl,
           },
           aspectRatio: '1600:1066',
         },
@@ -166,19 +168,19 @@ export class LineBotService {
               action: {
                 type: 'uri',
                 label: '今日のトピックス',
-                uri: 'https://google.co.jp/',
+                uri: programUrl,
               },
             },
-            {
-              type: 'button',
-              style: 'link',
-              height: 'sm',
-              action: {
-                type: 'uri',
-                label: '過去の番組',
-                uri: 'https://google.co.jp/',
-              },
-            },
+            // {
+            //   type: 'button',
+            //   style: 'link',
+            //   height: 'sm',
+            //   action: {
+            //     type: 'uri',
+            //     label: '過去の番組',
+            //     uri: 'https://google.co.jp/',
+            //   },
+            // },
             {
               type: 'box',
               layout: 'vertical',
