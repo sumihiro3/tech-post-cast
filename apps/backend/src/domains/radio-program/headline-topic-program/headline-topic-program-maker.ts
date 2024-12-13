@@ -469,7 +469,10 @@ export class HeadlineTopicProgramMaker {
     return new Promise<void>((resolve, reject) => {
       ffmpeg()
         .input(pictureFilePath)
-        .inputOptions(['-loop 1']) // 画像を無限ループさせる（音声の長さに合わせるため）
+        .inputOptions([
+          '-loop 1', // 画像を無限ループさせる（音声の長さに合わせるため）
+          '-vf scale=1280:720', // 解像度を1280x720にリサイズ
+        ])
         .input(audioFilePath)
         .outputOptions([
           '-vcodec libx264', // 動画エンコードに libx264 を使用（高い互換性と品質）
