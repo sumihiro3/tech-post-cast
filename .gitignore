@@ -3,4 +3,11 @@ dist/
 tmp/
 
 .env.backend
+.env.line-bot-backend
 docker_compose.backend.env
+
+# envs
+# GitHub Actions の secret に使う（開発環境用）
+envs_develop.env
+# GitHub Actions の secret に使う（本番環境用）
+envs_main.env

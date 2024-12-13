@@ -1,6 +1,6 @@
 services:
   backend:
-    container_name: tech-post-cast
+    container_name: backend-container
     image: tech-post-cast-backend
     build: 
       context: .
@@ -12,6 +12,7 @@ services:
     env_file:
       - docker_compose.backend.env
     environment:
+      - PORT=3000
       - NODE_ENV=development
       - SHOW_QUERY_LOGS=true
       # ffmpeg
@@ -26,3 +27,21 @@ services:
       # AWS
       - PROGRAM_AUDIO_BUCKET_NAME=tech-post-cast-program-audio-bucket-develop
       - PROGRAM_AUDIO_FILE_URL_PREFIX=https://d2ohwgmlpn9j5f.cloudfront.net
+  line-bot-backend:
+    container_name: line-bot-backend-container
+    image: tech-post-cast-line-bot-backend
+    build: 
+      context: .
+      dockerfile: Dockerfile.line-bot-backend
+    # volumes:
+    #   - .:/app
+    ports:
+      - '4000:4000'
+    env_file:
+      - docker_compose.backend.env
+    environment:
+      - PORT=4000
+      - NODE_ENV=development
+      - SHOW_QUERY_LOGS=true
+      # AWS
+      - PROGRAM_FILE_URL_PREFIX=https://d2ohwgmlpn9j5f.cloudfront.net
