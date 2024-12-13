@@ -9,7 +9,7 @@ RUN yarn install --pure-lockfile --non-interactive
 # prisma のスキーマを生成
 RUN yarn generate-prisma
 # ソースコードをビルド
-RUN yarn build-all
+RUN yarn build-for-backend
 
 # -----------------------------
 FROM node:20.18.1-bullseye-slim
