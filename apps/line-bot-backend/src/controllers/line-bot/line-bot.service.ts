@@ -95,7 +95,7 @@ export class LineBotService {
     }
     const programFileUrlPrefix = this.appConfig.ProgramFileUrlPrefix;
     const previewUrl = `${programFileUrlPrefix}/headline-topic-program/technology.jpg`;
-    const programUrl = `${programFileUrlPrefix}/headline-topic-program/technology.mp3`;
+    const programUrl = latestProgram.audioUrl;
     const flex: FlexMessage = {
       type: 'flex',
       altText: '最新のヘッドライントピックです',
