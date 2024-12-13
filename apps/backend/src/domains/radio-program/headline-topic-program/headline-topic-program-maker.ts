@@ -1,9 +1,16 @@
-import { QiitaPostApiResponse } from '@/domains/qiita-posts/qiita-posts.entity';
-import { QiitaPostsRepository } from '@/infrastructure/database/qiita-posts/qiita-posts.repository';
-import { OpenAiApiClient } from '@/infrastructure/external-api/openai-api/openai-api.client';
+import {
+  PutObjectCommand,
+  S3Client,
+  S3ServiceException,
+} from '@aws-sdk/client-s3';
+import { QiitaPostApiResponse } from '@domains/qiita-posts/qiita-posts.entity';
+import { HeadlineTopicProgramsRepository } from '@infrastructure/database/headline-topic-programs/headline-topic-programs.repository';
+import { QiitaPostsRepository } from '@infrastructure/database/qiita-posts/qiita-posts.repository';
+import { OpenAiApiClient } from '@infrastructure/external-api/openai-api/openai-api.client';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HeadlineTopicProgram } from '@prisma/client';
+import { formatDate } from '@tech-post-cast/commons';
 import * as ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
 import { readFile } from 'node:fs/promises';
@@ -11,15 +18,8 @@ import * as path from 'path';
 import {
   HeadlineTopicProgramGenerateResult,
   HeadlineTopicProgramScript,
+  ProgramUploadResult,
 } from '.';
-
-import { HeadlineTopicProgramsRepository } from '@/infrastructure/database/headline-topic-programs/headline-topic-programs.repository';
-import {
-  PutObjectCommand,
-  S3Client,
-  S3ServiceException,
-} from '@aws-sdk/client-s3';
-import { formatDate } from '@tech-post-cast/commons';
 
 @Injectable()
 export class HeadlineTopicProgramMaker {
@@ -64,22 +64,25 @@ export class HeadlineTopicProgramMaker {
         mainAudioPath,
       );
       // 生成した「ヘッドライントピック」番組の音声ファイルを S3 にアップロードする処理を追加
-      const url = await this.uploadProgramAudioFile(
+      const uploadResult = await this.uploadProgramFiles(
         generateResult.audioFilePath,
+        generateResult.videoFilePath,
         programDate,
       );
-      this.logger.log(`S3 に番組音声ファイルをアップロードしました`, { url });
+      this.logger.log(`S3 に番組ファイルをアップロードしました`, {
+        uploadResult,
+      });
       // DB に記事を登録
       const registeredPosts =
         await this.qiitaPostsRepository.upsertQiitaPosts(posts);
       this.logger.debug(`${registeredPosts.length} 件の記事を登録しました`);
       // DB に「ヘッドライントピック」番組を登録する
       const program =
-        await this.headlineTopicProgramsRepository.upsertHeadlineTopicProgram(
+        await this.headlineTopicProgramsRepository.createHeadlineTopicProgram(
           programDate,
           registeredPosts,
           generateResult,
-          url,
+          uploadResult,
         );
       this.logger.log(`ヘッドライントピック番組を生成しました`, { program });
       return program;
@@ -190,21 +193,35 @@ export class HeadlineTopicProgramMaker {
     const endingPath = this.configService.get<string>(
       'HEADLINE_TOPIC_PROGRAM_ENDING_FILE_PATH',
     );
-    const targetFileName = `headline-topic-program_${Date.now()}.mp3`;
-    const outputPath = `${this.outputDir}/${targetFileName}`;
+    const now = new Date();
+    const audioFileName = `headline-topic-program_${now.getTime()}.mp3`;
+    const audioFilePath = `${this.outputDir}/${audioFileName}`;
     // メイン音声やBGMを組み合わせてラジオ番組を作成する
-    const duration = await this.mixAudioFiles(
+    const audioDuration = await this.mixAudioFiles(
       mainAudioPath,
       bgmPath,
       openingPath,
       endingPath,
-      outputPath,
+      audioFilePath,
+    );
+    // 番組音声ファイルから動画ファイル（MP4）を生成する
+    const pictureFilePath = this.configService.get<string>(
+      'HEADLINE_TOPIC_PROGRAM_PICTURE_FILE_PATH',
+    );
+    const videoFileName = `headline-topic-program_${now.getTime()}.mp4`;
+    const videoFilePath = `${this.outputDir}/${videoFileName}`;
+    await this.generateProgramVideoFile(
+      audioFilePath,
+      pictureFilePath,
+      videoFilePath,
     );
     // 生成結果を返却
     const result: HeadlineTopicProgramGenerateResult = {
-      audioFileName: targetFileName,
-      audioFilePath: outputPath,
-      duration,
+      audioFileName,
+      audioFilePath,
+      audioDuration,
+      videoFileName,
+      videoFilePath,
       script,
     };
     this.logger.log(`ラジオ番組を生成しました`, { result });
@@ -311,8 +328,24 @@ export class HeadlineTopicProgramMaker {
             '-y',
           ]) // メイン音声長に切り詰める
           .save(loopedBgmPath)
-          .on('end', resolve)
-          .on('error', reject);
+          .on('start', (commandLine) => {
+            this.logger.debug(`Spawned FFmpeg with command: ${commandLine}`);
+          })
+          .on('end', () => {
+            this.logger.log(
+              `メイン音声の長さと同じBGMファイルの生成処理が完了しました: ${loopedBgmPath}`,
+            );
+            resolve();
+          })
+          .on('error', (error) => {
+            this.logger.error(
+              `メイン音声の長さと同じBGMファイルの生成処理中にエラーが発生しました: ${error.message}`,
+              {
+                error,
+              },
+            );
+            reject(error);
+          });
       });
 
       // メイン音声とループした BGM をミックス
@@ -334,14 +367,25 @@ export class HeadlineTopicProgramMaker {
             '-y', // 上書き許可
           ])
           .output(outputPath)
+          .on('start', (commandLine) => {
+            this.logger.debug(`Spawned FFmpeg with command: ${commandLine}`);
+          })
           .on('end', () => {
+            this.logger.log(
+              `メイン音声とBGMのマージ処理が完了しました: ${loopedBgmPath}`,
+            );
             fs.unlinkSync(loopedBgmPath); // 一時 BGM ファイル削除
             resolve();
           })
-          .on('error', (err) => {
-            this.logger.error(err);
+          .on('error', (error) => {
+            this.logger.error(
+              `メイン音声とBGMのマージ処理中にエラーが発生しました: ${error.message}`,
+              {
+                error,
+              },
+            );
             fs.unlinkSync(loopedBgmPath); // 一時 BGM ファイル削除
-            reject(err);
+            reject(error);
           })
           .run();
       });
@@ -377,35 +421,109 @@ export class HeadlineTopicProgramMaker {
           '-y', // 上書き許可
         ])
         .save(outputPath)
+        .on('start', (commandLine) => {
+          this.logger.debug(`Spawned FFmpeg with command: ${commandLine}`);
+        })
+        .on('progress', (progress) => {
+          this.logger.debug(`音声ファイルの結合処理中...`, {
+            progress,
+          });
+        })
         .on('end', () => {
+          this.logger.debug(
+            `音声ファイルの結合処理が完了しました: ${outputPath}`,
+          );
           fs.unlinkSync(listFilePath); // 一時ファイル削除
           resolve();
         })
-        .on('error', (err) => {
-          this.logger.error(err);
+        .on('error', (error) => {
+          this.logger.error(`音声ファイルの結合処理中にエラーが発生しました`, {
+            error,
+          });
           fs.unlinkSync(listFilePath); // 一時ファイル削除
-          reject(err);
+          reject(error);
         });
     });
   };
 
   /**
-   * 番組音声ファイルを S3 にアップロードする
-   * @param filePath 番組音声ファイルのパス
-   * @param programDate 番組日
-   * @returns アップロードした音声ファイルの URL
+   * 番組音声ファイルから動画ファイル（MP4）を生成する
+   * @param audioFilePath 番組音声ファイルのパス
+   * @param pictureFilePath 動画に使用する画像ファイルのパス
+   * @param videoFilePath 生成する動画ファイルのパス
    */
-  async uploadProgramAudioFile(
-    filePath: string,
-    programDate: Date,
-  ): Promise<string> {
+  async generateProgramVideoFile(
+    audioFilePath: string,
+    pictureFilePath: string,
+    videoFilePath: string,
+  ): Promise<void> {
     this.logger.debug(
-      `HeadlineTopicProgramMaker.uploadProgramAudioFile called`,
+      `HeadlineTopicProgramMaker.generateProgramVideoFile called`,
       {
-        filePath,
-        programDate,
+        audioFilePath,
+        pictureFilePath,
+        videoFilePath,
       },
     );
+    // ffmpeg で動画ファイルを生成する
+    return new Promise<void>((resolve, reject) => {
+      ffmpeg()
+        .input(pictureFilePath)
+        .inputOptions(['-loop 1']) // Loop the image
+        .input(audioFilePath)
+        .outputOptions([
+          '-r 30000/1001', // Set frame rate
+          '-vcodec libx264', // Use libx264 for video encoding
+          '-acodec aac', // Use AAC for audio encoding
+          '-strict experimental', // Allow experimental features for AAC
+          '-ab 320k', // Set audio bitrate
+          '-ac 2', // Set audio channels
+          '-ar 48000', // Set audio sample rate
+          '-pix_fmt yuv420p', // Set pixel format
+          '-shortest', // Make the output duration equal to the shortest input
+        ])
+        .save(videoFilePath)
+        .on('start', (commandLine) => {
+          this.logger.debug(`Spawned FFmpeg with command: ${commandLine}`);
+        })
+        .on('progress', (progress) => {
+          this.logger.debug(`動画生成処理中...`, {
+            progress,
+          });
+        })
+        .on('end', () => {
+          this.logger.log(`動画生成処理が完了しました: ${videoFilePath}`);
+          resolve();
+        })
+        .on('error', (error) => {
+          this.logger.error(
+            `動画生成処理中にエラーが発生しました: ${error.message}`,
+            {
+              error,
+            },
+          );
+          reject(error);
+        });
+    });
+  }
+
+  /**
+   * 番組音声ファイルと動画ファイルを S3 にアップロードする
+   * @param audioFilePath 番組音声ファイルのパス
+   * @param videoFilePath 動画ファイルのパス
+   * @param programDate 番組日
+   * @returns アップロード結果
+   */
+  async uploadProgramFiles(
+    audioFilePath: string,
+    videoFilePath: string,
+    programDate: Date,
+  ): Promise<ProgramUploadResult> {
+    this.logger.debug(`HeadlineTopicProgramMaker.uploadProgramFiles called`, {
+      audioFilePath,
+      videoFilePath,
+      programDate,
+    });
     const bucketName = this.configService.get<string>(
       'PROGRAM_AUDIO_BUCKET_NAME',
     );
@@ -413,23 +531,38 @@ export class HeadlineTopicProgramMaker {
       const client = new S3Client({});
       const dt = formatDate(programDate, 'YYYYMMDD');
       const programName = 'headline-topic-program';
-      const objectKey = `${programName}/${dt}/${programName}_${programDate.getTime()}.mp3`;
-      const command = new PutObjectCommand({
-        Bucket: bucketName,
-        Key: objectKey,
-        Body: await readFile(filePath),
-      });
-      // S3 にアップロード
-      const response = await client.send(command);
+      const objectKeyPrefix = `${programName}/${dt}/${programName}_${programDate.getTime()}`;
       const urlPrefix = this.configService.get<string>(
         'PROGRAM_AUDIO_FILE_URL_PREFIX',
       );
-      const url = `${urlPrefix}/${objectKey}`;
-      this.logger.log(`S3 に番組音声ファイルをアップロードしました`, {
-        response,
-        url,
+      // 音声ファイルを S3 にアップロード
+      const audioUploadCommand = new PutObjectCommand({
+        Bucket: bucketName,
+        Key: `${objectKeyPrefix}.mp3`,
+        Body: await readFile(audioFilePath),
       });
-      return url;
+      const audioResponse = await client.send(audioUploadCommand);
+      const audioUrl = `${urlPrefix}/${objectKeyPrefix}.mp3`;
+      this.logger.log(`S3 に番組音声ファイルをアップロードしました`, {
+        response: audioResponse,
+        url: audioUrl,
+      });
+      // 動画ファイルを S3 にアップロード
+      const videoUploadCommand = new PutObjectCommand({
+        Bucket: bucketName,
+        Key: `${objectKeyPrefix}.mp4`,
+        Body: await readFile(videoFilePath),
+      });
+      const videoResponse = await client.send(videoUploadCommand);
+      const videoUrl = `${urlPrefix}/${objectKeyPrefix}.mp4`;
+      this.logger.log(`S3 に番組音声ファイルをアップロードしました`, {
+        response: videoResponse,
+        url: videoUrl,
+      });
+      return {
+        audioUrl,
+        videoUrl,
+      };
     } catch (caught) {
       if (
         caught instanceof S3ServiceException &&

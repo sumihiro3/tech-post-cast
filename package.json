@@ -21,6 +21,8 @@
     "diff-infra": "yarn workspace @tech-post-cast/infra run diff",
     "format-prisma": "yarn workspace @tech-post-cast/database run prisma:format",
     "generate-prisma": "yarn workspace @tech-post-cast/database run prisma:generate",
+    "create-migration-prisma": "yarn workspace @tech-post-cast/database run prisma:create-migration",
+    "deploy-migration-prisma": "yarn workspace @tech-post-cast/database run prisma:deploy-migration",
     "test": "yarn test-backend",
     "test-backend": "yarn workspace @tech-post-cast/backend run test",
     "test-commons": "yarn workspace @tech-post-cast/commons run test",

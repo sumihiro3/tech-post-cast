@@ -74,6 +74,8 @@ export class TechPostCastBackendStack extends cdk.Stack {
             'assets/audio/headline-topic-programs/opening.mp3',
           HEADLINE_TOPIC_PROGRAM_ENDING_FILE_PATH:
             'assets/audio/headline-topic-programs/ending.mp3',
+          HEADLINE_TOPIC_PROGRAM_PICTURE_FILE_PATH:
+            'assets/audio/headline-topic-programs/preview.jpg',
           // AWS
           PROGRAM_AUDIO_BUCKET_NAME: audioBucket.bucketName,
           PROGRAM_AUDIO_FILE_URL_PREFIX: audioFileUrlPrefix,

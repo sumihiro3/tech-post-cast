@@ -8,6 +8,8 @@ COPY . .
 RUN yarn install --pure-lockfile --non-interactive
 # prisma のスキーマを生成
 RUN yarn generate-prisma
+# prisma のマイグレーションを実行
+RUN yarn deploy-migration-prisma
 # ソースコードをビルド
 RUN yarn build-all
 

@@ -1,8 +1,11 @@
-import { IHeadlineTopicProgramsRepository } from '@/domains/radio-program/headline-topic-program/headline-topic-programs.repository.interface';
+import {
+  HeadlineTopicProgramGenerateResult,
+  ProgramUploadResult,
+} from '@domains/radio-program/headline-topic-program';
+import { IHeadlineTopicProgramsRepository } from '@domains/radio-program/headline-topic-program/headline-topic-programs.repository.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { HeadlineTopicProgram, Prisma, QiitaPost } from '@prisma/client';
 import { PrismaService } from '@tech-post-cast/database';
-import { HeadlineTopicProgramGenerateResult } from '../../../domains/radio-program/headline-topic-program';
 
 /**
  * IHeadlineTopicProgramsRepository の実装
@@ -32,35 +35,35 @@ export class HeadlineTopicProgramsRepository
   }
 
   /**
-   * ヘッドライントピック番組を新規登録または更新する
+   * ヘッドライントピック番組を新規登録する
    * @param programDate 番組日時
    * @param posts 番組での紹介記事 一覧
-   * @param audioFileGenerateResult 音声ファイルの生成結果
-   * @param audioFileUrl 音声ファイルの URL
+   * @param programGenerateResult 番組ファイルの生成結果
+   * @param programUploadResult 番組ファイルのアップロード結果
    */
-  async upsertHeadlineTopicProgram(
+  async createHeadlineTopicProgram(
     programDate: Date,
     posts: QiitaPost[],
-    audioFileGenerateResult: HeadlineTopicProgramGenerateResult,
-    audioFileUrl: string,
+    programGenerateResult: HeadlineTopicProgramGenerateResult,
+    programUploadResult: ProgramUploadResult,
   ): Promise<HeadlineTopicProgram> {
     this.logger.debug(
-      `HeadlineTopicProgramsRepository.upsertHeadlineTopicProgram called`,
+      `HeadlineTopicProgramsRepository.createHeadlineTopicProgram called`,
       {
-        audioFileGenerateResult,
-        audioFileUrl,
+        programGenerateResult,
+        programUploadResult,
       },
     );
     const result: HeadlineTopicProgram =
-      await this.prisma.headlineTopicProgram.upsert(
-        this.createUpsertQuery(
+      await this.prisma.headlineTopicProgram.create({
+        data: this.createInsertQuery(
           programDate,
           posts,
-          audioFileGenerateResult,
-          audioFileUrl,
+          programGenerateResult,
+          programUploadResult,
         ),
-      );
-    this.logger.debug(`ヘッドライントピック番組を登録または更新しました`, {
+      });
+    this.logger.debug(`ヘッドライントピック番組を新規登録しました`, {
       result,
     });
     return result;
@@ -70,40 +73,35 @@ export class HeadlineTopicProgramsRepository
    * ヘッドライントピック番組の新規登録または更新クエリを生成する
    * @param programDate 番組日時
    * @param posts 紹介記事一覧
-   * @param audioFileGenerateResult 音声ファイルの生成結果
-   * @param audioFileUrl 音声ファイルの URL
+   * @param programGenerateResult 番組ファイルの生成結果
+   * @param programUploadResult 番組ファイルのアップロード結果
    * @returns ヘッドライントピック番組の新規登録または更新クエリ
    */
-  private createUpsertQuery(
+  private createInsertQuery(
     programDate: Date,
     posts: QiitaPost[],
-    audioFileGenerateResult: HeadlineTopicProgramGenerateResult,
-    audioFileUrl: string,
-  ): Prisma.HeadlineTopicProgramUpsertArgs {
+    programGenerateResult: HeadlineTopicProgramGenerateResult,
+    programUploadResult: ProgramUploadResult,
+  ): Prisma.HeadlineTopicProgramCreateInput {
     this.logger.debug(
-      `HeadlineTopicProgramsRepository.createUpsertQuery called`,
+      `HeadlineTopicProgramsRepository.createInsertQuery called`,
       {
-        audioFileGenerateResult,
-        audioFileUrl,
+        programGenerateResult,
+        programUploadResult,
       },
     );
-    const scriptString = JSON.stringify(audioFileGenerateResult.script);
-    const update = {
-      title: audioFileGenerateResult.script.title,
+    const scriptString = JSON.stringify(programGenerateResult.script);
+    return {
+      title: programGenerateResult.script.title,
       script: scriptString as Prisma.InputJsonValue,
-      audioUrl: audioFileUrl,
-      audioDuration: audioFileGenerateResult.duration,
+      audioUrl: programUploadResult.audioUrl,
+      audioDuration: programGenerateResult.audioDuration,
+      videoUrl: programUploadResult.videoUrl,
       posts: {
         connect: posts.map((post) => ({ id: post.id })),
       },
       createdAt: programDate,
       updatedAt: new Date(),
-    };
-    const create = { ...update, id: undefined };
-    return {
-      where: { id: '' },
-      create,
-      update,
     };
   }
 }

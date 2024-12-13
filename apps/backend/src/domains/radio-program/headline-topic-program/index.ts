@@ -38,11 +38,27 @@ export interface HeadlineTopicProgramGenerateResult {
    */
   audioFilePath: string;
   /**
-   * 長さ（ミリ秒）
+   * 音声ファイルの長さ（ミリ秒）
    */
-  duration: number;
+  audioDuration: number;
+  /**
+   * 動画ファイル名
+   */
+  videoFileName: string;
+  /**
+   * 動画ファイルのパス
+   */
+  videoFilePath: string;
   /**
    * 台本
    */
   script: HeadlineTopicProgramScript;
+}
+
+/**
+ * 番組音声ファイル、動画ファイルのアップロード結果を表すインターフェイス
+ */
+export interface ProgramUploadResult {
+  audioUrl: string;
+  videoUrl: string;
 }
