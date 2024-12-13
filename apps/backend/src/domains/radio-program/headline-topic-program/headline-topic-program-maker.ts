@@ -535,7 +535,7 @@ export class HeadlineTopicProgramMaker {
       const client = new S3Client({});
       const dt = formatDate(programDate, 'YYYYMMDD');
       const programName = 'headline-topic-program';
-      const objectKeyPrefix = `${programName}/${dt}/${programName}_${programDate.getTime()}`;
+      const objectKeyPrefix = `${programName}/${dt}/${programName}_${Date.now()}`;
       const urlPrefix = this.configService.get<string>(
         'PROGRAM_AUDIO_FILE_URL_PREFIX',
       );
