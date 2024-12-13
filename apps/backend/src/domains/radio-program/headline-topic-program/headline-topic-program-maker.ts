@@ -471,7 +471,6 @@ export class HeadlineTopicProgramMaker {
         .input(pictureFilePath)
         .inputOptions([
           '-loop 1', // 画像を無限ループさせる（音声の長さに合わせるため）
-          '-vf scale=1280:720', // 解像度を1280x720にリサイズ
         ])
         .input(audioFilePath)
         .outputOptions([
