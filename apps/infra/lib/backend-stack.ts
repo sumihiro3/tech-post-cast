@@ -16,6 +16,9 @@ import { StageConfig } from '../config';
 const dockerfileDir = path.join(__dirname, '../../..');
 
 export class TechPostCastBackendStack extends cdk.Stack {
+  /** 番組ファイルの URL Prefix */
+  public readonly programFileUrlPrefix: string;
+
   constructor(
     scope: Construct,
     id: string,
@@ -41,10 +44,11 @@ export class TechPostCastBackendStack extends cdk.Stack {
         },
       },
     );
-    const audioFileUrlPrefix = `https://${distribution.distributionDomainName}`;
+    const programFileUrlPrefix = `https://${distribution.distributionDomainName}`;
     new cdk.CfnOutput(this, 'TechPostCastDistribution URL', {
-      value: audioFileUrlPrefix,
+      value: programFileUrlPrefix,
     });
+    this.programFileUrlPrefix = programFileUrlPrefix;
 
     // Lambda with Docker Image
     const backendLambda = new lambda.DockerImageFunction(
@@ -62,6 +66,7 @@ export class TechPostCastBackendStack extends cdk.Stack {
         tracing: lambda.Tracing.ACTIVE,
         environment: {
           // 環境変数
+          PORT: '3000',
           SHOW_QUERY_LOGS: 'true',
           // ffmpeg
           FFMPEG_PATH: '/usr/bin/ffmpeg',
@@ -74,9 +79,11 @@ export class TechPostCastBackendStack extends cdk.Stack {
             'assets/audio/headline-topic-programs/opening.mp3',
           HEADLINE_TOPIC_PROGRAM_ENDING_FILE_PATH:
             'assets/audio/headline-topic-programs/ending.mp3',
+          HEADLINE_TOPIC_PROGRAM_PICTURE_FILE_PATH:
+            'assets/audio/headline-topic-programs/preview.jpg',
           // AWS
           PROGRAM_AUDIO_BUCKET_NAME: audioBucket.bucketName,
-          PROGRAM_AUDIO_FILE_URL_PREFIX: audioFileUrlPrefix,
+          PROGRAM_AUDIO_FILE_URL_PREFIX: programFileUrlPrefix,
         },
       },
     );

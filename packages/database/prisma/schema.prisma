@@ -21,10 +21,12 @@ model HeadlineTopicProgram {
   title         String   @db.VarChar(255)
   // 台本
   script        Json     @db.Json
-  // 今日のヘッドライントピックの音声ファイルURL
-  audioUrl      String   @map("audio_url")
+  // ヘッドライントピックの音声ファイルURL
+  audioUrl      String   @default("") @map("audio_url") @db.VarChar(255)
   // 音声ファイルの長さ（ミリ秒）
-  audioDuration Int      @map("audio_duration")
+  audioDuration Int      @default(0) @map("audio_duration")
+  // ヘッドライントピックの動画ファイルURL
+  videoUrl      String   @default("") @map("video_url") @db.VarChar(255)
   // 画像URL
   imageUrl      String?  @map("image_url") @db.VarChar(255)
   // 今日のヘッドライントピックが作成された日時

@@ -10,8 +10,6 @@ RUN yarn install --pure-lockfile --non-interactive
 RUN yarn generate-prisma
 # ソースコードをビルド
 RUN yarn build-all
-# prisma のマイグレーションを実行
-RUN yarn deploy-migration-prisma
 
 # -----------------------------
 FROM node:20.18.1-bullseye-slim
@@ -25,28 +23,21 @@ ENV PORT 3000
 ENV READINESS_CHECK_PATH /health-check
 # Non-HTTP Event Triggers
 # @see https://github.com/awslabs/aws-lambda-web-adapter?tab=readme-ov-file#non-http-event-triggers
-ENV AWS_LWA_PASS_THROUGH_PATH /events
-
-# ffmpeg のインストール
-RUN apt-get -y update && apt-get -y upgrade && apt-get install -y ffmpeg
+# ENV AWS_LWA_PASS_THROUGH_PATH /events
 
 WORKDIR /app
 
-RUN mkdir -p /tmp/headline-topic-programs
-
 # 依存ライブラリをコピー
 COPY --from=builder /build/node_modules node_modules
-# apps/backend のビルド結果をコンテナー内にコピー
-COPY --from=builder /build/apps/backend/dist dist
-# apps/backend の package.json をコンテナー内にコピー
-COPY --from=builder /build/apps/backend/package.json .
-# apps/backend の .env.docker をコンテナー内にコピー
-COPY --from=builder /build/.env.backend ./.env
-# apps/backend の assets をコンテナー内にコピー
-COPY --from=builder /build/apps/backend/assets assets
+# apps/line-bot-backend のビルド結果をコンテナー内にコピー
+COPY --from=builder /build/apps/line-bot-backend/dist dist
+# apps/line-bot-backend の package.json をコンテナー内にコピー
+COPY --from=builder /build/apps/line-bot-backend/package.json .
+# apps/line-bot-backend の .env.docker をコンテナー内にコピー
+COPY --from=builder /build/.env.line-bot-backend ./.env
 # yarn workspace 内の共通ライブラリ群（commons database）のビルド結果をコンテナー内にコピー
 COPY --from=builder /build/packages/commons node_modules/@tech-post-cast/commons
 COPY --from=builder /build/packages/database node_modules/@tech-post-cast/database
 
-EXPOSE 3000 
+EXPOSE 4000 
 CMD [ "yarn", "start:prod" ]

@@ -7,6 +7,6 @@ Content-Type: application/json
 Authorization: Bearer xxxxxxxxxxxffffffffffff
 
 {
-  "daysAgo": 3
+  "daysAgo": 0
 }
 

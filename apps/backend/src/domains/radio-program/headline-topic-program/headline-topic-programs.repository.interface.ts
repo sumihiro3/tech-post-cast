@@ -1,5 +1,5 @@
 import { HeadlineTopicProgram, QiitaPost } from '@prisma/client';
-import { HeadlineTopicProgramGenerateResult } from '.';
+import { HeadlineTopicProgramGenerateResult, ProgramUploadResult } from '.';
 
 /**
  * ヘッドライントピック番組のリポジトリインターフェース
@@ -13,17 +13,17 @@ export interface IHeadlineTopicProgramsRepository {
   findOne(id: string): Promise<HeadlineTopicProgram>;
 
   /**
-   * ヘッドライントピック番組を新規登録または更新する
+   * ヘッドライントピック番組を新規登録する
    * @param programDate 番組日時
    * @param posts 番組での紹介記事 ID 一覧
-   * @param audioFileGenerateResult 番組音声ファイルの生成結果
-   * @param audioFileUrl 番組音声ファイルの URL
+   * @param programGenerateResult 番組ファイルの生成結果
+   * @param programUploadResult 番組ファイルのアップロード結果
    * @returns 登録したヘッドライントピック番組
    */
-  upsertHeadlineTopicProgram(
+  createHeadlineTopicProgram(
     programDate: Date,
     posts: QiitaPost[],
-    audioFileGenerateResult: HeadlineTopicProgramGenerateResult,
-    audioFileUrl: string,
+    programGenerateResult: HeadlineTopicProgramGenerateResult,
+    programUploadResult: ProgramUploadResult,
   ): Promise<HeadlineTopicProgram>;
 }

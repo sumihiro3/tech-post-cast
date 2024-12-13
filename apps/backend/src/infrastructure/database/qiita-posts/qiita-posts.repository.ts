@@ -1,7 +1,7 @@
 import {
   IQiitaPostApiResponse,
   QiitaPostApiResponse,
-} from '@/domains/qiita-posts/qiita-posts.entity';
+} from '@domains/qiita-posts/qiita-posts.entity';
 import { IQiitaPostsRepository } from '@domains/qiita-posts/qiita-posts.repository.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma, QiitaPost } from '@prisma/client';
@@ -22,7 +22,7 @@ export class QiitaPostsRepository implements IQiitaPostsRepository {
    * @param id Qiita 記事 ID
    * @returns Qiita 記事
    */
-  async findOne(id: string): Promise<QiitaPost> {
+  async findOne(id: string): Promise<QiitaPost | null> {
     this.logger.verbose({ id }, `QiitaItemsRepository.findOne called`);
     const result = await this.prisma.qiitaPost.findUnique({
       where: { id },
