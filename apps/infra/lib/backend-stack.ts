@@ -61,7 +61,7 @@ export class TechPostCastBackendStack extends cdk.Stack {
         }),
         functionName: `TechPostCastBackendLambda${stage.suffixLarge}`,
         memorySize: 1024,
-        timeout: cdk.Duration.seconds(10 * 60),
+        timeout: cdk.Duration.seconds(15 * 60),
         logRetention: cloudWatchLogs.RetentionDays.ONE_WEEK,
         tracing: lambda.Tracing.ACTIVE,
         environment: {

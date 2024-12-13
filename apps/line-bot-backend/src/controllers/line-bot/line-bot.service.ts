@@ -85,7 +85,11 @@ export class LineBotService {
     this.logger.debug(`LineBotService.createLatestProgramMessage() called`);
     const latestProgram =
       await this.headlineTopicProgramsRepository.findLatest();
-    if (!latestProgram) {
+    if (
+      !latestProgram ||
+      !latestProgram.videoUrl ||
+      !latestProgram.videoUrl.startsWith('http')
+    ) {
       return [
         {
           type: 'text',
@@ -95,10 +99,10 @@ export class LineBotService {
     }
     const programFileUrlPrefix = this.appConfig.ProgramFileUrlPrefix;
     const previewUrl = `${programFileUrlPrefix}/headline-topic-program/technology.jpg`;
-    const programUrl = `${programFileUrlPrefix}/headline-topic-program/technology.mp3`;
+    const programUrl = latestProgram.audioUrl;
     const flex: FlexMessage = {
       type: 'flex',
-      altText: '最新のヘッドライントピックです',
+      altText: `ヘッドライントピック：${latestProgram.title}`,
       contents: {
         type: 'bubble',
         size: 'mega',
@@ -108,9 +112,10 @@ export class LineBotService {
           contents: [
             {
               type: 'text',
-              text: 'Headline topic',
+              text: latestProgram.title,
               weight: 'bold',
               size: 'xl',
+              wrap: true,
             },
             {
               type: 'text',
