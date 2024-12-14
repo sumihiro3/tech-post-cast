@@ -1,6 +1,16 @@
 export * from './headline-topic-program-maker';
 
 /**
+ * 記事の要約を表すインターフェイス
+ */
+export interface PostSummary {
+  /**
+   * 記事の要約
+   */
+  summary: string;
+}
+
+/**
  * ヘッドライントピック番組の台本を表すインターフェイス
  */
 export interface HeadlineTopicProgramScript {
@@ -15,9 +25,9 @@ export interface HeadlineTopicProgramScript {
   intro: string;
 
   /**
-   * 紹介記事
+   * 紹介記事の要約
    */
-  posts: { summary: string }[];
+  posts: PostSummary[];
 
   /**
    * エンディング
