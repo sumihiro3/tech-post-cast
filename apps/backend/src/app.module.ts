@@ -18,7 +18,13 @@ import { HeadlineTopicProgramsModule } from './controllers/headline-topic-progra
     HeadlineTopicProgramsModule,
     EventsModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [
+    AppController,
+    // SampleController // 実装確認時に使う Controller
+  ],
+  providers: [
+    AppService,
+    // OpenAiApiClient, QiitaPostsApiClient // SampleController で使うサービス
+  ],
 })
 export class AppModule {}
