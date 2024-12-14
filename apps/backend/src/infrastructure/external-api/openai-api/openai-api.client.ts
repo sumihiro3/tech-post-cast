@@ -1,10 +1,16 @@
-import { IQiitaPostApiResponse } from '@/domains/qiita-posts/qiita-posts.entity';
-import { HeadlineTopicProgramScript } from '@/domains/radio-program/headline-topic-program';
+import { IQiitaPostApiResponse } from '@domains/qiita-posts/qiita-posts.entity';
+import {
+  HeadlineTopicProgramScript,
+  PostSummary,
+} from '@domains/radio-program/headline-topic-program';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { getJapaneseDateStringWithWeekday } from '@tech-post-cast/commons';
 import * as fs from 'fs';
 import OpenAI from 'openai';
+import { zodResponseFormat } from 'openai/helpers/zod';
+import { z } from 'zod';
+import { HeadlineTopicProgramScriptSchema, PostSummarySchema } from './schemas';
 
 @Injectable()
 export class OpenAiApiClient {
@@ -26,7 +32,7 @@ export class OpenAiApiClient {
    * @param post 記事
    * @returns 記事要約
    */
-  async summarizePost(post: IQiitaPostApiResponse): Promise<string> {
+  async summarizePost(post: IQiitaPostApiResponse): Promise<PostSummary> {
     this.logger.debug(`OpenAiApiClient.summarizePost called`, { post });
     try {
       const systemPrompt = this.getPostSummarySystemPrompt(post);
@@ -43,15 +49,20 @@ export class OpenAiApiClient {
             content: post.body,
           },
         ],
+        // 生成結果のスキーマを指定する
+        response_format: zodResponseFormat(PostSummarySchema, 'summary'),
       };
-      const chatCompletion: OpenAI.Chat.ChatCompletion =
-        await this.openAi.chat.completions.create(params);
+      const chatCompletion =
+        await this.openAi.beta.chat.completions.parse(params);
+      // await this.openAi.chat.completions.create(params);
       this.logger.debug(`記事を要約しました`, {
         chatCompletion: chatCompletion,
       });
-      const summaryString = chatCompletion.choices[0]?.message.content;
-      const summaryJson = JSON.parse(summaryString);
-      return summaryJson.summary;
+      // 指定したスキーマで生成結果を取得する
+      const summary = chatCompletion.choices[0]?.message.parsed as z.infer<
+        typeof PostSummarySchema
+      > as PostSummary;
+      return summary;
     } catch (error) {
       this.logger.error(`記事の要約に失敗しました`, { error });
       // TODO エラークラスを作成して返す
@@ -80,14 +91,6 @@ export class OpenAiApiClient {
 - 要約は800文字程度で出力します
 - 難しい漢字は読み手が間違えないように、ひらがなで書きます
 - 要約には markdown の記法やコード、改行コード、URL は含めないでください
-
-## 出力フォーマット
-
-要約した内容を下記のように JSON 形式で出力してください。
-
-{
-  "summary": "{要約した内容}"
-}
 `;
   }
 
@@ -119,15 +122,22 @@ export class OpenAiApiClient {
             content: prompt,
           },
         ],
+        // 生成結果のスキーマを指定する
+        response_format: zodResponseFormat(
+          HeadlineTopicProgramScriptSchema,
+          'script',
+        ),
       };
-      const chatCompletion: OpenAI.Chat.ChatCompletion =
-        await this.openAi.chat.completions.create(params);
+      const chatCompletion =
+        await this.openAi.beta.chat.completions.parse(params);
       this.logger.debug(`ヘッドライントピック番組の台本を生成しました`, {
         chatCompletion: chatCompletion,
       });
-      const scriptString = chatCompletion.choices[0]?.message.content;
-      const scriptJson = JSON.parse(scriptString) as HeadlineTopicProgramScript;
-      return scriptJson;
+      // 指定したスキーマで生成結果を取得する
+      const script = chatCompletion.choices[0]?.message.parsed as z.infer<
+        typeof HeadlineTopicProgramScriptSchema
+      > as HeadlineTopicProgramScript;
+      return script;
     } catch (error) {
       this.logger.error(
         `ヘッドライントピック番組の台本生成に失敗しました`,
@@ -187,22 +197,6 @@ export class OpenAiApiClient {
 - 「紹介する内容」は、1つの記事につき550文字以内でまとめてください
 - 出力する文字数の下限は3000文字（この文字数は遵守してください）
 - 出力する文字数の上限は4000文字（この文字数は遵守してください）
-
-## 出力形式
-
-下記のようにJSON形式で出力してください。
-必ず出力内容のJSON形式が正しいか検証してから出力してください。
-
-{
-  "title": "{番組タイトル},
-  "intro": "{番組冒頭の挨拶}",
-  "posts": [
-    {
-      "summary": "{記事の要約}"
-    }
-  ],
-  "ending": "{番組の締めの挨拶}"
-}
 
 ### 今日の日付
 

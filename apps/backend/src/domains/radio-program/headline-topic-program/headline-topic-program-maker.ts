@@ -108,7 +108,8 @@ export class HeadlineTopicProgramMaker {
     // 対象の記事を要約する
     const summarizedPosts = await Promise.all(
       posts.map(async (post) => {
-        post.summary = await this.openAiApiClient.summarizePost(post);
+        const result = await this.openAiApiClient.summarizePost(post);
+        post.summary = result.summary;
         return post;
       }),
     );
