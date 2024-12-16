@@ -1,4 +1,5 @@
 import { AppConfigService } from '@/app-config/app-config.service';
+import { PostbackData } from '@/types';
 import { HeadlineTopicProgramsRepository } from '@infrastructure/database/headline-topic-programs/headline-topic-programs.repository';
 import * as line from '@line/bot-sdk';
 import {
@@ -8,7 +9,9 @@ import {
   WebhookEvent,
 } from '@line/bot-sdk';
 import { Injectable, Logger } from '@nestjs/common';
+import { QiitaPost } from '@prisma/client';
 import { formatDate } from '@tech-post-cast/commons';
+import { HeadlineTopicProgramWithQiitaPosts } from '@tech-post-cast/database';
 
 /**
  * 最新の番組情報を取得するためのメッセージ
@@ -44,27 +47,21 @@ export class LineBotService {
     });
     try {
       // Event 処理
-      // テキストメッセージ以外は無視する
-      if (event.type !== 'message' || event.message.type !== 'text') return;
-      const replyToken = event.replyToken;
-      const message = event.message.text;
-      const client = this.createLineBotClient();
-      let replyMessages; // 返信するメッセージ
-      if (message && LATEST_PROGRAM_MESSAGE === message.toLowerCase()) {
-        // 最新の番組情報を取得する
-        replyMessages = await this.createLatestProgramMessage();
-      } else {
-        // 番組情報の要求以外はオウム返し
-        replyMessages = this.createEchoMessage(message);
+      switch (event.type) {
+        // メッセージイベントの場合
+        case 'message':
+          await this.handleMessageEvent(event);
+          break;
+        // ポストバックイベントの場合
+        case 'postback':
+          await this.handlePostbackEvent(event);
+          break;
+        default:
+          this.logger.warn(`未対応のイベントタイプです`, {
+            event,
+          });
+          break;
       }
-      // メッセージを返信する
-      const res = await client.replyMessage({
-        replyToken,
-        messages: replyMessages,
-      });
-      this.logger.log(`メッセージを返信しました`, {
-        res,
-      });
       return;
     } catch (error) {
       this.logger.error(`LINE Webhook イベント処理中にエラーが発生しました`, {
@@ -73,6 +70,104 @@ export class LineBotService {
       // TODO エラーハンドリング
       throw error;
     }
+  }
+
+  /**
+   * メッセージイベントを処理する
+   * @param event MessageEvent
+   */
+  async handleMessageEvent(event: line.MessageEvent): Promise<void> {
+    this.logger.debug(`LineBotService.handleMessageEvent() called`, {
+      event,
+    });
+    // テキストメッセージの場合
+    if (event.message.type === 'text') {
+      const message: line.TextEventMessage = event.message;
+      await this.handleTextMessageEvent(event, message);
+    } else {
+      // テキストメッセージ以外は未対応
+      this.logger.warn(`未対応のメッセージタイプです`, {
+        event,
+      });
+    }
+  }
+
+  /**
+   * TextMessage の受信時処理
+   * @param event MessageEvent
+   * @param message TextEventMessage
+   */
+  async handleTextMessageEvent(
+    event: line.MessageEvent,
+    message: line.TextEventMessage,
+  ): Promise<void> {
+    this.logger.debug(`LineBotService.handleTextMessageEvent() called`, {
+      event,
+    });
+    const replyToken = event.replyToken;
+    const messageString = message.text;
+    const client = this.createLineBotClient();
+    let replyMessages; // 返信するメッセージ
+    if (message && LATEST_PROGRAM_MESSAGE === messageString.toLowerCase()) {
+      // 最新の番組情報を取得する
+      replyMessages = await this.createLatestProgramMessage();
+    } else {
+      // 番組情報の要求以外はオウム返し
+      replyMessages = this.createEchoMessage(messageString);
+    }
+    // メッセージを返信する
+    const res = await client.replyMessage({
+      replyToken,
+      messages: replyMessages,
+    });
+    this.logger.log(`メッセージを返信しました`, {
+      res,
+    });
+  }
+
+  /**
+   * ポストバックイベントを処理する
+   * @param event PostbackEvent
+   */
+  async handlePostbackEvent(event: line.PostbackEvent): Promise<void> {
+    this.logger.debug(`LineBotService.handlePostbackEvent() called`, {
+      event,
+    });
+    const postbackData = new PostbackData(event.postback.data);
+    if (postbackData.type !== 'headlineTopicProgram') {
+      this.logger.warn(`未対応のポストバックデータです`, {
+        event,
+      });
+      return;
+    }
+    let replyMessages; // 返信するメッセージ
+    // ヘッドライントピック番組情報を取得する
+    const programId = postbackData.id;
+    const program =
+      await this.headlineTopicProgramsRepository.findById(programId);
+    if (!program) {
+      this.logger.warn(`ヘッドライントピック番組が見つかりませんでした`, {
+        programId,
+      });
+      replyMessages = [
+        {
+          type: 'text',
+          text: '対象記事が見つかりませんでした',
+        },
+      ];
+      return;
+    }
+    // 紹介記事のメッセージを生成する
+    replyMessages = this.createIntroducedPostsMessage(program);
+    const client = this.createLineBotClient();
+    // メッセージを返信する
+    const res = await client.replyMessage({
+      replyToken: event.replyToken,
+      messages: replyMessages,
+    });
+    this.logger.log(`メッセージを返信しました`, {
+      res,
+    });
   }
 
   /**
@@ -143,24 +238,6 @@ export class LineBotService {
           },
           aspectRatio: '1600:1066',
         },
-        body: {
-          type: 'box',
-          layout: 'vertical',
-          contents: [
-            {
-              type: 'text',
-              text: '※画像をタップすると再生できます',
-              size: 'xxs',
-              wrap: true,
-            },
-            {
-              type: 'box',
-              layout: 'vertical',
-              contents: [],
-              margin: 'lg',
-            },
-          ],
-        },
         footer: {
           type: 'box',
           layout: 'vertical',
@@ -172,20 +249,22 @@ export class LineBotService {
               height: 'sm',
               action: {
                 type: 'uri',
-                label: '今日のトピックス',
+                label: '番組を再生する',
                 uri: programUrl,
               },
             },
-            // {
-            //   type: 'button',
-            //   style: 'link',
-            //   height: 'sm',
-            //   action: {
-            //     type: 'uri',
-            //     label: '過去の番組',
-            //     uri: 'https://google.co.jp/',
-            //   },
-            // },
+            {
+              type: 'button',
+              style: 'link',
+              height: 'sm',
+              action: {
+                type: 'postback',
+                label: '紹介記事',
+                data: `type=headlineTopicProgram&id=${latestProgram.id}`,
+                displayText: '紹介記事',
+                inputOption: 'closeRichMenu',
+              },
+            },
             {
               type: 'box',
               layout: 'vertical',
@@ -198,6 +277,100 @@ export class LineBotService {
       },
     };
     return [flex];
+  }
+
+  /**
+   * 紹介記事のメッセージを生成する
+   * @param program ヘッドライントピック番組
+   * @returns FlexMessage
+   */
+  createIntroducedPostsMessage(
+    program: HeadlineTopicProgramWithQiitaPosts,
+  ): (TextMessage | FlexMessage)[] {
+    this.logger.debug(`LineBotService.createIntroducedPostsMessage() called`, {
+      program,
+    });
+    const bubbles: line.FlexBubble[] = program.posts.map((post: QiitaPost) => {
+      return {
+        type: 'bubble',
+        size: 'kilo',
+        header: {
+          type: 'box',
+          layout: 'vertical',
+          contents: [
+            {
+              type: 'text',
+              text: post.title,
+              color: '#ffffff',
+              align: 'start',
+              size: 'lg',
+              gravity: 'center',
+              wrap: true,
+            },
+            {
+              type: 'text',
+              text: post.authorName,
+              color: '#ffffff',
+              align: 'end',
+              size: 'xs',
+              gravity: 'center',
+              margin: 'md',
+            },
+            {
+              type: 'text',
+              text: formatDate(post.createdAt, 'YYYY/MM/DD'),
+              color: '#ffffff',
+              align: 'end',
+              size: 'xs',
+              gravity: 'center',
+              margin: 'md',
+            },
+          ],
+          backgroundColor: '#55c500', // Qiita カラー
+          paddingTop: '19px',
+          paddingAll: '12px',
+          paddingBottom: '16px',
+        },
+        footer: {
+          type: 'box',
+          layout: 'vertical',
+          spacing: 'sm',
+          contents: [
+            {
+              type: 'button',
+              style: 'link',
+              height: 'sm',
+              action: {
+                type: 'uri',
+                label: '記事を見る',
+                uri: post.url,
+              },
+            },
+            {
+              type: 'box',
+              layout: 'vertical',
+              contents: [],
+              margin: 'sm',
+            },
+          ],
+          flex: 0,
+        },
+      };
+    });
+    const altText = `ヘッドライントピック「${program.title}」での紹介記事です`;
+    const text: TextMessage = {
+      type: 'text',
+      text: altText,
+    };
+    const flex: FlexMessage = {
+      type: 'flex',
+      altText,
+      contents: {
+        type: 'carousel',
+        contents: [...bubbles],
+      },
+    };
+    return [text, flex];
   }
 
   /**
