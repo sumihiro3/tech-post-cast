@@ -1,5 +1,5 @@
 import { LineBotSignatureGuard } from '@/guards/line-bot/ine-bot-signature.guard';
-import { WebhookEvent, WebhookRequestBody } from '@line/bot-sdk';
+import { webhook } from '@line/bot-sdk';
 import { Body, Controller, Logger, Post, UseGuards } from '@nestjs/common';
 import { LineBotService } from './line-bot.service';
 
@@ -11,11 +11,11 @@ export class LineBotController {
 
   @Post()
   @UseGuards(LineBotSignatureGuard)
-  async webhook(@Body() request: WebhookRequestBody): Promise<string> {
+  async webhook(@Body() request: webhook.CallbackRequest): Promise<string> {
     this.logger.debug(`LineBotController.webhook() called`, {
       request,
     });
-    const events: WebhookEvent[] = request.events;
+    const events: webhook.Event[] = request.events;
     if (events.length === 0) return 'No events';
     // Webhook イベントを処理
     await Promise.all(
