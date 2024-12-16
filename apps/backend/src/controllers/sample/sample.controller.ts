@@ -1,3 +1,4 @@
+import { QiitaPostApiResponse } from '@domains/qiita-posts/qiita-posts.entity';
 import {
   HeadlineTopicProgramScript,
   PostSummary,
@@ -10,7 +11,6 @@ import {
   Logger,
   Post,
 } from '@nestjs/common';
-import { QiitaPostApiResponse } from '../domains/qiita-posts/qiita-posts.entity';
 
 @Controller('sample')
 export class SampleController {
@@ -53,8 +53,11 @@ export class SampleController {
         programDate,
       );
       this.logger.debug(`${posts.length} の記事を取得しました`);
-      // ランダムに選んだ3件の記事を要約する
-      const targetPosts = posts.sort(() => 0.5 - Math.random()).slice(0, 3);
+      // ランダムに選んだ5件の記事を要約する
+      const postCount = 5;
+      const targetPosts = posts
+        .sort(() => 0.5 - Math.random())
+        .slice(0, postCount);
       const summarizedPosts: QiitaPostApiResponse[] = await Promise.all(
         targetPosts.map(async (post) => {
           this.logger.debug(`記事の要約の生成を開始します`, { id: post.id });

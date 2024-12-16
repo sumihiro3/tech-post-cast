@@ -1,13 +1,14 @@
 @baseUrl = http://localhost:3000
 
-# @name = summarize
+# @name SummarizePosts
 POST {{baseUrl}}/sample/summary
 # x-amzn-lambda-context: {"request_id":"85203a83-e02c-4284-b6dd-3f0def1ae128","deadline":1723132633704}
 Content-Type: application/json
 Authorization: Bearer xxxxxxxxxxxffffffffffff
 
-###
+### 
 
+# @name GenerateScript
 POST {{baseUrl}}/sample/script
 Content-Type: application/json
 Authorization: Bearer xxxxxxxxxxxffffffffffff
