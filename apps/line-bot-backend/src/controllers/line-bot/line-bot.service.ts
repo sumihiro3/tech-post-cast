@@ -10,7 +10,7 @@ import { HeadlineTopicProgramWithQiitaPosts } from '@tech-post-cast/database';
 /**
  * 最新の番組情報を取得するためのメッセージ
  */
-const LATEST_PROGRAM_MESSAGE = '*latest-program*';
+const LATEST_PROGRAM_MESSAGE = '最新のヘッドライントピック';
 
 @Injectable()
 export class LineBotService {
