@@ -1,13 +1,7 @@
 import { AppConfigService } from '@/app-config/app-config.service';
 import { PostbackData } from '@/types';
 import { HeadlineTopicProgramsRepository } from '@infrastructure/database/headline-topic-programs/headline-topic-programs.repository';
-import * as line from '@line/bot-sdk';
-import {
-  AudioMessage,
-  FlexMessage,
-  TextMessage,
-  WebhookEvent,
-} from '@line/bot-sdk';
+import { messagingApi, webhook } from '@line/bot-sdk';
 import { Injectable, Logger } from '@nestjs/common';
 import { QiitaPost } from '@prisma/client';
 import { formatDate } from '@tech-post-cast/commons';
@@ -16,7 +10,7 @@ import { HeadlineTopicProgramWithQiitaPosts } from '@tech-post-cast/database';
 /**
  * 最新の番組情報を取得するためのメッセージ
  */
-const LATEST_PROGRAM_MESSAGE = '*latest-program*';
+const LATEST_PROGRAM_MESSAGE = '最新のヘッドライントピック';
 
 @Injectable()
 export class LineBotService {
@@ -30,9 +24,9 @@ export class LineBotService {
   /**
    * Messaging API にアクセスするためのクライアントを生成する
    */
-  createLineBotClient(): line.messagingApi.MessagingApiClient {
+  createLineBotClient(): messagingApi.MessagingApiClient {
     this.logger.debug(`LineBotService.createLineBotClient() called`);
-    return new line.messagingApi.MessagingApiClient({
+    return new messagingApi.MessagingApiClient({
       channelAccessToken: this.appConfig.LineBotChannelAccessToken,
     });
   }
@@ -41,7 +35,7 @@ export class LineBotService {
    * LINE Webhook イベントを処理する
    * @param event WebhookEvent
    */
-  async handleWebhookEvent(event: WebhookEvent): Promise<void> {
+  async handleWebhookEvent(event: webhook.Event): Promise<void> {
     this.logger.debug(`LineBotService.handleWebhook() called`, {
       event,
     });
@@ -76,13 +70,13 @@ export class LineBotService {
    * メッセージイベントを処理する
    * @param event MessageEvent
    */
-  async handleMessageEvent(event: line.MessageEvent): Promise<void> {
+  async handleMessageEvent(event: webhook.MessageEvent): Promise<void> {
     this.logger.debug(`LineBotService.handleMessageEvent() called`, {
       event,
     });
     // テキストメッセージの場合
     if (event.message.type === 'text') {
-      const message: line.TextEventMessage = event.message;
+      const message: webhook.TextMessageContent = event.message;
       await this.handleTextMessageEvent(event, message);
     } else {
       // テキストメッセージ以外は未対応
@@ -98,8 +92,8 @@ export class LineBotService {
    * @param message TextEventMessage
    */
   async handleTextMessageEvent(
-    event: line.MessageEvent,
-    message: line.TextEventMessage,
+    event: webhook.MessageEvent,
+    message: webhook.TextMessageContent,
   ): Promise<void> {
     this.logger.debug(`LineBotService.handleTextMessageEvent() called`, {
       event,
@@ -107,7 +101,7 @@ export class LineBotService {
     const replyToken = event.replyToken;
     const messageString = message.text;
     const client = this.createLineBotClient();
-    let replyMessages; // 返信するメッセージ
+    let replyMessages: messagingApi.Message[]; // 返信するメッセージ
     if (message && LATEST_PROGRAM_MESSAGE === messageString.toLowerCase()) {
       // 最新の番組情報を取得する
       replyMessages = await this.createLatestProgramMessage();
@@ -129,7 +123,7 @@ export class LineBotService {
    * ポストバックイベントを処理する
    * @param event PostbackEvent
    */
-  async handlePostbackEvent(event: line.PostbackEvent): Promise<void> {
+  async handlePostbackEvent(event: webhook.PostbackEvent): Promise<void> {
     this.logger.debug(`LineBotService.handlePostbackEvent() called`, {
       event,
     });
@@ -140,7 +134,7 @@ export class LineBotService {
       });
       return;
     }
-    let replyMessages; // 返信するメッセージ
+    let replyMessages: messagingApi.Message[]; // 返信するメッセージ
     // ヘッドライントピック番組情報を取得する
     const programId = postbackData.id;
     const program =
@@ -175,7 +169,11 @@ export class LineBotService {
    * @returns メッセージ
    */
   async createLatestProgramMessage(): Promise<
-    (AudioMessage | TextMessage | FlexMessage)[]
+    (
+      | messagingApi.AudioMessage
+      | messagingApi.TextMessage
+      | messagingApi.FlexMessage
+    )[]
   > {
     this.logger.debug(`LineBotService.createLatestProgramMessage() called`);
     const latestProgram =
@@ -195,7 +193,7 @@ export class LineBotService {
     const programFileUrlPrefix = this.appConfig.ProgramFileUrlPrefix;
     const previewUrl = `${programFileUrlPrefix}/headline-topic-program/technology.jpg`;
     const programUrl = latestProgram.audioUrl;
-    const flex: FlexMessage = {
+    const flex: messagingApi.FlexMessage = {
       type: 'flex',
       altText: `ヘッドライントピック：${latestProgram.title}`,
       contents: {
@@ -286,83 +284,96 @@ export class LineBotService {
    */
   createIntroducedPostsMessage(
     program: HeadlineTopicProgramWithQiitaPosts,
-  ): (TextMessage | FlexMessage)[] {
+  ): (messagingApi.TextMessage | messagingApi.FlexMessage)[] {
     this.logger.debug(`LineBotService.createIntroducedPostsMessage() called`, {
       program,
     });
-    const bubbles: line.FlexBubble[] = program.posts.map((post: QiitaPost) => {
-      return {
-        type: 'bubble',
-        size: 'kilo',
-        header: {
-          type: 'box',
-          layout: 'vertical',
-          contents: [
-            {
-              type: 'text',
-              text: post.title,
-              color: '#ffffff',
-              align: 'start',
-              size: 'lg',
-              gravity: 'center',
-              wrap: true,
-            },
-            {
-              type: 'text',
-              text: post.authorName,
-              color: '#ffffff',
-              align: 'end',
-              size: 'xs',
-              gravity: 'center',
-              margin: 'md',
-            },
-            {
-              type: 'text',
-              text: formatDate(post.createdAt, 'YYYY/MM/DD'),
-              color: '#ffffff',
-              align: 'end',
-              size: 'xs',
-              gravity: 'center',
-              margin: 'md',
-            },
-          ],
-          backgroundColor: '#55c500', // Qiita カラー
-          paddingTop: '19px',
-          paddingAll: '12px',
-          paddingBottom: '16px',
-        },
-        footer: {
-          type: 'box',
-          layout: 'vertical',
-          spacing: 'sm',
-          contents: [
-            {
-              type: 'button',
-              style: 'link',
-              height: 'sm',
-              action: {
-                type: 'uri',
-                label: '記事を見る',
-                uri: post.url,
+
+    const bubbles: messagingApi.FlexBubble[] = program.posts.map(
+      (post: QiitaPost) => {
+        return {
+          type: 'bubble',
+          size: 'kilo',
+          header: {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              {
+                type: 'text',
+                text: post.title,
+                color: '#ffffff',
+                align: 'start',
+                size: 'lg',
+                gravity: 'center',
+                wrap: true,
               },
-            },
-            {
-              type: 'box',
-              layout: 'vertical',
-              contents: [],
-              margin: 'sm',
-            },
-          ],
-          flex: 0,
-        },
-      };
-    });
+              {
+                type: 'text',
+                text: post.authorName,
+                color: '#ffffff',
+                align: 'end',
+                size: 'xs',
+                gravity: 'center',
+                margin: 'md',
+              },
+              {
+                type: 'text',
+                text: formatDate(post.createdAt, 'YYYY/MM/DD'),
+                color: '#ffffff',
+                align: 'end',
+                size: 'xs',
+                gravity: 'center',
+                margin: 'md',
+              },
+            ],
+            backgroundColor: '#55c500', // Qiita カラー
+            paddingTop: '19px',
+            paddingAll: '12px',
+            paddingBottom: '16px',
+          },
+          footer: {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'button',
+                style: 'link',
+                height: 'sm',
+                action: {
+                  type: 'uri',
+                  label: '記事を見る',
+                  uri: post.url,
+                },
+              },
+              {
+                type: 'button',
+                style: 'link',
+                height: 'sm',
+                action: {
+                  type: 'clipboard',
+                  label: '記事の URL をコピー',
+                  clipboardText: post.url,
+                },
+              },
+              {
+                type: 'box',
+                layout: 'vertical',
+                contents: [],
+                margin: 'sm',
+              },
+            ],
+            flex: 0,
+          },
+        };
+      },
+    );
     const altText = `ヘッドライントピック「${program.title}」での紹介記事です`;
-    const text: TextMessage = {
+    const text: messagingApi.TextMessage = {
       type: 'text',
       text: altText,
     };
-    const flex: FlexMessage = {
+    const flex: messagingApi.FlexMessage = {
       type: 'flex',
       altText,
       contents: {
@@ -378,7 +389,7 @@ export class LineBotService {
    * @param text テキスト
    * @returns テキストメッセージ
    */
-  createEchoMessage(text: string): TextMessage[] {
+  createEchoMessage(text: string): messagingApi.TextMessage[] {
     this.logger.debug(`LineBotService.createEchoMessage() called`, {
       text,
     });
