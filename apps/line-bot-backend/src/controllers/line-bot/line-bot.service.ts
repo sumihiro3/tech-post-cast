@@ -347,6 +347,16 @@ export class LineBotService {
                 },
               },
               {
+                type: 'button',
+                style: 'link',
+                height: 'sm',
+                action: {
+                  type: 'clipboard',
+                  label: '記事の URL をコピー',
+                  clipboardText: post.url,
+                },
+              },
+              {
                 type: 'box',
                 layout: 'vertical',
                 contents: [],
