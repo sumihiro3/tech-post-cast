@@ -15,7 +15,7 @@ export const PostSummarySchema = z.object({
  * HeadlineTopicProgramScript と同じ構造とする
  */
 export const HeadlineTopicProgramScriptSchema = z.object({
-  title: z.string().describe('タイトル'),
+  title: z.string().describe('番組タイトル'),
   intro: z.string().describe('イントロダクション'),
   posts: z.array(PostSummarySchema).describe('紹介記事の要約'),
   ending: z.string().describe('エンディング'),
