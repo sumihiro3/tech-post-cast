@@ -288,8 +288,11 @@ export class LineBotService {
     this.logger.debug(`LineBotService.createIntroducedPostsMessage() called`, {
       program,
     });
-
-    const bubbles: messagingApi.FlexBubble[] = program.posts.map(
+    // 紹介記事をいいね多い順に並び替える
+    const sortedPosts = program.posts.sort(
+      (a, b) => b.likesCount - a.likesCount,
+    );
+    const bubbles: messagingApi.FlexBubble[] = sortedPosts.map(
       (post: QiitaPost) => {
         return {
           type: 'bubble',
