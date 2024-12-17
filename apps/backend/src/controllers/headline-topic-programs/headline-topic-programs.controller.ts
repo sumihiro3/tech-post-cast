@@ -40,12 +40,17 @@ export class HeadlineTopicProgramsController {
     try {
       // ヘッドライントピック番組を生成する
       const programDate = dto.getProgramDate();
-      this.logger.debug(`ヘッドライントピック番組の生成を開始します`, {
+      this.logger.log(`ヘッドライントピック番組の生成を開始します`, {
         programDate,
       });
-      await this.headlineTopicProgramsService.createHeadlineTopicProgram(
-        programDate,
-      );
+      const program =
+        await this.headlineTopicProgramsService.createHeadlineTopicProgram(
+          programDate,
+        );
+      this.logger.log(`ヘッドライントピック番組の生成を開始しました！`, {
+        id: program.id,
+        title: program.title,
+      });
     } catch (error) {
       const errorMessage = `ヘッドライントピック番組の生成中にエラーが発生しました`;
       this.logger.error(errorMessage, { error }, error.stack);

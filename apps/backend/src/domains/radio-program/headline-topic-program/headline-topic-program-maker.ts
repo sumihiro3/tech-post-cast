@@ -17,6 +17,7 @@ import { readFile } from 'node:fs/promises';
 import * as path from 'path';
 import {
   HeadlineTopicProgramGenerateResult,
+  HeadlineTopicProgramInMetadata,
   HeadlineTopicProgramScript,
   ProgramUploadResult,
 } from '.';
@@ -61,6 +62,7 @@ export class HeadlineTopicProgramMaker {
       // BGM などを組み合わせて「ヘッドライントピック」番組の音声ファイルを生成する
       const generateResult = await this.generateProgramAudioFile(
         script,
+        programDate,
         mainAudioPath,
       );
       // 生成した「ヘッドライントピック」番組の音声ファイルを S3 にアップロードする処理を追加
@@ -172,16 +174,20 @@ export class HeadlineTopicProgramMaker {
   /**
    * ヘッドライントピック番組の音声ファイルを生成する
    * @param script 台本
+   * @param programDate 番組日
    * @param mainAudioPath メイン音声ファイルのパス
    * @return ヘッドライントピック番組の生成結果
    */
   async generateProgramAudioFile(
     script: HeadlineTopicProgramScript,
+    programDate: Date,
     mainAudioPath: string,
   ): Promise<HeadlineTopicProgramGenerateResult> {
     this.logger.debug(
       `HeadlineTopicProgramMaker.generateProgramAudioFile called`,
       {
+        title: script.title,
+        programDate,
         mainAudioPath,
       },
     );
@@ -197,6 +203,13 @@ export class HeadlineTopicProgramMaker {
     const now = new Date();
     const audioFileName = `headline-topic-program_${now.getTime()}.mp3`;
     const audioFilePath = `${this.outputDir}/${audioFileName}`;
+    // ラジオ番組のメタデータ情報
+    const metadata = new HeadlineTopicProgramInMetadata(
+      script,
+      'Tech Post Cast',
+      programDate,
+      audioFileName,
+    );
     // メイン音声やBGMを組み合わせてラジオ番組を作成する
     const audioDuration = await this.mixAudioFiles(
       mainAudioPath,
@@ -204,6 +217,7 @@ export class HeadlineTopicProgramMaker {
       openingPath,
       endingPath,
       audioFilePath,
+      metadata,
     );
     // 番組音声ファイルから動画ファイル（MP4）を生成する
     const pictureFilePath = this.configService.get<string>(
@@ -211,10 +225,12 @@ export class HeadlineTopicProgramMaker {
     );
     const videoFileName = `headline-topic-program_${now.getTime()}.mp4`;
     const videoFilePath = `${this.outputDir}/${videoFileName}`;
+    metadata.filename = videoFileName;
     await this.generateProgramVideoFile(
       audioFilePath,
       pictureFilePath,
       videoFilePath,
+      metadata,
     );
     // 生成結果を返却
     const result: HeadlineTopicProgramGenerateResult = {
@@ -236,6 +252,7 @@ export class HeadlineTopicProgramMaker {
    * @param openingPath オープニング音声ファイルのパス
    * @param endingPath エンディング音声ファイルのパス
    * @param targetPath 生成したラジオ番組の保存先パス
+   * @param metadata ラジオ番組のメタデータ情報
    * @returns 生成したラジオ番組の長さ（ミリ秒）
    */
   async mixAudioFiles(
@@ -244,6 +261,7 @@ export class HeadlineTopicProgramMaker {
     openingPath: string,
     endingPath: string,
     targetPath: string,
+    metadata: HeadlineTopicProgramInMetadata,
   ): Promise<number> {
     this.logger.debug(`HeadlineTopicProgramMaker.mixAudioFiles called`);
     this.logger.debug('1. メイン音声と BGM のマージを開始...');
@@ -255,17 +273,16 @@ export class HeadlineTopicProgramMaker {
       2.5,
     );
     this.logger.log('メイン音声と BGM のマージが完了しました。');
-
     this.logger.log('2. オープニング、メイン音声、エンディングの結合を開始...');
     await this.concatAudioFiles(
       [openingPath, mergedMainWithBgmPath, endingPath],
       targetPath,
+      metadata,
     );
     fs.unlinkSync(mergedMainWithBgmPath); // 一時ファイル削除
     const duration = Math.ceil(
       (await this.getAudioDuration(targetPath)) * 1000,
     );
-
     this.logger.log(
       'オープニング、メイン音声、エンディングの結合が完了しました:',
       targetPath,
@@ -330,7 +347,12 @@ export class HeadlineTopicProgramMaker {
           ]) // メイン音声長に切り詰める
           .save(loopedBgmPath)
           .on('start', (commandLine) => {
-            this.logger.debug(`Spawned FFmpeg with command: ${commandLine}`);
+            this.logger.log(
+              `メイン音声の長さと同じBGMファイルの生成処理を開始します`,
+            );
+            this.logger.debug(
+              `メイン音声の長さと同じBGMファイルの生成コマンド: ${commandLine}`,
+            );
           })
           .on('end', () => {
             this.logger.log(
@@ -369,7 +391,10 @@ export class HeadlineTopicProgramMaker {
           ])
           .output(outputPath)
           .on('start', (commandLine) => {
-            this.logger.debug(`Spawned FFmpeg with command: ${commandLine}`);
+            this.logger.log(`メイン音声とBGMのマージ処理を開始します`);
+            this.logger.debug(
+              `メイン音声とBGMのマージ処理のコマンド: ${commandLine}`,
+            );
           })
           .on('end', () => {
             this.logger.log(
@@ -402,8 +427,18 @@ export class HeadlineTopicProgramMaker {
    * 複数の音声ファイルを結合する
    * @param files 結合する音声ファイルのパス
    * @param outputPath 出力先のパス
+   * @param metadata ラジオ番組のメタデータ情報
    */
-  concatAudioFiles = (files: string[], outputPath: string): Promise<void> => {
+  concatAudioFiles = (
+    files: string[],
+    outputPath: string,
+    metadata: HeadlineTopicProgramInMetadata,
+  ): Promise<void> => {
+    this.logger.debug(`HeadlineTopicProgramMaker.concatAudioFiles called`, {
+      files,
+      outputPath,
+      metadata,
+    });
     return new Promise((resolve, reject) => {
       const listFilePath = `${this.outputDir}/file-list.txt`;
       const fileListContent = files
@@ -421,9 +456,19 @@ export class HeadlineTopicProgramMaker {
           '-ac 2', // ステレオ
           '-y', // 上書き許可
         ])
+        // メタデータの埋め込み
+        .outputOptions('-metadata', `artist=${metadata.artist}`)
+        .outputOptions('-metadata', `album=${metadata.album}`)
+        .outputOptions('-metadata', `album_artist=${metadata.albumArtist}`)
+        .outputOptions('-metadata', `title=${metadata.title}`)
+        .outputOptions('-metadata', `date=${metadata.date}`)
+        .outputOptions('-metadata', `genre=${metadata.genre}`)
+        .outputOptions('-metadata', `language=${metadata.language}`)
+        .outputOptions('-metadata', `filename=${metadata.filename}`)
         .save(outputPath)
         .on('start', (commandLine) => {
-          this.logger.debug(`Spawned FFmpeg with command: ${commandLine}`);
+          this.logger.log(`音声ファイルの結合処理を開始します`);
+          this.logger.debug(`音声ファイルの結合処理コマンド: ${commandLine}`);
         })
         .on('progress', (progress) => {
           this.logger.debug(`音声ファイルの結合処理中...`, {
@@ -431,7 +476,7 @@ export class HeadlineTopicProgramMaker {
           });
         })
         .on('end', () => {
-          this.logger.debug(
+          this.logger.log(
             `音声ファイルの結合処理が完了しました: ${outputPath}`,
           );
           fs.unlinkSync(listFilePath); // 一時ファイル削除
@@ -452,11 +497,13 @@ export class HeadlineTopicProgramMaker {
    * @param audioFilePath 番組音声ファイルのパス
    * @param pictureFilePath 動画に使用する画像ファイルのパス
    * @param videoFilePath 生成する動画ファイルのパス
+   * @param metadata ラジオ番組のメタデータ情報
    */
   async generateProgramVideoFile(
     audioFilePath: string,
     pictureFilePath: string,
     videoFilePath: string,
+    metadata: HeadlineTopicProgramInMetadata,
   ): Promise<void> {
     this.logger.debug(
       `HeadlineTopicProgramMaker.generateProgramVideoFile called`,
@@ -464,6 +511,7 @@ export class HeadlineTopicProgramMaker {
         audioFilePath,
         pictureFilePath,
         videoFilePath,
+        metadata,
       },
     );
     // ffmpeg で動画ファイルを生成する
@@ -487,17 +535,29 @@ export class HeadlineTopicProgramMaker {
           '-profile:v baseline', // 簡易プロファイルを設定
           '-shortest', // 出力を最短の入力に合わせる（音声または画像の短い方に合わせる）
         ])
+        // メタデータの埋め込み
+        .outputOptions('-metadata', `artist=${metadata.artist}`)
+        .outputOptions('-metadata', `album=${metadata.album}`)
+        .outputOptions('-metadata', `album_artist=${metadata.albumArtist}`)
+        .outputOptions('-metadata', `title=${metadata.title}`)
+        .outputOptions('-metadata', `date=${metadata.date}`)
+        .outputOptions('-metadata', `genre=${metadata.genre}`)
+        .outputOptions('-metadata', `language=${metadata.language}`)
+        .outputOptions('-metadata', `filename=${metadata.filename}`)
         .save(videoFilePath) // エンコード結果を指定したファイルパスに保存
         .on('start', (commandLine) => {
-          this.logger.debug(`Spawned FFmpeg with command: ${commandLine}`);
+          this.logger.log(`動画ファイル生成処理を開始します`);
+          this.logger.debug(`動画ファイル生成処理コマンド: ${commandLine}`);
         })
         .on('progress', (progress) => {
-          this.logger.debug(`動画生成処理中...`, {
+          this.logger.debug(`動画ファイル生成処理中...`, {
             progress,
           });
         })
         .on('end', () => {
-          this.logger.log(`動画生成処理が完了しました: ${videoFilePath}`);
+          this.logger.log(
+            `動画ファイル生成処理が完了しました: ${videoFilePath}`,
+          );
           resolve();
         })
         .on('error', (error) => {
@@ -560,7 +620,7 @@ export class HeadlineTopicProgramMaker {
       });
       const videoResponse = await client.send(videoUploadCommand);
       const videoUrl = `${urlPrefix}/${objectKeyPrefix}.mp4`;
-      this.logger.log(`S3 に番組音声ファイルをアップロードしました`, {
+      this.logger.log(`S3 に番組動画ファイルをアップロードしました`, {
         response: videoResponse,
         url: videoUrl,
       });

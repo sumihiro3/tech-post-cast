@@ -3,6 +3,7 @@ import { HeadlineTopicProgramMaker } from '@/domains/radio-program/headline-topi
 import { QiitaPostsRepository } from '@/infrastructure/database/qiita-posts/qiita-posts.repository';
 import { QiitaPostsApiClient } from '@/infrastructure/external-api/qiita-api/qiita-posts.api.client';
 import { Injectable, Logger } from '@nestjs/common';
+import { HeadlineTopicProgram } from '@prisma/client';
 import { getYesterday, subtractDays } from '@tech-post-cast/commons';
 
 // 「ヘッドライントピック」番組に含める記事の期間
@@ -24,7 +25,9 @@ export class HeadlineTopicProgramsService {
    * 「ヘッドライントピック」番組を生成する
    * @param programDate 番組日
    */
-  async createHeadlineTopicProgram(programDate: Date): Promise<void> {
+  async createHeadlineTopicProgram(
+    programDate: Date,
+  ): Promise<HeadlineTopicProgram> {
     this.logger.debug(
       `DailyHeadlineTopicsService.createDailyHeadlineTopics called`,
     );
@@ -37,11 +40,12 @@ export class HeadlineTopicProgramsService {
         to: to,
       });
       // Qiita 記事を API で取得
+      this.logger.log(`Qiita 記事の取得を開始します`);
       const posts = await this.qiitaPostsApiClient.findQiitaPostsByDateRange(
         from,
         to,
       );
-      this.logger.debug(`取得した記事の件数: ${posts.length}`);
+      this.logger.debug(`${posts.length} 件の Qiita 記事を取得しました`);
       // DB に登録されていない記事を取得
       const notExistsPosts =
         await this.qiitaPostsRepository.findNotExistsPosts(posts);
@@ -50,10 +54,11 @@ export class HeadlineTopicProgramsService {
         notExistsPosts,
         POPULAR_POSTS_COUNT,
       );
-      this.logger.debug(`いいね数が多い記事を取得しました`, {
-        popularPosts: popularPosts,
+      this.logger.log(`いいね数が多い記事を取得しました`, {
+        postIds: popularPosts.map((post) => post.id),
       });
       // 「ヘッドライントピック」番組を生成する
+      this.logger.log(`「ヘッドライントピック」番組のファイル生成を開始します`);
       const program = await this.headlineTopicProgramMaker.generateProgram(
         programDate,
         popularPosts,
@@ -61,6 +66,7 @@ export class HeadlineTopicProgramsService {
       this.logger.debug(`「ヘッドライントピック」番組を生成しました`, {
         program,
       });
+      return program;
     } catch (error) {
       this.logger.error(`エラーが発生しました`, error);
       // TODO: 独自エラークラスを作成してエラーハンドリングを行う
