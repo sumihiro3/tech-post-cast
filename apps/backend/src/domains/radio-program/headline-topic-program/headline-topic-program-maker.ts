@@ -347,7 +347,12 @@ export class HeadlineTopicProgramMaker {
           ]) // メイン音声長に切り詰める
           .save(loopedBgmPath)
           .on('start', (commandLine) => {
-            this.logger.debug(`Spawned FFmpeg with command: ${commandLine}`);
+            this.logger.log(
+              `メイン音声の長さと同じBGMファイルの生成処理を開始します`,
+            );
+            this.logger.debug(
+              `メイン音声の長さと同じBGMファイルの生成コマンド: ${commandLine}`,
+            );
           })
           .on('end', () => {
             this.logger.log(
@@ -386,7 +391,10 @@ export class HeadlineTopicProgramMaker {
           ])
           .output(outputPath)
           .on('start', (commandLine) => {
-            this.logger.debug(`Spawned FFmpeg with command: ${commandLine}`);
+            this.logger.log(`メイン音声とBGMのマージ処理を開始します`);
+            this.logger.debug(
+              `メイン音声とBGMのマージ処理のコマンド: ${commandLine}`,
+            );
           })
           .on('end', () => {
             this.logger.log(
@@ -459,7 +467,8 @@ export class HeadlineTopicProgramMaker {
         .outputOptions('-metadata', `filename=${metadata.filename}`)
         .save(outputPath)
         .on('start', (commandLine) => {
-          this.logger.debug(`Spawned FFmpeg with command: ${commandLine}`);
+          this.logger.log(`音声ファイルの結合処理を開始します`);
+          this.logger.debug(`音声ファイルの結合処理コマンド: ${commandLine}`);
         })
         .on('progress', (progress) => {
           this.logger.debug(`音声ファイルの結合処理中...`, {
@@ -467,7 +476,7 @@ export class HeadlineTopicProgramMaker {
           });
         })
         .on('end', () => {
-          this.logger.debug(
+          this.logger.log(
             `音声ファイルの結合処理が完了しました: ${outputPath}`,
           );
           fs.unlinkSync(listFilePath); // 一時ファイル削除
@@ -537,15 +546,18 @@ export class HeadlineTopicProgramMaker {
         .outputOptions('-metadata', `filename=${metadata.filename}`)
         .save(videoFilePath) // エンコード結果を指定したファイルパスに保存
         .on('start', (commandLine) => {
-          this.logger.debug(`Spawned FFmpeg with command: ${commandLine}`);
+          this.logger.log(`動画ファイル生成処理を開始します`);
+          this.logger.debug(`動画ファイル生成処理コマンド: ${commandLine}`);
         })
         .on('progress', (progress) => {
-          this.logger.debug(`動画生成処理中...`, {
+          this.logger.debug(`動画ファイル生成処理中...`, {
             progress,
           });
         })
         .on('end', () => {
-          this.logger.log(`動画生成処理が完了しました: ${videoFilePath}`);
+          this.logger.log(
+            `動画ファイル生成処理が完了しました: ${videoFilePath}`,
+          );
           resolve();
         })
         .on('error', (error) => {
@@ -608,7 +620,7 @@ export class HeadlineTopicProgramMaker {
       });
       const videoResponse = await client.send(videoUploadCommand);
       const videoUrl = `${urlPrefix}/${objectKeyPrefix}.mp4`;
-      this.logger.log(`S3 に番組音声ファイルをアップロードしました`, {
+      this.logger.log(`S3 に番組動画ファイルをアップロードしました`, {
         response: videoResponse,
         url: videoUrl,
       });
