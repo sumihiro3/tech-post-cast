@@ -71,6 +71,11 @@ export class TechPostCastBackendStack extends cdk.Stack {
           // ffmpeg
           FFMPEG_PATH: '/usr/bin/ffmpeg',
           FFPROBE_PATH: '/usr/bin/ffprobe',
+          // OpenAI
+          OPEN_AI_SUMMARIZATION_MODEL: 'gpt-4o-mini',
+          OPEN_AI_SCRIPT_GENERATION_MODEL: 'gpt-4o-mini',
+          // 番組ファイル生成で利用する一時ファイルの保存先
+          PROGRAM_FILE_GENERATION_TEMP_DIR: '/tmp/program-file-maker',
           // ヘッドライントピック番組用音声ファイル
           HEADLINE_TOPIC_PROGRAM_TARGET_DIR: '/tmp/headline-topic-programs',
           HEADLINE_TOPIC_PROGRAM_BGM_FILE_PATH:
