@@ -1,4 +1,5 @@
 import { formatDate } from '@tech-post-cast/commons';
+import { ProgramFileMetadata } from '../program-file-maker.interface';
 
 export * from './headline-topic-program-maker';
 
@@ -41,7 +42,7 @@ export interface HeadlineTopicProgramScript {
  * ヘッドライントピック番組の情報を表すクラス
  * ffmpeg で音声ファイル、動画ファイルに埋め込むメタデータ情報
  */
-export class HeadlineTopicProgramInMetadata {
+export class HeadlineTopicProgramMetadata implements ProgramFileMetadata {
   /** artist */
   artist: string;
   /** album */
@@ -76,18 +77,6 @@ export class HeadlineTopicProgramInMetadata {
     this.language = 'jpn';
     this.filename = fileName;
   }
-
-  // getFFmpegMetadataOptions(): string[][] {
-  //   return [
-  //     ['-metadata', `artist="${this.artist}"`],
-  //     ['-metadata', `album="${this.album}"`],
-  //     ['-metadata', `album_artist="${this.albumArtist}"`],
-  //     ['-metadata', `title="${this.title}"`],
-  //     ['-metadata', `date="${this.date}"`],
-  //     ['-metadata', `genre="${this.genre}"`],
-  //     ['-metadata', `language="${this.language}"`],
-  //   ];
-  // }
 }
 
 /**

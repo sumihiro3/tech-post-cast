@@ -27,6 +27,11 @@ export class AppConfigService {
         'OPEN_AI_SCRIPT_GENERATION_MODEL が設定されていません',
       );
     }
+    if (!this.ProgramFileGenerationTempDir) {
+      throw new AppConfigValidationError(
+        'PROGRAM_FILE_GENERATION_TEMP_DIR が設定されていません',
+      );
+    }
     if (!this.HeadlineTopicProgramTargetDir) {
       throw new AppConfigValidationError(
         'HEADLINE_TOPIC_PROGRAM_TARGET_DIR が設定されていません',
@@ -109,6 +114,14 @@ export class AppConfigService {
     if (!v) v = 'gpt-4o-mini';
     return v;
   }
+
+  /**
+   * 番組ファイル生成で利用する一時ファイルの保存先
+   */
+  get ProgramFileGenerationTempDir(): string {
+    return this.config.get<string>('PROGRAM_FILE_GENERATION_TEMP_DIR');
+  }
+
   /**
    * 番組のターゲットディレクトリ
    */

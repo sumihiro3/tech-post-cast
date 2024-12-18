@@ -6,12 +6,10 @@ import { OpenAiApiClient } from '@infrastructure/external-api/openai-api/openai-
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { HeadlineTopicProgram } from '@prisma/client';
 import { formatDate } from '@tech-post-cast/commons';
-import * as ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
-import * as path from 'path';
 import {
   HeadlineTopicProgramGenerateResult,
-  HeadlineTopicProgramInMetadata,
+  HeadlineTopicProgramMetadata,
   HeadlineTopicProgramScript,
   ProgramUploadResult,
 } from '.';
@@ -19,6 +17,7 @@ import {
   IProgramFileUploader,
   ProgramFileUploadCommand,
 } from '../file-uploader.interface';
+import { IProgramFileMaker } from '../program-file-maker.interface';
 
 @Injectable()
 export class HeadlineTopicProgramMaker {
@@ -31,6 +30,8 @@ export class HeadlineTopicProgramMaker {
     private readonly qiitaPostsRepository: QiitaPostsRepository,
     private readonly openAiApiClient: OpenAiApiClient,
     private readonly headlineTopicProgramsRepository: HeadlineTopicProgramsRepository,
+    @Inject('ProgramFileMaker')
+    private readonly programFileMaker: IProgramFileMaker,
     @Inject('ProgramFileUploader')
     private readonly programFileUploader: IProgramFileUploader,
   ) {
@@ -57,8 +58,8 @@ export class HeadlineTopicProgramMaker {
       const script = await this.generateScript(programDate, summarizedPosts);
       // ヘッドライントピック番組の台本読み上げ音声ファイルを生成する
       const mainAudioPath = await this.generateMainAudioFile(script);
-      // BGM などを組み合わせてヘッドライントピック番組の音声ファイルを生成する
-      const generateResult = await this.generateProgramAudioFile(
+      // BGM などを組み合わせてヘッドライントピック番組の音声ファイルと動画ファイルを生成する
+      const generateResult = await this.generateProgramFiles(
         script,
         programDate,
         mainAudioPath,
@@ -89,7 +90,6 @@ export class HeadlineTopicProgramMaker {
     } catch (error) {
       const errorMessage = `ヘッドライントピック番組の生成中にエラーが発生しました`;
       this.logger.error(errorMessage, error, error.stack);
-      // TODO: 独自エラークラスを作成してエラーハンドリングを行う
       throw error;
     }
   }
@@ -170,396 +170,69 @@ export class HeadlineTopicProgramMaker {
   }
 
   /**
-   * ヘッドライントピック番組の音声ファイルを生成する
+   * ヘッドライントピック番組の音声ファイルと動画ファイルを生成する
    * @param script 台本
    * @param programDate 番組日
-   * @param mainAudioPath メイン音声ファイルのパス
-   * @return ヘッドライントピック番組の生成結果
+   * @param mainAudioFilePath メイン音声ファイルのパス
+   * @return ヘッドライントピック番組ファイル生成結果
    */
-  async generateProgramAudioFile(
+  async generateProgramFiles(
     script: HeadlineTopicProgramScript,
     programDate: Date,
-    mainAudioPath: string,
+    mainAudioFilePath: string,
   ): Promise<HeadlineTopicProgramGenerateResult> {
-    this.logger.debug(
-      `HeadlineTopicProgramMaker.generateProgramAudioFile called`,
-      {
-        title: script.title,
-        programDate,
-        mainAudioPath,
-      },
-    );
-    const bgmPath = this.appConfig.HeadlineTopicProgramBgmFilePath;
-    const openingPath = this.appConfig.HeadlineTopicProgramOpeningFilePath;
-    const endingPath = this.appConfig.HeadlineTopicProgramEndingFilePath;
+    this.logger.debug(`HeadlineTopicProgramMaker.generateProgramFiles called`, {
+      title: script.title,
+      programDate,
+      mainAudioPath: mainAudioFilePath,
+    });
+    const bgmAudioFilePath = this.appConfig.HeadlineTopicProgramBgmFilePath;
+    const openingAudioFilePath =
+      this.appConfig.HeadlineTopicProgramOpeningFilePath;
+    const endingAudioFilePath =
+      this.appConfig.HeadlineTopicProgramEndingFilePath;
+    const volumeRate = 2.5;
     const now = new Date();
-    const audioFileName = `headline-topic-program_${now.getTime()}.mp3`;
-    const audioFilePath = `${this.outputDir}/${audioFileName}`;
+    const programAudioFileName = `headline-topic-program_${now.getTime()}.mp3`;
+    const programAudioFilePath = `${this.outputDir}/${programAudioFileName}`;
     // ラジオ番組のメタデータ情報
-    const metadata = new HeadlineTopicProgramInMetadata(
+    const metadata = new HeadlineTopicProgramMetadata(
       script,
       'Tech Post Cast',
       programDate,
-      audioFileName,
+      programAudioFileName,
     );
-    // メイン音声やBGMを組み合わせてラジオ番組を作成する
-    const audioDuration = await this.mixAudioFiles(
-      mainAudioPath,
-      bgmPath,
-      openingPath,
-      endingPath,
-      audioFilePath,
+    const audioResult = await this.programFileMaker.generateProgramAudioFile({
+      mainAudioFilePath,
+      bgmAudioFilePath,
+      openingAudioFilePath,
+      endingAudioFilePath,
+      outputFilePath: programAudioFilePath,
+      volumeRate,
       metadata,
-    );
+    });
     // 番組音声ファイルから動画ファイル（MP4）を生成する
     const pictureFilePath = this.appConfig.HeadlineTopicProgramPictureFilePath;
-    const videoFileName = `headline-topic-program_${now.getTime()}.mp4`;
-    const videoFilePath = `${this.outputDir}/${videoFileName}`;
-    metadata.filename = videoFileName;
-    await this.generateProgramVideoFile(
-      audioFilePath,
+    const programVideoFileName = `headline-topic-program_${now.getTime()}.mp4`;
+    const programVideoFilePath = `${this.outputDir}/${programVideoFileName}`;
+    metadata.filename = programVideoFileName;
+    await this.programFileMaker.generateProgramVideoFile({
+      audioFilePath: programAudioFilePath,
       pictureFilePath,
-      videoFilePath,
+      outputFilePath: programVideoFilePath,
       metadata,
-    );
+    });
     // 生成結果を返却
     const result: HeadlineTopicProgramGenerateResult = {
-      audioFileName,
-      audioFilePath,
-      audioDuration,
-      videoFileName,
-      videoFilePath,
+      audioFileName: programAudioFileName,
+      audioFilePath: programAudioFilePath,
+      audioDuration: audioResult.duration,
+      videoFileName: programVideoFileName,
+      videoFilePath: programVideoFilePath,
       script,
     };
-    this.logger.log(`ラジオ番組を生成しました`, { result });
+    this.logger.log(`ヘッドライントピック番組を生成しました`, { result });
     return result;
-  }
-
-  /**
-   * ラジオ番組を作成する
-   * @param mainAudioPath メイン音声ファイルのパス
-   * @param bgmPath BGM 音声ファイルのパス
-   * @param openingPath オープニング音声ファイルのパス
-   * @param endingPath エンディング音声ファイルのパス
-   * @param targetPath 生成したラジオ番組の保存先パス
-   * @param metadata ラジオ番組のメタデータ情報
-   * @returns 生成したラジオ番組の長さ（ミリ秒）
-   */
-  async mixAudioFiles(
-    mainAudioPath: string,
-    bgmPath: string,
-    openingPath: string,
-    endingPath: string,
-    targetPath: string,
-    metadata: HeadlineTopicProgramInMetadata,
-  ): Promise<number> {
-    this.logger.debug(`HeadlineTopicProgramMaker.mixAudioFiles called`);
-    this.logger.debug('1. メイン音声と BGM のマージを開始...');
-    const mergedMainWithBgmPath = `${this.outputDir}/merged_main_with_bgm.mp3`;
-    await this.mergeBgmWithMainAudio(
-      mainAudioPath,
-      bgmPath,
-      mergedMainWithBgmPath,
-      2.5,
-    );
-    this.logger.log('メイン音声と BGM のマージが完了しました。');
-    this.logger.log('2. オープニング、メイン音声、エンディングの結合を開始...');
-    await this.concatAudioFiles(
-      [openingPath, mergedMainWithBgmPath, endingPath],
-      targetPath,
-      metadata,
-    );
-    fs.unlinkSync(mergedMainWithBgmPath); // 一時ファイル削除
-    const duration = Math.ceil(
-      (await this.getAudioDuration(targetPath)) * 1000,
-    );
-    this.logger.log(
-      'オープニング、メイン音声、エンディングの結合が完了しました:',
-      targetPath,
-      duration,
-    );
-    return duration;
-  }
-
-  /**
-   * 音声ファイルの長さを取得
-   * @param filePath 音声ファイルのパス
-   * @returns 音声ファイルの長さ（秒）
-   */
-  getAudioDuration = (filePath: string): Promise<number> => {
-    this.logger.debug(`HeadlineTopicProgramMaker.getAudioDuration called`, {
-      filePath,
-    });
-    return new Promise((resolve, reject) => {
-      ffmpeg.ffprobe(filePath, (err, metadata) => {
-        if (err) {
-          reject(err);
-        } else {
-          const duration = metadata.format.duration;
-          resolve(duration ?? 0);
-        }
-      });
-    });
-  };
-
-  /**
-   * BGM をメイン音声にマージ
-   */
-  mergeBgmWithMainAudio = async (
-    mainPath: string,
-    bgmPath: string,
-    outputPath: string,
-    volumeBoost = 1.0,
-  ): Promise<void> => {
-    this.logger.debug(
-      `HeadlineTopicProgramMaker.mergeBgmWithMainAudio called`,
-      {
-        mainPath,
-        bgmPath,
-        outputPath,
-        volumeBoost,
-      },
-    );
-    try {
-      const mainAudioDuration = await this.getAudioDuration(mainPath);
-
-      // 一時 BGM ループファイル
-      const loopedBgmPath = `${this.outputDir}/looped_bgm.mp3`;
-
-      // BGM をループしてメイン音声の長さに合わせる
-      await new Promise<void>((resolve, reject) => {
-        ffmpeg(bgmPath)
-          .inputOptions(['-stream_loop -1']) // 無限ループ
-          .outputOptions([
-            `-t ${mainAudioDuration}`,
-            '-acodec libmp3lame',
-            '-y',
-          ]) // メイン音声長に切り詰める
-          .save(loopedBgmPath)
-          .on('start', (commandLine) => {
-            this.logger.log(
-              `メイン音声の長さと同じBGMファイルの生成処理を開始します`,
-            );
-            this.logger.debug(
-              `メイン音声の長さと同じBGMファイルの生成コマンド: ${commandLine}`,
-            );
-          })
-          .on('end', () => {
-            this.logger.log(
-              `メイン音声の長さと同じBGMファイルの生成処理が完了しました: ${loopedBgmPath}`,
-            );
-            resolve();
-          })
-          .on('error', (error) => {
-            this.logger.error(
-              `メイン音声の長さと同じBGMファイルの生成処理中にエラーが発生しました: ${error.message}`,
-              {
-                error,
-              },
-            );
-            reject(error);
-          });
-      });
-
-      // メイン音声とループした BGM をミックス
-      await new Promise<void>((resolve, reject) => {
-        ffmpeg()
-          .input(mainPath)
-          .input(loopedBgmPath)
-          .complexFilter([
-            '[0:a]volume=2.0[a1]', // メイン音声の音量
-            '[1:a]volume=0.05[a2]', // BGM の音量
-            '[a1][a2]amix=inputs=2:duration=first:dropout_transition=3[mixed]', // 合成
-            `[mixed]volume=${volumeBoost}[out]`, // 全体の音量調整
-          ])
-          .map('[out]')
-          .outputOptions([
-            '-acodec libmp3lame', // MP3 エンコーダー
-            '-ar 44100', // サンプルレート 44.1KHz
-            '-ac 2', // ステレオチャンネル
-            '-y', // 上書き許可
-          ])
-          .output(outputPath)
-          .on('start', (commandLine) => {
-            this.logger.log(`メイン音声とBGMのマージ処理を開始します`);
-            this.logger.debug(
-              `メイン音声とBGMのマージ処理のコマンド: ${commandLine}`,
-            );
-          })
-          .on('end', () => {
-            this.logger.log(
-              `メイン音声とBGMのマージ処理が完了しました: ${loopedBgmPath}`,
-            );
-            fs.unlinkSync(loopedBgmPath); // 一時 BGM ファイル削除
-            resolve();
-          })
-          .on('error', (error) => {
-            this.logger.error(
-              `メイン音声とBGMのマージ処理中にエラーが発生しました: ${error.message}`,
-              {
-                error,
-              },
-            );
-            fs.unlinkSync(loopedBgmPath); // 一時 BGM ファイル削除
-            reject(error);
-          })
-          .run();
-      });
-    } catch (error) {
-      const errorMessage = `BGM マージ中にエラーが発生しました`;
-      this.logger.error(errorMessage, { error }, error.stack);
-      // TODO: 独自エラークラスを作成してエラーハンドリングを行う
-      throw error;
-    }
-  };
-
-  /**
-   * 複数の音声ファイルを結合する
-   * @param files 結合する音声ファイルのパス
-   * @param outputPath 出力先のパス
-   * @param metadata ラジオ番組のメタデータ情報
-   */
-  concatAudioFiles = (
-    files: string[],
-    outputPath: string,
-    metadata: HeadlineTopicProgramInMetadata,
-  ): Promise<void> => {
-    this.logger.debug(`HeadlineTopicProgramMaker.concatAudioFiles called`, {
-      files,
-      outputPath,
-      metadata,
-    });
-    return new Promise((resolve, reject) => {
-      const listFilePath = `${this.outputDir}/file-list.txt`;
-      const fileListContent = files
-        .map((file) => `file '${path.resolve(file)}'`)
-        .join('\n');
-      fs.writeFileSync(listFilePath, fileListContent);
-
-      ffmpeg()
-        .input(listFilePath)
-        .inputOptions(['-f concat', '-safe 0']) // ファイルリストから結合
-        .outputOptions(['-c copy', '-y']) // 再エンコードなしで結合
-        .outputOptions([
-          '-acodec libmp3lame', // MP3 エンコーダー
-          '-ar 44100', // サンプルレート 44.1KHz
-          '-ac 2', // ステレオ
-          '-y', // 上書き許可
-        ])
-        // メタデータの埋め込み
-        .outputOptions('-metadata', `artist=${metadata.artist}`)
-        .outputOptions('-metadata', `album=${metadata.album}`)
-        .outputOptions('-metadata', `album_artist=${metadata.albumArtist}`)
-        .outputOptions('-metadata', `title=${metadata.title}`)
-        .outputOptions('-metadata', `date=${metadata.date}`)
-        .outputOptions('-metadata', `genre=${metadata.genre}`)
-        .outputOptions('-metadata', `language=${metadata.language}`)
-        .outputOptions('-metadata', `filename=${metadata.filename}`)
-        .save(outputPath)
-        .on('start', (commandLine) => {
-          this.logger.log(`音声ファイルの結合処理を開始します`);
-          this.logger.debug(`音声ファイルの結合処理コマンド: ${commandLine}`);
-        })
-        .on('progress', (progress) => {
-          this.logger.debug(`音声ファイルの結合処理中...`, {
-            progress,
-          });
-        })
-        .on('end', () => {
-          this.logger.log(
-            `音声ファイルの結合処理が完了しました: ${outputPath}`,
-          );
-          fs.unlinkSync(listFilePath); // 一時ファイル削除
-          resolve();
-        })
-        .on('error', (error) => {
-          this.logger.error(`音声ファイルの結合処理中にエラーが発生しました`, {
-            error,
-          });
-          fs.unlinkSync(listFilePath); // 一時ファイル削除
-          reject(error);
-        });
-    });
-  };
-
-  /**
-   * 番組音声ファイルから動画ファイル（MP4）を生成する
-   * @param audioFilePath 番組音声ファイルのパス
-   * @param pictureFilePath 動画に使用する画像ファイルのパス
-   * @param videoFilePath 生成する動画ファイルのパス
-   * @param metadata ラジオ番組のメタデータ情報
-   */
-  async generateProgramVideoFile(
-    audioFilePath: string,
-    pictureFilePath: string,
-    videoFilePath: string,
-    metadata: HeadlineTopicProgramInMetadata,
-  ): Promise<void> {
-    this.logger.debug(
-      `HeadlineTopicProgramMaker.generateProgramVideoFile called`,
-      {
-        audioFilePath,
-        pictureFilePath,
-        videoFilePath,
-        metadata,
-      },
-    );
-    // ffmpeg で動画ファイルを生成する
-    return new Promise<void>((resolve, reject) => {
-      ffmpeg()
-        .input(pictureFilePath)
-        .inputOptions([
-          '-loop 1', // 画像を無限ループさせる（音声の長さに合わせるため）
-        ])
-        .input(audioFilePath)
-        .outputOptions([
-          '-vcodec libx264', // 動画エンコードに libx264 を使用（高い互換性と品質）
-          '-preset ultrafast', // エンコード速度優先のプリセット（ファイルサイズや品質より速度重視）
-          '-threads 8', // エンコード時に使用するスレッド数（8スレッド使用）
-          '-acodec aac', // 音声エンコードに AAC を使用（互換性の高いフォーマット）
-          '-ab 320k', // 音声のビットレートを 320kbps に設定（高品質な音声）
-          '-ac 2', // 音声チャンネル数をステレオ（2チャンネル）に設定
-          '-b:v 1M', // 映像のビットレートを1Mbpsに設定
-          '-r 24', // フレームレートを24fpsに設定
-          '-pix_fmt yuv420p', // ピクセルフォーマットを YUV420 に設定（互換性のため）
-          '-profile:v baseline', // 簡易プロファイルを設定
-          '-shortest', // 出力を最短の入力に合わせる（音声または画像の短い方に合わせる）
-        ])
-        // メタデータの埋め込み
-        .outputOptions('-metadata', `artist=${metadata.artist}`)
-        .outputOptions('-metadata', `album=${metadata.album}`)
-        .outputOptions('-metadata', `album_artist=${metadata.albumArtist}`)
-        .outputOptions('-metadata', `title=${metadata.title}`)
-        .outputOptions('-metadata', `date=${metadata.date}`)
-        .outputOptions('-metadata', `genre=${metadata.genre}`)
-        .outputOptions('-metadata', `language=${metadata.language}`)
-        .outputOptions('-metadata', `filename=${metadata.filename}`)
-        .save(videoFilePath) // エンコード結果を指定したファイルパスに保存
-        .on('start', (commandLine) => {
-          this.logger.log(`動画ファイル生成処理を開始します`);
-          this.logger.debug(`動画ファイル生成処理コマンド: ${commandLine}`);
-        })
-        .on('progress', (progress) => {
-          this.logger.debug(`動画ファイル生成処理中...`, {
-            progress,
-          });
-        })
-        .on('end', () => {
-          this.logger.log(
-            `動画ファイル生成処理が完了しました: ${videoFilePath}`,
-          );
-          resolve();
-        })
-        .on('error', (error) => {
-          this.logger.error(
-            `動画生成処理中にエラーが発生しました: ${error.message}`,
-            {
-              error,
-            },
-          );
-          reject(error);
-        });
-    });
   }
 
   /**

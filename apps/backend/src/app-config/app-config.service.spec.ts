@@ -26,6 +26,8 @@ describe('AppConfigService', () => {
                 OPENAI_API_KEY: 'openai-api-key',
                 OPEN_AI_SUMMARIZATION_MODEL: 'gpt-4o-mini',
                 OPEN_AI_SCRIPT_GENERATION_MODEL: 'gpt-4o-mini',
+                PROGRAM_FILE_GENERATION_TEMP_DIR:
+                  'program-file-generation-temp-dir',
                 HEADLINE_TOPIC_PROGRAM_TARGET_DIR:
                   'headline-topic-program-target-dir',
                 HEADLINE_TOPIC_PROGRAM_BGM_FILE_PATH:
@@ -93,6 +95,16 @@ describe('AppConfigService', () => {
       return 'some-value';
     });
 
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
+  it('PROGRAM_FILE_GENERATION_TEMP_DIR が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'PROGRAM_FILE_GENERATION_TEMP_DIR') return null;
+      return 'some-value';
+    });
     expect(() => new AppConfigService(configService)).toThrow(
       AppConfigValidationError,
     );

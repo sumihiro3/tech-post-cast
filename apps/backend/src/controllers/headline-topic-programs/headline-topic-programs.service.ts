@@ -69,7 +69,6 @@ export class HeadlineTopicProgramsService {
       return program;
     } catch (error) {
       this.logger.error(`エラーが発生しました`, error);
-      // TODO: 独自エラークラスを作成してエラーハンドリングを行う
       throw error;
     }
   }
