@@ -1,10 +1,10 @@
+import { AppConfigService } from '@/app-config/app-config.service';
 import { IQiitaPostsApiClient } from '@/domains/qiita-posts/qiita-posts.api.client.interface';
 import {
   IQiitaPostApiResponse,
   QiitaPostApiResponse,
 } from '@domains/qiita-posts/qiita-posts.entity';
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import axios, { AxiosError, AxiosInstance, isAxiosError } from 'axios';
 import * as dayjs from 'dayjs';
 
@@ -29,11 +29,11 @@ export class QiitaPostsApiClient implements IQiitaPostsApiClient {
   private readonly logger = new Logger(QiitaPostsApiClient.name);
   private apiClient: AxiosInstance;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly appConfig: AppConfigService) {}
 
   getApiClient(): AxiosInstance {
     if (this.apiClient) return this.apiClient;
-    const token = this.configService.get('QIITA_API_ACCESS_TOKEN');
+    const token = this.appConfig.QiitaAccessToken;
     this.apiClient = axios.create({
       baseURL: 'https://qiita.com/api/v2',
       responseType: 'json',
