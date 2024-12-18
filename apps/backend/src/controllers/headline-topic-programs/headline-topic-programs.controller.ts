@@ -47,7 +47,7 @@ export class HeadlineTopicProgramsController {
         await this.headlineTopicProgramsService.createHeadlineTopicProgram(
           programDate,
         );
-      this.logger.log(`ヘッドライントピック番組の生成を開始しました！`, {
+      this.logger.log(`ヘッドライントピック番組の生成が完了しました！`, {
         id: program.id,
         title: program.title,
       });
