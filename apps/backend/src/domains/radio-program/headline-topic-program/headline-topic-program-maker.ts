@@ -55,17 +55,17 @@ export class HeadlineTopicProgramMaker {
     try {
       // 対象の記事を要約する
       const summarizedPosts = await this.summarizePosts(posts);
-      // 「ヘッドライントピック」番組の台本を生成する
+      // ヘッドライントピック番組の台本を生成する
       const script = await this.generateScript(programDate, summarizedPosts);
-      // 「ヘッドライントピック」番組の台本読み上げ音声ファイルを生成する
+      // ヘッドライントピック番組の台本読み上げ音声ファイルを生成する
       const mainAudioPath = await this.generateMainAudioFile(script);
-      // BGM などを組み合わせて「ヘッドライントピック」番組の音声ファイルを生成する
+      // BGM などを組み合わせてヘッドライントピック番組の音声ファイルを生成する
       const generateResult = await this.generateProgramAudioFile(
         script,
         programDate,
         mainAudioPath,
       );
-      // 生成した「ヘッドライントピック」番組の音声ファイルを S3 にアップロードする処理を追加
+      // 生成したヘッドライントピック番組の音声ファイルを S3 にアップロードする処理を追加
       const uploadResult = await this.uploadProgramFiles(
         generateResult.audioFilePath,
         generateResult.videoFilePath,
@@ -78,7 +78,7 @@ export class HeadlineTopicProgramMaker {
       const registeredPosts =
         await this.qiitaPostsRepository.upsertQiitaPosts(posts);
       this.logger.debug(`${registeredPosts.length} 件の記事を登録しました`);
-      // DB に「ヘッドライントピック」番組を登録する
+      // DB にヘッドライントピック番組を登録する
       const program =
         await this.headlineTopicProgramsRepository.createHeadlineTopicProgram(
           programDate,
