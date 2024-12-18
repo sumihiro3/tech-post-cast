@@ -12,3 +12,10 @@ Authorization: Bearer xxxxxxxxxxxffffffffffff
 POST {{baseUrl}}/sample/script
 Content-Type: application/json
 Authorization: Bearer xxxxxxxxxxxffffffffffff
+
+### 
+
+# @name Uploader
+POST {{baseUrl}}/sample/upload
+Content-Type: application/json
+Authorization: Bearer xxxxxxxxxxxffffffffffff

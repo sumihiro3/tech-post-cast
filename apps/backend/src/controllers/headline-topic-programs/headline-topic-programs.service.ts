@@ -6,9 +6,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { HeadlineTopicProgram } from '@prisma/client';
 import { getYesterday, subtractDays } from '@tech-post-cast/commons';
 
-// 「ヘッドライントピック」番組に含める記事の期間
+// ヘッドライントピック番組に含める記事の期間
 const DATE_RANGE = 3;
-// 「ヘッドライントピック」番組に含める記事数
+// ヘッドライントピック番組に含める記事数
 const POPULAR_POSTS_COUNT = 5;
 
 @Injectable()
@@ -22,7 +22,7 @@ export class HeadlineTopicProgramsService {
   ) {}
 
   /**
-   * 「ヘッドライントピック」番組を生成する
+   * ヘッドライントピック番組を生成する
    * @param programDate 番組日
    */
   async createHeadlineTopicProgram(
@@ -57,19 +57,18 @@ export class HeadlineTopicProgramsService {
       this.logger.log(`いいね数が多い記事を取得しました`, {
         postIds: popularPosts.map((post) => post.id),
       });
-      // 「ヘッドライントピック」番組を生成する
-      this.logger.log(`「ヘッドライントピック」番組のファイル生成を開始します`);
+      // ヘッドライントピック番組を生成する
+      this.logger.log(`ヘッドライントピック番組のファイル生成を開始します`);
       const program = await this.headlineTopicProgramMaker.generateProgram(
         programDate,
         popularPosts,
       );
-      this.logger.debug(`「ヘッドライントピック」番組を生成しました`, {
+      this.logger.debug(`ヘッドライントピック番組を生成しました`, {
         program,
       });
       return program;
     } catch (error) {
       this.logger.error(`エラーが発生しました`, error);
-      // TODO: 独自エラークラスを作成してエラーハンドリングを行う
       throw error;
     }
   }

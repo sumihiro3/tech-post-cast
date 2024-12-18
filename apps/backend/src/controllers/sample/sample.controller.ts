@@ -3,10 +3,12 @@ import {
   HeadlineTopicProgramScript,
   PostSummary,
 } from '@domains/radio-program/headline-topic-program';
+import { S3ProgramFileUploader } from '@infrastructure/external-api/aws/s3';
 import { OpenAiApiClient } from '@infrastructure/external-api/openai-api/openai-api.client';
 import { QiitaPostsApiClient } from '@infrastructure/external-api/qiita-api/qiita-posts.api.client';
 import {
   Controller,
+  Inject,
   InternalServerErrorException,
   Logger,
   Post,
@@ -19,6 +21,8 @@ export class SampleController {
   constructor(
     private readonly openAiApiClient: OpenAiApiClient,
     private readonly qiitaPostsApiClient: QiitaPostsApiClient,
+    @Inject('ProgramFileUploader')
+    private readonly s3ProgramFileUploader: S3ProgramFileUploader,
   ) {}
 
   @Post('summary')
@@ -80,5 +84,20 @@ export class SampleController {
       this.logger.error(errorMessage, { error }, error.stack);
       throw new InternalServerErrorException(errorMessage);
     }
+  }
+
+  @Post('upload')
+  async uploadSampleProgram() {
+    this.logger.debug(`SampleController.uploadSampleProgram called`);
+    // ここにファイルアップロード処理を実装する
+    const filePath = 'tmp/script.txt';
+    const result = await this.s3ProgramFileUploader.upload({
+      programId: 'sample-program',
+      programDate: new Date(),
+      bucketName: 'tech-post-cast-program-audio-bucket-develop',
+      uploadPath: 'sample-program/script.txt',
+      filePath,
+    });
+    this.logger.log(`ファイルアップロードが完了しました`, { result });
   }
 }

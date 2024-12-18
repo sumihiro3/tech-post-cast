@@ -1,10 +1,10 @@
+import { AppConfigService } from '@/app-config/app-config.service';
 import { IQiitaPostApiResponse } from '@domains/qiita-posts/qiita-posts.entity';
 import {
   HeadlineTopicProgramScript,
   PostSummary,
 } from '@domains/radio-program/headline-topic-program';
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { getJapaneseDateStringWithWeekday } from '@tech-post-cast/commons';
 import * as fs from 'fs';
 import OpenAI from 'openai';
@@ -21,9 +21,9 @@ export class OpenAiApiClient {
    */
   private openAi: OpenAI;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(private readonly appConfig: AppConfigService) {
     this.openAi = new OpenAI({
-      apiKey: this.configService.get('OPENAI_API_KEY'),
+      apiKey: this.appConfig.OpenAiApiKey,
     });
   }
 
@@ -37,7 +37,7 @@ export class OpenAiApiClient {
     try {
       const systemPrompt = this.getPostSummarySystemPrompt(post);
       const params: OpenAI.Chat.ChatCompletionCreateParams = {
-        model: 'gpt-4o-mini',
+        model: this.appConfig.OpenAiSummarizationModel,
         temperature: 0.8,
         messages: [
           {
@@ -114,7 +114,7 @@ export class OpenAiApiClient {
         posts,
       );
       const params: OpenAI.Chat.ChatCompletionCreateParams = {
-        model: 'gpt-4o-mini',
+        model: this.appConfig.OpenAiScriptGenerationModel,
         temperature: 0.8,
         messages: [
           {
