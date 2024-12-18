@@ -1,19 +1,13 @@
 import { AppConfigService } from '@/app-config/app-config.service';
-import {
-  PutObjectCommand,
-  S3Client,
-  S3ServiceException,
-} from '@aws-sdk/client-s3';
 import { QiitaPostApiResponse } from '@domains/qiita-posts/qiita-posts.entity';
 import { HeadlineTopicProgramsRepository } from '@infrastructure/database/headline-topic-programs/headline-topic-programs.repository';
 import { QiitaPostsRepository } from '@infrastructure/database/qiita-posts/qiita-posts.repository';
 import { OpenAiApiClient } from '@infrastructure/external-api/openai-api/openai-api.client';
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { HeadlineTopicProgram } from '@prisma/client';
 import { formatDate } from '@tech-post-cast/commons';
 import * as ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
-import { readFile } from 'node:fs/promises';
 import * as path from 'path';
 import {
   HeadlineTopicProgramGenerateResult,
@@ -21,6 +15,10 @@ import {
   HeadlineTopicProgramScript,
   ProgramUploadResult,
 } from '.';
+import {
+  IProgramFileUploader,
+  ProgramFileUploadCommand,
+} from '../file-uploader.interface';
 
 @Injectable()
 export class HeadlineTopicProgramMaker {
@@ -33,6 +31,8 @@ export class HeadlineTopicProgramMaker {
     private readonly qiitaPostsRepository: QiitaPostsRepository,
     private readonly openAiApiClient: OpenAiApiClient,
     private readonly headlineTopicProgramsRepository: HeadlineTopicProgramsRepository,
+    @Inject('ProgramFileUploader')
+    private readonly programFileUploader: IProgramFileUploader,
   ) {
     this.outputDir = this.appConfig.HeadlineTopicProgramTargetDir;
   }
@@ -580,57 +580,42 @@ export class HeadlineTopicProgramMaker {
       programDate,
     });
     const bucketName = this.appConfig.ProgramAudioBucketName;
-    try {
-      const client = new S3Client({});
-      const dt = formatDate(programDate, 'YYYYMMDD');
-      const programName = 'headline-topic-program';
-      const objectKeyPrefix = `${programName}/${dt}/${programName}_${Date.now()}`;
-      const urlPrefix = this.appConfig.ProgramAudioFileUrlPrefix;
-      // 音声ファイルを S3 にアップロード
-      const audioUploadCommand = new PutObjectCommand({
-        Bucket: bucketName,
-        Key: `${objectKeyPrefix}.mp3`,
-        Body: await readFile(audioFilePath),
-      });
-      const audioResponse = await client.send(audioUploadCommand);
-      const audioUrl = `${urlPrefix}/${objectKeyPrefix}.mp3`;
-      this.logger.log(`S3 に番組音声ファイルをアップロードしました`, {
-        response: audioResponse,
-        url: audioUrl,
-      });
-      // 動画ファイルを S3 にアップロード
-      const videoUploadCommand = new PutObjectCommand({
-        Bucket: bucketName,
-        Key: `${objectKeyPrefix}.mp4`,
-        Body: await readFile(videoFilePath),
-      });
-      const videoResponse = await client.send(videoUploadCommand);
-      const videoUrl = `${urlPrefix}/${objectKeyPrefix}.mp4`;
-      this.logger.log(`S3 に番組動画ファイルをアップロードしました`, {
-        response: videoResponse,
-        url: videoUrl,
-      });
-      return {
-        audioUrl,
-        videoUrl,
-      };
-    } catch (caught) {
-      if (
-        caught instanceof S3ServiceException &&
-        caught.name === 'EntityTooLarge'
-      ) {
-        this.logger.error(
-          `Error from S3 while uploading object to ${bucketName}. \
-  The object was too large. To upload objects larger than 5GB, use the S3 console (160GB max) \
-  or the multipart upload API (5TB max).`,
-        );
-      } else if (caught instanceof S3ServiceException) {
-        this.logger.error(
-          `Error from S3 while uploading object to ${bucketName}.  ${caught.name}: ${caught.message}`,
-        );
-      } else {
-        throw caught;
-      }
-    }
+    const dt = formatDate(programDate, 'YYYYMMDD');
+    const programId = 'headline-topic-program';
+    const objectKeyPrefix = `${programId}/${dt}/${programId}_${Date.now()}`;
+    // 番組音声ファイルをアップロード
+    const audioFileUploadCommand: ProgramFileUploadCommand = {
+      programId,
+      programDate,
+      bucketName,
+      uploadPath: `${objectKeyPrefix}.mp3`,
+      filePath: audioFilePath,
+    };
+    const audioUrl = await this.programFileUploader.upload(
+      audioFileUploadCommand,
+    );
+    this.logger.log(`番組音声ファイルをアップロードしました`, {
+      uploadCommand: audioFileUploadCommand,
+      audioUrl,
+    });
+    // 動画ファイルをアップロード
+    const videoFileUploadCommand: ProgramFileUploadCommand = {
+      programId,
+      programDate,
+      bucketName,
+      uploadPath: `${objectKeyPrefix}.mp4`,
+      filePath: videoFilePath,
+    };
+    const videoUrl = await this.programFileUploader.upload(
+      videoFileUploadCommand,
+    );
+    this.logger.log(`番組動画ファイルをアップロードしました`, {
+      uploadCommand: videoFileUploadCommand,
+      videoUrl,
+    });
+    return {
+      audioUrl,
+      videoUrl,
+    };
   }
 }
