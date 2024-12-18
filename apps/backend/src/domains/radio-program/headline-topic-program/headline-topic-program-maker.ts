@@ -1,3 +1,4 @@
+import { AppConfigService } from '@/app-config/app-config.service';
 import {
   PutObjectCommand,
   S3Client,
@@ -8,7 +9,6 @@ import { HeadlineTopicProgramsRepository } from '@infrastructure/database/headli
 import { QiitaPostsRepository } from '@infrastructure/database/qiita-posts/qiita-posts.repository';
 import { OpenAiApiClient } from '@infrastructure/external-api/openai-api/openai-api.client';
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { HeadlineTopicProgram } from '@prisma/client';
 import { formatDate } from '@tech-post-cast/commons';
 import * as ffmpeg from 'fluent-ffmpeg';
@@ -29,14 +29,12 @@ export class HeadlineTopicProgramMaker {
   private readonly outputDir;
 
   constructor(
-    private readonly configService: ConfigService,
+    private readonly appConfig: AppConfigService,
     private readonly qiitaPostsRepository: QiitaPostsRepository,
     private readonly openAiApiClient: OpenAiApiClient,
     private readonly headlineTopicProgramsRepository: HeadlineTopicProgramsRepository,
   ) {
-    this.outputDir = this.configService.get<string>(
-      'HEADLINE_TOPIC_PROGRAM_TARGET_DIR',
-    );
+    this.outputDir = this.appConfig.HeadlineTopicProgramTargetDir;
   }
 
   /**
@@ -191,15 +189,9 @@ export class HeadlineTopicProgramMaker {
         mainAudioPath,
       },
     );
-    const bgmPath = this.configService.get<string>(
-      'HEADLINE_TOPIC_PROGRAM_BGM_FILE_PATH',
-    );
-    const openingPath = this.configService.get<string>(
-      'HEADLINE_TOPIC_PROGRAM_OPENING_FILE_PATH',
-    );
-    const endingPath = this.configService.get<string>(
-      'HEADLINE_TOPIC_PROGRAM_ENDING_FILE_PATH',
-    );
+    const bgmPath = this.appConfig.HeadlineTopicProgramBgmFilePath;
+    const openingPath = this.appConfig.HeadlineTopicProgramOpeningFilePath;
+    const endingPath = this.appConfig.HeadlineTopicProgramEndingFilePath;
     const now = new Date();
     const audioFileName = `headline-topic-program_${now.getTime()}.mp3`;
     const audioFilePath = `${this.outputDir}/${audioFileName}`;
@@ -220,9 +212,7 @@ export class HeadlineTopicProgramMaker {
       metadata,
     );
     // 番組音声ファイルから動画ファイル（MP4）を生成する
-    const pictureFilePath = this.configService.get<string>(
-      'HEADLINE_TOPIC_PROGRAM_PICTURE_FILE_PATH',
-    );
+    const pictureFilePath = this.appConfig.HeadlineTopicProgramPictureFilePath;
     const videoFileName = `headline-topic-program_${now.getTime()}.mp4`;
     const videoFilePath = `${this.outputDir}/${videoFileName}`;
     metadata.filename = videoFileName;
@@ -589,17 +579,13 @@ export class HeadlineTopicProgramMaker {
       videoFilePath,
       programDate,
     });
-    const bucketName = this.configService.get<string>(
-      'PROGRAM_AUDIO_BUCKET_NAME',
-    );
+    const bucketName = this.appConfig.ProgramAudioBucketName;
     try {
       const client = new S3Client({});
       const dt = formatDate(programDate, 'YYYYMMDD');
       const programName = 'headline-topic-program';
       const objectKeyPrefix = `${programName}/${dt}/${programName}_${Date.now()}`;
-      const urlPrefix = this.configService.get<string>(
-        'PROGRAM_AUDIO_FILE_URL_PREFIX',
-      );
+      const urlPrefix = this.appConfig.ProgramAudioFileUrlPrefix;
       // 音声ファイルを S3 にアップロード
       const audioUploadCommand = new PutObjectCommand({
         Bucket: bucketName,
