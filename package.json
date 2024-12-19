@@ -32,5 +32,9 @@
     "test-commons": "yarn workspace @tech-post-cast/commons run test",
     "test-database": "yarn workspace @tech-post-cast/database run test",
     "test-infra": "yarn workspace @tech-post-cast/infra run test"
+  },
+  "packageManager": "yarn@1.22.19+sha1.4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447",
+  "dependencies": {
+    "nuxt": "^3.14.1592"
   }
 }
