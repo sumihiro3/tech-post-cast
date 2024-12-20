@@ -34,7 +34,7 @@ const backendStack = new TechPostCastBackendStack(
   { env },
   stageConfig,
 );
-// TODO LINE Bot Backend Stack
+// LINE Bot Backend Stack
 const lineBotBackendStack = new TechPostCastLineBotBackendStack(
   app,
   `${stageConfig.stackName}LineBot`,
@@ -42,13 +42,21 @@ const lineBotBackendStack = new TechPostCastLineBotBackendStack(
   stageConfig,
   backendStack,
 );
+// LP Frontend Stack
+// const lpFrontendStack = new TechPostCastLpFrontendStack(
+//   app,
+//   `${stageConfig.stackName}LpFrontend`,
+//   { env },
+//   stageConfig,
+// );
 
 // Tag 付け
 cdk.Tags.of(app).add('ServiceName', 'TechPostCast');
 cdk.Tags.of(backendStack).add('Environment', stageConfig.name);
 cdk.Tags.of(lineBotBackendStack).add('Environment', stageConfig.name);
+// cdk.Tags.of(lp).add('Environment', stageConfig.name);
 
-console.log(`[${stageConfig.nameJp}] の環境構築が完了しました`);
+// console.log(`[${stageConfig.nameJp}] の環境構築が完了しました`);
 
 /**
  * 環境別設定を取得する
