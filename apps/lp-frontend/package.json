@@ -10,9 +10,9 @@
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
+    "serve": "npx serve .output/public",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare",
-    "serve": "npx serve .output/public"
+    "postinstall": "nuxt prepare"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
