@@ -6,6 +6,9 @@ import { ConfigService } from '@nestjs/config';
 export class AppConfigService {
   constructor(private readonly config: ConfigService) {
     // 検証
+    if (!this.V1ApiKey) {
+      throw new AppConfigValidationError('V1_API_KEY が設定されていません');
+    }
     if (!this.DatabaseUrl) {
       throw new AppConfigValidationError('DATABASE_URL が設定されていません');
     }
@@ -67,6 +70,15 @@ export class AppConfigService {
         'PROGRAM_AUDIO_FILE_URL_PREFIX が設定されていません',
       );
     }
+  }
+
+  /**
+   * API Key
+   * for ApiV1
+   * @returns API Key
+   */
+  get V1ApiKey(): string {
+    return this.config.get<string>('V1_API_KEY');
   }
 
   /**
