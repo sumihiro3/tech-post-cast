@@ -1,4 +1,12 @@
 <script setup lang="ts">
+definePageMeta({
+  validate: async (route) => {
+    const id = Number(route.params.id)
+    // Check if the id is made up of digits
+    return !(id > 100)
+  }
+})
+
 const route = useRoute()
 
 // When accessing /posts/1, route.params.id will be 1
