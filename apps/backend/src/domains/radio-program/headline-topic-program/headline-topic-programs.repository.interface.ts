@@ -13,6 +13,14 @@ export interface IHeadlineTopicProgramsRepository {
   findOne(id: string): Promise<HeadlineTopicProgram>;
 
   /**
+   * ヘッドライントピック番組を取得する
+   * @param page ページ番号
+   * @param limit 1 ページあたりの件数
+   * @returns ヘッドライントピック番組一覧
+   */
+  find(page: number, limit: number): Promise<HeadlineTopicProgram[]>;
+
+  /**
    * ヘッドライントピック番組を新規登録する
    * @param programDate 番組日時
    * @param posts 番組での紹介記事 ID 一覧

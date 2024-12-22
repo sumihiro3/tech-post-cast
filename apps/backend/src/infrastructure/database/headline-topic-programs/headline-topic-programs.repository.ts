@@ -35,6 +35,26 @@ export class HeadlineTopicProgramsRepository
   }
 
   /**
+   * ヘッドライントピック番組を取得する
+   * @param page ページ番号
+   * @param limit 1 ページあたりの件数
+   * @returns ヘッドライントピック番組一覧
+   */
+  async find(page: number, limit: number): Promise<HeadlineTopicProgram[]> {
+    this.logger.debug(`HeadlineTopicProgramsRepository.find called`, {
+      page,
+      limit,
+    });
+    const result = await this.prisma.headlineTopicProgram.findMany({
+      take: limit,
+      skip: (page - 1) * limit,
+      orderBy: { createdAt: 'desc' },
+    });
+    this.logger.debug(`ヘッドライントピック番組を取得しました`, { result });
+    return result;
+  }
+
+  /**
    * ヘッドライントピック番組を新規登録する
    * @param programDate 番組日時
    * @param posts 番組での紹介記事 一覧
