@@ -1,4 +1,61 @@
-import { Injectable } from '@nestjs/common';
+import { HeadlineTopicProgramFindError } from '@/types/errors/headline-topic-program.error';
+import { IHeadlineTopicProgramsRepository } from '@domains/radio-program/headline-topic-program/headline-topic-programs.repository.interface';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { HeadlineTopicProgram } from '@prisma/client';
+import { HeadlineTopicProgramsFindRequestDto } from './dto';
 
 @Injectable()
-export class ApiV1Service {}
+export class ApiV1Service {
+  private readonly logger = new Logger(ApiV1Service.name);
+
+  constructor(
+    @Inject('HeadlineTopicProgramsRepository')
+    private readonly headlineTopicProgramsRepository: IHeadlineTopicProgramsRepository,
+  ) {}
+
+  /**
+   * 指定 ID のヘッドライントピック番組を取得する
+   * @param id ヘッドライントピック番組 ID
+   * @returns ヘッドライントピック番組
+   */
+  async getHeadlineTopicProgram(id: string): Promise<HeadlineTopicProgram> {
+    this.logger.debug('ApiV1Service.getHeadlineTopicProgram called', { id });
+    try {
+      const result = await this.headlineTopicProgramsRepository.findOne(id);
+      this.logger.debug(
+        `指定のヘッドライントピック番組 [${id}] を取得しました`,
+        {
+          result,
+        },
+      );
+      return result;
+    } catch (error) {
+      const errorMessage = 'ヘッドライントピック番組の取得に失敗しました';
+      this.logger.error(errorMessage, error, error.stack);
+      throw new HeadlineTopicProgramFindError(errorMessage, { cause: error });
+    }
+  }
+
+  /**
+   * ヘッドライントピック番組を取得する
+   * @param dto リクエスト DTO
+   * @returns ヘッドライントピック番組
+   */
+  async getHeadlineTopicPrograms(
+    dto: HeadlineTopicProgramsFindRequestDto,
+  ): Promise<HeadlineTopicProgram[]> {
+    this.logger.debug('ApiV1Service.getHeadlineTopicPrograms called', { dto });
+    try {
+      const result = await this.headlineTopicProgramsRepository.find(
+        dto.page,
+        dto.limit,
+      );
+      this.logger.debug('ヘッドライントピック番組を取得しました', { result });
+      return result;
+    } catch (error) {
+      const errorMessage = 'ヘッドライントピック番組の取得に失敗しました';
+      this.logger.error(errorMessage, error, error.stack);
+      throw new HeadlineTopicProgramFindError(errorMessage, { cause: error });
+    }
+  }
+}

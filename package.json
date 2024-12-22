@@ -11,6 +11,7 @@
   "scripts": {
     "start-backend": "yarn workspace @tech-post-cast/backend run start:dev",
     "start-line-bot-backend": "yarn workspace @tech-post-cast/line-bot-backend run start:dev",
+    "start-lp-frontend": "yarn workspace @tech-post-cast/lp-frontend run serve",
     "build-all": "yarn build-commons && yarn build-database && yarn build-backend && yarn build-line-bot-backend",
     "build-for-backend": "yarn build-commons && yarn build-database && yarn build-backend",
     "build-for-line-bot-backend": "yarn build-commons && yarn build-database && yarn build-line-bot-backend",
@@ -18,6 +19,7 @@
     "build-database": "yarn workspace @tech-post-cast/database run build",
     "build-backend": "yarn workspace @tech-post-cast/backend run build",
     "build-line-bot-backend": "yarn workspace @tech-post-cast/line-bot-backend run build",
+    "generate-lp-frontend": "yarn workspace @tech-post-cast/lp-frontend run generate",
     "build-infra": "yarn workspace @tech-post-cast/infra run build",
     "diff-infra": "yarn workspace @tech-post-cast/infra run diff:dev",
     "deploy-infra": "yarn workspace @tech-post-cast/infra run deploy:dev",
