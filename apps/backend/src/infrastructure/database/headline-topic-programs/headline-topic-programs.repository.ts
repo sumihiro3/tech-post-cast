@@ -35,6 +35,19 @@ export class HeadlineTopicProgramsRepository
   }
 
   /**
+   * ヘッドライントピック番組の件数を取得する
+   * @returns ヘッドライントピック番組の件数
+   */
+  async count(): Promise<number> {
+    this.logger.debug(`HeadlineTopicProgramsRepository.count called`);
+    const result = await this.prisma.headlineTopicProgram.count();
+    this.logger.debug(`ヘッドライントピック番組の件数を取得しました`, {
+      result,
+    });
+    return result;
+  }
+
+  /**
    * ヘッドライントピック番組を取得する
    * @param page ページ番号
    * @param limit 1 ページあたりの件数

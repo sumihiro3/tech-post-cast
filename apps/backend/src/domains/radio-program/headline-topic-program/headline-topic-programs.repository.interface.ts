@@ -13,6 +13,12 @@ export interface IHeadlineTopicProgramsRepository {
   findOne(id: string): Promise<HeadlineTopicProgram>;
 
   /**
+   * ヘッドライントピック番組の件数を取得する
+   * @returns ヘッドライントピック番組の件数
+   */
+  count(): Promise<number>;
+
+  /**
    * ヘッドライントピック番組を取得する
    * @param page ページ番号
    * @param limit 1 ページあたりの件数
