@@ -42,9 +42,42 @@ export class ApiV1Controller {
     });
     try {
       const result = await this.service.getHeadlineTopicProgram(id);
+      this.logger.log(`指定のヘッドライントピック番組 [${id}] を取得しました`, {
+        title: result.title,
+        createdAt: result.createdAt,
+      });
       return result;
     } catch (error) {
       const errorMessage = 'ヘッドライントピック番組の取得に失敗しました';
+      this.logger.error(errorMessage, error, error.stack);
+      throw new InternalServerErrorException(errorMessage);
+    }
+  }
+
+  @Get('headline-topic-programs/count')
+  @ApiOperation({
+    operationId: 'ApiV1_getHeadlineTopicProgramsCounts',
+    summary: 'ヘッドライントピック番組の件数を取得する',
+  })
+  @ApiHeader({
+    name: 'x-api-key',
+    description: 'API Key',
+    example: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    required: true,
+  })
+  @ApiResponse({ status: 200, description: '処理成功' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @UseGuards(ApiV1ApiKeyGuard)
+  async getHeadlineTopicProgramsCounts(): Promise<number> {
+    this.logger.debug('ApiV1Controller.getHeadlineTopicProgramsCounts called');
+    try {
+      const result = await this.service.getHeadlineTopicProgramsCounts();
+      this.logger.log('ヘッドライントピック番組の件数を取得しました', {
+        count: result,
+      });
+      return result;
+    } catch (error) {
+      const errorMessage = 'ヘッドライントピック番組の件数の取得に失敗しました';
       this.logger.error(errorMessage, error, error.stack);
       throw new InternalServerErrorException(errorMessage);
     }
@@ -72,6 +105,9 @@ export class ApiV1Controller {
     });
     try {
       const result = await this.service.getHeadlineTopicPrograms(dto);
+      this.logger.log('ヘッドライントピック番組を取得しました', {
+        count: result.length,
+      });
       return result;
     } catch (error) {
       const errorMessage = 'ヘッドライントピック番組の取得に失敗しました';

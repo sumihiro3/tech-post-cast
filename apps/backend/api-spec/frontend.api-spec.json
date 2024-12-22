@@ -1,0 +1,139 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/v1/headline-topic-programs/{id}": {
+      "get": {
+        "operationId": "ApiV1_getHeadlineTopicProgram",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "description": "API Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "処理成功"
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "summary": "指定のヘッドライントピック番組を取得する",
+        "tags": [
+          "ApiV1"
+        ]
+      }
+    },
+    "/api/v1/headline-topic-programs/count": {
+      "get": {
+        "operationId": "ApiV1_getHeadlineTopicProgramsCounts",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "description": "API Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "処理成功"
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "summary": "ヘッドライントピック番組の件数を取得する",
+        "tags": [
+          "ApiV1"
+        ]
+      }
+    },
+    "/api/v1/headline-topic-programs": {
+      "get": {
+        "operationId": "ApiV1_getHeadlineTopicPrograms",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "description": "API Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeadlineTopicProgramsFindRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "処理成功"
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "summary": "ヘッドライントピック番組の一覧を取得する",
+        "tags": [
+          "ApiV1"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "TechPostCast APIs",
+    "description": "API document for TechPostCast APIs",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "HeadlineTopicProgramsFindRequestDto": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "number",
+            "description": "ページあたりに取得する番組の数",
+            "example": 10,
+            "default": 10
+          },
+          "page": {
+            "type": "number",
+            "description": "ページ番号",
+            "example": 0,
+            "default": 1
+          }
+        },
+        "required": [
+          "limit"
+        ]
+      }
+    }
+  }
+}

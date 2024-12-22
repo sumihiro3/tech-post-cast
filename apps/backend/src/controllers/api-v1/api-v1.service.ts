@@ -37,6 +37,25 @@ export class ApiV1Service {
   }
 
   /**
+   * ヘッドライントピック番組の件数を取得する
+   * @returns ヘッドライントピック番組の件数
+   */
+  async getHeadlineTopicProgramsCounts(): Promise<number> {
+    this.logger.debug('ApiV1Service.getHeadlineTopicProgramsCounts called');
+    try {
+      const result = await this.headlineTopicProgramsRepository.count();
+      this.logger.debug('ヘッドライントピック番組の件数を取得しました', {
+        result,
+      });
+      return result;
+    } catch (error) {
+      const errorMessage = 'ヘッドライントピック番組の件数の取得に失敗しました';
+      this.logger.error(errorMessage, error, error.stack);
+      throw new HeadlineTopicProgramFindError(errorMessage, { cause: error });
+    }
+  }
+
+  /**
    * ヘッドライントピック番組を取得する
    * @param dto リクエスト DTO
    * @returns ヘッドライントピック番組
