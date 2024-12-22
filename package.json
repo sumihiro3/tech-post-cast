@@ -29,6 +29,7 @@
     "generate-prisma": "yarn workspace @tech-post-cast/database run prisma:generate",
     "create-migration-prisma": "yarn workspace @tech-post-cast/database run prisma:create-migration",
     "deploy-migration-prisma": "yarn workspace @tech-post-cast/database run prisma:deploy-migration",
+    "generate:api-client": "openapi-generator-cli generate",
     "test": "yarn test-backend",
     "test-backend": "yarn workspace @tech-post-cast/backend run test",
     "test-commons": "yarn workspace @tech-post-cast/commons run test",
@@ -37,6 +38,6 @@
   },
   "packageManager": "yarn@1.22.19+sha1.4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447",
   "dependencies": {
-    "nuxt": "^3.14.1592"
+    "@openapitools/openapi-generator-cli": "^2.15.3"
   }
 }
