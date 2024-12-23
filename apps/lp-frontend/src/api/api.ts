@@ -26,6 +26,25 @@ import { BASE_PATH, COLLECTION_FORMATS, BaseAPI, RequiredError, operationServerM
 /**
  * 
  * @export
+ * @interface HeadlineTopicProgramDto
+ */
+export interface HeadlineTopicProgramDto {
+    /**
+     * 番組ID
+     * @type {string}
+     * @memberof HeadlineTopicProgramDto
+     */
+    'id': string;
+    /**
+     * タイトル
+     * @type {string}
+     * @memberof HeadlineTopicProgramDto
+     */
+    'title': string;
+}
+/**
+ * 
+ * @export
  * @interface HeadlineTopicProgramsFindRequestDto
  */
 export interface HeadlineTopicProgramsFindRequestDto {
@@ -188,7 +207,7 @@ export const ApiV1ApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async apiV1GetHeadlineTopicProgram(id: string, xApiKey: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+        async apiV1GetHeadlineTopicProgram(id: string, xApiKey: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<HeadlineTopicProgramDto>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.apiV1GetHeadlineTopicProgram(id, xApiKey, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['ApiV1Api.apiV1GetHeadlineTopicProgram']?.[localVarOperationServerIndex]?.url;
@@ -239,7 +258,7 @@ export const ApiV1ApiFactory = function (configuration?: Configuration, basePath
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        apiV1GetHeadlineTopicProgram(id: string, xApiKey: string, options?: RawAxiosRequestConfig): AxiosPromise<void> {
+        apiV1GetHeadlineTopicProgram(id: string, xApiKey: string, options?: RawAxiosRequestConfig): AxiosPromise<HeadlineTopicProgramDto> {
             return localVarFp.apiV1GetHeadlineTopicProgram(id, xApiKey, options).then((request) => request(axios, basePath));
         },
         /**
