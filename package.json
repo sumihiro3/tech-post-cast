@@ -29,6 +29,7 @@
     "generate-prisma": "yarn workspace @tech-post-cast/database run prisma:generate",
     "create-migration-prisma": "yarn workspace @tech-post-cast/database run prisma:create-migration",
     "deploy-migration-prisma": "yarn workspace @tech-post-cast/database run prisma:deploy-migration",
+    "generate:api-spec": "yarn workspace @tech-post-cast/backend generate:api-spec",
     "generate:api-client": "openapi-generator-cli generate",
     "test": "yarn test-backend",
     "test-backend": "yarn workspace @tech-post-cast/backend run test",
