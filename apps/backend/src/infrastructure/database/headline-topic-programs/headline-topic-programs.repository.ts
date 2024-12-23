@@ -5,7 +5,10 @@ import {
 import { IHeadlineTopicProgramsRepository } from '@domains/radio-program/headline-topic-program/headline-topic-programs.repository.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { HeadlineTopicProgram, Prisma, QiitaPost } from '@prisma/client';
-import { PrismaService } from '@tech-post-cast/database';
+import {
+  HeadlineTopicProgramWithQiitaPosts,
+  PrismaService,
+} from '@tech-post-cast/database';
 
 /**
  * IHeadlineTopicProgramsRepository の実装
@@ -23,10 +26,11 @@ export class HeadlineTopicProgramsRepository
    * @param id ヘッドライントピック番組 ID
    * @returns ヘッドライントピック番組
    */
-  async findOne(id: string): Promise<HeadlineTopicProgram> {
+  async findOne(id: string): Promise<HeadlineTopicProgramWithQiitaPosts> {
     this.logger.debug(`HeadlineTopicProgramsRepository.findOne called`, { id });
     const result = await this.prisma.headlineTopicProgram.findUnique({
       where: { id },
+      include: { posts: true },
     });
     this.logger.debug(`指定のヘッドライントピック番組 [${id}] を取得しました`, {
       result,

@@ -25,7 +25,14 @@
         ],
         "responses": {
           "200": {
-            "description": "処理成功"
+            "description": "処理成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeadlineTopicProgramDto"
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad request"
@@ -114,6 +121,25 @@
   "servers": [],
   "components": {
     "schemas": {
+      "HeadlineTopicProgramDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "番組ID",
+            "example": "sample-program-id"
+          },
+          "title": {
+            "type": "string",
+            "description": "タイトル",
+            "example": "サンプル番組"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ]
+      },
       "HeadlineTopicProgramsFindRequestDto": {
         "type": "object",
         "properties": {

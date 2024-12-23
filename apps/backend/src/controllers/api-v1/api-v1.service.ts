@@ -2,6 +2,7 @@ import { HeadlineTopicProgramFindError } from '@/types/errors/headline-topic-pro
 import { IHeadlineTopicProgramsRepository } from '@domains/radio-program/headline-topic-program/headline-topic-programs.repository.interface';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { HeadlineTopicProgram } from '@prisma/client';
+import { HeadlineTopicProgramWithQiitaPosts } from '@tech-post-cast/database';
 import { HeadlineTopicProgramsFindRequestDto } from './dto';
 
 @Injectable()
@@ -18,7 +19,9 @@ export class ApiV1Service {
    * @param id ヘッドライントピック番組 ID
    * @returns ヘッドライントピック番組
    */
-  async getHeadlineTopicProgram(id: string): Promise<HeadlineTopicProgram> {
+  async getHeadlineTopicProgram(
+    id: string,
+  ): Promise<HeadlineTopicProgramWithQiitaPosts> {
     this.logger.debug('ApiV1Service.getHeadlineTopicProgram called', { id });
     try {
       const result = await this.headlineTopicProgramsRepository.findOne(id);
