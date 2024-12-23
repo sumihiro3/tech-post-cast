@@ -76,11 +76,11 @@ export const ApiV1ApiAxiosParamCreator = function (configuration?: Configuration
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        apiV1GetHeadlineTopicProgram: async (id: string, xApiKey: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        getHeadlineTopicProgram: async (id: string, xApiKey: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'id' is not null or undefined
-            assertParamExists('apiV1GetHeadlineTopicProgram', 'id', id)
+            assertParamExists('getHeadlineTopicProgram', 'id', id)
             // verify required parameter 'xApiKey' is not null or undefined
-            assertParamExists('apiV1GetHeadlineTopicProgram', 'xApiKey', xApiKey)
+            assertParamExists('getHeadlineTopicProgram', 'xApiKey', xApiKey)
             const localVarPath = `/api/v1/headline-topic-programs/{id}`
                 .replace(`{${"id"}}`, encodeURIComponent(String(id)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
@@ -117,11 +117,11 @@ export const ApiV1ApiAxiosParamCreator = function (configuration?: Configuration
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        apiV1GetHeadlineTopicPrograms: async (xApiKey: string, headlineTopicProgramsFindRequestDto: HeadlineTopicProgramsFindRequestDto, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        getHeadlineTopicProgramList: async (xApiKey: string, headlineTopicProgramsFindRequestDto: HeadlineTopicProgramsFindRequestDto, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'xApiKey' is not null or undefined
-            assertParamExists('apiV1GetHeadlineTopicPrograms', 'xApiKey', xApiKey)
+            assertParamExists('getHeadlineTopicProgramList', 'xApiKey', xApiKey)
             // verify required parameter 'headlineTopicProgramsFindRequestDto' is not null or undefined
-            assertParamExists('apiV1GetHeadlineTopicPrograms', 'headlineTopicProgramsFindRequestDto', headlineTopicProgramsFindRequestDto)
+            assertParamExists('getHeadlineTopicProgramList', 'headlineTopicProgramsFindRequestDto', headlineTopicProgramsFindRequestDto)
             const localVarPath = `/api/v1/headline-topic-programs`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -159,9 +159,9 @@ export const ApiV1ApiAxiosParamCreator = function (configuration?: Configuration
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        apiV1GetHeadlineTopicProgramsCounts: async (xApiKey: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        getHeadlineTopicProgramsCount: async (xApiKey: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'xApiKey' is not null or undefined
-            assertParamExists('apiV1GetHeadlineTopicProgramsCounts', 'xApiKey', xApiKey)
+            assertParamExists('getHeadlineTopicProgramsCount', 'xApiKey', xApiKey)
             const localVarPath = `/api/v1/headline-topic-programs/count`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -207,10 +207,10 @@ export const ApiV1ApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async apiV1GetHeadlineTopicProgram(id: string, xApiKey: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<HeadlineTopicProgramDto>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.apiV1GetHeadlineTopicProgram(id, xApiKey, options);
+        async getHeadlineTopicProgram(id: string, xApiKey: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<HeadlineTopicProgramDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getHeadlineTopicProgram(id, xApiKey, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['ApiV1Api.apiV1GetHeadlineTopicProgram']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['ApiV1Api.getHeadlineTopicProgram']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -221,10 +221,10 @@ export const ApiV1ApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async apiV1GetHeadlineTopicPrograms(xApiKey: string, headlineTopicProgramsFindRequestDto: HeadlineTopicProgramsFindRequestDto, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.apiV1GetHeadlineTopicPrograms(xApiKey, headlineTopicProgramsFindRequestDto, options);
+        async getHeadlineTopicProgramList(xApiKey: string, headlineTopicProgramsFindRequestDto: HeadlineTopicProgramsFindRequestDto, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getHeadlineTopicProgramList(xApiKey, headlineTopicProgramsFindRequestDto, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['ApiV1Api.apiV1GetHeadlineTopicPrograms']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['ApiV1Api.getHeadlineTopicProgramList']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -234,10 +234,10 @@ export const ApiV1ApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async apiV1GetHeadlineTopicProgramsCounts(xApiKey: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.apiV1GetHeadlineTopicProgramsCounts(xApiKey, options);
+        async getHeadlineTopicProgramsCount(xApiKey: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getHeadlineTopicProgramsCount(xApiKey, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['ApiV1Api.apiV1GetHeadlineTopicProgramsCounts']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['ApiV1Api.getHeadlineTopicProgramsCount']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
     }
@@ -258,8 +258,8 @@ export const ApiV1ApiFactory = function (configuration?: Configuration, basePath
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        apiV1GetHeadlineTopicProgram(id: string, xApiKey: string, options?: RawAxiosRequestConfig): AxiosPromise<HeadlineTopicProgramDto> {
-            return localVarFp.apiV1GetHeadlineTopicProgram(id, xApiKey, options).then((request) => request(axios, basePath));
+        getHeadlineTopicProgram(id: string, xApiKey: string, options?: RawAxiosRequestConfig): AxiosPromise<HeadlineTopicProgramDto> {
+            return localVarFp.getHeadlineTopicProgram(id, xApiKey, options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -269,8 +269,8 @@ export const ApiV1ApiFactory = function (configuration?: Configuration, basePath
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        apiV1GetHeadlineTopicPrograms(xApiKey: string, headlineTopicProgramsFindRequestDto: HeadlineTopicProgramsFindRequestDto, options?: RawAxiosRequestConfig): AxiosPromise<void> {
-            return localVarFp.apiV1GetHeadlineTopicPrograms(xApiKey, headlineTopicProgramsFindRequestDto, options).then((request) => request(axios, basePath));
+        getHeadlineTopicProgramList(xApiKey: string, headlineTopicProgramsFindRequestDto: HeadlineTopicProgramsFindRequestDto, options?: RawAxiosRequestConfig): AxiosPromise<void> {
+            return localVarFp.getHeadlineTopicProgramList(xApiKey, headlineTopicProgramsFindRequestDto, options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -279,8 +279,8 @@ export const ApiV1ApiFactory = function (configuration?: Configuration, basePath
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        apiV1GetHeadlineTopicProgramsCounts(xApiKey: string, options?: RawAxiosRequestConfig): AxiosPromise<void> {
-            return localVarFp.apiV1GetHeadlineTopicProgramsCounts(xApiKey, options).then((request) => request(axios, basePath));
+        getHeadlineTopicProgramsCount(xApiKey: string, options?: RawAxiosRequestConfig): AxiosPromise<void> {
+            return localVarFp.getHeadlineTopicProgramsCount(xApiKey, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -301,8 +301,8 @@ export class ApiV1Api extends BaseAPI {
      * @throws {RequiredError}
      * @memberof ApiV1Api
      */
-    public apiV1GetHeadlineTopicProgram(id: string, xApiKey: string, options?: RawAxiosRequestConfig) {
-        return ApiV1ApiFp(this.configuration).apiV1GetHeadlineTopicProgram(id, xApiKey, options).then((request) => request(this.axios, this.basePath));
+    public getHeadlineTopicProgram(id: string, xApiKey: string, options?: RawAxiosRequestConfig) {
+        return ApiV1ApiFp(this.configuration).getHeadlineTopicProgram(id, xApiKey, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -314,8 +314,8 @@ export class ApiV1Api extends BaseAPI {
      * @throws {RequiredError}
      * @memberof ApiV1Api
      */
-    public apiV1GetHeadlineTopicPrograms(xApiKey: string, headlineTopicProgramsFindRequestDto: HeadlineTopicProgramsFindRequestDto, options?: RawAxiosRequestConfig) {
-        return ApiV1ApiFp(this.configuration).apiV1GetHeadlineTopicPrograms(xApiKey, headlineTopicProgramsFindRequestDto, options).then((request) => request(this.axios, this.basePath));
+    public getHeadlineTopicProgramList(xApiKey: string, headlineTopicProgramsFindRequestDto: HeadlineTopicProgramsFindRequestDto, options?: RawAxiosRequestConfig) {
+        return ApiV1ApiFp(this.configuration).getHeadlineTopicProgramList(xApiKey, headlineTopicProgramsFindRequestDto, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -326,8 +326,8 @@ export class ApiV1Api extends BaseAPI {
      * @throws {RequiredError}
      * @memberof ApiV1Api
      */
-    public apiV1GetHeadlineTopicProgramsCounts(xApiKey: string, options?: RawAxiosRequestConfig) {
-        return ApiV1ApiFp(this.configuration).apiV1GetHeadlineTopicProgramsCounts(xApiKey, options).then((request) => request(this.axios, this.basePath));
+    public getHeadlineTopicProgramsCount(xApiKey: string, options?: RawAxiosRequestConfig) {
+        return ApiV1ApiFp(this.configuration).getHeadlineTopicProgramsCount(xApiKey, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

@@ -26,7 +26,7 @@ export class ApiV1Controller {
 
   @Get('headline-topic-programs/:id')
   @ApiOperation({
-    operationId: 'ApiV1_getHeadlineTopicProgram',
+    operationId: 'getHeadlineTopicProgram',
     summary: '指定のヘッドライントピック番組を取得する',
   })
   @ApiHeader({
@@ -73,7 +73,7 @@ export class ApiV1Controller {
 
   @Get('headline-topic-programs/count')
   @ApiOperation({
-    operationId: 'ApiV1_getHeadlineTopicProgramsCounts',
+    operationId: 'getHeadlineTopicProgramsCount',
     summary: 'ヘッドライントピック番組の件数を取得する',
   })
   @ApiHeader({
@@ -102,7 +102,7 @@ export class ApiV1Controller {
 
   @Get('headline-topic-programs')
   @ApiOperation({
-    operationId: 'ApiV1_getHeadlineTopicPrograms',
+    operationId: 'getHeadlineTopicProgramList',
     summary: 'ヘッドライントピック番組の一覧を取得する',
   })
   @ApiHeader({

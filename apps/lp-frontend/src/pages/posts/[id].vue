@@ -52,7 +52,7 @@ const {
 } = await useAsyncData<HeadlineTopicProgramDto>(
   `program:${programId}`,
   async () => {
-    const { data: dto } = await $apiV1.apiV1GetHeadlineTopicProgram(
+    const { data: dto } = await $apiV1.getHeadlineTopicProgram(
       programId,
       apiKey,
     );
