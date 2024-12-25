@@ -1,7 +1,10 @@
 /**
  * ヘッドライントピック番組の番組ID一覧を取得する
+ * @returns ヘッドライントピック番組の番組ID一覧
  */
-export default async function useGetHeadlineTopicProgramIds() {
+export default async function useGetHeadlineTopicProgramIds(): Promise<
+  string[]
+> {
   console.debug(`useGetHeadlineTopicProgramIds called`);
   const { $apiV1, $config } = useNuxtApp();
   const token = $config.public.apiAccessToken;
