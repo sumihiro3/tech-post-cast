@@ -85,15 +85,15 @@ export const ApiV1ApiAxiosParamCreator = function (configuration?: Configuration
          * 
          * @summary 指定のヘッドライントピック番組を取得する
          * @param {string} id 
-         * @param {string} xApiKey API Key
+         * @param {string} authorization Bearer Token
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getHeadlineTopicProgram: async (id: string, xApiKey: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        getHeadlineTopicProgram: async (id: string, authorization: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'id' is not null or undefined
             assertParamExists('getHeadlineTopicProgram', 'id', id)
-            // verify required parameter 'xApiKey' is not null or undefined
-            assertParamExists('getHeadlineTopicProgram', 'xApiKey', xApiKey)
+            // verify required parameter 'authorization' is not null or undefined
+            assertParamExists('getHeadlineTopicProgram', 'authorization', authorization)
             const localVarPath = `/api/v1/headline-topic-programs/{id}`
                 .replace(`{${"id"}}`, encodeURIComponent(String(id)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
@@ -107,8 +107,8 @@ export const ApiV1ApiAxiosParamCreator = function (configuration?: Configuration
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
 
-            if (xApiKey != null) {
-                localVarHeaderParameter['x-api-key'] = String(xApiKey);
+            if (authorization != null) {
+                localVarHeaderParameter['authorization'] = String(authorization);
             }
 
 
@@ -125,13 +125,13 @@ export const ApiV1ApiAxiosParamCreator = function (configuration?: Configuration
         /**
          * 
          * @summary ヘッドライントピック番組の番組ID一覧を取得する
-         * @param {string} xApiKey API Key
+         * @param {string} authorization Bearer Token
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getHeadlineTopicProgramIds: async (xApiKey: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'xApiKey' is not null or undefined
-            assertParamExists('getHeadlineTopicProgramIds', 'xApiKey', xApiKey)
+        getHeadlineTopicProgramIds: async (authorization: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'authorization' is not null or undefined
+            assertParamExists('getHeadlineTopicProgramIds', 'authorization', authorization)
             const localVarPath = `/api/v1/headline-topic-program-ids`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -144,8 +144,8 @@ export const ApiV1ApiAxiosParamCreator = function (configuration?: Configuration
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
 
-            if (xApiKey != null) {
-                localVarHeaderParameter['x-api-key'] = String(xApiKey);
+            if (authorization != null) {
+                localVarHeaderParameter['authorization'] = String(authorization);
             }
 
 
@@ -162,14 +162,14 @@ export const ApiV1ApiAxiosParamCreator = function (configuration?: Configuration
         /**
          * 
          * @summary ヘッドライントピック番組の一覧を取得する
-         * @param {string} xApiKey API Key
+         * @param {string} authorization Bearer Token
          * @param {HeadlineTopicProgramsFindRequestDto} headlineTopicProgramsFindRequestDto 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getHeadlineTopicProgramList: async (xApiKey: string, headlineTopicProgramsFindRequestDto: HeadlineTopicProgramsFindRequestDto, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'xApiKey' is not null or undefined
-            assertParamExists('getHeadlineTopicProgramList', 'xApiKey', xApiKey)
+        getHeadlineTopicProgramList: async (authorization: string, headlineTopicProgramsFindRequestDto: HeadlineTopicProgramsFindRequestDto, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'authorization' is not null or undefined
+            assertParamExists('getHeadlineTopicProgramList', 'authorization', authorization)
             // verify required parameter 'headlineTopicProgramsFindRequestDto' is not null or undefined
             assertParamExists('getHeadlineTopicProgramList', 'headlineTopicProgramsFindRequestDto', headlineTopicProgramsFindRequestDto)
             const localVarPath = `/api/v1/headline-topic-programs`;
@@ -184,8 +184,8 @@ export const ApiV1ApiAxiosParamCreator = function (configuration?: Configuration
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
 
-            if (xApiKey != null) {
-                localVarHeaderParameter['x-api-key'] = String(xApiKey);
+            if (authorization != null) {
+                localVarHeaderParameter['authorization'] = String(authorization);
             }
 
 
@@ -205,13 +205,13 @@ export const ApiV1ApiAxiosParamCreator = function (configuration?: Configuration
         /**
          * 
          * @summary ヘッドライントピック番組の件数を取得する
-         * @param {string} xApiKey API Key
+         * @param {string} authorization Bearer Token
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getHeadlineTopicProgramsCount: async (xApiKey: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'xApiKey' is not null or undefined
-            assertParamExists('getHeadlineTopicProgramsCount', 'xApiKey', xApiKey)
+        getHeadlineTopicProgramsCount: async (authorization: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'authorization' is not null or undefined
+            assertParamExists('getHeadlineTopicProgramsCount', 'authorization', authorization)
             const localVarPath = `/api/v1/headline-topic-programs/count`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -224,8 +224,8 @@ export const ApiV1ApiAxiosParamCreator = function (configuration?: Configuration
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
 
-            if (xApiKey != null) {
-                localVarHeaderParameter['x-api-key'] = String(xApiKey);
+            if (authorization != null) {
+                localVarHeaderParameter['authorization'] = String(authorization);
             }
 
 
@@ -253,12 +253,12 @@ export const ApiV1ApiFp = function(configuration?: Configuration) {
          * 
          * @summary 指定のヘッドライントピック番組を取得する
          * @param {string} id 
-         * @param {string} xApiKey API Key
+         * @param {string} authorization Bearer Token
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getHeadlineTopicProgram(id: string, xApiKey: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<HeadlineTopicProgramDto>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getHeadlineTopicProgram(id, xApiKey, options);
+        async getHeadlineTopicProgram(id: string, authorization: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<HeadlineTopicProgramDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getHeadlineTopicProgram(id, authorization, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['ApiV1Api.getHeadlineTopicProgram']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -266,12 +266,12 @@ export const ApiV1ApiFp = function(configuration?: Configuration) {
         /**
          * 
          * @summary ヘッドライントピック番組の番組ID一覧を取得する
-         * @param {string} xApiKey API Key
+         * @param {string} authorization Bearer Token
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getHeadlineTopicProgramIds(xApiKey: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<string>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getHeadlineTopicProgramIds(xApiKey, options);
+        async getHeadlineTopicProgramIds(authorization: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<string>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getHeadlineTopicProgramIds(authorization, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['ApiV1Api.getHeadlineTopicProgramIds']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -279,13 +279,13 @@ export const ApiV1ApiFp = function(configuration?: Configuration) {
         /**
          * 
          * @summary ヘッドライントピック番組の一覧を取得する
-         * @param {string} xApiKey API Key
+         * @param {string} authorization Bearer Token
          * @param {HeadlineTopicProgramsFindRequestDto} headlineTopicProgramsFindRequestDto 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getHeadlineTopicProgramList(xApiKey: string, headlineTopicProgramsFindRequestDto: HeadlineTopicProgramsFindRequestDto, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<HeadlineTopicProgramDto>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getHeadlineTopicProgramList(xApiKey, headlineTopicProgramsFindRequestDto, options);
+        async getHeadlineTopicProgramList(authorization: string, headlineTopicProgramsFindRequestDto: HeadlineTopicProgramsFindRequestDto, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<HeadlineTopicProgramDto>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getHeadlineTopicProgramList(authorization, headlineTopicProgramsFindRequestDto, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['ApiV1Api.getHeadlineTopicProgramList']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -293,12 +293,12 @@ export const ApiV1ApiFp = function(configuration?: Configuration) {
         /**
          * 
          * @summary ヘッドライントピック番組の件数を取得する
-         * @param {string} xApiKey API Key
+         * @param {string} authorization Bearer Token
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getHeadlineTopicProgramsCount(xApiKey: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<HeadlineTopicProgramsCountDto>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getHeadlineTopicProgramsCount(xApiKey, options);
+        async getHeadlineTopicProgramsCount(authorization: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<HeadlineTopicProgramsCountDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getHeadlineTopicProgramsCount(authorization, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['ApiV1Api.getHeadlineTopicProgramsCount']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -317,43 +317,43 @@ export const ApiV1ApiFactory = function (configuration?: Configuration, basePath
          * 
          * @summary 指定のヘッドライントピック番組を取得する
          * @param {string} id 
-         * @param {string} xApiKey API Key
+         * @param {string} authorization Bearer Token
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getHeadlineTopicProgram(id: string, xApiKey: string, options?: RawAxiosRequestConfig): AxiosPromise<HeadlineTopicProgramDto> {
-            return localVarFp.getHeadlineTopicProgram(id, xApiKey, options).then((request) => request(axios, basePath));
+        getHeadlineTopicProgram(id: string, authorization: string, options?: RawAxiosRequestConfig): AxiosPromise<HeadlineTopicProgramDto> {
+            return localVarFp.getHeadlineTopicProgram(id, authorization, options).then((request) => request(axios, basePath));
         },
         /**
          * 
          * @summary ヘッドライントピック番組の番組ID一覧を取得する
-         * @param {string} xApiKey API Key
+         * @param {string} authorization Bearer Token
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getHeadlineTopicProgramIds(xApiKey: string, options?: RawAxiosRequestConfig): AxiosPromise<Array<string>> {
-            return localVarFp.getHeadlineTopicProgramIds(xApiKey, options).then((request) => request(axios, basePath));
+        getHeadlineTopicProgramIds(authorization: string, options?: RawAxiosRequestConfig): AxiosPromise<Array<string>> {
+            return localVarFp.getHeadlineTopicProgramIds(authorization, options).then((request) => request(axios, basePath));
         },
         /**
          * 
          * @summary ヘッドライントピック番組の一覧を取得する
-         * @param {string} xApiKey API Key
+         * @param {string} authorization Bearer Token
          * @param {HeadlineTopicProgramsFindRequestDto} headlineTopicProgramsFindRequestDto 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getHeadlineTopicProgramList(xApiKey: string, headlineTopicProgramsFindRequestDto: HeadlineTopicProgramsFindRequestDto, options?: RawAxiosRequestConfig): AxiosPromise<Array<HeadlineTopicProgramDto>> {
-            return localVarFp.getHeadlineTopicProgramList(xApiKey, headlineTopicProgramsFindRequestDto, options).then((request) => request(axios, basePath));
+        getHeadlineTopicProgramList(authorization: string, headlineTopicProgramsFindRequestDto: HeadlineTopicProgramsFindRequestDto, options?: RawAxiosRequestConfig): AxiosPromise<Array<HeadlineTopicProgramDto>> {
+            return localVarFp.getHeadlineTopicProgramList(authorization, headlineTopicProgramsFindRequestDto, options).then((request) => request(axios, basePath));
         },
         /**
          * 
          * @summary ヘッドライントピック番組の件数を取得する
-         * @param {string} xApiKey API Key
+         * @param {string} authorization Bearer Token
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getHeadlineTopicProgramsCount(xApiKey: string, options?: RawAxiosRequestConfig): AxiosPromise<HeadlineTopicProgramsCountDto> {
-            return localVarFp.getHeadlineTopicProgramsCount(xApiKey, options).then((request) => request(axios, basePath));
+        getHeadlineTopicProgramsCount(authorization: string, options?: RawAxiosRequestConfig): AxiosPromise<HeadlineTopicProgramsCountDto> {
+            return localVarFp.getHeadlineTopicProgramsCount(authorization, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -369,50 +369,50 @@ export class ApiV1Api extends BaseAPI {
      * 
      * @summary 指定のヘッドライントピック番組を取得する
      * @param {string} id 
-     * @param {string} xApiKey API Key
+     * @param {string} authorization Bearer Token
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof ApiV1Api
      */
-    public getHeadlineTopicProgram(id: string, xApiKey: string, options?: RawAxiosRequestConfig) {
-        return ApiV1ApiFp(this.configuration).getHeadlineTopicProgram(id, xApiKey, options).then((request) => request(this.axios, this.basePath));
+    public getHeadlineTopicProgram(id: string, authorization: string, options?: RawAxiosRequestConfig) {
+        return ApiV1ApiFp(this.configuration).getHeadlineTopicProgram(id, authorization, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
      * 
      * @summary ヘッドライントピック番組の番組ID一覧を取得する
-     * @param {string} xApiKey API Key
+     * @param {string} authorization Bearer Token
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof ApiV1Api
      */
-    public getHeadlineTopicProgramIds(xApiKey: string, options?: RawAxiosRequestConfig) {
-        return ApiV1ApiFp(this.configuration).getHeadlineTopicProgramIds(xApiKey, options).then((request) => request(this.axios, this.basePath));
+    public getHeadlineTopicProgramIds(authorization: string, options?: RawAxiosRequestConfig) {
+        return ApiV1ApiFp(this.configuration).getHeadlineTopicProgramIds(authorization, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
      * 
      * @summary ヘッドライントピック番組の一覧を取得する
-     * @param {string} xApiKey API Key
+     * @param {string} authorization Bearer Token
      * @param {HeadlineTopicProgramsFindRequestDto} headlineTopicProgramsFindRequestDto 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof ApiV1Api
      */
-    public getHeadlineTopicProgramList(xApiKey: string, headlineTopicProgramsFindRequestDto: HeadlineTopicProgramsFindRequestDto, options?: RawAxiosRequestConfig) {
-        return ApiV1ApiFp(this.configuration).getHeadlineTopicProgramList(xApiKey, headlineTopicProgramsFindRequestDto, options).then((request) => request(this.axios, this.basePath));
+    public getHeadlineTopicProgramList(authorization: string, headlineTopicProgramsFindRequestDto: HeadlineTopicProgramsFindRequestDto, options?: RawAxiosRequestConfig) {
+        return ApiV1ApiFp(this.configuration).getHeadlineTopicProgramList(authorization, headlineTopicProgramsFindRequestDto, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
      * 
      * @summary ヘッドライントピック番組の件数を取得する
-     * @param {string} xApiKey API Key
+     * @param {string} authorization Bearer Token
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof ApiV1Api
      */
-    public getHeadlineTopicProgramsCount(xApiKey: string, options?: RawAxiosRequestConfig) {
-        return ApiV1ApiFp(this.configuration).getHeadlineTopicProgramsCount(xApiKey, options).then((request) => request(this.axios, this.basePath));
+    public getHeadlineTopicProgramsCount(authorization: string, options?: RawAxiosRequestConfig) {
+        return ApiV1ApiFp(this.configuration).getHeadlineTopicProgramsCount(authorization, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

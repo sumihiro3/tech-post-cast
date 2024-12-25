@@ -6,8 +6,10 @@ import { ConfigService } from '@nestjs/config';
 export class AppConfigService {
   constructor(private readonly config: ConfigService) {
     // 検証
-    if (!this.V1ApiKey) {
-      throw new AppConfigValidationError('V1_API_KEY が設定されていません');
+    if (!this.V1ApiToken) {
+      throw new AppConfigValidationError(
+        'V1_API_ACCESS_TOKEN が設定されていません',
+      );
     }
     if (!this.DatabaseUrl) {
       throw new AppConfigValidationError('DATABASE_URL が設定されていません');
@@ -73,12 +75,12 @@ export class AppConfigService {
   }
 
   /**
-   * API Key
+   * Bearer Token
    * for ApiV1
-   * @returns API Key
+   * @returns Bearer Token
    */
-  get V1ApiKey(): string {
-    return this.config.get<string>('V1_API_KEY');
+  get V1ApiToken(): string {
+    return this.config.get<string>('V1_API_ACCESS_TOKEN');
   }
 
   /**

@@ -1,4 +1,4 @@
-import { ApiV1ApiKeyGuard } from '@/guards/api-key.guard';
+import { ApiV1BearerTokenGuard } from '@/guards/bearer-token.guard';
 import {
   Body,
   Controller,
@@ -31,9 +31,9 @@ export class ApiV1Controller {
     summary: '指定のヘッドライントピック番組を取得する',
   })
   @ApiHeader({
-    name: 'x-api-key',
-    description: 'API Key',
-    example: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    name: 'authorization',
+    description: 'Bearer Token',
+    example: 'Bearer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
     required: true,
   })
   @ApiResponse({
@@ -43,7 +43,7 @@ export class ApiV1Controller {
   })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 404, description: 'Not found' })
-  @UseGuards(ApiV1ApiKeyGuard)
+  @UseGuards(ApiV1BearerTokenGuard)
   async getHeadlineTopicProgram(
     @Param('id') id: string,
   ): Promise<HeadlineTopicProgramDto> {
@@ -78,9 +78,9 @@ export class ApiV1Controller {
     summary: 'ヘッドライントピック番組の件数を取得する',
   })
   @ApiHeader({
-    name: 'x-api-key',
-    description: 'API Key',
-    example: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    name: 'authorization',
+    description: 'Bearer Token',
+    example: 'Bearer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
     required: true,
   })
   @ApiResponse({
@@ -89,7 +89,7 @@ export class ApiV1Controller {
     type: HeadlineTopicProgramsCountDto,
   })
   @ApiResponse({ status: 400, description: 'Bad request' })
-  @UseGuards(ApiV1ApiKeyGuard)
+  @UseGuards(ApiV1BearerTokenGuard)
   async getHeadlineTopicProgramsCounts(): Promise<number> {
     this.logger.debug('ApiV1Controller.getHeadlineTopicProgramsCounts called');
     try {
@@ -111,9 +111,9 @@ export class ApiV1Controller {
     summary: 'ヘッドライントピック番組の一覧を取得する',
   })
   @ApiHeader({
-    name: 'x-api-key',
-    description: 'API Key',
-    example: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    name: 'authorization',
+    description: 'Bearer Token',
+    example: 'Bearer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
     required: true,
   })
   @ApiResponse({
@@ -122,7 +122,7 @@ export class ApiV1Controller {
     type: [HeadlineTopicProgramDto],
   })
   @ApiResponse({ status: 400, description: 'Bad request' })
-  @UseGuards(ApiV1ApiKeyGuard)
+  @UseGuards(ApiV1BearerTokenGuard)
   async getHeadlineTopicPrograms(
     @Body() dto: HeadlineTopicProgramsFindRequestDto,
   ): Promise<HeadlineTopicProgram[]> {
@@ -148,9 +148,9 @@ export class ApiV1Controller {
     summary: 'ヘッドライントピック番組の番組ID一覧を取得する',
   })
   @ApiHeader({
-    name: 'x-api-key',
-    description: 'API Key',
-    example: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    name: 'authorization',
+    description: 'Bearer Token',
+    example: 'Bearer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
     required: true,
   })
   @ApiResponse({
@@ -159,7 +159,7 @@ export class ApiV1Controller {
     type: [String],
   })
   @ApiResponse({ status: 400, description: 'Bad request' })
-  @UseGuards(ApiV1ApiKeyGuard)
+  @UseGuards(ApiV1BearerTokenGuard)
   async getHeadlineTopicProgramIds(): Promise<string[]> {
     this.logger.debug('ApiV1Controller.getHeadlineTopicProgramIds called');
     try {

@@ -14,9 +14,9 @@
             }
           },
           {
-            "name": "x-api-key",
+            "name": "authorization",
             "in": "header",
-            "description": "API Key",
+            "description": "Bearer Token",
             "required": true,
             "schema": {
               "type": "string"
@@ -52,9 +52,9 @@
         "operationId": "getHeadlineTopicProgramsCount",
         "parameters": [
           {
-            "name": "x-api-key",
+            "name": "authorization",
             "in": "header",
-            "description": "API Key",
+            "description": "Bearer Token",
             "required": true,
             "schema": {
               "type": "string"
@@ -87,9 +87,9 @@
         "operationId": "getHeadlineTopicProgramList",
         "parameters": [
           {
-            "name": "x-api-key",
+            "name": "authorization",
             "in": "header",
-            "description": "API Key",
+            "description": "Bearer Token",
             "required": true,
             "schema": {
               "type": "string"
@@ -135,9 +135,9 @@
         "operationId": "getHeadlineTopicProgramIds",
         "parameters": [
           {
-            "name": "x-api-key",
+            "name": "authorization",
             "in": "header",
-            "description": "API Key",
+            "description": "Bearer Token",
             "required": true,
             "schema": {
               "type": "string"

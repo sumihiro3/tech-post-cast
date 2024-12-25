@@ -20,7 +20,7 @@ describe('AppConfigService', () => {
             get: jest.fn((key: string) => {
               // ここで定義したキーが、ConfigService の get メソッドに渡される
               const configKeys = {
-                V1_API_KEY: 'v1-api-key',
+                V1_API_ACCESS_TOKEN: 'v1-token',
                 QIITA_API_ACCESS_TOKEN: 'qiita-api-access-token',
                 DATABASE_URL: 'https://example-database.url',
                 SHOW_QUERY_LOGS: true,
@@ -68,9 +68,9 @@ describe('AppConfigService', () => {
     expect(configService).toBeDefined();
   });
 
-  it('V1_API_KEY が設定されていない場合、エラーをスローするべき', () => {
+  it('V1_API_ACCESS_TOKEN が設定されていない場合、エラーをスローするべき', () => {
     jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-      if (key === 'V1_API_KEY') return null;
+      if (key === 'V1_API_ACCESS_TOKEN') return null;
       return 'some-value';
     });
   });
