@@ -1,7 +1,6 @@
 <template>
   <div>
-    <h1>Post {{ program?.id }}</h1>
-    <h2>Post {{ program?.title }}</h2>
+    <h1>Program {{ program?.id }}: {{ program?.title }}</h1>
     <v-btn
       append-icon="mdi-account-circle"
       prepend-icon="mdi-check-circle"
@@ -18,6 +17,7 @@
       </template>
     </v-btn>
     <div>{{ program }}</div>
+    <div v-if="error">{{ error }}</div>
   </div>
 </template>
 
@@ -31,42 +31,23 @@ definePageMeta({
   //   return !(id > 100);
   // },
 });
-const { $apiV1 } = useNuxtApp();
-const { id } = useRoute().params;
+const { $apiV1, $config } = useNuxtApp();
+const apiAccessToken = $config.public.apiAccessToken;
+const route = useRoute();
+const { id } = route.params;
 const programId = Array.isArray(id) ? id[0] : id;
 
-const apiBaseUrl = 'http://localhost:3000';
-const apiKey = 'test-v1-api-key';
-
-type Program = {
-  id: string;
-  title: string;
-};
-
-// const program = ref<Program | null>(null);
-const {
-  data: program,
-  pending,
-  error,
-  refresh,
-} = await useAsyncData<HeadlineTopicProgramDto>(
+const { data: program, error } = await useAsyncData<HeadlineTopicProgramDto>(
   `program:${programId}`,
   async () => {
     const { data: dto } = await $apiV1.getHeadlineTopicProgram(
       programId,
-      apiKey,
+      apiAccessToken,
     );
     return {
       id: programId,
       title: dto.title!,
     };
   },
-  // $fetch<Program>(`${apiBaseUrl}/api/v1/headline-topic-programs/${id}`, {
-  //   method: 'GET',
-  //   headers: {
-  //     'Content-Type': 'application/json',
-  //     'x-api-key': apiKey,
-  //   },
-  // }),
 );
 </script>

@@ -1,24 +1,21 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify';
-
 /**
- * ポストのルートを取得する
- * @returns `posts/:id` のルートを返す
+ * ヘッドライントピック番組ページのルートを取得する
+ * @returns `headline-topic-programs/:id` のルートを返す
  */
-const getPostRoutes = async () => {
-  // const pageLimit = 10;
-  // const totalCounts = 100;
-  // // const maxPage = Math.ceil(totalCounts / pageLimit);
-
-  // // totalCounts 分のページを作成
-  // const ids: string[] = Array.from({ length: totalCounts }, (_, i) => (i + 1).toString());
-  // return ids.map((id: string) => `/posts/${id}`);
-  // TODO API から全県取得して パスを作成する
-  return [
-    '/posts/cm4zaab0400003jfhi34zwox0',
-    '/posts/cm4tnkuvx0000mk0zsprm7pnf',
-    '/posts/cm4mar63600003jvdtsto6y75',
-  ];
+const getHeadlineTopicProgramPageRoutes = async () => {
+  const apiUrl = process.env.API_BASE_URL;
+  const apiKey = process.env.API_ACCESS_TOKEN;
+  const response = await fetch(`${apiUrl}/api/v1/headline-topic-program-ids`, {
+    method: 'GET',
+    headers: {
+      'x-api-key': apiKey!,
+    },
+  });
+  const programIds = await response.json();
+  console.log(`ヘッドライントピック番組一覧`, { programIds });
+  return programIds.map((id: string) => `/headline-topic-programs/${id}`);
 };
 
 export default defineNuxtConfig({
@@ -42,8 +39,10 @@ export default defineNuxtConfig({
   },
   hooks: {
     async 'nitro:config'(nitroConfig) {
-      const slugs = await getPostRoutes();
-      nitroConfig.prerender?.routes?.push(...slugs);
+      // ヘッドライントピック番組ページのルートを追加
+      const headlineTopicProgramRoutes =
+        await getHeadlineTopicProgramPageRoutes();
+      nitroConfig.prerender?.routes?.push(...headlineTopicProgramRoutes);
     },
   },
   // Vuetify
