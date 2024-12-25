@@ -28,6 +28,12 @@ export interface IHeadlineTopicProgramsRepository {
   find(page: number, limit: number): Promise<HeadlineTopicProgram[]>;
 
   /**
+   * ヘッドライントピック番組のID一覧を取得する
+   * @returns ヘッドライントピック番組のID一覧
+   */
+  findIds(): Promise<string[]>;
+
+  /**
    * ヘッドライントピック番組を新規登録する
    * @param programDate 番組日時
    * @param posts 番組での紹介記事 ID 一覧

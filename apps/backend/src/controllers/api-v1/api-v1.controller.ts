@@ -14,6 +14,7 @@ import { HeadlineTopicProgram } from '@prisma/client';
 import { ApiV1Service } from './api-v1.service';
 import {
   HeadlineTopicProgramDto,
+  HeadlineTopicProgramsCountDto,
   HeadlineTopicProgramsFindRequestDto,
 } from './dto';
 
@@ -136,6 +137,40 @@ export class ApiV1Controller {
       return result;
     } catch (error) {
       const errorMessage = 'ヘッドライントピック番組の取得に失敗しました';
+      this.logger.error(errorMessage, error, error.stack);
+      throw new InternalServerErrorException(errorMessage);
+    }
+  }
+
+  @Get('headline-topic-program-ids')
+  @ApiOperation({
+    operationId: 'getHeadlineTopicProgramIds',
+    summary: 'ヘッドライントピック番組の番組ID一覧を取得する',
+  })
+  @ApiHeader({
+    name: 'x-api-key',
+    description: 'API Key',
+    example: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description: '処理成功',
+    type: [String],
+  })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @UseGuards(ApiV1ApiKeyGuard)
+  async getHeadlineTopicProgramIds(): Promise<string[]> {
+    this.logger.debug('ApiV1Controller.getHeadlineTopicProgramIds called');
+    try {
+      const result = await this.service.getHeadlineTopicProgramIds();
+      this.logger.log('ヘッドライントピック番組の番組ID一覧を取得しました', {
+        count: result.length,
+      });
+      return result;
+    } catch (error) {
+      const errorMessage =
+        'ヘッドライントピック番組の番組ID一覧の取得に失敗しました';
       this.logger.error(errorMessage, error, error.stack);
       throw new InternalServerErrorException(errorMessage);
     }

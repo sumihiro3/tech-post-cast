@@ -72,6 +72,21 @@ export class HeadlineTopicProgramsRepository
   }
 
   /**
+   * ヘッドライントピック番組のID一覧を取得する
+   * @returns ヘッドライントピック番組のID一覧
+   */
+  async findIds(): Promise<string[]> {
+    this.logger.debug(`HeadlineTopicProgramsRepository.findIds called`);
+    const result = await this.prisma.headlineTopicProgram.findMany({
+      select: { id: true },
+    });
+    this.logger.debug(`ヘッドライントピック番組のID一覧を取得しました`, {
+      result,
+    });
+    return result.map((r) => r.id);
+  }
+
+  /**
    * ヘッドライントピック番組を新規登録する
    * @param programDate 番組日時
    * @param posts 番組での紹介記事 一覧

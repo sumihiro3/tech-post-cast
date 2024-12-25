@@ -59,7 +59,7 @@ export class ApiV1Service {
   }
 
   /**
-   * ヘッドライントピック番組を取得する
+   * ヘッドライントピック番組一覧を取得する
    * @param dto リクエスト DTO
    * @returns ヘッドライントピック番組
    */
@@ -76,6 +76,26 @@ export class ApiV1Service {
       return result;
     } catch (error) {
       const errorMessage = 'ヘッドライントピック番組の取得に失敗しました';
+      this.logger.error(errorMessage, error, error.stack);
+      throw new HeadlineTopicProgramFindError(errorMessage, { cause: error });
+    }
+  }
+
+  /**
+   * ヘッドライントピック番組のID一覧を取得する
+   * @returns ヘッドライントピック番組のID一覧
+   */
+  async getHeadlineTopicProgramIds(): Promise<string[]> {
+    this.logger.debug('ApiV1Service.getHeadlineTopicProgramIds called');
+    try {
+      const result = await this.headlineTopicProgramsRepository.findIds();
+      this.logger.debug('ヘッドライントピック番組のID一覧を取得しました', {
+        result,
+      });
+      return result;
+    } catch (error) {
+      const errorMessage =
+        'ヘッドライントピック番組のID一覧の取得に失敗しました';
       this.logger.error(errorMessage, error, error.stack);
       throw new HeadlineTopicProgramFindError(errorMessage, { cause: error });
     }
