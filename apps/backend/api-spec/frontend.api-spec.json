@@ -63,7 +63,14 @@
         ],
         "responses": {
           "200": {
-            "description": "処理成功"
+            "description": "処理成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeadlineTopicProgramsCountDto"
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad request"
@@ -101,13 +108,61 @@
         },
         "responses": {
           "200": {
-            "description": "処理成功"
+            "description": "処理成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HeadlineTopicProgramDto"
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad request"
           }
         },
         "summary": "ヘッドライントピック番組の一覧を取得する",
+        "tags": [
+          "ApiV1"
+        ]
+      }
+    },
+    "/api/v1/headline-topic-program-ids": {
+      "get": {
+        "operationId": "getHeadlineTopicProgramIds",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "description": "API Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "処理成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "summary": "ヘッドライントピック番組の番組ID一覧を取得する",
         "tags": [
           "ApiV1"
         ]
@@ -141,6 +196,19 @@
         "required": [
           "id",
           "title"
+        ]
+      },
+      "HeadlineTopicProgramsCountDto": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "number",
+            "description": "番組数",
+            "example": 100
+          }
+        },
+        "required": [
+          "count"
         ]
       },
       "HeadlineTopicProgramsFindRequestDto": {
