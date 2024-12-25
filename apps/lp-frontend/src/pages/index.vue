@@ -1,13 +1,24 @@
 <template lang="pug">
 div
-  nav
-    ul
-      li
-        NuxtLink(to='/about') About
-      li
-        NuxtLink(to='/headline-topic-programs/cm4zaab0400003jfhi34zwox0')
-          | Program cm4zaab0400003jfhi34zwox0
-    h1 Welcome to the homepage
-    span This is an auto-imported component
-    NuxtLink(to='about') Go to about page
+  div
+    h1 ヘッドライントピック
+    ul(v-if='programIds')
+      li(v-for='programId in programIds')
+        NuxtLink(:to='`/headline-topic-programs/${programId}`') Program {{ programId }}
+        //- v-btn(:to='`/headline-topic-programs/${programId}`') Program {{ programId }}
+  div(v-if='error') {{ error }}
+  NuxtLink(to='about') Go to about page
 </template>
+
+<script setup lang="ts">
+import useGetHeadlineTopicProgramIds from '@/composables/headline-topic-programs/useGetHeadlineTopicProgramIds';
+
+// ヘッドライントピック番組の ID 一覧を取得する
+const { data: programIds, error } = await useAsyncData(
+  'headline-topic-programs',
+  async () => {
+    const programIds = await useGetHeadlineTopicProgramIds();
+    return programIds;
+  },
+);
+</script>
