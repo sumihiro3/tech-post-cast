@@ -4,7 +4,8 @@ import type { HeadlineTopicProgramDto } from '@/api';
 /**
  * ヘッドライントピック番組の番組ID一覧を取得する
  */
-export default async function useGetHeadlineTopicIds() {
+export default async function useGetHeadlineTopicProgramIds() {
+  console.debug(`useGetHeadlineTopicProgramIds called`);
   const { $apiV1, $config } = useNuxtApp();
   const apiKey = $config.public.apiAccessToken;
   const pageLimit = 10;

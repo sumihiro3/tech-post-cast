@@ -5,12 +5,12 @@ import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify';
  * @returns `headline-topic-programs/:id` のルートを返す
  */
 const getHeadlineTopicProgramPageRoutes = async () => {
-  const apiUrl = process.env.API_BASE_URL || 'http://localhost:3000';
-  const apiKey = process.env.API_ACCESS_TOKEN || 'test-v1-api-key';
+  const apiUrl = process.env.API_BASE_URL;
+  const token = process.env.API_ACCESS_TOKEN;
   const response = await fetch(`${apiUrl}/api/v1/headline-topic-program-ids`, {
     method: 'GET',
     headers: {
-      'x-api-key': apiKey!,
+      Authorization: `Bearer ${token!}`,
     },
   });
   const programIds = await response.json();

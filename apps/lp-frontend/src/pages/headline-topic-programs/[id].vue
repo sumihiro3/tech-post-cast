@@ -1,6 +1,8 @@
 <template lang="pug">
 div
-  h1 Program {{ program?.id }}: {{ program?.title }}
+  div(v-if='program')
+    h1 Program {{ program?.id }}: {{ program?.title }}
+      div {{ program }}
   v-btn(
     append-icon='mdi-account-circle',
     prepend-icon='mdi-check-circle',
@@ -11,12 +13,12 @@ div
     | Go to homepage Button
     template(v-slot:append)
       v-icon(color='warning')
-  div {{ program }}
   div(v-if='error') {{ error }}
 </template>
 
 <script setup lang="ts">
 import type { HeadlineTopicProgramDto } from '@/api';
+import useGetHeadlineTopicProgram from '@/composables/headline-topic-programs/useGetHeadlineTopicProgram';
 
 definePageMeta({
   // validate: async (route) => {
@@ -34,10 +36,8 @@ const programId = Array.isArray(id) ? id[0] : id;
 const { data: program, error } = await useAsyncData<HeadlineTopicProgramDto>(
   `program:${programId}`,
   async () => {
-    const { data: dto } = await $apiV1.getHeadlineTopicProgram(
-      programId,
-      apiAccessToken,
-    );
+    // 指定されたIDの番組情報を取得
+    const dto = await useGetHeadlineTopicProgram(programId);
     return {
       id: programId,
       title: dto.title!,
