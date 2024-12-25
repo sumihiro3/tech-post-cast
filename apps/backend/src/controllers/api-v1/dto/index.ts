@@ -61,3 +61,16 @@ export class HeadlineTopicProgramDto {
     return dto;
   }
 }
+
+/**
+ * ヘッドライントピック番組の番組数取得結果を表すDTO
+ */
+export class HeadlineTopicProgramsCountDto {
+  @ApiProperty({
+    description: '番組数',
+    example: 100,
+    required: true,
+  })
+  @IsNumber()
+  count: number;
+}

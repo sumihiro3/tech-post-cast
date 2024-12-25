@@ -82,7 +82,11 @@ export class ApiV1Controller {
     example: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
     required: true,
   })
-  @ApiResponse({ status: 200, description: '処理成功' })
+  @ApiResponse({
+    status: 200,
+    description: '処理成功',
+    type: HeadlineTopicProgramsCountDto,
+  })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @UseGuards(ApiV1ApiKeyGuard)
   async getHeadlineTopicProgramsCounts(): Promise<number> {
@@ -111,7 +115,11 @@ export class ApiV1Controller {
     example: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
     required: true,
   })
-  @ApiResponse({ status: 200, description: '処理成功' })
+  @ApiResponse({
+    status: 200,
+    description: '処理成功',
+    type: [HeadlineTopicProgramDto],
+  })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @UseGuards(ApiV1ApiKeyGuard)
   async getHeadlineTopicPrograms(
