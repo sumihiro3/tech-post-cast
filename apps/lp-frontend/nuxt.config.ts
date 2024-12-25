@@ -5,8 +5,8 @@ import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify';
  * @returns `headline-topic-programs/:id` のルートを返す
  */
 const getHeadlineTopicProgramPageRoutes = async () => {
-  const apiUrl = process.env.API_BASE_URL;
-  const apiKey = process.env.API_ACCESS_TOKEN;
+  const apiUrl = process.env.API_BASE_URL || 'http://localhost:3000';
+  const apiKey = process.env.API_ACCESS_TOKEN || 'test-v1-api-key';
   const response = await fetch(`${apiUrl}/api/v1/headline-topic-program-ids`, {
     method: 'GET',
     headers: {
@@ -21,6 +21,9 @@ const getHeadlineTopicProgramPageRoutes = async () => {
 export default defineNuxtConfig({
   srcDir: 'src/',
   compatibilityDate: '2024-11-01',
+  devServer: {
+    port: 3333,
+  },
   devtools: { enabled: true },
   build: {
     transpile: ['vuetify'],
@@ -28,6 +31,10 @@ export default defineNuxtConfig({
   ssr: true,
   nitro: {
     static: true,
+    prerender: {
+      crawlLinks: true,
+      failOnError: false,
+    },
   },
   runtimeConfig: {
     public: {

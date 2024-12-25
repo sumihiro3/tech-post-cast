@@ -1,24 +1,18 @@
-<template>
-  <div>
-    <h1>Program {{ program?.id }}: {{ program?.title }}</h1>
-    <v-btn
-      append-icon="mdi-account-circle"
-      prepend-icon="mdi-check-circle"
-      to="/"
-    >
-      <template v-slot:prepend>
-        <v-icon color="success"></v-icon>
-      </template>
-
-      Go to homepage Button
-
-      <template v-slot:append>
-        <v-icon color="warning"></v-icon>
-      </template>
-    </v-btn>
-    <div>{{ program }}</div>
-    <div v-if="error">{{ error }}</div>
-  </div>
+<template lang="pug">
+div
+  h1 Program {{ program?.id }}: {{ program?.title }}
+  v-btn(
+    append-icon='mdi-account-circle',
+    prepend-icon='mdi-check-circle',
+    to='/'
+  )
+    template(v-slot:prepend)
+      v-icon(color='success')
+    | Go to homepage Button
+    template(v-slot:append)
+      v-icon(color='warning')
+  div {{ program }}
+  div(v-if='error') {{ error }}
 </template>
 
 <script setup lang="ts">
