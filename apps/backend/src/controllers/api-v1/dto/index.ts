@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { HeadlineTopicProgramWithQiitaPosts } from '@tech-post-cast/database';
+import { Transform } from 'class-transformer';
 import { IsNumber, IsString, Min } from 'class-validator';
 
 /**
@@ -12,6 +13,7 @@ export class HeadlineTopicProgramsFindRequestDto {
     default: 10,
     required: true,
   })
+  @Transform(({ value }) => parseInt(value))
   @IsNumber()
   limit: number;
 
@@ -21,6 +23,7 @@ export class HeadlineTopicProgramsFindRequestDto {
     default: 1,
     required: false,
   })
+  @Transform(({ value }) => parseInt(value))
   @Min(1)
   @IsNumber()
   page?: number;

@@ -1,12 +1,12 @@
 import { ApiV1BearerTokenGuard } from '@/guards/bearer-token.guard';
 import {
-  Body,
   Controller,
   Get,
   InternalServerErrorException,
   Logger,
   NotFoundException,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -43,14 +43,16 @@ export class ApiV1Controller {
   })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @UseGuards(ApiV1BearerTokenGuard)
-  async getHeadlineTopicProgramsCounts(): Promise<number> {
+  async getHeadlineTopicProgramsCounts(): Promise<HeadlineTopicProgramsCountDto> {
     this.logger.debug('ApiV1Controller.getHeadlineTopicProgramsCounts called');
     try {
       const result = await this.service.getHeadlineTopicProgramsCounts();
       this.logger.log('ヘッドライントピック番組の件数を取得しました', {
         count: result,
       });
-      return result;
+      const dto = new HeadlineTopicProgramsCountDto();
+      dto.count = result;
+      return dto;
     } catch (error) {
       const errorMessage = 'ヘッドライントピック番組の件数の取得に失敗しました';
       this.logger.error(errorMessage, error, error.stack);
@@ -60,7 +62,7 @@ export class ApiV1Controller {
 
   @Get('headline-topic-programs')
   @ApiOperation({
-    operationId: 'getHeadlineTopicProgramList',
+    operationId: 'getHeadlineTopicPrograms',
     summary: 'ヘッドライントピック番組の一覧を取得する',
   })
   @ApiHeader({
@@ -77,7 +79,7 @@ export class ApiV1Controller {
   @ApiResponse({ status: 400, description: 'Bad request' })
   @UseGuards(ApiV1BearerTokenGuard)
   async getHeadlineTopicPrograms(
-    @Body() dto: HeadlineTopicProgramsFindRequestDto,
+    @Query() dto: HeadlineTopicProgramsFindRequestDto,
   ): Promise<HeadlineTopicProgram[]> {
     this.logger.debug('ApiV1Controller.getHeadlineTopicPrograms called', {
       dto,
