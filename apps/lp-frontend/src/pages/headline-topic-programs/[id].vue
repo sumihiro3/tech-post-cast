@@ -18,17 +18,8 @@ div
 
 <script setup lang="ts">
 import type { HeadlineTopicProgramDto } from '@/api';
-import useGetHeadlineTopicProgram from '@/composables/headline-topic-programs/useGetHeadlineTopicProgram';
+import { useGetHeadlineTopicProgram } from '@/composables/headline-topic-programs/useGetHeadlineTopicProgram';
 
-definePageMeta({
-  // validate: async (route) => {
-  //   const id = Number(route.params.id);
-  //   // Check if the id is made up of digits
-  //   return !(id > 100);
-  // },
-});
-const { $apiV1, $config } = useNuxtApp();
-const apiAccessToken = $config.public.apiAccessToken;
 const route = useRoute();
 const { id } = route.params;
 const programId = Array.isArray(id) ? id[0] : id;
@@ -36,12 +27,18 @@ const programId = Array.isArray(id) ? id[0] : id;
 const { data: program, error } = await useAsyncData<HeadlineTopicProgramDto>(
   `program:${programId}`,
   async () => {
-    // 指定されたIDの番組情報を取得
-    const dto = await useGetHeadlineTopicProgram(programId);
-    return {
-      id: programId,
-      title: dto.title!,
-    };
+    try {
+      const app = useNuxtApp();
+      // 指定されたIDの番組情報を取得
+      const dto = await useGetHeadlineTopicProgram(app, programId);
+      return { ...dto };
+    } catch (error) {
+      console.error(`番組 [${programId}] の取得に失敗しました。`, error);
+      if (error instanceof Error) {
+        console.error(error.message, error.stack);
+      }
+      throw error;
+    }
   },
 );
 </script>

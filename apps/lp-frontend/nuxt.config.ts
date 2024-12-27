@@ -1,5 +1,39 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify';
+import type { HeadlineTopicProgramsCountDto } from './src/api';
+
+/**
+ * ヘッドライントピック番組一覧の各ページのルートを取得する
+ * @returns `/?page={page}` のルートの配列を返す
+ */
+const getHeadlineTopicProgramListPageRoutes = async () => {
+  const apiUrl = process.env.API_BASE_URL;
+  const token = process.env.API_ACCESS_TOKEN;
+  const response = await fetch(
+    `${apiUrl}/api/v1/headline-topic-programs/count`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token!}`,
+      },
+    },
+  );
+  const dto = (await response.json()) as HeadlineTopicProgramsCountDto;
+  console.log(`ヘッドライントピック番組一覧`, { programs: dto });
+  const programsPerPage = Number(process.env.PROGRAMS_PER_PAGE);
+  const pageCount = Math.ceil(dto.count / programsPerPage);
+  console.log(`ヘッドライントピック番組一覧のページ数`, {
+    programCount: dto.count,
+    perPagePrograms: programsPerPage,
+    pageCount,
+  });
+  const routes = [];
+  for (let p = 1; p <= pageCount; p++) {
+    routes.push(`/headline-topic-programs/pages/${p}`);
+  }
+  return routes;
+};
+
 /**
  * ヘッドライントピック番組ページのルートを取得する
  * @returns `headline-topic-programs/:id` のルートを返す
@@ -33,7 +67,7 @@ export default defineNuxtConfig({
     static: true,
     prerender: {
       crawlLinks: true,
-      failOnError: false,
+      failOnError: true,
     },
   },
   runtimeConfig: {
@@ -42,14 +76,20 @@ export default defineNuxtConfig({
       version: process.env.npm_package_version,
       apiUrl: process.env.API_BASE_URL,
       apiAccessToken: process.env.API_ACCESS_TOKEN,
+      programsPerPage: process.env.PROGRAMS_PER_PAGE,
     },
   },
   hooks: {
     async 'nitro:config'(nitroConfig) {
-      // ヘッドライントピック番組ページのルートを追加
-      const headlineTopicProgramRoutes =
-        await getHeadlineTopicProgramPageRoutes();
-      nitroConfig.prerender?.routes?.push(...headlineTopicProgramRoutes);
+      // TODO トップページに番組一覧ページへのリンク配置しているため不要としている。今後、トップページに番組一覧を表示しない場合は、以下の処理を有効にする。
+      // // ヘッドライントピック番組一覧の各ページのルートを追加
+      // const headlineTopicProgramListRoutes =
+      //   await getHeadlineTopicProgramListPageRoutes();
+      // nitroConfig.prerender?.routes?.push(...headlineTopicProgramListRoutes);
+      // // ヘッドライントピック番組ページのルートを追加
+      // const headlineTopicProgramRoutes =
+      //   await getHeadlineTopicProgramPageRoutes();
+      // nitroConfig.prerender?.routes?.push(...headlineTopicProgramRoutes);
     },
   },
   // Vuetify

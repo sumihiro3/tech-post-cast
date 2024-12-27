@@ -5,7 +5,6 @@ div
     ul(v-if='programs')
       li(v-for='program in programs')
         NuxtLink(:to='`/headline-topic-programs/${program.id}`') Program {{ program.title }}
-  NuxtLink(to='about') Go to about page
   ul(v-if='pages')
     li(v-for='i in pages')
       NuxtLink(
@@ -19,9 +18,10 @@ div
 <script setup lang="ts">
 import { useGetCurrentPagePrograms } from '@/composables/headline-topic-programs/useGetCurrentPagePrograms';
 
-const currentPage = 1;
+const route = useRoute();
+const currentPage = Number(route.params.page) || 1;
 
-const { data } = await useAsyncData(
+const { data, error } = await useAsyncData(
   `headline-topic-programs:${currentPage}`,
   async () => {
     try {
@@ -36,12 +36,11 @@ const { data } = await useAsyncData(
       if (error instanceof Error) {
         console.error(error.message, error.stack);
       }
-      return { error };
+      throw error;
     }
   },
 );
 
 const programs = data.value?.programs;
 const pages = data.value?.pages;
-const error = data.value?.error;
 </script>
