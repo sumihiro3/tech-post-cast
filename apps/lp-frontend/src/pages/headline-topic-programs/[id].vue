@@ -13,7 +13,7 @@ div
     | Go to homepage Button
     template(v-slot:append)
       v-icon(color='warning')
-  div(v-if='error') {{ error }}
+  //- div(v-if='error') {{ error }}
 </template>
 
 <script setup lang="ts">
@@ -24,8 +24,8 @@ const route = useRoute();
 const { id } = route.params;
 const programId = Array.isArray(id) ? id[0] : id;
 
-const { data: program, error } = await useAsyncData<HeadlineTopicProgramDto>(
-  `program:${programId}`,
+const { data: program } = await useAsyncData<HeadlineTopicProgramDto>(
+  `headline-topic-program:${programId}`,
   async () => {
     try {
       const app = useNuxtApp();
@@ -37,7 +37,11 @@ const { data: program, error } = await useAsyncData<HeadlineTopicProgramDto>(
       if (error instanceof Error) {
         console.error(error.message, error.stack);
       }
-      throw error;
+      throw showError({
+        message: `指定のページが存在しません`,
+        statusCode: 404,
+        fatal: true,
+      });
     }
   },
 );

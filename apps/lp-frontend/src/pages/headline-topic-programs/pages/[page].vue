@@ -12,7 +12,7 @@ div
         :to='`/headline-topic-programs/pages/${i}`'
       ) P.{{ i }}
       span(v-else) P.{{ i }}
-  div(v-if='error') {{ error }}
+  //- div(v-if='error') {{ error }}
 </template>
 
 <script setup lang="ts">
@@ -36,7 +36,11 @@ const { data, error } = await useAsyncData(
       if (error instanceof Error) {
         console.error(error.message, error.stack);
       }
-      throw error;
+      throw showError({
+        message: `指定のページが存在しません`,
+        statusCode: 404,
+        fatal: true,
+      });
     }
   },
 );

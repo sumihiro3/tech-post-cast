@@ -13,7 +13,7 @@ div
         :to='`/headline-topic-programs/pages/${i}`'
       ) P.{{ i }}
       span(v-else) P.{{ i }}
-  div(v-if='error') {{ error }}
+  //- div(v-if='error') {{ error }}
 </template>
 
 <script setup lang="ts">
@@ -21,7 +21,7 @@ import { useGetCurrentPagePrograms } from '@/composables/headline-topic-programs
 
 const currentPage = 1;
 
-const { data } = await useAsyncData(
+const { data, error } = await useAsyncData(
   `headline-topic-programs:${currentPage}`,
   async () => {
     try {
@@ -36,12 +36,15 @@ const { data } = await useAsyncData(
       if (error instanceof Error) {
         console.error(error.message, error.stack);
       }
-      return { error };
+      throw showError({
+        message: `指定のページが存在しません`,
+        statusCode: 404,
+        fatal: true,
+      });
     }
   },
 );
 
 const programs = data.value?.programs;
 const pages = data.value?.pages;
-const error = data.value?.error;
 </script>
