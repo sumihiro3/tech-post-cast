@@ -10,7 +10,7 @@
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
-    "serve": "npx serve .output/public",
+    "serve": "npx serve -p 3333 .output/public",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
   },
