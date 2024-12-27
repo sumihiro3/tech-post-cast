@@ -1,52 +1,6 @@
 {
   "openapi": "3.0.0",
   "paths": {
-    "/api/v1/headline-topic-programs/{id}": {
-      "get": {
-        "operationId": "getHeadlineTopicProgram",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "description": "Bearer Token",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "処理成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HeadlineTopicProgramDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request"
-          },
-          "404": {
-            "description": "Not found"
-          }
-        },
-        "summary": "指定のヘッドライントピック番組を取得する",
-        "tags": [
-          "ApiV1"
-        ]
-      }
-    },
     "/api/v1/headline-topic-programs/count": {
       "get": {
         "operationId": "getHeadlineTopicProgramsCount",
@@ -84,8 +38,30 @@
     },
     "/api/v1/headline-topic-programs": {
       "get": {
-        "operationId": "getHeadlineTopicProgramList",
+        "operationId": "getHeadlineTopicPrograms",
         "parameters": [
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "description": "ページあたりに取得する番組の数",
+            "schema": {
+              "default": 10,
+              "example": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "ページ番号",
+            "schema": {
+              "default": 1,
+              "example": 0,
+              "type": "number"
+            }
+          },
           {
             "name": "authorization",
             "in": "header",
@@ -96,16 +72,6 @@
             }
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/HeadlineTopicProgramsFindRequestDto"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "処理成功",
@@ -167,6 +133,52 @@
           "ApiV1"
         ]
       }
+    },
+    "/api/v1/headline-topic-programs/{id}": {
+      "get": {
+        "operationId": "getHeadlineTopicProgram",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "description": "Bearer Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "処理成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeadlineTopicProgramDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
+        "summary": "指定のヘッドライントピック番組を取得する",
+        "tags": [
+          "ApiV1"
+        ]
+      }
     }
   },
   "info": {
@@ -179,6 +191,19 @@
   "servers": [],
   "components": {
     "schemas": {
+      "HeadlineTopicProgramsCountDto": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "number",
+            "description": "番組数",
+            "example": 100
+          }
+        },
+        "required": [
+          "count"
+        ]
+      },
       "HeadlineTopicProgramDto": {
         "type": "object",
         "properties": {
@@ -196,39 +221,6 @@
         "required": [
           "id",
           "title"
-        ]
-      },
-      "HeadlineTopicProgramsCountDto": {
-        "type": "object",
-        "properties": {
-          "count": {
-            "type": "number",
-            "description": "番組数",
-            "example": 100
-          }
-        },
-        "required": [
-          "count"
-        ]
-      },
-      "HeadlineTopicProgramsFindRequestDto": {
-        "type": "object",
-        "properties": {
-          "limit": {
-            "type": "number",
-            "description": "ページあたりに取得する番組の数",
-            "example": 10,
-            "default": 10
-          },
-          "page": {
-            "type": "number",
-            "description": "ページ番号",
-            "example": 0,
-            "default": 1
-          }
-        },
-        "required": [
-          "limit"
         ]
       }
     }
