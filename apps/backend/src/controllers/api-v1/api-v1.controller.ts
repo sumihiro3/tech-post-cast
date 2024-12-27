@@ -25,53 +25,6 @@ export class ApiV1Controller {
 
   constructor(private readonly service: ApiV1Service) {}
 
-  @Get('headline-topic-programs/:id')
-  @ApiOperation({
-    operationId: 'getHeadlineTopicProgram',
-    summary: '指定のヘッドライントピック番組を取得する',
-  })
-  @ApiHeader({
-    name: 'authorization',
-    description: 'Bearer Token',
-    example: 'Bearer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-    required: true,
-  })
-  @ApiResponse({
-    status: 200,
-    description: '処理成功',
-    type: HeadlineTopicProgramDto,
-  })
-  @ApiResponse({ status: 400, description: 'Bad request' })
-  @ApiResponse({ status: 404, description: 'Not found' })
-  @UseGuards(ApiV1BearerTokenGuard)
-  async getHeadlineTopicProgram(
-    @Param('id') id: string,
-  ): Promise<HeadlineTopicProgramDto> {
-    this.logger.debug('ApiV1Controller.getHeadlineTopicProgram called', {
-      id,
-    });
-    try {
-      // 指定のヘッドライントピック番組を取得
-      const result = await this.service.getHeadlineTopicProgram(id);
-      this.logger.log(`指定のヘッドライントピック番組 [${id}] を取得しました`, {
-        title: result.title,
-        createdAt: result.createdAt,
-      });
-      if (!result) {
-        const errorMessage = `指定のヘッドライントピック番組 [${id}] が見つかりません`;
-        this.logger.error(errorMessage);
-        throw new NotFoundException(errorMessage);
-      }
-      // DTO へ変換
-      const dto = HeadlineTopicProgramDto.createFromEntity(result);
-      return dto;
-    } catch (error) {
-      const errorMessage = 'ヘッドライントピック番組の取得に失敗しました';
-      this.logger.error(errorMessage, error, error.stack);
-      throw new InternalServerErrorException(errorMessage);
-    }
-  }
-
   @Get('headline-topic-programs/count')
   @ApiOperation({
     operationId: 'getHeadlineTopicProgramsCount',
@@ -171,6 +124,53 @@ export class ApiV1Controller {
     } catch (error) {
       const errorMessage =
         'ヘッドライントピック番組の番組ID一覧の取得に失敗しました';
+      this.logger.error(errorMessage, error, error.stack);
+      throw new InternalServerErrorException(errorMessage);
+    }
+  }
+
+  @Get('headline-topic-programs/:id')
+  @ApiOperation({
+    operationId: 'getHeadlineTopicProgram',
+    summary: '指定のヘッドライントピック番組を取得する',
+  })
+  @ApiHeader({
+    name: 'authorization',
+    description: 'Bearer Token',
+    example: 'Bearer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description: '処理成功',
+    type: HeadlineTopicProgramDto,
+  })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 404, description: 'Not found' })
+  @UseGuards(ApiV1BearerTokenGuard)
+  async getHeadlineTopicProgram(
+    @Param('id') id: string,
+  ): Promise<HeadlineTopicProgramDto> {
+    this.logger.debug('ApiV1Controller.getHeadlineTopicProgram called', {
+      id,
+    });
+    try {
+      // 指定のヘッドライントピック番組を取得
+      const result = await this.service.getHeadlineTopicProgram(id);
+      this.logger.log(`指定のヘッドライントピック番組 [${id}] を取得しました`, {
+        title: result.title,
+        createdAt: result.createdAt,
+      });
+      if (!result) {
+        const errorMessage = `指定のヘッドライントピック番組 [${id}] が見つかりません`;
+        this.logger.error(errorMessage);
+        throw new NotFoundException(errorMessage);
+      }
+      // DTO へ変換
+      const dto = HeadlineTopicProgramDto.createFromEntity(result);
+      return dto;
+    } catch (error) {
+      const errorMessage = 'ヘッドライントピック番組の取得に失敗しました';
       this.logger.error(errorMessage, error, error.stack);
       throw new InternalServerErrorException(errorMessage);
     }
