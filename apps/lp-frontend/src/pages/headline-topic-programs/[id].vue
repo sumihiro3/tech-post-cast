@@ -13,7 +13,6 @@ div
     | Go to homepage Button
     template(v-slot:append)
       v-icon(color='warning')
-  //- div(v-if='error') {{ error }}
 </template>
 
 <script setup lang="ts">

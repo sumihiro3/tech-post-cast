@@ -13,7 +13,6 @@ div
         :to='`/headline-topic-programs/pages/${i}`'
       ) P.{{ i }}
       span(v-else) P.{{ i }}
-  //- div(v-if='error') {{ error }}
 </template>
 
 <script setup lang="ts">
