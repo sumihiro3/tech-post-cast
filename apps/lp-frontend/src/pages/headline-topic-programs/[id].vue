@@ -1,8 +1,16 @@
 <template lang="pug">
 div
   div(v-if='program')
-    h1 Program {{ program?.id }}: {{ program?.title }}
-      div {{ program }}
+    h1 {{ program?.title }}
+    div
+      ul(v-for='(post, index) in program.posts', :key='index')
+        li {{ post.title }}
+        li {{ post.authorName }}
+    div {{ program.script.intro }}
+      ul
+        li(v-for='(post, index) in program.script.posts', :key='index')
+          span {{ post.summary }}
+    div {{ program }}
   v-btn(
     append-icon='mdi-account-circle',
     prepend-icon='mdi-check-circle',

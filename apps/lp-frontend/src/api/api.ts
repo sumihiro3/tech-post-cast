@@ -41,6 +41,85 @@ export interface HeadlineTopicProgramDto {
      * @memberof HeadlineTopicProgramDto
      */
     'title': string;
+    /**
+     * 台本
+     * @type {HeadlineTopicProgramScriptDto}
+     * @memberof HeadlineTopicProgramDto
+     */
+    'script': HeadlineTopicProgramScriptDto;
+    /**
+     * ヘッドライントピックの音声ファイルURL
+     * @type {string}
+     * @memberof HeadlineTopicProgramDto
+     */
+    'audioUrl': string;
+    /**
+     * 音声ファイルの長さ（ミリ秒）
+     * @type {number}
+     * @memberof HeadlineTopicProgramDto
+     */
+    'audioDuration': number;
+    /**
+     * ヘッドライントピックの動画ファイルURL
+     * @type {string}
+     * @memberof HeadlineTopicProgramDto
+     */
+    'videoUrl'?: string;
+    /**
+     * 画像URL
+     * @type {string}
+     * @memberof HeadlineTopicProgramDto
+     */
+    'imageUrl'?: string;
+    /**
+     * 今日のヘッドライントピックが作成された日時
+     * @type {string}
+     * @memberof HeadlineTopicProgramDto
+     */
+    'createdAt': string;
+    /**
+     * 最終更新日時
+     * @type {string}
+     * @memberof HeadlineTopicProgramDto
+     */
+    'updatedAt': string;
+    /**
+     * 紹介している投稿の一覧
+     * @type {Array<QiitaPostDto>}
+     * @memberof HeadlineTopicProgramDto
+     */
+    'posts': Array<QiitaPostDto>;
+}
+/**
+ * 
+ * @export
+ * @interface HeadlineTopicProgramScriptDto
+ */
+export interface HeadlineTopicProgramScriptDto {
+    /**
+     * タイトル
+     * @type {string}
+     * @memberof HeadlineTopicProgramScriptDto
+     */
+    'title': string;
+    /**
+     * イントロダクション
+     * @type {string}
+     * @memberof HeadlineTopicProgramScriptDto
+     */
+    'intro': string;
+    /**
+     * 紹介記事の要約
+     * @type {Array<PostSummaryDto>}
+     * @memberof HeadlineTopicProgramScriptDto
+     */
+    'posts': Array<PostSummaryDto>;
+    /**
+     * エンディング
+     * @type {string}
+     * @memberof HeadlineTopicProgramScriptDto
+     */
+    'ending': string;
 }
 /**
  * 
@@ -54,6 +133,62 @@ export interface HeadlineTopicProgramsCountDto {
      * @memberof HeadlineTopicProgramsCountDto
      */
     'count': number;
+}
+/**
+ * 
+ * @export
+ * @interface PostSummaryDto
+ */
+export interface PostSummaryDto {
+    /**
+     * 記事の要約
+     * @type {string}
+     * @memberof PostSummaryDto
+     */
+    'summary': string;
+}
+/**
+ * 
+ * @export
+ * @interface QiitaPostDto
+ */
+export interface QiitaPostDto {
+    /**
+     * Qiita 記事ID
+     * @type {string}
+     * @memberof QiitaPostDto
+     */
+    'id': string;
+    /**
+     * タイトル
+     * @type {string}
+     * @memberof QiitaPostDto
+     */
+    'title': string;
+    /**
+     * URL
+     * @type {string}
+     * @memberof QiitaPostDto
+     */
+    'url': string;
+    /**
+     * 記事が作成された日時
+     * @type {string}
+     * @memberof QiitaPostDto
+     */
+    'createdAt': string;
+    /**
+     * 記事投稿者のユーザ名
+     * @type {string}
+     * @memberof QiitaPostDto
+     */
+    'authorName': string;
+    /**
+     * 記事投稿者のユーザID
+     * @type {string}
+     * @memberof QiitaPostDto
+     */
+    'authorId': string;
 }
 
 /**

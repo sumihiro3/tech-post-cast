@@ -204,6 +204,101 @@
           "count"
         ]
       },
+      "PostSummaryDto": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string",
+            "description": "記事の要約",
+            "example": "記事の要約"
+          }
+        },
+        "required": [
+          "summary"
+        ]
+      },
+      "HeadlineTopicProgramScriptDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "タイトル",
+            "example": "タイトル"
+          },
+          "intro": {
+            "type": "string",
+            "description": "イントロダクション",
+            "example": "イントロダクション"
+          },
+          "posts": {
+            "description": "紹介記事の要約",
+            "example": [
+              {
+                "summary": "記事の要約"
+              }
+            ],
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PostSummaryDto"
+            }
+          },
+          "ending": {
+            "type": "string",
+            "description": "エンディング",
+            "example": "エンディング"
+          }
+        },
+        "required": [
+          "title",
+          "intro",
+          "posts",
+          "ending"
+        ]
+      },
+      "QiitaPostDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Qiita 記事ID",
+            "example": "sample-post-id"
+          },
+          "title": {
+            "type": "string",
+            "description": "タイトル",
+            "example": "タイトル"
+          },
+          "url": {
+            "type": "string",
+            "description": "URL",
+            "example": "https://example.com"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "記事が作成された日時",
+            "example": "2021-01-01T00:00:00Z"
+          },
+          "authorName": {
+            "type": "string",
+            "description": "記事投稿者のユーザ名",
+            "example": "user-name"
+          },
+          "authorId": {
+            "type": "string",
+            "description": "記事投稿者のユーザID",
+            "example": "user-id"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "url",
+          "createdAt",
+          "authorName",
+          "authorId"
+        ]
+      },
       "HeadlineTopicProgramDto": {
         "type": "object",
         "properties": {
@@ -216,11 +311,65 @@
             "type": "string",
             "description": "タイトル",
             "example": "サンプル番組"
+          },
+          "script": {
+            "description": "台本",
+            "example": "番組の台本",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HeadlineTopicProgramScriptDto"
+              }
+            ]
+          },
+          "audioUrl": {
+            "type": "string",
+            "description": "ヘッドライントピックの音声ファイルURL",
+            "example": "https://example.com/sample.mp3"
+          },
+          "audioDuration": {
+            "type": "number",
+            "description": "音声ファイルの長さ（ミリ秒）",
+            "example": 1000
+          },
+          "videoUrl": {
+            "type": "string",
+            "description": "ヘッドライントピックの動画ファイルURL",
+            "example": "https://example.com/sample.mp4"
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "画像URL",
+            "example": "https://example.com/sample.jpg"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "今日のヘッドライントピックが作成された日時",
+            "example": "2021-01-01T00:00:00Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "最終更新日時",
+            "example": "2021-01-01T00:00:00Z"
+          },
+          "posts": {
+            "description": "紹介している投稿の一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QiitaPostDto"
+            }
           }
         },
         "required": [
           "id",
-          "title"
+          "title",
+          "script",
+          "audioUrl",
+          "audioDuration",
+          "createdAt",
+          "updatedAt",
+          "posts"
         ]
       }
     }
