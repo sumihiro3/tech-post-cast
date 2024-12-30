@@ -6,10 +6,12 @@ div
       ul(v-for='(post, index) in program.posts', :key='index')
         li {{ post.title }}
         li {{ post.authorName }}
-    div {{ program.script.intro }}
-      ul
-        li(v-for='(post, index) in program.script.posts', :key='index')
-          span {{ post.summary }}
+    div(v-if='program.script')
+      div {{ program.script.intro }}
+        ul
+          li(v-for='(post, index) in program.script.posts', :key='index')
+            span {{ post.summary }}
+      div {{ program.script.ending }}
     div {{ program }}
   v-btn(
     append-icon='mdi-account-circle',
