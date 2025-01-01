@@ -1,9 +1,6 @@
-<template>
-  <div>
-    <h1>About page</h1>
-    <span>
-      This is an auto-imported component
-    </span>
-    <NuxtLink to="/">Go to homepage</NuxtLink>
-  </div>
+<template lang="pug">
+div
+  h1 Here is about page
+  span This is an auto-imported component
+  NuxtLink(to='/') Go to homepage
 </template>

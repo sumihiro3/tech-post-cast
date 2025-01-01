@@ -6,6 +6,11 @@ import { ConfigService } from '@nestjs/config';
 export class AppConfigService {
   constructor(private readonly config: ConfigService) {
     // 検証
+    if (!this.V1ApiToken) {
+      throw new AppConfigValidationError(
+        'V1_API_ACCESS_TOKEN が設定されていません',
+      );
+    }
     if (!this.DatabaseUrl) {
       throw new AppConfigValidationError('DATABASE_URL が設定されていません');
     }
@@ -67,6 +72,15 @@ export class AppConfigService {
         'PROGRAM_AUDIO_FILE_URL_PREFIX が設定されていません',
       );
     }
+  }
+
+  /**
+   * Bearer Token
+   * for ApiV1
+   * @returns Bearer Token
+   */
+  get V1ApiToken(): string {
+    return this.config.get<string>('V1_API_ACCESS_TOKEN');
   }
 
   /**
