@@ -1,31 +1,37 @@
 <template lang="pug">
 div
+  h1.mx-auto.mt-4.text-h4.font-weight-black
+    | ヘッドライントピック
+  div(v-if='programs')
+    v-container
+      v-row.pa-4(align='center')
+        v-col(cols='10')
+          ContentHeadlineTopicProgram(
+            v-for='program in programs',
+            :key='program.id',
+            :program='program'
+          )
   div
-    h1 ヘッドライントピック
-    ul(v-if='programs')
-      li(v-for='program in programs')
-        NuxtLink(:to='`/headline-topic-programs/${program.id}`') Program {{ program.title }}
-  ul(v-if='pages')
-    li(v-for='i in pages')
-      NuxtLink(
-        v-if='i !== currentPage',
-        :to='`/headline-topic-programs/pages/${i}`'
-      ) P.{{ i }}
-      span(v-else) P.{{ i }}
+  v-pagination(
+    v-model='currentPage',
+    :length='pages',
+    active-color='secondary',
+    @click='onPageChange'
+  )
 </template>
 
 <script setup lang="ts">
 import { useGetCurrentPagePrograms } from '@/composables/headline-topic-programs/useGetCurrentPagePrograms';
 
 const route = useRoute();
-const currentPage = Number(route.params.page) || 1;
+const currentPage = ref(route.params.page ? Number(route.params.page) : 1);
 
 const { data, error } = await useAsyncData(
   `headline-topic-programs:${currentPage}`,
   async () => {
     try {
       const app = useNuxtApp();
-      const result = await useGetCurrentPagePrograms(app, currentPage);
+      const result = await useGetCurrentPagePrograms(app, currentPage.value);
       return { programs: result.programs, pages: result.pages };
     } catch (error) {
       console.error(
@@ -43,6 +49,16 @@ const { data, error } = await useAsyncData(
     }
   },
 );
+
+/**
+ * ページネーションでページが変更されたときの処理
+ * @param event イベント
+ */
+const onPageChange =  async (event: PointerEvent) => {
+  console.log('Event', event);
+  await navigateTo(`/headline-topic-programs/pages/${currentPage.value}`)
+  reloadNuxtApp();
+};
 
 const programs = data.value?.programs;
 const pages = data.value?.pages;

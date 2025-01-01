@@ -80,18 +80,18 @@ export default defineNuxtConfig({
     },
   },
   // TODO トップページに番組一覧ページへのリンク配置しているため不要としている。今後、トップページに番組一覧を表示しない場合は、以下の処理を有効にする。
-  // hooks: {
-  //   async 'nitro:config'(nitroConfig) {
-  // // ヘッドライントピック番組一覧の各ページのルートを追加
-  // const headlineTopicProgramListRoutes =
-  //   await getHeadlineTopicProgramListPageRoutes();
-  // nitroConfig.prerender?.routes?.push(...headlineTopicProgramListRoutes);
-  // // ヘッドライントピック番組ページのルートを追加
-  // const headlineTopicProgramRoutes =
-  //   await getHeadlineTopicProgramPageRoutes();
-  // nitroConfig.prerender?.routes?.push(...headlineTopicProgramRoutes);
-  //   },
-  // },
+  hooks: {
+    async 'nitro:config'(nitroConfig) {
+      // ヘッドライントピック番組一覧の各ページのルートを追加
+      // const headlineTopicProgramListRoutes =
+      //   await getHeadlineTopicProgramListPageRoutes();
+      // nitroConfig.prerender?.routes?.push(...headlineTopicProgramListRoutes);
+      // // ヘッドライントピック番組ページのルートを追加
+      // const headlineTopicProgramRoutes =
+      //   await getHeadlineTopicProgramPageRoutes();
+      // nitroConfig.prerender?.routes?.push(...headlineTopicProgramRoutes);
+    },
+  },
   // Vuetify
   modules: [
     (_options, nuxt) => {
