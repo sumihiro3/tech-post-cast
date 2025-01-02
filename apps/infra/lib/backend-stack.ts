@@ -41,6 +41,21 @@ export class TechPostCastBackendStack extends cdk.Stack {
       {
         defaultBehavior: {
           origin: origins.S3BucketOrigin.withOriginAccessControl(audioBucket),
+          // CORS, CORB 対策
+          // @see https://www.chromium.org/Home/chromium-security/corb-for-developers/
+          responseHeadersPolicy: new cloudfront.ResponseHeadersPolicy(
+            this,
+            'TechPostCastDistributionResponseHeadersPolicy',
+            {
+              corsBehavior: {
+                accessControlAllowOrigins: ['*'],
+                accessControlAllowHeaders: ['*'],
+                accessControlAllowMethods: ['ALL'],
+                accessControlAllowCredentials: false,
+                originOverride: true,
+              },
+            },
+          ),
         },
       },
     );
