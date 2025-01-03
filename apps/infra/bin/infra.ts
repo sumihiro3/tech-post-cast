@@ -40,7 +40,6 @@ const lineBotBackendStack = new TechPostCastLineBotBackendStack(
   `${stageConfig.stackName}LineBot`,
   { env },
   stageConfig,
-  backendStack,
 );
 
 // Tag 付け
