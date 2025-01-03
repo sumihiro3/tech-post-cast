@@ -38,7 +38,6 @@ export class TechPostCastLineBotBackendStack extends cdk.Stack {
         environment: {
           PORT: '4000',
           SHOW_QUERY_LOGS: 'true',
-          PROGRAM_FILE_URL_PREFIX: backendStack.programFileUrlPrefix,
         },
       },
     );

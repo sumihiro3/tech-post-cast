@@ -13,9 +13,6 @@ import { StageConfig } from '../config';
 const dockerfileDir = path.join(__dirname, '../../..');
 
 export class TechPostCastBackendStack extends cdk.Stack {
-  /** 番組ファイルの URL Prefix */
-  public readonly programFileUrlPrefix: string;
-
   constructor(
     scope: Construct,
     id: string,
