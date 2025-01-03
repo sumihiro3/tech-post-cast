@@ -1,4 +1,5 @@
 import { HeadlineTopicProgram, QiitaPost } from '@prisma/client';
+import { HeadlineTopicProgramWithQiitaPosts } from '@tech-post-cast/database';
 import { HeadlineTopicProgramGenerateResult, ProgramUploadResult } from '.';
 
 /**
@@ -10,7 +11,27 @@ export interface IHeadlineTopicProgramsRepository {
    * @param id ヘッドライントピック番組 ID
    * @returns ヘッドライントピック番組
    */
-  findOne(id: string): Promise<HeadlineTopicProgram>;
+  findOne(id: string): Promise<HeadlineTopicProgramWithQiitaPosts>;
+
+  /**
+   * ヘッドライントピック番組の件数を取得する
+   * @returns ヘッドライントピック番組の件数
+   */
+  count(): Promise<number>;
+
+  /**
+   * ヘッドライントピック番組を取得する
+   * @param page ページ番号
+   * @param limit 1 ページあたりの件数
+   * @returns ヘッドライントピック番組一覧
+   */
+  find(page: number, limit: number): Promise<HeadlineTopicProgram[]>;
+
+  /**
+   * ヘッドライントピック番組のID一覧を取得する
+   * @returns ヘッドライントピック番組のID一覧
+   */
+  findIds(): Promise<string[]>;
 
   /**
    * ヘッドライントピック番組を新規登録する

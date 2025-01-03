@@ -55,9 +55,9 @@ model QiitaPost {
   createdAt   DateTime @map("created_at")
   // 記事の最終更新日時
   updatedAt   DateTime @map("updated_at")
-  // 記事記事者のユーザ名
+  // 記事投稿者のユーザ名
   authorName  String   @map("author_name") @db.VarChar(50)
-  // 記事記事者のユーザID
+  // 記事投稿者のユーザID
   authorId    String   @map("author_id") @db.VarChar(50)
   // この記事へのいいねの数
   likesCount  Int      @default(0) @map("likes_count")

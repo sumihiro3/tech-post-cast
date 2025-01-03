@@ -5,7 +5,10 @@ import {
 import { IHeadlineTopicProgramsRepository } from '@domains/radio-program/headline-topic-program/headline-topic-programs.repository.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { HeadlineTopicProgram, Prisma, QiitaPost } from '@prisma/client';
-import { PrismaService } from '@tech-post-cast/database';
+import {
+  HeadlineTopicProgramWithQiitaPosts,
+  PrismaService,
+} from '@tech-post-cast/database';
 
 /**
  * IHeadlineTopicProgramsRepository の実装
@@ -23,15 +26,64 @@ export class HeadlineTopicProgramsRepository
    * @param id ヘッドライントピック番組 ID
    * @returns ヘッドライントピック番組
    */
-  async findOne(id: string): Promise<HeadlineTopicProgram> {
+  async findOne(id: string): Promise<HeadlineTopicProgramWithQiitaPosts> {
     this.logger.debug(`HeadlineTopicProgramsRepository.findOne called`, { id });
     const result = await this.prisma.headlineTopicProgram.findUnique({
       where: { id },
+      include: { posts: true },
     });
     this.logger.debug(`指定のヘッドライントピック番組 [${id}] を取得しました`, {
       result,
     });
     return result;
+  }
+
+  /**
+   * ヘッドライントピック番組の件数を取得する
+   * @returns ヘッドライントピック番組の件数
+   */
+  async count(): Promise<number> {
+    this.logger.debug(`HeadlineTopicProgramsRepository.count called`);
+    const result = await this.prisma.headlineTopicProgram.count();
+    this.logger.debug(`ヘッドライントピック番組の件数を取得しました`, {
+      result,
+    });
+    return result;
+  }
+
+  /**
+   * ヘッドライントピック番組を取得する
+   * @param page ページ番号
+   * @param limit 1 ページあたりの件数
+   * @returns ヘッドライントピック番組一覧
+   */
+  async find(page: number, limit: number): Promise<HeadlineTopicProgram[]> {
+    this.logger.debug(`HeadlineTopicProgramsRepository.find called`, {
+      page,
+      limit,
+    });
+    const result = await this.prisma.headlineTopicProgram.findMany({
+      take: limit,
+      skip: (page - 1) * limit,
+      orderBy: { createdAt: 'desc' },
+    });
+    this.logger.debug(`ヘッドライントピック番組を取得しました`, { result });
+    return result;
+  }
+
+  /**
+   * ヘッドライントピック番組のID一覧を取得する
+   * @returns ヘッドライントピック番組のID一覧
+   */
+  async findIds(): Promise<string[]> {
+    this.logger.debug(`HeadlineTopicProgramsRepository.findIds called`);
+    const result = await this.prisma.headlineTopicProgram.findMany({
+      select: { id: true },
+    });
+    this.logger.debug(`ヘッドライントピック番組のID一覧を取得しました`, {
+      result,
+    });
+    return result.map((r) => r.id);
   }
 
   /**
