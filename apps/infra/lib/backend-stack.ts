@@ -1,14 +1,11 @@
 import * as cdk from 'aws-cdk-lib';
 import * as apiGatewayV2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as apiGatewayV2Integration from 'aws-cdk-lib/aws-apigatewayv2-integrations';
-import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
-import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as cloudWatchLogs from 'aws-cdk-lib/aws-logs';
-import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 import * as path from 'path';
 import { StageConfig } from '../config';
@@ -26,45 +23,6 @@ export class TechPostCastBackendStack extends cdk.Stack {
     stage: StageConfig,
   ) {
     super(scope, id, props);
-
-    // 番組音声ファイルを保存するS3バケット
-    const audioBucket = new s3.Bucket(this, 'TechPostCastAudioBucket', {
-      bucketName: `tech-post-cast-program-audio-bucket${stage.suffix}`,
-      versioned: false,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
-
-    // CloudFront
-    const distribution = new cloudfront.Distribution(
-      this,
-      'TechPostCastDistribution',
-      {
-        defaultBehavior: {
-          origin: origins.S3BucketOrigin.withOriginAccessControl(audioBucket),
-          // CORS, CORB 対策
-          // @see https://www.chromium.org/Home/chromium-security/corb-for-developers/
-          responseHeadersPolicy: new cloudfront.ResponseHeadersPolicy(
-            this,
-            'TechPostCastDistributionResponseHeadersPolicy',
-            {
-              corsBehavior: {
-                accessControlAllowOrigins: ['*'],
-                accessControlAllowHeaders: ['*'],
-                accessControlAllowMethods: ['ALL'],
-                accessControlAllowCredentials: false,
-                originOverride: true,
-              },
-            },
-          ),
-        },
-      },
-    );
-    const programFileUrlPrefix = `https://${distribution.distributionDomainName}`;
-    new cdk.CfnOutput(this, 'TechPostCastDistribution URL', {
-      value: programFileUrlPrefix,
-    });
-    this.programFileUrlPrefix = programFileUrlPrefix;
-
     // Lambda with Docker Image
     const backendLambda = new lambda.DockerImageFunction(
       this,
@@ -101,14 +59,10 @@ export class TechPostCastBackendStack extends cdk.Stack {
             'assets/audio/headline-topic-programs/ending.mp3',
           HEADLINE_TOPIC_PROGRAM_PICTURE_FILE_PATH:
             'assets/audio/headline-topic-programs/preview.jpg',
-          // AWS
-          PROGRAM_AUDIO_BUCKET_NAME: audioBucket.bucketName,
-          PROGRAM_AUDIO_FILE_URL_PREFIX: programFileUrlPrefix,
         },
       },
     );
     // Lambda 実行ロール
-    const backendLambdaRole = backendLambda.role!;
     const lambdaArnExportName = `TechPostCastBackendLambdaArn${stage.suffixLarge}`;
     new cdk.CfnOutput(this, lambdaArnExportName, {
       value: backendLambda.functionArn,
@@ -119,8 +73,6 @@ export class TechPostCastBackendStack extends cdk.Stack {
       value: backendLambda.functionName,
       exportName: lambdaNameExportName,
     });
-    // Lambda 実行ロールにS3バケットへのアクセス権限を付与
-    audioBucket.grantReadWrite(backendLambdaRole);
 
     // API Gateway
     const backendGateway = new apiGatewayV2.HttpApi(
