@@ -16,6 +16,6 @@ export class AppConfigService {
   }
 
   get ProgramFileUrlPrefix(): string {
-    return this.config.get<string>('PROGRAM_FILE_URL_PREFIX');
+    return this.config.get<string>('PROGRAM_AUDIO_FILE_URL_PREFIX');
   }
 }
