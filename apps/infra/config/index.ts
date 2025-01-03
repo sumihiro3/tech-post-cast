@@ -11,6 +11,10 @@ export class StageConfig {
   readonly suffixLarge: string;
   /** スタック名 */
   readonly stackName: string;
+  /** 番組ファイルを保存する バケット名 */
+  readonly programFileBucketName: string;
+  /** 番組ファイルを公開する URL prefix */
+  readonly programFileUrlPrefix: string;
 
   /**
    * 環境が本番環境かどうかを判定する
@@ -32,10 +36,12 @@ export class StageConfig {
 
     switch (name) {
       case 'develop':
+        this.programFileUrlPrefix = `https://pub-05da8f18509440838753b2889cebdaf1.r2.dev`;
         break;
       case 'production':
         s = ``;
         nJp = `本番環境`;
+        this.programFileUrlPrefix = `https://pub-2bec3306c9a1436e8bc204465623e633.r2.dev`;
         break;
       default:
         const errorMessage = `想定外のステージ名 [name: ${name}] が指定されました。`;
@@ -54,6 +60,7 @@ export class StageConfig {
     }
     this.stackName = sn + this.suffixLarge;
     this.nameJp = nJp;
+    this.programFileBucketName = `tech-post-cast-program-audio-bucket${this.suffix}`;
     console.log(`環境情報を初期化しました `, {
       name: this.name,
       nameJp: this.nameJp,
