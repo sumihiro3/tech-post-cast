@@ -18,14 +18,39 @@ export class S3ProgramFileUploader implements IProgramFileUploader {
   private s3Client: S3Client;
 
   constructor(private readonly appConfig: AppConfigService) {
-    this.s3Client = this.createS3Client();
+    if (!this.appConfig.CloudflareAccessKeyId) {
+      // Cloudflare Access Key ID が設定されていない場合は、AWS S3 を利用する
+      this.logger.log('AWS S3 を利用してファイルアップロードを行います');
+      this.s3Client = this.createS3Client();
+    } else {
+      this.logger.log('Cloudflare R2 を利用してファイルアップロードを行います');
+      // Cloudflare Access Key ID が設定されている場合は、Cloudflare R2 を利用する
+      this.s3Client = this.createCloudflareR2S3Client(appConfig);
+    }
   }
 
   /**
    * S3クライアントを生成する
+   * @returns S3クライアント
    */
   createS3Client(): S3Client {
     return new S3Client({});
+  }
+
+  /**
+   * Cloudflare R2 向けの S3 クライアントを生成する
+   * @params appConfig アプリケーション設定
+   * @returns Cloudflare R2 向けの S3 クライアント
+   */
+  createCloudflareR2S3Client(appConfig: AppConfigService): S3Client {
+    return new S3Client({
+      region: 'auto',
+      endpoint: appConfig.CloudflareR2Endpoint,
+      credentials: {
+        accessKeyId: appConfig.CloudflareAccessKeyId,
+        secretAccessKey: appConfig.CloudflareSecretAccessKey,
+      },
+    });
   }
 
   /*

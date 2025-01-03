@@ -41,6 +41,9 @@ describe('AppConfigService', () => {
                   'headline-topic-program-picture-file-path',
                 PROGRAM_AUDIO_BUCKET_NAME: 'program-audio-bucket-name',
                 PROGRAM_AUDIO_FILE_URL_PREFIX: 'program-audio-file-url-prefix',
+                CLOUDFLARE_ACCESS_KEY_ID: 'cloudflare-access-key-id',
+                CLOUDFLARE_SECRET_ACCESS_KEY: 'cloudflare-secret-access-key',
+                CLOUDFLARE_R2_ENDPOINT: 'cloudflare-r2-endpoint',
               };
               return configKeys[key];
             }),
@@ -195,6 +198,19 @@ describe('AppConfigService', () => {
     );
   });
 
+  it('CLOUDFLARE_ACCESS_KEY_ID が設定されている場合は、CLOUDFLARE_SECRET_ACCESS_KEY と CLOUDFLARE_R2_ENDPOINT が設定されているべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'CLOUDFLARE_ACCESS_KEY_ID') return 'some-value';
+      if (key === 'CLOUDFLARE_SECRET_ACCESS_KEY') return null;
+      if (key === 'CLOUDFLARE_R2_ENDPOINT') return null;
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
   it('ゲッターから正しい値を返すべき', () => {
     expect(service.DatabaseUrl).toBe('https://example-database.url');
     expect(service.ShowQueryLogs).toBe(true);
@@ -221,5 +237,10 @@ describe('AppConfigService', () => {
     expect(service.ProgramAudioFileUrlPrefix).toBe(
       'program-audio-file-url-prefix',
     );
+    expect(service.CloudflareAccessKeyId).toBe('cloudflare-access-key-id');
+    expect(service.CloudflareSecretAccessKey).toBe(
+      'cloudflare-secret-access-key',
+    );
+    expect(service.CloudflareR2Endpoint).toBe('cloudflare-r2-endpoint');
   });
 });

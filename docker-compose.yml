@@ -24,9 +24,12 @@ services:
       - HEADLINE_TOPIC_PROGRAM_OPENING_FILE_PATH=assets/audio/headline-topic-programs/opening.mp3
       - HEADLINE_TOPIC_PROGRAM_ENDING_FILE_PATH=assets/audio/headline-topic-programs/ending.mp3
       - HEADLINE_TOPIC_PROGRAM_PICTURE_FILE_PATH=assets/audio/headline-topic-programs/preview.jpg
-      # AWS
+      # Cloudflare
       - PROGRAM_AUDIO_BUCKET_NAME=tech-post-cast-program-audio-bucket-develop
-      - PROGRAM_AUDIO_FILE_URL_PREFIX=https://d2ohwgmlpn9j5f.cloudfront.net
+      - PROGRAM_AUDIO_FILE_URL_PREFIX=https://pub-05da8f18509440838753b2889cebdaf1.r2.dev
+      - CLOUDFLARE_ACCESS_KEY_ID=44d40b16cd5fb4ac657a59f5e5d708d5
+      - CLOUDFLARE_SECRET_ACCESS_KEY=8389cc368787e07042ec119c1770eaa19144960462e238a1eab28e495398633a
+      - CLOUDFLARE_R2_ENDPOINT=https://91cf8fd29796185fd97f3461ac10978a.r2.cloudflarestorage.com
   line-bot-backend:
     container_name: line-bot-backend-container
     image: tech-post-cast-line-bot-backend
@@ -43,5 +46,4 @@ services:
       - PORT=4000
       - NODE_ENV=development
       - SHOW_QUERY_LOGS=true
-      # AWS
-      - PROGRAM_FILE_URL_PREFIX=https://d2ohwgmlpn9j5f.cloudfront.net
+      - PROGRAM_AUDIO_FILE_URL_PREFIX=https://pub-05da8f18509440838753b2889cebdaf1.r2.dev

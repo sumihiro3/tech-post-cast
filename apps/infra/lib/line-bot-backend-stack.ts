@@ -7,7 +7,6 @@ import * as cloudWatchLogs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 import * as path from 'path';
 import { StageConfig } from '../config';
-import { TechPostCastBackendStack } from './backend-stack';
 
 const dockerfileDir = path.join(__dirname, '../../..');
 
@@ -17,7 +16,6 @@ export class TechPostCastLineBotBackendStack extends cdk.Stack {
     id: string,
     props: cdk.StackProps,
     stage: StageConfig,
-    backendStack: TechPostCastBackendStack,
   ) {
     super(scope, id, props);
 
@@ -38,7 +36,6 @@ export class TechPostCastLineBotBackendStack extends cdk.Stack {
         environment: {
           PORT: '4000',
           SHOW_QUERY_LOGS: 'true',
-          PROGRAM_FILE_URL_PREFIX: backendStack.programFileUrlPrefix,
         },
       },
     );
