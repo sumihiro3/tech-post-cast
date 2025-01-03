@@ -3,16 +3,12 @@ import { RemovalPolicy } from 'aws-cdk-lib';
 import * as apiGatewayV2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as apiGatewayV2Integration from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
-import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as cloudWatchLogs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
-import * as path from 'path';
 import { StageConfig } from '../config';
-
-const dockerfileDir = path.join(__dirname, '../../..');
 
 export class TechPostCastBackendStack extends cdk.Stack {
   constructor(
@@ -47,9 +43,8 @@ export class TechPostCastBackendStack extends cdk.Stack {
       this,
       'TechPostCastBackendLambda',
       {
-        code: lambda.DockerImageCode.fromImageAsset(dockerfileDir, {
-          file: 'Dockerfile.backend',
-          platform: Platform.LINUX_AMD64,
+        code: lambda.DockerImageCode.fromEcr(repository, {
+          tag: 'latest',
         }),
         functionName: `TechPostCastBackendLambda${stage.suffixLarge}`,
         memorySize: 1024,
