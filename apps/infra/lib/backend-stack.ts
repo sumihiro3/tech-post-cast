@@ -1,6 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
+import { RemovalPolicy } from 'aws-cdk-lib';
 import * as apiGatewayV2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as apiGatewayV2Integration from 'aws-cdk-lib/aws-apigatewayv2-integrations';
+import * as ecr from 'aws-cdk-lib/aws-ecr';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
@@ -20,6 +22,26 @@ export class TechPostCastBackendStack extends cdk.Stack {
     stage: StageConfig,
   ) {
     super(scope, id, props);
+
+    // ECR
+    const repository = new ecr.Repository(
+      this,
+      'TechPostCastBackendRepository',
+      {
+        repositoryName: `tech-post-cast-backend-repository${stage.suffix}`,
+        removalPolicy: RemovalPolicy.DESTROY,
+        imageScanOnPush: true,
+      },
+    );
+    repository.applyRemovalPolicy(RemovalPolicy.RETAIN);
+
+    // Lifecycle rule
+    repository.addLifecycleRule({
+      tagStatus: ecr.TagStatus.UNTAGGED,
+      maxImageCount: 5,
+      description: 'Leave 5 untagged images and delete all others',
+    });
+
     // Lambda with Docker Image
     const backendLambda = new lambda.DockerImageFunction(
       this,
@@ -56,6 +78,8 @@ export class TechPostCastBackendStack extends cdk.Stack {
             'assets/audio/headline-topic-programs/ending.mp3',
           HEADLINE_TOPIC_PROGRAM_PICTURE_FILE_PATH:
             'assets/audio/headline-topic-programs/preview.jpg',
+          PROGRAM_AUDIO_BUCKET_NAME: stage.programFileBucketName,
+          PROGRAM_AUDIO_FILE_URL_PREFIX: stage.programFileUrlPrefix,
         },
       },
     );
