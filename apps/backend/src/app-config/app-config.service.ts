@@ -72,6 +72,18 @@ export class AppConfigService {
         'PROGRAM_AUDIO_FILE_URL_PREFIX が設定されていません',
       );
     }
+    if (this.CloudflareAccessKeyId) {
+      if (!this.CloudflareSecretAccessKey) {
+        throw new AppConfigValidationError(
+          'CLOUDFLARE_SECRET_ACCESS_KEY が設定されていません',
+        );
+      }
+      if (!this.CloudflareR2Endpoint) {
+        throw new AppConfigValidationError(
+          'CLOUDFLARE_R2_ENDPOINT が設定されていません',
+        );
+      }
+    }
   }
 
   /**
@@ -183,5 +195,26 @@ export class AppConfigService {
    */
   get ProgramAudioFileUrlPrefix(): string {
     return this.config.get<string>('PROGRAM_AUDIO_FILE_URL_PREFIX');
+  }
+
+  /**
+   * Cloudflare Access key id
+   */
+  get CloudflareAccessKeyId(): string {
+    return this.config.get<string>('CLOUDFLARE_ACCESS_KEY_ID');
+  }
+
+  /**
+   * Cloudflare Secret access key
+   */
+  get CloudflareSecretAccessKey(): string {
+    return this.config.get<string>('CLOUDFLARE_SECRET_ACCESS_KEY');
+  }
+
+  /**
+   * Cloudflare R2 endpoint
+   */
+  get CloudflareR2Endpoint(): string {
+    return this.config.get<string>('CLOUDFLARE_R2_ENDPOINT');
   }
 }
