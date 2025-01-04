@@ -35,8 +35,11 @@ export class TechPostCastLineBotBackendStack extends cdk.Stack {
         tracing: lambda.Tracing.ACTIVE,
         environment: {
           PORT: '4000',
-          SHOW_QUERY_LOGS: 'true',
+          LINE_BOT_CHANNEL_SECRET: stage.lineBotChannelSecret,
+          LINE_BOT_CHANNEL_ACCESS_TOKEN: stage.lineBotChannelAccessToken,
           PROGRAM_AUDIO_FILE_URL_PREFIX: stage.programFileUrlPrefix,
+          DATABASE_URL: stage.databaseUrl,
+          SHOW_QUERY_LOGS: 'true',
         },
       },
     );
