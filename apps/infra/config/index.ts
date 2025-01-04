@@ -1,3 +1,5 @@
+import * as dotenv from 'dotenv';
+
 export class StageConfig {
   /** 環境名 */
   readonly name: string;
@@ -11,10 +13,60 @@ export class StageConfig {
   readonly suffixLarge: string;
   /** スタック名 */
   readonly stackName: string;
+
+  /** Backend API Access Token */
+  get backendApiAccessToken(): string {
+    return process.env.V1_API_ACCESS_TOKEN || '';
+  }
+
+  /** Qiita API Access Token */
+  get qiitaApiAccessToken(): string {
+    return process.env.QIITA_API_ACCESS_TOKEN || '';
+  }
+
+  /** OpenAI API Key */
+  get openAiApiKey(): string {
+    return process.env.OPENAI_API_KEY || '';
+  }
+
+  /** database URL */
+  get databaseUrl(): string {
+    return process.env.DATABASE_URL || '';
+  }
+
+  /** LINE Bot Channel secret */
+  get lineBotChannelSecret(): string {
+    return process.env.LINE_BOT_CHANNEL_SECRET || '';
+  }
+
+  /** LINE Bot Channel access token */
+  get lineBotChannelAccessToken(): string {
+    return process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN || '';
+  }
+
+  /** Cloudflare access key id */
+  get cloudflareAccessKeyId(): string {
+    return process.env.CLOUDFLARE_ACCESS_KEY_ID || '';
+  }
+
+  /** Cloudflare secret access key */
+  get cloudflareSecretAccessKey(): string {
+    return process.env.CLOUDFLARE_SECRET_ACCESS_KEY || '';
+  }
+
+  /** Cloudflare R2 endpoint */
+  get cloudflareR2Endpoint(): string {
+    return process.env.CLOUDFLARE_R2_ENDPOINT || '';
+  }
+
   /** 番組ファイルを保存する バケット名 */
-  readonly programFileBucketName: string;
+  get programFileBucketName(): string {
+    return process.env.PROGRAM_AUDIO_BUCKET_NAME || '';
+  }
   /** 番組ファイルを公開する URL prefix */
-  readonly programFileUrlPrefix: string;
+  get programFileUrlPrefix(): string {
+    return process.env.PROGRAM_AUDIO_FILE_URL_PREFIX || '';
+  }
 
   /**
    * 環境が本番環境かどうかを判定する
@@ -33,21 +85,22 @@ export class StageConfig {
     let sn = `TechPostCastStack`;
     let s = `develop`;
     let nJp = `開発環境`;
+    let dotenvPath = './.env.develop';
 
     switch (name) {
       case 'develop':
-        this.programFileUrlPrefix = `https://pub-05da8f18509440838753b2889cebdaf1.r2.dev`;
         break;
       case 'production':
         s = ``;
         nJp = `本番環境`;
-        this.programFileUrlPrefix = `https://pub-2bec3306c9a1436e8bc204465623e633.r2.dev`;
+        dotenvPath = './.env.production';
         break;
       default:
         const errorMessage = `想定外のステージ名 [name: ${name}] が指定されました。`;
         console.error(errorMessage);
         throw new Error(errorMessage);
     }
+    dotenv.config({ path: dotenvPath });
     this.name = name;
     if (s.length > 0) {
       this.suffix = `-${s}`;
@@ -60,7 +113,6 @@ export class StageConfig {
     }
     this.stackName = sn + this.suffixLarge;
     this.nameJp = nJp;
-    this.programFileBucketName = `tech-post-cast-program-audio-bucket${this.suffix}`;
     console.log(`環境情報を初期化しました `, {
       name: this.name,
       nameJp: this.nameJp,
@@ -68,6 +120,17 @@ export class StageConfig {
       suffixWithUnderBar: this.suffixWithUnderBar,
       suffixLarge: this.suffixLarge,
       stackName: this.stackName,
+      V1_API_ACCESS_TOKEN: this.backendApiAccessToken,
+      QIITA_API_ACCESS_TOKEN: this.qiitaApiAccessToken,
+      OPENAI_API_KEY: this.openAiApiKey,
+      DATABASE_URL: this.databaseUrl,
+      LINE_BOT_CHANNEL_SECRET: this.lineBotChannelSecret,
+      LINE_BOT_CHANNEL_ACCESS_TOKEN: this.lineBotChannelAccessToken,
+      CLOUDFLARE_ACCESS_KEY_ID: this.cloudflareAccessKeyId,
+      CLOUDFLARE_SECRET_ACCESS_KEY: this.cloudflareSecretAccessKey,
+      CLOUDFLARE_R2_ENDPOINT: this.cloudflareR2Endpoint,
+      PROGRAM_AUDIO_BUCKET_NAME: this.programFileBucketName,
+      PROGRAM_AUDIO_FILE_URL_PREFIX: this.programFileUrlPrefix,
     });
   }
 }
