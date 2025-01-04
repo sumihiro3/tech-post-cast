@@ -9,6 +9,7 @@ on:
     types:
       - closed
     paths:
+      - '.github/workflows/deploy-backend.yaml'
       - 'apps/backend/**'
 
 jobs:
@@ -35,6 +36,10 @@ jobs:
         # ECR へログイン
         - name: Login to ECR
           run: yarn login:ecr:for-ci
+          env:
+            AWS_DEFAULT_REGION: 'ap-northeast-1'
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         # develop ブランチにプッシュされたとき
         - name: Build image and push to ECR for develop
           if: ${{ github.ref_name == 'develop'}}
