@@ -44,7 +44,7 @@ export class TechPostCastBackendStack extends cdk.Stack {
       'TechPostCastBackendLambda',
       {
         code: lambda.DockerImageCode.fromEcr(repository, {
-          tag: 'latest',
+          tagOrDigest: 'latest',
         }),
         functionName: `TechPostCastBackendLambda${stage.suffixLarge}`,
         memorySize: 1024,
@@ -54,13 +54,20 @@ export class TechPostCastBackendStack extends cdk.Stack {
         environment: {
           // 環境変数
           PORT: '3000',
+          // V1 API
+          V1_API_ACCESS_TOKEN: stage.backendApiAccessToken,
+          // Database
+          DATABASE_URL: stage.databaseUrl,
           SHOW_QUERY_LOGS: 'true',
+          // Qiita API
+          QIITA_API_ACCESS_TOKEN: stage.qiitaApiAccessToken,
+          // OpenAI
+          OPENAI_API_KEY: stage.openAiApiKey,
+          OPEN_AI_SUMMARIZATION_MODEL: 'gpt-4o-mini',
+          OPEN_AI_SCRIPT_GENERATION_MODEL: 'gpt-4o-mini',
           // ffmpeg
           FFMPEG_PATH: '/usr/bin/ffmpeg',
           FFPROBE_PATH: '/usr/bin/ffprobe',
-          // OpenAI
-          OPEN_AI_SUMMARIZATION_MODEL: 'gpt-4o-mini',
-          OPEN_AI_SCRIPT_GENERATION_MODEL: 'gpt-4o-mini',
           // 番組ファイル生成で利用する一時ファイルの保存先
           PROGRAM_FILE_GENERATION_TEMP_DIR: '/tmp/program-file-maker',
           // ヘッドライントピック番組用音声ファイル
@@ -75,6 +82,10 @@ export class TechPostCastBackendStack extends cdk.Stack {
             'assets/audio/headline-topic-programs/preview.jpg',
           PROGRAM_AUDIO_BUCKET_NAME: stage.programFileBucketName,
           PROGRAM_AUDIO_FILE_URL_PREFIX: stage.programFileUrlPrefix,
+          // Cloudflare
+          CLOUDFLARE_ACCESS_KEY_ID: stage.cloudflareAccessKeyId,
+          CLOUDFLARE_SECRET_ACCESS_KEY: stage.cloudflareSecretAccessKey,
+          CLOUDFLARE_R2_ENDPOINT: stage.cloudflareR2Endpoint,
         },
       },
     );
