@@ -1,9 +1,11 @@
 import { AppConfigValidationError } from '@/types/errors';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AppConfigService {
+  private readonly logger = new Logger(AppConfigService.name);
+
   constructor(private readonly config: ConfigService) {
     // 検証
     if (!this.V1ApiToken) {
@@ -84,6 +86,30 @@ export class AppConfigService {
         );
       }
     }
+    // 設定値のログ出力
+    this.logger.log('AppConfigService initialized', {
+      V1ApiToken: this.V1ApiToken,
+      DatabaseUrl: this.DatabaseUrl,
+      ShowQueryLogs: this.ShowQueryLogs,
+      QiitaAccessToken: this.QiitaAccessToken,
+      OpenAiApiKey: this.OpenAiApiKey,
+      OpenAiSummarizationModel: this.OpenAiSummarizationModel,
+      OpenAiScriptGenerationModel: this.OpenAiScriptGenerationModel,
+      ProgramFileGenerationTempDir: this.ProgramFileGenerationTempDir,
+      HeadlineTopicProgramTargetDir: this.HeadlineTopicProgramTargetDir,
+      HeadlineTopicProgramBgmFilePath: this.HeadlineTopicProgramBgmFilePath,
+      HeadlineTopicProgramOpeningFilePath:
+        this.HeadlineTopicProgramOpeningFilePath,
+      HeadlineTopicProgramEndingFilePath:
+        this.HeadlineTopicProgramEndingFilePath,
+      HeadlineTopicProgramPictureFilePath:
+        this.HeadlineTopicProgramPictureFilePath,
+      ProgramAudioBucketName: this.ProgramAudioBucketName,
+      ProgramAudioFileUrlPrefix: this.ProgramAudioFileUrlPrefix,
+      CloudflareAccessKeyId: this.CloudflareAccessKeyId,
+      CloudflareSecretAccessKey: this.CloudflareSecretAccessKey,
+      CloudflareR2Endpoint: this.CloudflareR2Endpoint,
+    });
   }
 
   /**

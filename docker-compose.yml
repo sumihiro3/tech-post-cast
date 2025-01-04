@@ -5,11 +5,10 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile.backend
-    # volumes:
-    #   - .:/app
     ports:
       - '3000:3000'
     env_file:
+      - apps/infra/.env.develop
       - docker_compose.backend.env
     environment:
       - PORT=3000
@@ -18,32 +17,28 @@ services:
       # ffmpeg
       - FFMPEG_PATH=/usr/bin/ffmpeg
       - FFPROBE_PATH=/usr/bin/ffprobe
-      # ヘッドライントピック番組用音声ファイル
+      # OpenAI
+      - OPEN_AI_SUMMARIZATION_MODEL=gpt-4o-mini
+      - OPEN_AI_SCRIPT_GENERATION_MODEL=gpt-4o-mini
+      # 番組ファイル生成で利用する一時ファイルの保存先
       - HEADLINE_TOPIC_PROGRAM_TARGET_DIR=/tmp/headline-topic-programs
+      - PROGRAM_FILE_GENERATION_TEMP_DIR=/tmp/program-file-maker
+      # ヘッドライントピック番組用音声ファイル
       - HEADLINE_TOPIC_PROGRAM_BGM_FILE_PATH=assets/audio/headline-topic-programs/bgm.mp3
       - HEADLINE_TOPIC_PROGRAM_OPENING_FILE_PATH=assets/audio/headline-topic-programs/opening.mp3
       - HEADLINE_TOPIC_PROGRAM_ENDING_FILE_PATH=assets/audio/headline-topic-programs/ending.mp3
       - HEADLINE_TOPIC_PROGRAM_PICTURE_FILE_PATH=assets/audio/headline-topic-programs/preview.jpg
-      # Cloudflare
-      - PROGRAM_AUDIO_BUCKET_NAME=tech-post-cast-program-audio-bucket-develop
-      - PROGRAM_AUDIO_FILE_URL_PREFIX=https://pub-05da8f18509440838753b2889cebdaf1.r2.dev
-      - CLOUDFLARE_ACCESS_KEY_ID=44d40b16cd5fb4ac657a59f5e5d708d5
-      - CLOUDFLARE_SECRET_ACCESS_KEY=8389cc368787e07042ec119c1770eaa19144960462e238a1eab28e495398633a
-      - CLOUDFLARE_R2_ENDPOINT=https://91cf8fd29796185fd97f3461ac10978a.r2.cloudflarestorage.com
   line-bot-backend:
     container_name: line-bot-backend-container
     image: tech-post-cast-line-bot-backend
     build: 
       context: .
       dockerfile: Dockerfile.line-bot-backend
-    # volumes:
-    #   - .:/app
     ports:
       - '4000:4000'
     env_file:
-      - docker_compose.backend.env
+      - apps/infra/.env.develop
     environment:
       - PORT=4000
       - NODE_ENV=development
       - SHOW_QUERY_LOGS=true
-      - PROGRAM_AUDIO_FILE_URL_PREFIX=https://pub-05da8f18509440838753b2889cebdaf1.r2.dev
