@@ -1,9 +1,9 @@
 @baseUrl = http://localhost:3000
 
 # 本番環境
-# @baseUrl = https://v0q3zp560g.execute-api.ap-northeast-1.amazonaws.com/
+# @baseUrl = https://p0eui4ddrg.execute-api.ap-northeast-1.amazonaws.com/
 # 開発環境
-# @baseUrl = https://9xsg0utwm0.execute-api.ap-northeast-1.amazonaws.com/
+# @baseUrl = https://6oqfli27vg.execute-api.ap-northeast-1.amazonaws.com/
 
 @apiKey = test-v1-api-key
 @token = test-bearer-token
