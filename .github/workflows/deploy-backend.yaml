@@ -9,6 +9,7 @@ on:
     types:
       - closed
     paths:
+      - '.github/workflows/deploy-backend.yaml'
       - 'apps/backend/**'
 
 jobs:
