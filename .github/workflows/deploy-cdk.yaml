@@ -31,11 +31,11 @@ jobs:
         # develop ブランチにプッシュされたとき
         - name: create .env.develop for develop environment
           if: ${{ github.ref_name == 'develop'}}
-          run: echo "${{ secrets.ENVS_DEVELOP }}" > .env.develop
+          run: echo "${{ secrets.ENVS_DEVELOP }}" > apps/infra/.env.develop
         # main ブランチにプッシュされたとき
         - name: create .env.production for main environment
           if: ${{ github.ref_name == 'main'}}
-          run: echo "${{ secrets.ENVS_MAIN }}" > .env.production
+          run: echo "${{ secrets.ENVS_MAIN }}" > apps/infra/.env.production
         # Yarn のインストール
         - name: Install Yarn
           run: npm install -g yarn
