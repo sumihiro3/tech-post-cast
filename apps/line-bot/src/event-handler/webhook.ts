@@ -1,13 +1,16 @@
-import { messagingApi, webhook } from '@line/bot-sdk';
+import { webhook } from '@line/bot-sdk';
+import { Context } from 'hono';
+import { HonoEnv } from '../middlewares/factory';
 import { handleMessageEvent } from './message-event';
 
 /**
  * LINE Webhook イベントを処理する
+ * @param context Context
  * @param event WebhookEvent
  */
 export const handleWebhookEvent = async (
+  context: Context<HonoEnv>,
   event: webhook.Event,
-  client: messagingApi.MessagingApiClient,
 ): Promise<void> => {
   console.debug(`LineBotService.handleWebhook() called`, {
     event,
@@ -17,7 +20,7 @@ export const handleWebhookEvent = async (
     switch (event.type) {
       // メッセージイベントの場合
       case 'message':
-        await handleMessageEvent(event, client);
+        await handleMessageEvent(context, event);
         break;
       // ポストバックイベントの場合
       // case 'postback':

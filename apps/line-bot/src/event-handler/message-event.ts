@@ -1,13 +1,17 @@
 import { messagingApi, webhook } from '@line/bot-sdk';
+import { formatDate } from '@tech-post-cast/commons';
+import { Context } from 'hono';
+import { HonoEnv } from '../middlewares/factory';
+import { findLatest } from '../repositories/headline-topic-programs.repository';
 
 /**
  * メッセージイベントを処理する
+ * @param context Context
  * @param event MessageEvent
- * @param client MessagingApiClient
  */
 export const handleMessageEvent = async (
+  context: Context<HonoEnv>,
   event: webhook.MessageEvent,
-  client: messagingApi.MessagingApiClient,
 ): Promise<void> => {
   console.debug(`handleMessageEvent() called`, {
     event,
@@ -15,7 +19,7 @@ export const handleMessageEvent = async (
   // テキストメッセージの場合
   if (event.message.type === 'text') {
     const message: webhook.TextMessageContent = event.message;
-    await handleTextMessageEvent(event, message, client);
+    await handleTextMessageEvent(context, event, message);
   } else {
     // テキストメッセージ以外は未対応
     console.warn(`未対応のメッセージタイプです`, {
@@ -31,14 +35,14 @@ const LATEST_PROGRAM_MESSAGE = '最新のヘッドライントピック';
 
 /**
  * TextMessage の受信時処理
+ * @param context Context
  * @param event MessageEvent
  * @param message TextEventMessage
- * @param client MessagingApiClient
  */
 const handleTextMessageEvent = async (
+  context: Context<HonoEnv>,
   event: webhook.MessageEvent,
   message: webhook.TextMessageContent,
-  client: messagingApi.MessagingApiClient,
 ): Promise<void> => {
   console.debug(`handleTextMessageEvent() called`, {
     event,
@@ -49,13 +53,13 @@ const handleTextMessageEvent = async (
   let replyMessages: messagingApi.Message[]; // 返信するメッセージ
   if (message && LATEST_PROGRAM_MESSAGE === messageString.toLowerCase()) {
     // 最新の番組情報を取得する
-    // replyMessages = await this.createLatestProgramMessage();
-    replyMessages = createEchoMessage(messageString);
+    replyMessages = await createLatestProgramMessage(context);
   } else {
     // 番組情報の要求以外はオウム返し
     replyMessages = createEchoMessage(messageString);
   }
   // メッセージを返信する
+  const client = context.var.lineClient;
   const res = await client.replyMessage({
     replyToken,
     messages: replyMessages,
@@ -80,4 +84,120 @@ const createEchoMessage = (text: string): messagingApi.TextMessage[] => {
       text,
     },
   ];
+};
+
+/**
+ * 最新番組のメッセージを生成する
+ * @returns メッセージ
+ */
+const createLatestProgramMessage = async (
+  context: Context<HonoEnv>,
+): Promise<
+  (
+    | messagingApi.AudioMessage
+    | messagingApi.TextMessage
+    | messagingApi.FlexMessage
+  )[]
+> => {
+  console.debug(`LineBotService.createLatestProgramMessage() called`);
+  const prismaClient = context.var.prismaClient;
+  const latestProgram = await findLatest(prismaClient);
+  if (
+    !latestProgram ||
+    !latestProgram.videoUrl ||
+    !latestProgram.videoUrl.startsWith('http')
+  ) {
+    return [
+      {
+        type: 'text',
+        text: '最新の番組情報が見つかりませんでした',
+      },
+    ];
+  }
+  const programFileUrlPrefix =
+    'https://tech-post-cast.s3-ap-northeast-1.amazonaws.com';
+  const previewUrl = `${programFileUrlPrefix}/headline-topic-program/technology.jpg`;
+  const programUrl = latestProgram.audioUrl;
+  const flex: messagingApi.FlexMessage = {
+    type: 'flex',
+    altText: `ヘッドライントピック：${latestProgram.title}`,
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'text',
+            text: latestProgram.title,
+            weight: 'bold',
+            size: 'xl',
+            wrap: true,
+          },
+          {
+            type: 'text',
+            text: formatDate(latestProgram.createdAt, 'YYYY/MM/DD'),
+            align: 'end',
+            size: 'xs',
+          },
+        ],
+      },
+      hero: {
+        type: 'video',
+        url: latestProgram.videoUrl,
+        previewUrl: previewUrl,
+        altContent: {
+          type: 'image',
+          size: 'full',
+          aspectRatio: '1600:1066',
+          aspectMode: 'cover',
+          url: previewUrl,
+        },
+        action: {
+          type: 'uri',
+          label: '詳細はこちら',
+          uri: programUrl,
+        },
+        aspectRatio: '1600:1066',
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        contents: [
+          {
+            type: 'button',
+            style: 'link',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '番組を再生する',
+              uri: programUrl,
+            },
+          },
+          {
+            type: 'button',
+            style: 'link',
+            height: 'sm',
+            action: {
+              type: 'postback',
+              label: '紹介記事',
+              data: `type=headlineTopicProgram&id=${latestProgram.id}`,
+              displayText: '紹介記事',
+              inputOption: 'closeRichMenu',
+            },
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            contents: [],
+            margin: 'sm',
+          },
+        ],
+        flex: 0,
+      },
+    },
+  };
+  return [flex];
 };
