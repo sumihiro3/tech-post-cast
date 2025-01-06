@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy --minify"
+    "deploy": "wrangler deploy --minify",
+    "tail": "wrangler tail --format=pretty"
   },
   "dependencies": {
     "@line/bot-sdk": "^9.5.0",
