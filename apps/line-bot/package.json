@@ -6,7 +6,8 @@
     "deploy:dev": "wrangler deploy --minify --env=dev",
     "tail:dev": "wrangler tail --format=pretty --env=dev",
     "deploy:prod": "wrangler deploy --minify --env=prod",
-    "tail:prod": "wrangler tail --format=pretty --env=prod"
+    "tail:prod": "wrangler tail --format=pretty --env=prod",
+    "test": "jest --detectOpenHandles"
   },
   "dependencies": {
     "@line/bot-sdk": "^9.5.0",
@@ -19,11 +20,15 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241218.0",
+    "@types/jest": "^29.5.2",
+    "@types/node": "^20.3.1",
     "@types/ws": "^8.5.13",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^8.0.0",
+    "jest": "^29.5.0",
     "prettier": "^3.0.0",
+    "ts-jest": "^29.2.5",
     "wrangler": "^3.99.0"
   }
 }
