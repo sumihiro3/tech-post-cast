@@ -12,7 +12,7 @@ export const handleWebhookEvent = async (
   context: Context<HonoEnv>,
   event: webhook.Event,
 ): Promise<void> => {
-  console.debug(`LineBotService.handleWebhook() called`, {
+  console.debug(`event-handler.webhook.handleWebhookEvent called`, {
     event,
   });
   try {
@@ -32,6 +32,7 @@ export const handleWebhookEvent = async (
         });
         break;
     }
+    console.log(`Webhook イベントの処理が完了しました`, { event });
     return;
   } catch (error) {
     console.error(`LINE Webhook イベント処理中にエラーが発生しました`, {

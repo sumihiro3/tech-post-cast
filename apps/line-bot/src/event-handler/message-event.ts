@@ -13,7 +13,7 @@ export const handleMessageEvent = async (
   context: Context<HonoEnv>,
   event: webhook.MessageEvent,
 ): Promise<void> => {
-  console.debug(`handleMessageEvent() called`, {
+  console.debug(`event-handler.message-event.handleMessageEvent called`, {
     event,
   });
   // テキストメッセージの場合
@@ -44,7 +44,7 @@ const handleTextMessageEvent = async (
   event: webhook.MessageEvent,
   message: webhook.TextMessageContent,
 ): Promise<void> => {
-  console.debug(`handleTextMessageEvent() called`, {
+  console.debug(`event-handler.message-event.handleTextMessageEvent called`, {
     event,
     message,
   });
@@ -64,7 +64,8 @@ const handleTextMessageEvent = async (
     replyToken,
     messages: replyMessages,
   });
-  console.log(`メッセージを返信しました`, {
+  console.log(`テキストメッセージの処理が完了し、メッセージを返信しました`, {
+    replyMessages,
     res,
   });
 };
@@ -75,7 +76,7 @@ const handleTextMessageEvent = async (
  * @returns テキストメッセージ
  */
 const createEchoMessage = (text: string): messagingApi.TextMessage[] => {
-  console.debug(`LineBotService.createEchoMessage() called`, {
+  console.debug(`event-handler.message-event.createEchoMessage called`, {
     text,
   });
   return [
@@ -114,8 +115,7 @@ const createLatestProgramMessage = async (
       },
     ];
   }
-  const programFileUrlPrefix =
-    'https://tech-post-cast.s3-ap-northeast-1.amazonaws.com';
+  const programFileUrlPrefix = context.env.PROGRAM_FILE_URL_PREFIX;
   const previewUrl = `${programFileUrlPrefix}/headline-topic-program/technology.jpg`;
   const programUrl = latestProgram.audioUrl;
   const flex: messagingApi.FlexMessage = {

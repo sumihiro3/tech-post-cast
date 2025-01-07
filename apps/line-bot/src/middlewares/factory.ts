@@ -9,14 +9,21 @@ import { createPrismaClient } from './prisma';
  */
 export type HonoEnv = {
   Variables: {
+    /** LINE Messaging API クライアント */
     lineClient: messagingApi.MessagingApiClient;
+    /** Prisma クライアント */
     prismaClient: PrismaClient;
   };
 
   Bindings: {
+    /** LINE Bot のチャンネルアクセストークン */
     LINE_BOT_CHANNEL_ACCESS_TOKEN: string;
+    /** LINE Bot のチャンネルシークレット */
     LINE_BOT_CHANNEL_SECRET: string;
+    /** データベース接続情報 */
     DATABASE_URL: string;
+    /** 番組ファイルの URL プレフィックス */
+    PROGRAM_FILE_URL_PREFIX: string;
   };
 };
 
