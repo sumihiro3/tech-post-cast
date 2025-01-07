@@ -1,7 +1,8 @@
+import { HonoEnv } from '@/middlewares/factory';
 import { webhook } from '@line/bot-sdk';
 import { Context } from 'hono';
-import { HonoEnv } from '../middlewares/factory';
 import { handleMessageEvent } from './message-event';
+import { handlePostbackEvent } from './postback-event';
 
 /**
  * LINE Webhook イベントを処理する
@@ -23,9 +24,9 @@ export const handleWebhookEvent = async (
         await handleMessageEvent(context, event);
         break;
       // ポストバックイベントの場合
-      // case 'postback':
-      //   await this.handlePostbackEvent(event);
-      //   break;
+      case 'postback':
+        await handlePostbackEvent(context, event);
+        break;
       default:
         console.warn(`未対応のイベントタイプです`, {
           event,

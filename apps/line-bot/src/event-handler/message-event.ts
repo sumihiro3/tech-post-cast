@@ -1,8 +1,8 @@
+import { HonoEnv } from '@/middlewares/factory';
+import { findLatest } from '@/repositories/headline-topic-programs.repository';
 import { messagingApi, webhook } from '@line/bot-sdk';
 import { formatDate } from '@tech-post-cast/commons';
 import { Context } from 'hono';
-import { HonoEnv } from '../middlewares/factory';
-import { findLatest } from '../repositories/headline-topic-programs.repository';
 
 /**
  * メッセージイベントを処理する
@@ -100,7 +100,9 @@ const createLatestProgramMessage = async (
     | messagingApi.FlexMessage
   )[]
 > => {
-  console.debug(`LineBotService.createLatestProgramMessage() called`);
+  console.debug(
+    `event-handler.message-event.createLatestProgramMessage called`,
+  );
   const prismaClient = context.var.prismaClient;
   const latestProgram = await findLatest(prismaClient);
   if (
