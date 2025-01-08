@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
 }
 
@@ -77,4 +77,27 @@ model QiitaPost {
 
   // テーブル名
   @@map("qiita_posts")
+}
+
+// LINE ユーザー
+model LineUser {
+  // LINE ユーザーの一意なID
+  id          String   @id @default(cuid()) @db.VarChar(50)
+  // LINE ユーザーの表示名
+  displayName String   @map("display_name") @db.VarChar(50)
+  // LINE OA をフォローしているかどうかを表すフラグ
+  isFollowed  Boolean  @default(false) @map("is_followed")
+  // LINE OA をフォローした日時
+  followedAt  DateTime @default(now()) @map("followed_at")
+  // LINE ユーザーのプロフィール画像URL
+  pictureUrl  String?  @map("picture_url") @db.VarChar(255)
+  // LINE ユーザーの言語
+  language    String?  @db.VarChar(10)
+  // LINE ユーザーの作成日時
+  createdAt   DateTime @map("created_at")
+  // LINE ユーザーの最終更新日時
+  updatedAt   DateTime @map("updated_at")
+
+  // テーブル名
+  @@map("line_users")
 }
