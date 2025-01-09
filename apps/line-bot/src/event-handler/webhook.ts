@@ -1,8 +1,10 @@
 import { HonoEnv } from '@/middlewares/factory';
 import { webhook } from '@line/bot-sdk';
 import { Context } from 'hono';
+import { handleFollowEvent } from './follow-event';
 import { handleMessageEvent } from './message-event';
 import { handlePostbackEvent } from './postback-event';
+import { handleUnfollowEvent } from './unfollow-event';
 
 /**
  * LINE Webhook イベントを処理する
@@ -26,6 +28,14 @@ export const handleWebhookEvent = async (
       // ポストバックイベントの場合
       case 'postback':
         await handlePostbackEvent(context, event);
+        break;
+      // フォローイベントの場合
+      case 'follow':
+        await handleFollowEvent(context, event);
+        break;
+      // フォロー解除イベントの場合
+      case 'unfollow':
+        await handleUnfollowEvent(context, event);
         break;
       default:
         console.warn(`未対応のイベントタイプです`, {
