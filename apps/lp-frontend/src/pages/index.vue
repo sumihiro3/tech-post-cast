@@ -11,11 +11,10 @@ div
             :program='program'
           )
   div
-  v-pagination(
-    v-model='currentPage',
-    :length='pages',
-    active-color='secondary',
-    @click='onPageChange'
+  Pagination(
+    :currentPage='currentPage',
+    :pages='pages || 0',
+    linkPrefix='/headline-topic-programs/pages'
   )
 </template>
 
@@ -47,15 +46,6 @@ const { data, error } = await useAsyncData(
     }
   },
 );
-
-/**
- * ページネーションでページが変更されたときの処理
- * @param event イベント
- */
-const onPageChange = async (event: PointerEvent) => {
-  console.log('Event', event);
-  await navigateTo(`/headline-topic-programs/pages/${currentPage.value}`);
-};
 
 const programs = data.value?.programs;
 const pages = data.value?.pages;
