@@ -20,3 +20,13 @@ export class HeadlineTopicProgramFindError extends HeadlineTopicProgramError {
     super(message, options);
   }
 }
+
+/**
+ * ヘッドライントピック番組の台本生成に失敗したことを表すエラー
+ */
+export class HeadlineTopicProgramGenerateScriptError extends HeadlineTopicProgramError {
+  override name = 'HeadlineTopicProgramGenerateScriptError';
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}
