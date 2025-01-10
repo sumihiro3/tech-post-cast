@@ -79,13 +79,14 @@ export default defineNuxtConfig({
       programsPerPage: process.env.PROGRAMS_PER_PAGE,
     },
   },
-  // TODO トップページに番組一覧ページへのリンク配置しているため不要としている。今後、トップページに番組一覧を表示しない場合は、以下の処理を有効にする。
+  // hooks: https://nuxt.com/docs/api/configuration-hooks
   hooks: {
+    // ビルド前にヘッドライントピック番組一覧の各ページのルートを追加
     async 'nitro:config'(nitroConfig) {
       // ヘッドライントピック番組一覧の各ページのルートを追加
-      // const headlineTopicProgramListRoutes =
-      //   await getHeadlineTopicProgramListPageRoutes();
-      // nitroConfig.prerender?.routes?.push(...headlineTopicProgramListRoutes);
+      const headlineTopicProgramListRoutes =
+        await getHeadlineTopicProgramListPageRoutes();
+      nitroConfig.prerender?.routes?.push(...headlineTopicProgramListRoutes);
       // // ヘッドライントピック番組ページのルートを追加
       // const headlineTopicProgramRoutes =
       //   await getHeadlineTopicProgramPageRoutes();
