@@ -9,6 +9,8 @@ import type { HeadlineTopicProgramsCountDto } from './src/api';
 const getHeadlineTopicProgramListPageRoutes = async () => {
   const apiUrl = process.env.API_BASE_URL;
   const token = process.env.API_ACCESS_TOKEN;
+  console.log(`API_BASE_URL: ${apiUrl}`);
+  console.log(`API_ACCESS_TOKEN: ${token}`);
   const response = await fetch(
     `${apiUrl}/api/v1/headline-topic-programs/count`,
     {
