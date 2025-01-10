@@ -3,7 +3,6 @@ dist/
 tmp/
 
 .env.backend
-.env.line-bot-backend
 docker_compose.backend.env
 
 # envs
