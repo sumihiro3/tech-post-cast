@@ -1,0 +1,56 @@
+name: Deploy line-bot to Cloudflare Workers
+
+on:
+  # プルリクエストがクローズされたとき
+  pull_request:
+    branches:
+      - main
+      - develop
+    types:
+      - closed
+    paths:
+      - '.github/workflows/deploy-line-bot.yaml'
+      - 'apps/line-bot/**'
+jobs:
+  deploy:
+      runs-on: ubuntu-24.04
+      steps:
+        # ブランチ名を表示
+        - name: Show branch name
+          run: echo ${{ github.ref_name }}
+        # リポジトリのコードをチェックアウト
+        - name: Checkout
+          uses: actions/checkout@v4
+        # Node.js のセットアップ
+        - name: Setup Node.js
+          uses: actions/setup-node@v4
+          with:
+            node-version: '20.18.1'
+        # Yarn のインストール
+        - name: Install Yarn
+          run: npm install -g yarn
+        # 依存関係のインストール
+        - name: Install dependencies
+          run: yarn install
+        # ビルド
+        - name: Build
+          run: yarn build:line-bot
+          working-directory: ./
+        # develop ブランチにプッシュされたとき
+        - name: Build & Deploy Worker for develop
+          if: ${{ github.ref_name == 'develop'}}
+          uses: cloudflare/wrangler-action@v3
+          with:
+            workingDirectory: ./apps/line-bot
+            environment: dev
+            apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+            accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # develop ブランチにプッシュされたとき
+        - name: Build & Deploy Worker for production
+          if: ${{ github.ref_name == 'main'}}
+          uses: cloudflare/wrangler-action@v3
+          with:
+            workingDirectory: ./apps/line-bot
+            environment: prod
+            apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+            accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -1,0 +1,38 @@
+main = "src/index.ts"
+compatibility_date = "2025-01-05"
+compatibility_flags = [ "nodejs_compat" ]
+
+# 環境変数は Cloudflare Workers のダッシュボードから設定する（deploy では上書きしない）
+keep_vars = true
+
+[observability.logs]
+enabled = true
+
+[env.dev]
+name = "line-bot-dev"
+
+[env.prod]
+name = "line-bot"
+
+# [vars]
+# MY_VAR = "my-variable"
+
+# [[kv_namespaces]]
+# binding = "MY_KV_NAMESPACE"
+# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# [[r2_buckets]]
+# binding = "MY_BUCKET"
+# bucket_name = "my-bucket"
+
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "my-database"
+# database_id = ""
+
+# [ai]
+# binding = "AI"
+
+# [observability]
+# enabled = true
+# head_sampling_rate = 1

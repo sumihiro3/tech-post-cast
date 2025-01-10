@@ -16,6 +16,7 @@
     "build-all": "yarn build-commons && yarn build-database && yarn build-backend && yarn build-line-bot-backend",
     "build-for-backend": "yarn build-commons && yarn build-database && yarn build-backend",
     "build-for-line-bot-backend": "yarn build-commons && yarn build-database && yarn build-line-bot-backend",
+    "build:line-bot": "yarn build-commons && yarn build-database",
     "build-commons": "yarn workspace @tech-post-cast/commons run build",
     "build-database": "yarn workspace @tech-post-cast/database run build",
     "build-backend": "yarn workspace @tech-post-cast/backend run build",
