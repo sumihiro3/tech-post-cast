@@ -32,10 +32,12 @@ jobs:
         # 依存関係のインストール
         - name: Install dependencies
           run: yarn install
+        # prisma のスキーマを生成
+        - name: Generate Prisma schema
+          run: yarn generate-prisma
         # ビルド
         - name: Build
           run: yarn build:line-bot
-          working-directory: ./
         # develop ブランチにプッシュされたとき
         - name: Build & Deploy Worker for develop
           if: ${{ github.ref_name == 'develop'}}
