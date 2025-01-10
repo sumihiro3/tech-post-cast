@@ -16,7 +16,7 @@ div
   v-btn(
     append-icon='mdi-account-circle',
     prepend-icon='mdi-check-circle',
-    to='/'
+    href='/'
   )
     template(v-slot:prepend)
       v-icon(color='success')

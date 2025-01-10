@@ -9,6 +9,8 @@ import type { HeadlineTopicProgramsCountDto } from './src/api';
 const getHeadlineTopicProgramListPageRoutes = async () => {
   const apiUrl = process.env.API_BASE_URL;
   const token = process.env.API_ACCESS_TOKEN;
+  console.log(`API_BASE_URL: ${apiUrl}`);
+  console.log(`API_ACCESS_TOKEN: ${token}`);
   const response = await fetch(
     `${apiUrl}/api/v1/headline-topic-programs/count`,
     {
@@ -79,13 +81,14 @@ export default defineNuxtConfig({
       programsPerPage: process.env.PROGRAMS_PER_PAGE,
     },
   },
-  // TODO トップページに番組一覧ページへのリンク配置しているため不要としている。今後、トップページに番組一覧を表示しない場合は、以下の処理を有効にする。
+  // hooks: https://nuxt.com/docs/api/configuration-hooks
   hooks: {
+    // ビルド前にヘッドライントピック番組一覧の各ページのルートを追加
     async 'nitro:config'(nitroConfig) {
       // ヘッドライントピック番組一覧の各ページのルートを追加
-      // const headlineTopicProgramListRoutes =
-      //   await getHeadlineTopicProgramListPageRoutes();
-      // nitroConfig.prerender?.routes?.push(...headlineTopicProgramListRoutes);
+      const headlineTopicProgramListRoutes =
+        await getHeadlineTopicProgramListPageRoutes();
+      nitroConfig.prerender?.routes?.push(...headlineTopicProgramListRoutes);
       // // ヘッドライントピック番組ページのルートを追加
       // const headlineTopicProgramRoutes =
       //   await getHeadlineTopicProgramPageRoutes();
