@@ -6,7 +6,6 @@ import {
   StageConfig,
 } from '../config';
 import { TechPostCastBackendStack } from '../lib/backend-stack';
-import { TechPostCastLineBotBackendStack } from '../lib/line-bot-backend-stack';
 
 const app = new cdk.App();
 
@@ -34,18 +33,10 @@ const backendStack = new TechPostCastBackendStack(
   { env },
   stageConfig,
 );
-// LINE Bot Backend Stack
-const lineBotBackendStack = new TechPostCastLineBotBackendStack(
-  app,
-  `${stageConfig.stackName}LineBot`,
-  { env },
-  stageConfig,
-);
 
 // Tag 付け
 cdk.Tags.of(app).add('ServiceName', 'TechPostCast');
 cdk.Tags.of(backendStack).add('Environment', stageConfig.name);
-cdk.Tags.of(lineBotBackendStack).add('Environment', stageConfig.name);
 
 /**
  * 環境別設定を取得する
