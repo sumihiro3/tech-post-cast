@@ -10,6 +10,10 @@ import * as fs from 'fs';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
+import {
+  HeadlineTopicProgramError,
+  HeadlineTopicProgramGenerateScriptError,
+} from '../../../types/errors';
 import { HeadlineTopicProgramScriptSchema, PostSummarySchema } from './schemas';
 
 @Injectable()
@@ -137,17 +141,27 @@ export class OpenAiApiClient {
       const script = chatCompletion.choices[0]?.message.parsed as z.infer<
         typeof HeadlineTopicProgramScriptSchema
       > as HeadlineTopicProgramScript;
+      if (!script) {
+        throw new HeadlineTopicProgramGenerateScriptError(
+          `台本が生成されませんでした`,
+        );
+      } else if (script.posts.length < posts.length) {
+        throw new HeadlineTopicProgramGenerateScriptError(
+          `記事数よりも少ない記事の要約が生成されました [${script.posts.length} < ${posts.length}]`,
+        );
+      }
       return script;
     } catch (error) {
-      this.logger.error(
-        `ヘッドライントピック番組の台本生成に失敗しました`,
-        {
-          error,
-        },
-        error.stack,
+      const errorMessage = `ヘッドライントピック番組の台本生成に失敗しました`;
+      this.logger.error(errorMessage, { error }, error.stack);
+      if (error instanceof HeadlineTopicProgramError) {
+        throw error;
+      }
+      // 独自エラークラスで返す
+      throw new HeadlineTopicProgramGenerateScriptError(
+        `台本の生成に失敗しました`,
+        { cause: error },
       );
-      // TODO 独自エラークラスを作成して返す
-      throw error;
     }
   }
 
