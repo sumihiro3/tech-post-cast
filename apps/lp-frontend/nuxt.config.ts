@@ -11,6 +11,10 @@ const getHeadlineTopicProgramListPageRoutes = async () => {
   const token = process.env.API_ACCESS_TOKEN;
   console.log(`API_BASE_URL: ${apiUrl}`);
   console.log(`API_ACCESS_TOKEN: ${token}`);
+  if (!apiUrl || !token) {
+    console.warn('API_BASE_URL または API_ACCESS_TOKEN が設定されていません');
+    return [];
+  }
   const response = await fetch(
     `${apiUrl}/api/v1/headline-topic-programs/count`,
     {
@@ -85,10 +89,13 @@ export default defineNuxtConfig({
   hooks: {
     // ビルド前にヘッドライントピック番組一覧の各ページのルートを追加
     async 'nitro:config'(nitroConfig) {
+      // async 'prerender:routes'(route) {
+      if (nitroConfig.dev) return;
       // ヘッドライントピック番組一覧の各ページのルートを追加
       const headlineTopicProgramListRoutes =
         await getHeadlineTopicProgramListPageRoutes();
       nitroConfig.prerender?.routes?.push(...headlineTopicProgramListRoutes);
+      // route.routes.push(...headlineTopicProgramListRoutes);
       // // ヘッドライントピック番組ページのルートを追加
       // const headlineTopicProgramRoutes =
       //   await getHeadlineTopicProgramPageRoutes();

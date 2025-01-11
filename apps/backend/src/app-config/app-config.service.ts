@@ -86,6 +86,11 @@ export class AppConfigService {
         );
       }
     }
+    if (!this.LpDeployHookUrl) {
+      throw new AppConfigValidationError(
+        'LP_DEPLOY_HOOK_URL が設定されていません',
+      );
+    }
     // 設定値のログ出力
     this.logger.log('AppConfigService initialized', {
       V1ApiToken: this.V1ApiToken,
@@ -109,6 +114,7 @@ export class AppConfigService {
       CloudflareAccessKeyId: this.CloudflareAccessKeyId,
       CloudflareSecretAccessKey: this.CloudflareSecretAccessKey,
       CloudflareR2Endpoint: this.CloudflareR2Endpoint,
+      LpDeployHookUrl: this.LpDeployHookUrl,
     });
   }
 
@@ -242,5 +248,12 @@ export class AppConfigService {
    */
   get CloudflareR2Endpoint(): string {
     return this.config.get<string>('CLOUDFLARE_R2_ENDPOINT');
+  }
+
+  /**
+   * LP 再生成の Deploy Hook URL
+   */
+  get LpDeployHookUrl(): string {
+    return this.config.get<string>('LP_DEPLOY_HOOK_URL');
   }
 }
