@@ -1,3 +1,4 @@
+import { AppConfigService } from '@/app-config/app-config.service';
 import { QiitaPostApiResponse } from '@/domains/qiita-posts/qiita-posts.entity';
 import { HeadlineTopicProgramMaker } from '@/domains/radio-program/headline-topic-program/headline-topic-program-maker';
 import { QiitaPostsRepository } from '@/infrastructure/database/qiita-posts/qiita-posts.repository';
@@ -5,6 +6,7 @@ import { QiitaPostsApiClient } from '@/infrastructure/external-api/qiita-api/qii
 import { Injectable, Logger } from '@nestjs/common';
 import { HeadlineTopicProgram } from '@prisma/client';
 import { getYesterday, subtractDays } from '@tech-post-cast/commons';
+import axios, { AxiosError, isAxiosError } from 'axios';
 
 // ヘッドライントピック番組に含める記事の期間
 const DATE_RANGE = 3;
@@ -16,6 +18,7 @@ export class HeadlineTopicProgramsService {
   private readonly logger = new Logger(HeadlineTopicProgramsService.name);
 
   constructor(
+    private readonly appConfig: AppConfigService,
     private readonly qiitaPostsRepository: QiitaPostsRepository,
     private readonly qiitaPostsApiClient: QiitaPostsApiClient,
     private readonly headlineTopicProgramMaker: HeadlineTopicProgramMaker,
@@ -66,6 +69,8 @@ export class HeadlineTopicProgramsService {
       this.logger.debug(`ヘッドライントピック番組を生成しました`, {
         program,
       });
+      // LP の再生成をリクエストする
+      await this.requestLpDeploy();
       return program;
     } catch (error) {
       this.logger.error(`エラーが発生しました`, error);
@@ -93,5 +98,39 @@ export class HeadlineTopicProgramsService {
       .sort((a, b) => b.likes_count - a.likes_count)
       .slice(0, count);
     return popularPosts;
+  }
+
+  /**
+   * LP の再生成をリクエストする
+   */
+  async requestLpDeploy(): Promise<void> {
+    this.logger.debug(`DailyHeadlineTopicsService.requestLpDeploy called`);
+    try {
+      const url = this.appConfig.LpDeployHookUrl;
+      // LP の再生成リクエストを送信する
+      this.logger.log(`LP の再生成リクエストを送信します`, {
+        url,
+      });
+      // POST リクエストを送信
+      const response = await axios.create().post(url);
+      this.logger.log(`LP の再生成リクエストが成功しました`, {
+        status: response.status,
+        data: response.data,
+      });
+    } catch (error) {
+      this.logger.error(`LP の再生成リクエスト中にエラーが発生しました`, error);
+      if (isAxiosError(error)) {
+        const axiosError = error as AxiosError;
+        this.logger.error(
+          `Cloudflare deploy hook からエラーが返却されました。`,
+          {
+            code: axiosError.code,
+            errorMessage: axiosError.message,
+            response: axiosError.response?.data,
+          },
+        );
+      }
+      throw error;
+    }
   }
 }
