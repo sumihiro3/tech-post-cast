@@ -86,6 +86,8 @@ export class TechPostCastBackendStack extends cdk.Stack {
           CLOUDFLARE_ACCESS_KEY_ID: stage.cloudflareAccessKeyId,
           CLOUDFLARE_SECRET_ACCESS_KEY: stage.cloudflareSecretAccessKey,
           CLOUDFLARE_R2_ENDPOINT: stage.cloudflareR2Endpoint,
+          // LP 再生成の Deploy Hook URL
+          LP_DEPLOY_HOOK_URL: stage.lpDeployHookUrl,
         },
       },
     );
