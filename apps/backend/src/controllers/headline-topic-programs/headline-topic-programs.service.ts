@@ -69,7 +69,7 @@ export class HeadlineTopicProgramsService {
       this.logger.debug(`ヘッドライントピック番組を生成しました`, {
         program,
       });
-      // LP の再生成をリクエストする
+      // LP の再生成実行をリクエストする
       await this.requestLpDeploy();
       return program;
     } catch (error) {
