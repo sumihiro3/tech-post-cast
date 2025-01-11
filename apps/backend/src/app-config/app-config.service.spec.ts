@@ -44,6 +44,7 @@ describe('AppConfigService', () => {
                 CLOUDFLARE_ACCESS_KEY_ID: 'cloudflare-access-key-id',
                 CLOUDFLARE_SECRET_ACCESS_KEY: 'cloudflare-secret-access-key',
                 CLOUDFLARE_R2_ENDPOINT: 'cloudflare-r2-endpoint',
+                LP_DEPLOY_HOOK_URL: 'lp-deploy-hook-url',
               };
               return configKeys[key];
             }),
@@ -211,6 +212,17 @@ describe('AppConfigService', () => {
     );
   });
 
+  it('LP_DEPLOY_HOOK_URL が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'LP_DEPLOY_HOOK_URL') return null;
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
   it('ゲッターから正しい値を返すべき', () => {
     expect(service.DatabaseUrl).toBe('https://example-database.url');
     expect(service.ShowQueryLogs).toBe(true);
@@ -242,5 +254,6 @@ describe('AppConfigService', () => {
       'cloudflare-secret-access-key',
     );
     expect(service.CloudflareR2Endpoint).toBe('cloudflare-r2-endpoint');
+    expect(service.LpDeployHookUrl).toBe('lp-deploy-hook-url');
   });
 });
