@@ -68,6 +68,11 @@ export class StageConfig {
     return process.env.PROGRAM_AUDIO_FILE_URL_PREFIX || '';
   }
 
+  /** LP 再生成の Deploy Hook URL */
+  get lpDeployHookUrl(): string {
+    return process.env.LP_DEPLOY_HOOK_URL || '';
+  }
+
   /**
    * 環境が本番環境かどうかを判定する
    * 本番環境の場合は true を返す

@@ -1,3 +1,4 @@
+import { AppConfigService } from '@/app-config/app-config.service';
 import { HeadlineTopicProgramMaker } from '@domains/radio-program/headline-topic-program';
 import { QiitaPostsApiClient } from '@infrastructure/external-api/qiita-api/qiita-posts.api.client';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -17,7 +18,11 @@ describe('HeadlineTopicProgramsService', () => {
     })
       .useMocker((token) => {
         // Service の各メソッドを Mock 化する
-        if (token === QiitaPostsApiClient) {
+        if (token === AppConfigService) {
+          return {
+            // ここに Mock したいメソッドを記述する
+          } as AppConfigService;
+        } else if (token === QiitaPostsApiClient) {
           return {
             // ここに Mock したいメソッドを記述する
           } as QiitaPostsApiClient;
