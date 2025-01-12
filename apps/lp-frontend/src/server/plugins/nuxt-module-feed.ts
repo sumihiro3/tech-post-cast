@@ -1,5 +1,5 @@
 import { HeadlineTopicProgram } from '@prisma/client';
-import { dateFromISOString } from '@tech-post-cast/commons';
+import dayjs from 'dayjs';
 import { defineNitroPlugin } from 'nitropack/runtime';
 import type { Feed } from 'nuxt-module-feed';
 
@@ -94,7 +94,7 @@ export default defineNitroPlugin((nitroApp) => {
         guid: program.id,
         link: `${lpUrl}/headline-topic-programs/${program.id}`,
         content: program.title,
-        date: dateFromISOString(program.createdAt.toString()),
+        date: dayjs(program.createdAt.toString()).toDate(),
         enclosure: {
           url: program.audioUrl,
           type: 'audio/mpeg',
