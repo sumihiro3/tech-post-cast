@@ -100,8 +100,9 @@ export default async function generateSpotifyRssFeed(nitro: Nitro) {
       ],
     });
   });
-  const feedString = feed.xml({ indent: true }); //This returns the XML as a string.
-  writeFileSync(path.join(publicDir, 'feed-by-rss.xml'), feedString);
+  const feedString = feed.xml({ indent: true }); // RSSフィードを文字列に変換する
+  // RSSフィードをファイルに書き込む
+  writeFileSync(path.join(publicDir, 'rss.xml'), feedString);
 }
 
 /**
