@@ -9,8 +9,10 @@ import type { HeadlineTopicProgramsCountDto } from './src/api';
 const getHeadlineTopicProgramListPageRoutes = async () => {
   const apiUrl = process.env.API_BASE_URL;
   const token = process.env.API_ACCESS_TOKEN;
+  const programsPerPage = Number(process.env.PROGRAMS_PER_PAGE || 10);
   console.log(`API_BASE_URL: ${apiUrl}`);
   console.log(`API_ACCESS_TOKEN: ${token}`);
+  console.log(`PROGRAMS_PER_PAGE: ${programsPerPage}`);
   if (!apiUrl || !token) {
     console.warn('API_BASE_URL または API_ACCESS_TOKEN が設定されていません');
     return [];
@@ -25,8 +27,7 @@ const getHeadlineTopicProgramListPageRoutes = async () => {
     },
   );
   const dto = (await response.json()) as HeadlineTopicProgramsCountDto;
-  console.log(`ヘッドライントピック番組一覧`, { programs: dto });
-  const programsPerPage = Number(process.env.PROGRAMS_PER_PAGE);
+  console.log(`ヘッドライントピック番組数`, { programs: dto });
   const pageCount = Math.ceil(dto.count / programsPerPage);
   console.log(`ヘッドライントピック番組一覧のページ数`, {
     programCount: dto.count,
@@ -102,15 +103,30 @@ export default defineNuxtConfig({
       // nitroConfig.prerender?.routes?.push(...headlineTopicProgramRoutes);
     },
   },
-  // Vuetify
   modules: [
+    // Vuetify
     (_options, nuxt) => {
       nuxt.hooks.hook('vite:extendConfig', (config) => {
         // @ts-expect-error
         config.plugins.push(vuetify({ autoImport: true }));
       });
     },
+    'nuxt-module-feed',
   ],
+  feed: {
+    sources: [
+      {
+        path: '/feed.xml',
+        type: 'rss2',
+        cacheTime: 60 * 15,
+      },
+      {
+        path: '/atom-feed',
+        type: 'atom1',
+        cacheTime: 60 * 15,
+      },
+    ],
+  },
   vite: {
     vue: {
       template: {
