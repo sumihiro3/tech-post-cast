@@ -16,7 +16,8 @@ export default async function generateSpotifyRssFeed(nitro: Nitro) {
   const author = 'TEP Lab';
   const email = 'tpc@tep-lab.com';
   const category = 'Technology';
-  const programImageUrl = `https://pub-2bec3306c9a1436e8bc204465623e633.r2.dev/headline-topic-program/technology.jpg`;
+  const podcastImageUrl = `https://pub-2bec3306c9a1436e8bc204465623e633.r2.dev/TechPostCast_Podcast.png`;
+  const programImageUrl = `https://pub-2bec3306c9a1436e8bc204465623e633.r2.dev/TechPostCast_Podcast.png`;
   const programDescription = '人気のIT技術記事をAIが解説するポッドキャスト';
   // RSS フィードのファイル名
   const feedFileName = 'rss.xml';
@@ -29,7 +30,7 @@ export default async function generateSpotifyRssFeed(nitro: Nitro) {
     site_url: lpUrl!,
     feed_url: `${lpUrl}/${feedFileName}`,
     copyright: author,
-    image_url: programImageUrl,
+    image_url: podcastImageUrl,
     generator: 'TechPostCast Feed Generator',
     language: 'ja',
     pubDate: new Date(),
@@ -48,7 +49,7 @@ export default async function generateSpotifyRssFeed(nitro: Nitro) {
       {
         'itunes:image': {
           _attr: {
-            href: programImageUrl,
+            href: podcastImageUrl,
           },
         },
       },
