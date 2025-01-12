@@ -9,6 +9,15 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 /**
+ * 指定の日時文字列を Date に変換する
+ * @param dateString 日時文字列
+ * @returns Date
+ */
+export function dateFromISOString(dateString: string): Date {
+  return dayjs(dateString).toDate();
+}
+
+/**
  * 日付をフォーマットした文字列を返す
  * @param date Date
  * @param format 日付フォーマット
