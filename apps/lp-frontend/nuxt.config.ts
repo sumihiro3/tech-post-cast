@@ -1,6 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify';
 import type { HeadlineTopicProgramsCountDto } from './src/api';
+import generateSpotifyRssFeed from './src/scripts/rss';
 
 /**
  * ヘッドライントピック番組一覧の各ページのルートを取得する
@@ -76,6 +77,9 @@ export default defineNuxtConfig({
       crawlLinks: true,
       failOnError: true,
     },
+    hooks: {
+      compiled: generateSpotifyRssFeed,
+    },
   },
   runtimeConfig: {
     public: {
@@ -90,7 +94,6 @@ export default defineNuxtConfig({
   hooks: {
     // ビルド前にヘッドライントピック番組一覧の各ページのルートを追加
     async 'nitro:config'(nitroConfig) {
-      // async 'prerender:routes'(route) {
       if (nitroConfig.dev) return;
       // ヘッドライントピック番組一覧の各ページのルートを追加
       const headlineTopicProgramListRoutes =

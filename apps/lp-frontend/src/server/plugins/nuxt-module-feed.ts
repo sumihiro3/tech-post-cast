@@ -71,17 +71,36 @@ export default defineNitroPlugin((nitroApp) => {
 
   async function createTestFeed(feed: Feed) {
     const lpUrl = process.env.LP_BASE_URL;
+    const title = 'TechPostCast';
+    const author = 'TEP Lab';
+    const email = 'tpc@tep-lab.com';
+    const programDescription = '人気のIT技術記事をAIが解説するポッドキャスト';
     feed.options = {
-      id: 'TechPostCast',
-      title: 'TechPostCast',
-      description: '人気のIT技術記事をAIが解説するポッドキャスト',
-      copyright: 'TEP Lab',
+      id: title,
+      title,
+      description: programDescription,
+      copyright: author,
       image:
         'https://pub-2bec3306c9a1436e8bc204465623e633.r2.dev/headline-topic-program/technology.jpg',
       link: lpUrl,
       generator: 'TechPostCast Feed Generator',
       language: 'ja',
     };
+    // feed.addExtension({
+    //   name: 'itunes',
+    //   objects: {
+    //     author,
+    //     summary: programDescription,
+    //     owner: {
+    //       name: author,
+    //       email,
+    //     },
+    //   },
+    // });
+    feed.addExtension({
+      name: 'itunes:author',
+      objects: author,
+    });
 
     // ヘッドライントピック番組の一覧を取得する
     const programs = await getHeadlineTopicProgramList();
