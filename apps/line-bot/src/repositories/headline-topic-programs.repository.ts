@@ -12,13 +12,8 @@ export const findLatest = async (
   console.debug(`headline-topic-programs-repository.findLatest called`);
   const result = await prisma.headlineTopicProgram.findFirst({
     where: {
-      AND: {
-        videoUrl: {
-          not: undefined,
-        },
-        audioUrl: {
-          not: undefined,
-        },
+      audioUrl: {
+        not: undefined,
       },
     },
     orderBy: {

@@ -105,11 +105,7 @@ const createLatestProgramMessage = async (
   );
   const prismaClient = context.var.prismaClient;
   const latestProgram = await findLatest(prismaClient);
-  if (
-    !latestProgram ||
-    !latestProgram.videoUrl ||
-    !latestProgram.videoUrl.startsWith('http')
-  ) {
+  if (!latestProgram) {
     return [
       {
         type: 'text',
@@ -118,7 +114,7 @@ const createLatestProgramMessage = async (
     ];
   }
   const programFileUrlPrefix = context.env.PROGRAM_FILE_URL_PREFIX;
-  const previewUrl = `${programFileUrlPrefix}/headline-topic-program/technology.jpg`;
+  const imageUrl = `${programFileUrlPrefix}/TechPostCast_Main_gradation.png`;
   const programUrl = latestProgram.audioUrl;
   const flex: messagingApi.FlexMessage = {
     type: 'flex',
@@ -146,22 +142,15 @@ const createLatestProgramMessage = async (
         ],
       },
       hero: {
-        type: 'video',
-        url: latestProgram.videoUrl,
-        previewUrl: previewUrl,
-        altContent: {
-          type: 'image',
-          size: 'full',
-          aspectRatio: '1600:1066',
-          aspectMode: 'cover',
-          url: previewUrl,
-        },
+        type: 'image',
+        url: imageUrl,
+        size: 'full',
+        aspectRatio: '1:1',
+        aspectMode: 'cover',
         action: {
           type: 'uri',
-          label: '詳細はこちら',
           uri: programUrl,
         },
-        aspectRatio: '1600:1066',
       },
       footer: {
         type: 'box',
