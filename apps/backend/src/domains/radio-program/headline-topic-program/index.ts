@@ -96,14 +96,6 @@ export interface HeadlineTopicProgramGenerateResult {
    */
   audioDuration: number;
   /**
-   * 動画ファイル名
-   */
-  videoFileName: string;
-  /**
-   * 動画ファイルのパス
-   */
-  videoFilePath: string;
-  /**
    * 台本
    */
   script: HeadlineTopicProgramScript;
@@ -114,5 +106,4 @@ export interface HeadlineTopicProgramGenerateResult {
  */
 export interface ProgramUploadResult {
   audioUrl: string;
-  videoUrl: string;
 }

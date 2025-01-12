@@ -148,7 +148,7 @@ export class HeadlineTopicProgramsRepository
       script: scriptString as Prisma.InputJsonValue,
       audioUrl: programUploadResult.audioUrl,
       audioDuration: programGenerateResult.audioDuration,
-      videoUrl: programUploadResult.videoUrl,
+      videoUrl: '',
       posts: {
         connect: posts.map((post) => ({ id: post.id })),
       },

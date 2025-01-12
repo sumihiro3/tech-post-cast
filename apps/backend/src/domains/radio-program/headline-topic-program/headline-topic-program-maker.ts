@@ -58,7 +58,7 @@ export class HeadlineTopicProgramMaker {
       const script = await this.generateScript(programDate, summarizedPosts);
       // ヘッドライントピック番組の台本読み上げ音声ファイルを生成する
       const mainAudioPath = await this.generateMainAudioFile(script);
-      // BGM などを組み合わせてヘッドライントピック番組の音声ファイルと動画ファイルを生成する
+      // BGM などを組み合わせてヘッドライントピック番組の音声ファイルを生成する
       const generateResult = await this.generateProgramFiles(
         script,
         programDate,
@@ -67,7 +67,6 @@ export class HeadlineTopicProgramMaker {
       // 生成したヘッドライントピック番組の音声ファイルを S3 にアップロードする処理を追加
       const uploadResult = await this.uploadProgramFiles(
         generateResult.audioFilePath,
-        generateResult.videoFilePath,
         programDate,
       );
       this.logger.log(`S3 に番組ファイルをアップロードしました`, {
@@ -211,24 +210,11 @@ export class HeadlineTopicProgramMaker {
       volumeRate,
       metadata,
     });
-    // 番組音声ファイルから動画ファイル（MP4）を生成する
-    const pictureFilePath = this.appConfig.HeadlineTopicProgramPictureFilePath;
-    const programVideoFileName = `headline-topic-program_${now.getTime()}.mp4`;
-    const programVideoFilePath = `${this.outputDir}/${programVideoFileName}`;
-    metadata.filename = programVideoFileName;
-    await this.programFileMaker.generateProgramVideoFile({
-      audioFilePath: programAudioFilePath,
-      pictureFilePath,
-      outputFilePath: programVideoFilePath,
-      metadata,
-    });
     // 生成結果を返却
     const result: HeadlineTopicProgramGenerateResult = {
       audioFileName: programAudioFileName,
       audioFilePath: programAudioFilePath,
       audioDuration: audioResult.duration,
-      videoFileName: programVideoFileName,
-      videoFilePath: programVideoFilePath,
       script,
     };
     this.logger.log(`ヘッドライントピック番組を生成しました`, { result });
@@ -236,20 +222,17 @@ export class HeadlineTopicProgramMaker {
   }
 
   /**
-   * 番組音声ファイルと動画ファイルを S3 にアップロードする
+   * 番組音声ファイルを S3 にアップロードする
    * @param audioFilePath 番組音声ファイルのパス
-   * @param videoFilePath 動画ファイルのパス
    * @param programDate 番組日
    * @returns アップロード結果
    */
   async uploadProgramFiles(
     audioFilePath: string,
-    videoFilePath: string,
     programDate: Date,
   ): Promise<ProgramUploadResult> {
     this.logger.debug(`HeadlineTopicProgramMaker.uploadProgramFiles called`, {
       audioFilePath,
-      videoFilePath,
       programDate,
     });
     const bucketName = this.appConfig.ProgramAudioBucketName;
@@ -271,24 +254,8 @@ export class HeadlineTopicProgramMaker {
       uploadCommand: audioFileUploadCommand,
       audioUrl,
     });
-    // 動画ファイルをアップロード
-    const videoFileUploadCommand: ProgramFileUploadCommand = {
-      programId,
-      programDate,
-      bucketName,
-      uploadPath: `${objectKeyPrefix}.mp4`,
-      filePath: videoFilePath,
-    };
-    const videoUrl = await this.programFileUploader.upload(
-      videoFileUploadCommand,
-    );
-    this.logger.log(`番組動画ファイルをアップロードしました`, {
-      uploadCommand: videoFileUploadCommand,
-      videoUrl,
-    });
     return {
       audioUrl,
-      videoUrl,
     };
   }
 }
