@@ -18,6 +18,8 @@ export default async function generateSpotifyRssFeed(nitro: Nitro) {
   const category = 'Technology';
   const programImageUrl = `https://pub-2bec3306c9a1436e8bc204465623e633.r2.dev/headline-topic-program/technology.jpg`;
   const programDescription = '人気のIT技術記事をAIが解説するポッドキャスト';
+  // RSS フィードのファイル名
+  const feedFileName = 'rss.xml';
   // ヘッドライントピック番組一覧を取得
   const programs = await getHeadlineTopicProgramList();
   // RSSフィードを生成
@@ -25,7 +27,7 @@ export default async function generateSpotifyRssFeed(nitro: Nitro) {
     title,
     description: programDescription,
     site_url: lpUrl!,
-    feed_url: `${lpUrl}/feed`,
+    feed_url: `${lpUrl}/${feedFileName}`,
     copyright: author,
     image_url: programImageUrl,
     generator: 'TechPostCast Feed Generator',
@@ -102,7 +104,7 @@ export default async function generateSpotifyRssFeed(nitro: Nitro) {
   });
   const feedString = feed.xml({ indent: true }); // RSSフィードを文字列に変換する
   // RSSフィードをファイルに書き込む
-  writeFileSync(path.join(publicDir, 'rss.xml'), feedString);
+  writeFileSync(path.join(publicDir, feedFileName), feedString);
 }
 
 /**
