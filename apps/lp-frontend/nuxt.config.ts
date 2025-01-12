@@ -114,22 +114,7 @@ export default defineNuxtConfig({
         config.plugins.push(vuetify({ autoImport: true }));
       });
     },
-    'nuxt-module-feed',
   ],
-  feed: {
-    sources: [
-      {
-        path: '/feed.xml',
-        type: 'rss2',
-        cacheTime: 60 * 15,
-      },
-      {
-        path: '/atom-feed',
-        type: 'atom1',
-        cacheTime: 60 * 15,
-      },
-    ],
-  },
   vite: {
     vue: {
       template: {
