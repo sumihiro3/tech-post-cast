@@ -2,6 +2,7 @@ import { HeadlineTopicProgramMaker } from '@domains/radio-program/headline-topic
 import { HeadlineTopicProgramsRepository } from '@infrastructure/database/headline-topic-programs/headline-topic-programs.repository';
 import { QiitaPostsRepository } from '@infrastructure/database/qiita-posts/qiita-posts.repository';
 import { S3ProgramFileUploader } from '@infrastructure/external-api/aws/s3';
+import { TextToSpeechClient } from '@infrastructure/external-api/google/text-to-speech';
 import { OpenAiApiClient } from '@infrastructure/external-api/openai-api/openai-api.client';
 import { QiitaPostsApiClient } from '@infrastructure/external-api/qiita-api/qiita-posts.api.client';
 import { FfmpegProgramFileMaker } from '@infrastructure/ffmpeg/program-file-maker';
@@ -27,6 +28,10 @@ import { HeadlineTopicProgramsService } from './headline-topic-programs.service'
     {
       provide: 'ProgramFileUploader',
       useClass: S3ProgramFileUploader,
+    },
+    {
+      provide: 'TextToSpeechClient',
+      useClass: TextToSpeechClient,
     },
   ],
   exports: [HeadlineTopicProgramsService],

@@ -1,3 +1,5 @@
+import { HeadlineTopicProgramAudioFilesGenerateResult } from './text-to-speech.interface';
+
 /**
  * 番組ファイルのメタデータ
  */
@@ -27,10 +29,9 @@ export interface ProgramFileMetadata {
  */
 export interface GenerateProgramAudioFileCommand {
   /**
-   * メイン音声ファイルのパス
-   * @example '/path/to/main-audio.mp3'
+   * ヘッドライントピック番組の音声ファイルパス群
    */
-  mainAudioFilePath: string;
+  programAudioFilePaths: HeadlineTopicProgramAudioFilesGenerateResult;
 
   /**
    * BGM音声ファイルのパス

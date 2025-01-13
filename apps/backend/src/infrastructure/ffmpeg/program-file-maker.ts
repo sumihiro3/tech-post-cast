@@ -10,7 +10,9 @@ import {
   IProgramFileMaker,
   ProgramFileMetadata,
 } from '@domains/radio-program/program-file-maker.interface';
+import { HeadlineTopicProgramAudioFilesGenerateResult } from '@domains/radio-program/text-to-speech.interface';
 import { Injectable, Logger } from '@nestjs/common';
+import { formatDate } from '@tech-post-cast/commons';
 import * as ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
 import { mkdir, rm } from 'fs/promises';
@@ -76,7 +78,7 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
       // 1. メイン音声と BGM をマージする
       this.logger.log('1. メイン音声と BGM のマージを開始...');
       const mergedMainWithBgmPath = await this.mergeMainAudioAndBgm(
-        command.mainAudioFilePath,
+        command.programAudioFilePaths,
         command.bgmAudioFilePath,
         command.volumeRate,
       );
@@ -119,28 +121,47 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
 
   /**
    * メイン音声ファイルと BGM 音声ファイルをマージする
-   * @param mainAudioFilePath メイン音声ファイルのパス
+   * @param programAudioFilePaths ヘッドライントピック番組の音声ファイルパス群
    * @param bgmAudioFilePath BGM 音声ファイルのパス
    * @param volumeRate メイン音声ファイルの音量調整倍率
    * @returns マージした音声ファイルのパス
    */
   async mergeMainAudioAndBgm(
-    mainAudioFilePath: string,
+    programAudioFilePaths: HeadlineTopicProgramAudioFilesGenerateResult,
     bgmAudioFilePath: string,
     volumeRate: number,
   ): Promise<string> {
     this.logger.debug(`FfmpegProgramFileMaker.mergeMainAudioAndBgm called`, {
-      mainAudioFilePath,
+      mainAudioFilePath: programAudioFilePaths,
       bgmAudioFilePath,
       volumeRate,
     });
     try {
+      const now = Date.now();
+      // 番組の音声ファイル群を結合する
+      const programAudioFiles = [
+        programAudioFilePaths.introAudioFilePath,
+        ...programAudioFilePaths.mainAudioFilePaths,
+        programAudioFilePaths.endingAudioFilePath,
+      ];
+      const mainAudioFilePath = `${this.outputDir}/${now}_main_audio.mp3`;
+      await this.concatAudioFiles(programAudioFiles, mainAudioFilePath, {
+        artist: 'RadioProgram',
+        album: 'HeadlineTopicProgram',
+        albumArtist: 'HeadlineTopicProgram',
+        copyright: 'copyright',
+        title: 'MainAudio',
+        date: formatDate(new Date(), 'YYYY'),
+        genre: 'Technology',
+        language: 'Japanese',
+        filename: 'main_audio.mp3',
+      });
       // メイン音声の長さを取得（秒）
       const mainAudioDuration =
         (await this.getAudioDuration(mainAudioFilePath)) / 1000;
       // 1. BGM をループしてメイン音声の長さに合わせる
       // BGM ファイルをメイン音声の長さに合わせたファイルのパス
-      const loopedBgmPath = `${this.outputDir}/looped_bgm.mp3`;
+      const loopedBgmPath = `${this.outputDir}/${now}_looped_bgm.mp3`;
       await new Promise<void>((resolve, reject) => {
         ffmpeg(bgmAudioFilePath)
           .inputOptions(['-stream_loop -1']) // 無限ループ
@@ -176,7 +197,7 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
           .run();
       });
       // メイン音声とループした BGM をミックスする
-      const mergedMainWithBgmPath = `${this.outputDir}/merged_main_with_bgm.mp3`;
+      const mergedMainWithBgmPath = `${this.outputDir}/${now}_merged_main_with_bgm.mp3`;
       await new Promise<void>((resolve, reject) => {
         ffmpeg()
           .input(mainAudioFilePath)
@@ -223,7 +244,7 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
       return mergedMainWithBgmPath;
     } catch (error) {
       // エラー処理
-      const errorMessage = `メイン音声ファイル [${mainAudioFilePath}] と BGM 音声ファイル [${bgmAudioFilePath}] のマージに失敗しました`;
+      const errorMessage = `メイン音声ファイル [${programAudioFilePaths}] と BGM 音声ファイル [${bgmAudioFilePath}] のマージに失敗しました`;
       this.logger.error(errorMessage, error, error.stack);
       throw new ProgramAudioFileGenerationError(errorMessage, {
         cause: error,
@@ -249,7 +270,8 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
     });
     return new Promise<void>(async (resolve, reject) => {
       // 結合する音声ファイルのリストを作成
-      const listFilePath = `${this.outputDir}/file-list.txt`;
+      const now = Date.now();
+      const listFilePath = `${this.outputDir}/file-list_${now}.txt`;
       await rm(listFilePath, { force: true }); // 残っている場合は削除
       const fileListContent = files
         .map((file) => `file '${path.resolve(file)}'`)
@@ -289,7 +311,7 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
           this.logger.log(
             `音声ファイルの結合処理が完了しました: ${outputPath}`,
           );
-          await rm(listFilePath, { force: true }); // 一時ファイル削除
+          // await rm(listFilePath, { force: true }); // 一時ファイル削除
           resolve();
         })
         .on('error', (error) => {
