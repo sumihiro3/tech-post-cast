@@ -40,6 +40,8 @@ COPY --from=builder /build/apps/backend/dist dist
 COPY --from=builder /build/apps/backend/package.json .
 # apps/backend の assets をコンテナー内にコピー
 COPY --from=builder /build/apps/backend/assets assets
+# GCP の認証情報をコンテナー内にコピー
+COPY --from=builder /build/apps/backend/credentials credentials
 # yarn workspace 内の共通ライブラリ群（commons database）のビルド結果をコンテナー内にコピー
 COPY --from=builder /build/packages/commons node_modules/@tech-post-cast/commons
 COPY --from=builder /build/packages/database node_modules/@tech-post-cast/database
