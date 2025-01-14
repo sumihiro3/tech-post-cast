@@ -28,15 +28,26 @@ jobs:
           uses: actions/setup-node@v4
           with:
             node-version: '20.18.1'
+        # ディレクトリを作成
+        - name: create credentials directory
+          run: mkdir -p apps/backend/credentials
         # GCP の認証情報キーファイルを作成する
         # develop ブランチにプッシュされたとき
         - name: create gcp credentials for develop environment
           if: ${{ github.ref_name == 'develop'}}
-          run: mkdir -p apps/backend/credentials && echo ${{ secrets.GCP_CREDENTIALS_DEVELOP }} > apps/backend/credentials/tech-post-cast-backend-sa.json
+          uses: jsdaniell/create-json@v1.2.3
+          with:
+              name: "tech-post-cast-backend-sa.json"
+              json: ${{ secrets.GCP_CREDENTIALS_DEVELOP }}
+              dir: 'apps/backend/credentials/'
         # main ブランチにプッシュされたとき
         - name: create gcp credentials for main environment
           if: ${{ github.ref_name == 'main'}}
-          run: mkdir -p apps/backend/credentials && echo ${{ secrets.GCP_CREDENTIALS_MAIN }} > apps/backend/credentials/tech-post-cast-backend-sa.json
+          uses: jsdaniell/create-json@v1.2.3
+          with:
+              name: "tech-post-cast-backend-sa.json"
+              json: ${{ secrets.GCP_CREDENTIALS_MAIN }}
+              dir: 'apps/backend/credentials/'
         # Yarn のインストール
         - name: Install Yarn
           run: npm install -g yarn
