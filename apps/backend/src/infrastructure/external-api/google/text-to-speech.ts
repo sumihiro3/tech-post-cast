@@ -140,7 +140,7 @@ export class TextToSpeechClient implements ITextToSpeechClient {
         audioEncoding: 'MP3',
         effectsProfileId: ['handset-class-device'],
         pitch: -2.0,
-        speakingRate: 1.06,
+        speakingRate: 1.1,
       },
     };
     return request;
@@ -159,12 +159,11 @@ export class TextToSpeechClient implements ITextToSpeechClient {
       { script },
     );
     // SSML を生成する
-    const breakTime = '1000ms';
-    const intro = `<speak>${script.intro}<break time="${breakTime}"/></speak>`;
+    const intro = `<speak>${script.intro}<break time="1000ms"/></speak>`;
     const postSummaries = script.posts.map((post) => {
-      return `<speak>${post.summary}<break time="${breakTime}"/></speak>`;
+      return `<speak>${post.summary}<break time="1000ms"/></speak>`;
     });
-    const ending = `<speak>${script.ending}<break time="${breakTime}"/></speak>`;
+    const ending = `<speak>${script.ending}<break time="200ms"/></speak>`;
     const result: HeadlineTopicProgramSsml = {
       intro,
       postSummaries,
