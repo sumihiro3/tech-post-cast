@@ -27,6 +27,15 @@ jobs:
           uses: actions/setup-node@v4
           with:
             node-version: '20.18.1'
+        # GCP の認証情報キーファイルを作成する
+        # develop ブランチにプッシュされたとき
+        - name: create .env.develop for develop environment
+          if: ${{ github.ref_name == 'develop'}}
+          run: mkdir -p apps/backend/credentials && echo "${{ secrets.GCP_CREDENTIALS_DEVELOP }}" > apps/backend/credentials/tech-post-cast-backend-sa.json
+        # main ブランチにプッシュされたとき
+        - name: create .env.production for main environment
+          if: ${{ github.ref_name == 'main'}}
+          run: mkdir -p apps/backend/credentials && echo "${{ secrets.GCP_CREDENTIALS_MAIN }}" > apps/backend/credentials/tech-post-cast-backend-sa.json
         # Yarn のインストール
         - name: Install Yarn
           run: npm install -g yarn

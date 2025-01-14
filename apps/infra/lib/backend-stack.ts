@@ -88,6 +88,8 @@ export class TechPostCastBackendStack extends cdk.Stack {
           CLOUDFLARE_R2_ENDPOINT: stage.cloudflareR2Endpoint,
           // LP 再生成実行用の Deploy Hook URL
           LP_DEPLOY_HOOK_URL: stage.lpDeployHookUrl,
+          // Google Cloud
+          GCP_CREDENTIALS_FILE_PATH: stage.gcpCredentialsFilePath,
         },
       },
     );

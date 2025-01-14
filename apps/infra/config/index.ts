@@ -73,6 +73,11 @@ export class StageConfig {
     return process.env.LP_DEPLOY_HOOK_URL || '';
   }
 
+  /** Google Cloud の認証キーファイル配置パス */
+  get gcpCredentialsFilePath(): string {
+    return process.env.GCP_CREDENTIALS_FILE_PATH || '';
+  }
+
   /**
    * 環境が本番環境かどうかを判定する
    * 本番環境の場合は true を返す
@@ -136,6 +141,8 @@ export class StageConfig {
       CLOUDFLARE_R2_ENDPOINT: this.cloudflareR2Endpoint,
       PROGRAM_AUDIO_BUCKET_NAME: this.programFileBucketName,
       PROGRAM_AUDIO_FILE_URL_PREFIX: this.programFileUrlPrefix,
+      LP_DEPLOY_HOOK_URL: this.lpDeployHookUrl,
+      GCP_CREDENTIALS_FILE_PATH: this.gcpCredentialsFilePath,
     });
   }
 }
