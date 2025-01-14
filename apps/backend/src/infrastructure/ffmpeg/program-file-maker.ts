@@ -17,6 +17,7 @@ import * as ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
 import { mkdir, rm } from 'fs/promises';
 import * as path from 'path';
+import { setTimeout } from 'timers/promises';
 
 /**
  * ffmpeg を利用して番組ファイルを作成するクラス
@@ -96,6 +97,7 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
         command.outputFilePath,
         command.metadata,
       );
+      await setTimeout(5 * 1000); // 5秒待機
       await rm(mergedMainWithBgmPath, { force: true }); // 一時ファイル削除
       const duration = await this.getAudioDuration(command.outputFilePath);
       const result: GenerateProgramAudioFileResult = {
@@ -156,6 +158,7 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
         language: 'Japanese',
         filename: 'main_audio.mp3',
       });
+      await setTimeout(10 * 1000); // 10秒待機
       // メイン音声の長さを取得（秒）
       const mainAudioDuration =
         (await this.getAudioDuration(mainAudioFilePath)) / 1000;
@@ -277,11 +280,12 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
         .map((file) => `file '${path.resolve(file)}'`)
         .join('\n');
       fs.writeFileSync(listFilePath, fileListContent);
+      await setTimeout(3 * 1000); // 3秒待機
       // 音声ファイルを結合する
       ffmpeg()
         .input(listFilePath)
         .inputOptions(['-f concat', '-safe 0']) // ファイルリストから結合
-        .outputOptions(['-c copy', '-y']) // 再エンコードなしで結合
+        .outputOptions(['-c copy']) // 再エンコードなしで結合
         .outputOptions([
           '-acodec libmp3lame', // MP3 エンコーダー
           '-ar 44100', // サンプルレート 44.1KHz
