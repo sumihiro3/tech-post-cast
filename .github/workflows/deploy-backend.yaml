@@ -32,11 +32,11 @@ jobs:
         # develop ブランチにプッシュされたとき
         - name: create gcp credentials for develop environment
           if: ${{ github.ref_name == 'develop'}}
-          run: mkdir -p apps/backend/credentials && echo "${{ secrets.GCP_CREDENTIALS_DEVELOP }}" > apps/backend/credentials/tech-post-cast-backend-sa.json
+          run: mkdir -p apps/backend/credentials && echo ${{ secrets.GCP_CREDENTIALS_DEVELOP }} > apps/backend/credentials/tech-post-cast-backend-sa.json
         # main ブランチにプッシュされたとき
         - name: create gcp credentials for main environment
           if: ${{ github.ref_name == 'main'}}
-          run: mkdir -p apps/backend/credentials && echo "${{ secrets.GCP_CREDENTIALS_MAIN }}" > apps/backend/credentials/tech-post-cast-backend-sa.json
+          run: mkdir -p apps/backend/credentials && echo ${{ secrets.GCP_CREDENTIALS_MAIN }} > apps/backend/credentials/tech-post-cast-backend-sa.json
         # Yarn のインストール
         - name: Install Yarn
           run: npm install -g yarn
