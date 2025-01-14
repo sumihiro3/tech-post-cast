@@ -139,7 +139,7 @@ export class TextToSpeechClient implements ITextToSpeechClient {
       audioConfig: {
         audioEncoding: 'MP3',
         effectsProfileId: ['handset-class-device'],
-        pitch: -2.0,
+        pitch: -5.0,
         speakingRate: 1.1,
       },
     };
