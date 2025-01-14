@@ -6,7 +6,6 @@ import { OpenAiApiClient } from '@infrastructure/external-api/openai-api/openai-
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { HeadlineTopicProgram } from '@prisma/client';
 import { formatDate } from '@tech-post-cast/commons';
-import * as fs from 'fs';
 import {
   HeadlineTopicProgramGenerateResult,
   HeadlineTopicProgramMetadata,
@@ -18,6 +17,11 @@ import {
   ProgramFileUploadCommand,
 } from '../file-uploader.interface';
 import { IProgramFileMaker } from '../program-file-maker.interface';
+import {
+  HeadlineTopicProgramAudioFilesGenerateCommand,
+  HeadlineTopicProgramAudioFilesGenerateResult,
+  ITextToSpeechClient,
+} from '../text-to-speech.interface';
 
 @Injectable()
 export class HeadlineTopicProgramMaker {
@@ -34,6 +38,8 @@ export class HeadlineTopicProgramMaker {
     private readonly programFileMaker: IProgramFileMaker,
     @Inject('ProgramFileUploader')
     private readonly programFileUploader: IProgramFileUploader,
+    @Inject('TextToSpeechClient')
+    private readonly textToSpeechClient: ITextToSpeechClient,
   ) {
     this.outputDir = this.appConfig.HeadlineTopicProgramTargetDir;
   }
@@ -57,12 +63,13 @@ export class HeadlineTopicProgramMaker {
       // ヘッドライントピック番組の台本を生成する
       const script = await this.generateScript(programDate, summarizedPosts);
       // ヘッドライントピック番組の台本読み上げ音声ファイルを生成する
-      const mainAudioPath = await this.generateMainAudioFile(script);
+      const programAudioFilePaths =
+        await this.generateProgramAudioFiles(script);
       // BGM などを組み合わせてヘッドライントピック番組の音声ファイルを生成する
       const generateResult = await this.generateProgramFiles(
         script,
         programDate,
-        mainAudioPath,
+        programAudioFilePaths,
       );
       // 生成したヘッドライントピック番組の音声ファイルを S3 にアップロードする処理を追加
       const uploadResult = await this.uploadProgramFiles(
@@ -141,49 +148,49 @@ export class HeadlineTopicProgramMaker {
   }
 
   /**
-   * メイン音声ファイルを生成する
+   * ヘッドライントピック番組の音声ファイルを生成する
    * @param script 台本
-   * @returns メイン音声ファイルのファイルパス
+   * @returns ヘッドライントピック番組音声ファイルの生成結果
    */
-  async generateMainAudioFile(
+  async generateProgramAudioFiles(
     script: HeadlineTopicProgramScript,
-  ): Promise<string> {
+  ): Promise<HeadlineTopicProgramAudioFilesGenerateResult> {
     this.logger.debug(
-      `HeadlineTopicProgramMaker.generateMainAudioFile called`,
+      `HeadlineTopicProgramMaker.generateProgramAudioFiles called`,
       {
         script,
       },
     );
-    // 出力先ディレクトリを作成
-    if (!fs.existsSync(this.outputDir)) {
-      fs.mkdirSync(this.outputDir, { recursive: true });
-    }
-    // メイン音声ファイルを生成する
-    const mainAudioPath = `${this.outputDir}/${Date.now()}_main.mp3`;
-    await this.openAiApiClient.generateHeadlineTopicProgramAudioFile(
-      mainAudioPath,
-      script,
-    );
-    this.logger.debug(`メイン音声ファイルを生成しました`, { mainAudioPath });
-    return mainAudioPath;
+    const command: HeadlineTopicProgramAudioFilesGenerateCommand = {
+      script: script,
+      outputDir: this.outputDir,
+    };
+    const result =
+      await this.textToSpeechClient.generateHeadlineTopicProgramAudioFiles(
+        command,
+      );
+    this.logger.debug(`ヘッドライントピック番組の音声ファイルを生成しました`, {
+      result,
+    });
+    return result;
   }
 
   /**
    * ヘッドライントピック番組の音声ファイルと動画ファイルを生成する
    * @param script 台本
    * @param programDate 番組日
-   * @param mainAudioFilePath メイン音声ファイルのパス
+   * @param programAudioFilePaths 番組音声ファイルのパス一覧
    * @return ヘッドライントピック番組ファイル生成結果
    */
   async generateProgramFiles(
     script: HeadlineTopicProgramScript,
     programDate: Date,
-    mainAudioFilePath: string,
+    programAudioFilePaths: HeadlineTopicProgramAudioFilesGenerateResult,
   ): Promise<HeadlineTopicProgramGenerateResult> {
     this.logger.debug(`HeadlineTopicProgramMaker.generateProgramFiles called`, {
       title: script.title,
       programDate,
-      mainAudioPath: mainAudioFilePath,
+      programAudioFilePaths,
     });
     const bgmAudioFilePath = this.appConfig.HeadlineTopicProgramBgmFilePath;
     const openingAudioFilePath =
@@ -193,7 +200,7 @@ export class HeadlineTopicProgramMaker {
     const volumeRate = 2.5;
     const now = new Date();
     const programAudioFileName = `headline-topic-program_${now.getTime()}.mp3`;
-    const programAudioFilePath = `${this.outputDir}/${programAudioFileName}`;
+    const outputFilePath = `${this.outputDir}/${programAudioFileName}`;
     // ラジオ番組のメタデータ情報
     const metadata = new HeadlineTopicProgramMetadata(
       script,
@@ -202,18 +209,18 @@ export class HeadlineTopicProgramMaker {
       programAudioFileName,
     );
     const audioResult = await this.programFileMaker.generateProgramAudioFile({
-      mainAudioFilePath,
+      programAudioFilePaths,
       bgmAudioFilePath,
       openingAudioFilePath,
       endingAudioFilePath,
-      outputFilePath: programAudioFilePath,
+      outputFilePath,
       volumeRate,
       metadata,
     });
     // 生成結果を返却
     const result: HeadlineTopicProgramGenerateResult = {
       audioFileName: programAudioFileName,
-      audioFilePath: programAudioFilePath,
+      audioFilePath: outputFilePath,
       audioDuration: audioResult.duration,
       script,
     };
