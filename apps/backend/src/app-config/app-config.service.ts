@@ -91,6 +91,11 @@ export class AppConfigService {
         'LP_DEPLOY_HOOK_URL が設定されていません',
       );
     }
+    if (!this.GoogleCloudCredentialsFilePath) {
+      throw new AppConfigValidationError(
+        'GCP_CREDENTIALS_FILE_PATH が設定されていません',
+      );
+    }
     // 設定値のログ出力
     this.logger.log('AppConfigService initialized', {
       V1ApiToken: this.V1ApiToken,
@@ -115,6 +120,7 @@ export class AppConfigService {
       CloudflareSecretAccessKey: this.CloudflareSecretAccessKey,
       CloudflareR2Endpoint: this.CloudflareR2Endpoint,
       LpDeployHookUrl: this.LpDeployHookUrl,
+      GoogleCloudCredentialsFilePath: this.GoogleCloudCredentialsFilePath,
     });
   }
 
@@ -255,5 +261,12 @@ export class AppConfigService {
    */
   get LpDeployHookUrl(): string {
     return this.config.get<string>('LP_DEPLOY_HOOK_URL');
+  }
+
+  /**
+   * Google Cloud の認証キーファイルのパス
+   */
+  get GoogleCloudCredentialsFilePath(): string {
+    return this.config.get<string>('GCP_CREDENTIALS_FILE_PATH');
   }
 }

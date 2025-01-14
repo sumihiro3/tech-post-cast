@@ -10,6 +10,7 @@ on:
       - closed
     paths:
       - '.github/workflows/deploy-backend.yaml'
+      - 'Dockerfile.backend'
       - 'apps/backend/**'
 
 jobs:
@@ -27,6 +28,18 @@ jobs:
           uses: actions/setup-node@v4
           with:
             node-version: '20.18.1'
+        # ディレクトリを作成
+        - name: create credentials directory
+          run: mkdir -p apps/backend/credentials
+        # GCP の認証情報キーファイルを作成する
+        # develop ブランチにプッシュされたとき
+        - name: create gcp credentials for develop environment
+          if: ${{ github.ref_name == 'develop'}}
+          run: echo ${{ secrets.GCP_CREDENTIALS_DEVELOP }} | base64 -d > apps/backend/credentials/tech-post-cast-backend-sa.json
+        # main ブランチにプッシュされたとき
+        - name: create gcp credentials for main environment
+          if: ${{ github.ref_name == 'main'}}
+          run: echo ${{ secrets.GCP_CREDENTIALS_MAIN }} | base64 -d > apps/backend/credentials/tech-post-cast-backend-sa.json
         # Yarn のインストール
         - name: Install Yarn
           run: npm install -g yarn
