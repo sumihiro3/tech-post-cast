@@ -35,19 +35,11 @@ jobs:
         # develop ブランチにプッシュされたとき
         - name: create gcp credentials for develop environment
           if: ${{ github.ref_name == 'develop'}}
-          uses: jsdaniell/create-json@v1.2.3
-          with:
-              name: "tech-post-cast-backend-sa.json"
-              json: ${{ secrets.GCP_CREDENTIALS_DEVELOP }}
-              dir: 'apps/backend/credentials/'
+          run: echo ${{ secrets.GCP_CREDENTIALS_DEVELOP }} | base64 -d > apps/backend/credentials/tech-post-cast-backend-sa.json
         # main ブランチにプッシュされたとき
         - name: create gcp credentials for main environment
           if: ${{ github.ref_name == 'main'}}
-          uses: jsdaniell/create-json@v1.2.3
-          with:
-              name: "tech-post-cast-backend-sa.json"
-              json: ${{ secrets.GCP_CREDENTIALS_MAIN }}
-              dir: 'apps/backend/credentials/'
+          run: echo ${{ secrets.GCP_CREDENTIALS_MAIN }} | base64 -d > apps/backend/credentials/tech-post-cast-backend-sa.json
         # Yarn のインストール
         - name: Install Yarn
           run: npm install -g yarn
