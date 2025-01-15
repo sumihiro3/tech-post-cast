@@ -26,6 +26,11 @@ export interface ProgramFileUploadCommand {
    * アップロード対象のファイルパス
    */
   filePath: string;
+
+  /**
+   * アップロード対象のファイルのコンテンツタイプ
+   */
+  contentType?: string;
 }
 
 /**
