@@ -1,15 +1,14 @@
-<template>
-  <v-list-item prepend-icon="mdi-headphones" slim>
-    <template #prepend>
-      <v-icon color="secondary" size="30" />
-    </template>
-
-    <v-list-item-title class="text-h6">
-      <strong class="font-weight-black text-teal-darken-1">TechPostCast</strong>
-    </v-list-item-title>
-  </v-list-item>
+<template lang="pug">
+span
+  v-img(
+    :width='mobile ? 200 : 260',
+    src='@/assets/title_light.png',
+    alt='TechPostCast'
+  )
 </template>
 
 <script lang="ts" setup>
-//
+import { useDisplay } from 'vuetify';
+
+const { mobile } = useDisplay();
 </script>

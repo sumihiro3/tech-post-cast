@@ -25,7 +25,10 @@ export interface IHeadlineTopicProgramsRepository {
    * @param limit 1 ページあたりの件数
    * @returns ヘッドライントピック番組一覧
    */
-  find(page: number, limit: number): Promise<HeadlineTopicProgram[]>;
+  find(
+    page: number,
+    limit: number,
+  ): Promise<HeadlineTopicProgramWithQiitaPosts[]>;
 
   /**
    * ヘッドライントピック番組のID一覧を取得する
