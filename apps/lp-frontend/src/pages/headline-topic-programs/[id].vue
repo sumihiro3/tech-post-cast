@@ -1,28 +1,10 @@
 <template lang="pug">
-div
-  div(v-if='program')
-    h1 {{ program?.title }}
-    div
-      ul(v-for='(post, index) in program.posts', :key='index')
-        li {{ post.title }}
-        li {{ post.authorName }}
-    div(v-if='program.script')
-      div {{ program.script.intro }}
-        ul
-          li(v-for='(post, index) in program.script.posts', :key='index')
-            span {{ post.summary }}
-      div {{ program.script.ending }}
-    div {{ program }}
-  v-btn(
-    append-icon='mdi-account-circle',
-    prepend-icon='mdi-check-circle',
-    href='/'
-  )
-    template(v-slot:prepend)
-      v-icon(color='success')
-    | Go to homepage Button
-    template(v-slot:append)
-      v-icon(color='warning')
+div(v-if='program')
+  v-row(align='center')
+    v-col(cols='0', sm='2')
+    v-col(cols='12', sm='8')
+      ContentHeadlineTopicProgram(:key='program.id', :program='program')
+    v-col(cols='0', sm='2')
 </template>
 
 <script setup lang="ts">

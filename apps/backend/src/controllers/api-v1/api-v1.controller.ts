@@ -10,7 +10,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { HeadlineTopicProgram } from '@prisma/client';
 import { ApiV1Service } from './api-v1.service';
 import {
   HeadlineTopicProgramDto,
@@ -80,7 +79,7 @@ export class ApiV1Controller {
   @UseGuards(ApiV1BearerTokenGuard)
   async getHeadlineTopicPrograms(
     @Query() dto: HeadlineTopicProgramsFindRequestDto,
-  ): Promise<HeadlineTopicProgram[]> {
+  ): Promise<HeadlineTopicProgramDto[]> {
     this.logger.debug('ApiV1Controller.getHeadlineTopicPrograms called', {
       dto,
     });
@@ -89,7 +88,11 @@ export class ApiV1Controller {
       this.logger.log('ヘッドライントピック番組を取得しました', {
         count: result.length,
       });
-      return result;
+      // DTO へ変換
+      const dtoList = result.map((entity) =>
+        HeadlineTopicProgramDto.createFromEntity(entity),
+      );
+      return dtoList;
     } catch (error) {
       const errorMessage = 'ヘッドライントピック番組の取得に失敗しました';
       this.logger.error(errorMessage, error, error.stack);

@@ -88,9 +88,9 @@ nav {
 }
 
 .pagination a.active {
-  background-color: #4caf50;
+  background-color: #55c500;
   color: white;
-  border: 1px solid #4caf50;
+  border: 1px solid #55c500;
 }
 
 .pagination a:hover:not(.active) {

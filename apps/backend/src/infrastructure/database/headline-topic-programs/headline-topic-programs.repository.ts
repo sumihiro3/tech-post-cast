@@ -57,7 +57,10 @@ export class HeadlineTopicProgramsRepository
    * @param limit 1 ページあたりの件数
    * @returns ヘッドライントピック番組一覧
    */
-  async find(page: number, limit: number): Promise<HeadlineTopicProgram[]> {
+  async find(
+    page: number,
+    limit: number,
+  ): Promise<HeadlineTopicProgramWithQiitaPosts[]> {
     this.logger.debug(`HeadlineTopicProgramsRepository.find called`, {
       page,
       limit,
@@ -65,6 +68,7 @@ export class HeadlineTopicProgramsRepository
     const result = await this.prisma.headlineTopicProgram.findMany({
       take: limit,
       skip: (page - 1) * limit,
+      include: { posts: true },
       orderBy: { createdAt: 'desc' },
     });
     this.logger.debug(`ヘッドライントピック番組を取得しました`, { result });
