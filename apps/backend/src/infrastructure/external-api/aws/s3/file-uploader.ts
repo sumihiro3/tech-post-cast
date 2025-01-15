@@ -67,6 +67,7 @@ export class S3ProgramFileUploader implements IProgramFileUploader {
         Bucket: command.bucketName,
         Key: command.uploadPath,
         Body: await readFile(command.filePath),
+        ContentType: command.contentType,
       });
       const uploadResult = await this.s3Client.send(s3UploadCommand);
       // アップロードしたファイルのURL

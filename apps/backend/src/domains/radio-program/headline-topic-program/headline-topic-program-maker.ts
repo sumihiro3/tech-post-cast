@@ -253,6 +253,7 @@ export class HeadlineTopicProgramMaker {
       bucketName,
       uploadPath: `${objectKeyPrefix}.mp3`,
       filePath: audioFilePath,
+      contentType: 'audio/mpeg',
     };
     const audioUrl = await this.programFileUploader.upload(
       audioFileUploadCommand,
