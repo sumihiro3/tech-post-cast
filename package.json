@@ -20,6 +20,7 @@
     "build-commons": "yarn workspace @tech-post-cast/commons run build",
     "build-database": "yarn workspace @tech-post-cast/database run build",
     "build-backend": "yarn workspace @tech-post-cast/backend run build",
+    "build:lp-frontend": "yarn workspace @tech-post-cast/lp-frontend run build",
     "build-infra": "yarn workspace @tech-post-cast/infra run build",
     "diff-infra": "yarn workspace @tech-post-cast/infra run diff:dev",
     "deploy-infra": "yarn workspace @tech-post-cast/infra run deploy:dev",

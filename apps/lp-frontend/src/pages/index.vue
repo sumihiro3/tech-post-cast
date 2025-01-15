@@ -1,16 +1,15 @@
 <template lang="pug">
 div
   HeroHeader
-  div(v-if='programs')
-    v-container
-      v-row.pa-4(align='center')
-        v-col(cols='10')
-          ContentHeadlineTopicProgram(
-            v-for='program in programs',
-            :key='program.id',
-            :program='program'
-          )
-  div
+  v-row(v-if='programs', align='center')
+    v-col(cols='0', sm='2', lg='3')
+    v-col(cols='12', sm='8', lg='6')
+      ContentHeadlineTopicProgram(
+        v-for='program in programs',
+        :key='program.id',
+        :program='program'
+      )
+    v-col(cols='0', sm='2', lg='3')
   Pagination(
     :currentPage='currentPage',
     :pages='pages || 0',
