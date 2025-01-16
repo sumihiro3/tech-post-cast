@@ -15,6 +15,7 @@ div(v-if='program')
 import type { HeadlineTopicProgramDto } from '@/api';
 import { useGetHeadlineTopicProgram } from '@/composables/headline-topic-programs/useGetHeadlineTopicProgram';
 
+const app = useNuxtApp();
 const route = useRoute();
 const { id } = route.params;
 const programId = Array.isArray(id) ? id[0] : id;
@@ -23,7 +24,6 @@ const { data: program } = await useAsyncData<HeadlineTopicProgramDto>(
   `headline-topic-program:${programId}`,
   async () => {
     try {
-      const app = useNuxtApp();
       // 指定されたIDの番組情報を取得
       const dto = await useGetHeadlineTopicProgram(app, programId);
       return { ...dto };
@@ -41,16 +41,18 @@ const { data: program } = await useAsyncData<HeadlineTopicProgramDto>(
   },
 );
 
+// SEO 向けのメタ情報を設定
+const siteName = app.$config.public.siteName;
+const siteDescription = app.$config.public.siteDescription;
+const ogpImage = app.$config.public.siteOgpImageUrl;
+const title = `${siteName} - ${program.value?.title}`;
 useSeoMeta({
-  title: `TechPostCast - ${program.value?.title}`,
-  ogTitle: `TechPostCast - ${program.value?.title}`,
-  description:
-    'Qiitaの人気記事をAIが10分程度で解説するラジオ番組を配信しています',
-  ogDescription:
-    'Qiitaの人気記事をAIが10分程度で解説するラジオ番組を配信しています',
-  ogImage: 'https://pub-2bec3306c9a1436e8bc204465623e633.r2.dev/ogp_image.png',
+  title,
+  ogTitle: title,
+  description: siteDescription,
+  ogDescription: siteDescription,
+  ogImage: ogpImage,
   twitterCard: 'summary_large_image',
-  twitterImage:
-    'https://pub-2bec3306c9a1436e8bc204465623e633.r2.dev/ogp_image.png',
+  twitterImage: ogpImage,
 });
 </script>

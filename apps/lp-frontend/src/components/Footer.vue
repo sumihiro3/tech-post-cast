@@ -30,7 +30,7 @@ v-card.mt-6(flat, width='100%')
       v-icon.mr-2 {{ thanks.icon }}
       | {{ thanks.title }}
   v-container.text-left.pl-10(cols='10')
-    .text-center.mt-4.text-grey-darken-1
+    .text-center.mt-4.text-subtitle-2.text-md-subtitle-1.text-grey-darken-1
       | All rights are reserved &copy; {{ new Date().getFullYear() }}, TEP Lab
 </template>
 

@@ -12,13 +12,13 @@ export default async function generateSpotifyRssFeed(nitro: Nitro) {
   }
   const publicDir = nitro.options.output.publicDir;
   const lpUrl = process.env.LP_BASE_URL;
-  const title = 'TechPostCast';
-  const author = 'TEP Lab';
-  const email = 'tpc@tep-lab.com';
+  const title = process.env.LP_SITE_NAME!;
+  const author = process.env.PODCAST_AUTHOR_NAME;
+  const email = process.env.PODCAST_AUTHOR_EMAIL;
   const category = 'Technology';
-  const podcastImageUrl = `https://pub-2bec3306c9a1436e8bc204465623e633.r2.dev/TechPostCast_Podcast.png`;
-  const programImageUrl = `https://pub-2bec3306c9a1436e8bc204465623e633.r2.dev/TechPostCast_Podcast.png`;
-  const programDescription = '人気のIT技術記事をAIが解説するポッドキャスト';
+  const podcastImageUrl = process.env.PODCAST_IMAGE_URL;
+  const programImageUrl = process.env.PODCAST_IMAGE_URL;
+  const programDescription = process.env.PODCAST_PROGRAM_DESCRIPTION;
   // RSS フィードのファイル名
   const feedFileName = 'rss.xml';
   // ヘッドライントピック番組一覧を取得
@@ -31,7 +31,7 @@ export default async function generateSpotifyRssFeed(nitro: Nitro) {
     feed_url: `${lpUrl}/${feedFileName}`,
     copyright: author,
     image_url: podcastImageUrl,
-    generator: 'TechPostCast Feed Generator',
+    generator: `${title} Feed Generator`,
     language: 'ja',
     pubDate: new Date(),
     categories: [category],
