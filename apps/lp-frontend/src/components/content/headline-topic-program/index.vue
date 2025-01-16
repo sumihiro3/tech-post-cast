@@ -19,16 +19,28 @@ v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-blue-grey-lighten-4(
     v-tab.text-none.text-grey-darken-1(value='posts')
       | 紹介記事
     v-tab.text-none.text-grey-darken-1(v-if='showScript', value='script')
-      | 台本
+      | 番組の台本
   v-tabs-window(v-model='tab')
+    //- 紹介記事一覧
     v-tabs-window-item(value='posts')
-      ul.mt-4.ml-2.post-list
-        li.mb-1.text-body-2.text-md-body-1(
+      ul.mt-4.ml-2.ml-md-6.post-list
+        li.mb-2.text-body-2.text-md-body-1(
           v-for='post in program.posts',
           :key='post.id'
         )
           a(:href='post.url', target='_blank')
             | {{ post.title }}
+    //- 番組の台本
+    v-tabs-window-item(v-if='showScript', value='script')
+      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1
+        | {{ program.script.intro }}
+      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1(
+        v-for='(post, index) in program.script.posts',
+        :key='index'
+      )
+        | {{ post.summary }}
+      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1
+        | {{ program.script.ending }}
 </template>
 
 <script lang="ts" setup>
@@ -48,6 +60,7 @@ audio {
   width: 100%;
 }
 .post-list {
-  list-style: disc !important;
+  list-style: disc;
+  padding-left: 10px;
 }
 </style>

@@ -3,7 +3,11 @@ div(v-if='program')
   v-row(align='center')
     v-col(cols='0', sm='2')
     v-col(cols='12', sm='8')
-      ContentHeadlineTopicProgram(:key='program.id', :program='program')
+      ContentHeadlineTopicProgram(
+        :key='program.id',
+        :program='program',
+        :showScript='true'
+      )
     v-col(cols='0', sm='2')
 </template>
 
