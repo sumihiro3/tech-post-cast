@@ -48,4 +48,15 @@ const { data, error } = await useAsyncData(
 
 const programs = data.value?.programs;
 const pages = data.value?.pages;
+
+useSeoMeta({
+  title: `TechPostCast - ${currentPage}/${pages}`,
+  ogTitle: `TechPostCast - ${currentPage}/${pages}`,
+  description:
+    'Qiitaの人気記事をAIが10分程度で解説するラジオ番組を配信しています',
+  ogDescription:
+    'Qiitaの人気記事をAIが10分程度で解説するラジオ番組を配信しています',
+  ogImage: 'ogp_image.png',
+  twitterCard: 'summary_large_image',
+});
 </script>

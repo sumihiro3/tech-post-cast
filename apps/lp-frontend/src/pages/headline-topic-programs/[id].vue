@@ -40,4 +40,15 @@ const { data: program } = await useAsyncData<HeadlineTopicProgramDto>(
     }
   },
 );
+
+useSeoMeta({
+  title: `TechPostCast - ${program.value?.title}`,
+  ogTitle: `TechPostCast - ${program.value?.title}`,
+  description:
+    'Qiitaの人気記事をAIが10分程度で解説するラジオ番組を配信しています',
+  ogDescription:
+    'Qiitaの人気記事をAIが10分程度で解説するラジオ番組を配信しています',
+  ogImage: 'ogp_image.png',
+  twitterCard: 'summary_large_image',
+});
 </script>
