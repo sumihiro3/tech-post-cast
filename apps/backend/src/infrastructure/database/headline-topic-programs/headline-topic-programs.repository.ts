@@ -30,7 +30,11 @@ export class HeadlineTopicProgramsRepository
     this.logger.debug(`HeadlineTopicProgramsRepository.findOne called`, { id });
     const result = await this.prisma.headlineTopicProgram.findUnique({
       where: { id },
-      include: { posts: true },
+      include: {
+        posts: {
+          orderBy: { likesCount: 'desc' },
+        },
+      },
     });
     this.logger.debug(`指定のヘッドライントピック番組 [${id}] を取得しました`, {
       result,
@@ -68,7 +72,11 @@ export class HeadlineTopicProgramsRepository
     const result = await this.prisma.headlineTopicProgram.findMany({
       take: limit,
       skip: (page - 1) * limit,
-      include: { posts: true },
+      include: {
+        posts: {
+          orderBy: { likesCount: 'desc' },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
     this.logger.debug(`ヘッドライントピック番組を取得しました`, { result });
