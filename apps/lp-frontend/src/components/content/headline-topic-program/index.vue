@@ -1,8 +1,5 @@
 <template lang="pug">
-v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-blue-grey-lighten-4(
-  flat,
-  rounded='lg'
-)
+v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-white(flat, rounded='lg')
   v-card-subtitle.text-caption.text-md-subtitle-1.font-weight-bold
     | {{ utcToJstDateString(program.createdAt) }} のヘッドライントピック
   v-card-text.text-h6.text-md-h5.font-weight-black
