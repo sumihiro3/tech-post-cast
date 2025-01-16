@@ -22,17 +22,6 @@ import { useGetCurrentPagePrograms } from '@/composables/headline-topic-programs
 
 const currentPage = ref(1);
 
-useSeoMeta({
-  title: 'TechPostCast',
-  ogTitle: 'TechPostCast',
-  description:
-    'Qiitaの人気記事をAIが10分程度で解説するラジオ番組を配信しています',
-  ogDescription:
-    'Qiitaの人気記事をAIが10分程度で解説するラジオ番組を配信しています',
-  ogImage: 'https://pub-2bec3306c9a1436e8bc204465623e633.r2.dev/ogp_image.png',
-  twitterCard: 'summary_large_image',
-});
-
 const { data, error } = await useAsyncData(
   `headline-topic-programs:${currentPage}`,
   async () => {
@@ -59,4 +48,17 @@ const { data, error } = await useAsyncData(
 
 const programs = data.value?.programs;
 const pages = data.value?.pages;
+
+useSeoMeta({
+  title: 'TechPostCast',
+  ogTitle: 'TechPostCast',
+  description:
+    'Qiitaの人気記事をAIが10分程度で解説するラジオ番組を配信しています',
+  ogDescription:
+    'Qiitaの人気記事をAIが10分程度で解説するラジオ番組を配信しています',
+  ogImage: 'https://pub-2bec3306c9a1436e8bc204465623e633.r2.dev/ogp_image.png',
+  twitterCard: 'summary_large_image',
+  twitterImage:
+    'https://pub-2bec3306c9a1436e8bc204465623e633.r2.dev/ogp_image.png',
+});
 </script>

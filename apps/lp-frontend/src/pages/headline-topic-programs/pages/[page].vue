@@ -58,5 +58,7 @@ useSeoMeta({
     'Qiitaの人気記事をAIが10分程度で解説するラジオ番組を配信しています',
   ogImage: 'https://pub-2bec3306c9a1436e8bc204465623e633.r2.dev/ogp_image.png',
   twitterCard: 'summary_large_image',
+  twitterImage:
+    'https://pub-2bec3306c9a1436e8bc204465623e633.r2.dev/ogp_image.png',
 });
 </script>
