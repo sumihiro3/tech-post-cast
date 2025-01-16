@@ -6,7 +6,7 @@ import 'vuetify/styles';
 
 const techPostCastLightTheme: ThemeDefinition = {
   colors: {
-    background: '#F4F4F4',
+    background: '#F5F6F6',
     primary: '#55C500',
     secondary: colors.teal.darken1, // #26A69A
     anchor: '#8c9eff',
