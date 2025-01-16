@@ -22,8 +22,8 @@ v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-blue-grey-lighten-4(
       | 台本
   v-tabs-window(v-model='tab')
     v-tabs-window-item(value='posts')
-      ul.mt-4.ml-2.post-list
-        li.mb-1.text-body-2.text-md-body-1(
+      ul.mt-4.ml-2.ml-md-6.post-list
+        li.mb-2.text-body-2.text-md-body-1(
           v-for='post in program.posts',
           :key='post.id'
         )
@@ -48,6 +48,7 @@ audio {
   width: 100%;
 }
 .post-list {
-  list-style: disc !important;
+  list-style: disc;
+  padding-left: 10px;
 }
 </style>
