@@ -3,7 +3,7 @@ div(align='center', style='bg-color: #ffffff')
   v-avatar(
     image='@/assets/logo_green.png',
     :size='mobile ? 80 : 160',
-    alt='TechPostCast'
+    :alt='siteName'
   )
   h1.text-h6.text-md-h4.font-weight-bold.mt-2.mb-4
     | Qiita人気記事をAIラジオで毎日お届け
@@ -16,5 +16,7 @@ div(align='center', style='bg-color: #ffffff')
 <script lang="ts" setup>
 import { useDisplay } from 'vuetify';
 
+const app = useNuxtApp();
 const { mobile } = useDisplay();
+const siteName = app.$config.public.siteName;
 </script>

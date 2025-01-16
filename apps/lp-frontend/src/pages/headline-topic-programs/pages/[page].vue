@@ -19,6 +19,7 @@ div
 <script setup lang="ts">
 import { useGetCurrentPagePrograms } from '@/composables/headline-topic-programs/useGetCurrentPagePrograms';
 
+const app = useNuxtApp();
 const route = useRoute();
 const currentPage = ref(route.params.page ? Number(route.params.page) : 1);
 
@@ -26,7 +27,6 @@ const { data, error } = await useAsyncData(
   `headline-topic-programs:${currentPage}`,
   async () => {
     try {
-      const app = useNuxtApp();
       const result = await useGetCurrentPagePrograms(app, currentPage.value);
       return { programs: result.programs, pages: result.pages };
     } catch (error) {
@@ -49,16 +49,19 @@ const { data, error } = await useAsyncData(
 const programs = data.value?.programs;
 const pages = data.value?.pages;
 
+// SEO 向けのメタ情報を設定
+const siteName = app.$config.public.siteName;
+const siteSummary = app.$config.public.siteSummary;
+const siteDescription = app.$config.public.siteDescription;
+const ogpImage = app.$config.public.siteOgpImageUrl;
+const title = `${siteName} - ${siteSummary}`;
 useSeoMeta({
-  title: `TechPostCast - ${currentPage}/${pages}`,
-  ogTitle: `TechPostCast - ${currentPage}/${pages}`,
-  description:
-    'Qiitaの人気記事をAIが10分程度で解説するラジオ番組を配信しています',
-  ogDescription:
-    'Qiitaの人気記事をAIが10分程度で解説するラジオ番組を配信しています',
-  ogImage: 'https://pub-2bec3306c9a1436e8bc204465623e633.r2.dev/ogp_image.png',
+  title,
+  ogTitle: title,
+  description: siteDescription,
+  ogDescription: siteDescription,
+  ogImage: ogpImage,
   twitterCard: 'summary_large_image',
-  twitterImage:
-    'https://pub-2bec3306c9a1436e8bc204465623e633.r2.dev/ogp_image.png',
+  twitterImage: ogpImage,
 });
 </script>
