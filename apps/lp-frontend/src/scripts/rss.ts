@@ -66,16 +66,9 @@ export default async function generateSpotifyRssFeed(nitro: Nitro) {
   });
   // ヘッドライントピック番組をRSSフィードに追加
   programs.forEach((program) => {
-    // ヘッドライントピック番組の再生時間（ミリ秒）を 「{時間}: {分}: {秒}.{ミリ秒}」 の形式に変換する
+    // ヘッドライントピック番組の再生時間（ミリ秒）を 秒に変換する
     const duration = program.audioDuration;
-    const hours = Math.floor(duration / (60 * 60 * 1000)); // 時間を算出する
-    const minutes = Math.floor(duration / (60 * 1000)); // 分を算出する
-    const seconds = Math.floor((duration % (60 * 1000)) / 1000);
-    const milliseconds = duration % 1000; // 秒未満の値を算出する
-    // 時間、分、秒を2桁の0埋めの文字列に変換する
-    const hoursString = hours.toString().padStart(2, '0');
-    const minutesString = minutes.toString().padStart(2, '0');
-    const secondsString = seconds.toString().padStart(2, '0');
+    const seconds = Math.floor(duration / 1000);
     // 番組ページのURLを生成する
     const programUrl = `${lpUrl}/headline-topic-programs/${program.id}`;
     feed.item({
@@ -98,7 +91,7 @@ export default async function generateSpotifyRssFeed(nitro: Nitro) {
           },
         },
         {
-          'itunes:duration': `${hoursString}:${minutesString}:${secondsString}.${milliseconds}`,
+          'itunes:duration': seconds,
         },
       ],
     });
@@ -116,11 +109,11 @@ async function getHeadlineTopicProgramList(): Promise<HeadlineTopicProgram[]> {
   console.debug('getHeadlineTopicProgramList called');
   const apiUrl = process.env.API_BASE_URL;
   const token = process.env.API_ACCESS_TOKEN;
-  const programsPerPage = Number(process.env.PROGRAMS_PER_PAGE || 10);
+  const rssItemCount = 20;
   const lpUrl = process.env.LP_BASE_URL;
   console.log(`API_BASE_URL: ${apiUrl}`);
   console.log(`API_ACCESS_TOKEN: ${token}`);
-  console.log(`PROGRAMS_PER_PAGE: ${programsPerPage}`);
+  console.log(`RSS_ITEM_COUNT: ${rssItemCount}`);
   if (!apiUrl || !token || !lpUrl) {
     console.warn(
       'API_BASE_URL または API_ACCESS_TOKEN または LP_BASE_URL が設定されていません',
@@ -128,7 +121,7 @@ async function getHeadlineTopicProgramList(): Promise<HeadlineTopicProgram[]> {
     return [];
   }
   const response = await fetch(
-    `${apiUrl}/api/v1/headline-topic-programs?page=1&limit=${programsPerPage}`,
+    `${apiUrl}/api/v1/headline-topic-programs?page=1&limit=${rssItemCount}`,
     {
       method: 'GET',
       headers: {
