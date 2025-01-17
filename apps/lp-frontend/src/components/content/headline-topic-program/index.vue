@@ -13,20 +13,25 @@ v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-white(flat, rounded='lg')
     align-tabs='center',
     fixed-tabs
   )
-    v-tab.text-none.text-grey-darken-1(value='posts')
+    v-tab.text-none.text-grey-darken-4(value='posts')
       | 紹介記事
-    v-tab.text-none.text-grey-darken-1(v-if='showScript', value='script')
+    v-tab.text-none.text-grey-darken-4(v-if='showScript', value='script')
       | 番組の台本
   v-tabs-window(v-model='tab')
     //- 紹介記事一覧
     v-tabs-window-item(value='posts')
-      ul.mt-4.ml-2.ml-md-6.post-list
-        li.mb-2.text-body-2.text-md-body-1(
-          v-for='post in program.posts',
-          :key='post.id'
-        )
-          a(:href='post.url', target='_blank')
-            | {{ post.title }}
+      v-list(lines='two')
+        v-list-item(v-for='post in program.posts', :key='post.id')
+          v-list-item-subtitle.text-caption.text-md-body-2.text-start.mb-2
+            a.pb-2(
+              :href='`https://qiita.com/${post.authorId}`',
+              target='_blank'
+            ) {{ post.authorName }}
+            span.ml-4.ml-md-6
+            | {{ utcToJstDateString(post.createdAt, 'YYYY年M月D日') }}
+          v-list-item-title.text-body-1.text-md-subtitle-1.font-weight-bold.text-wrap.ml-4.ml-md-8
+            a(:href='post.url', target='_blank')
+              | {{ post.title }}
     //- 番組の台本
     v-tabs-window-item(v-if='showScript', value='script')
       p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1
