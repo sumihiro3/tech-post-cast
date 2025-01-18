@@ -30,3 +30,13 @@ export class HeadlineTopicProgramGenerateScriptError extends HeadlineTopicProgra
     super(message, options);
   }
 }
+
+/**
+ * ヘッドライントピック番組の再生成に失敗したことを表すエラー
+ */
+export class HeadlineTopicProgramRegenerateError extends HeadlineTopicProgramError {
+  override name = 'HeadlineTopicProgramRegenerateError';
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}

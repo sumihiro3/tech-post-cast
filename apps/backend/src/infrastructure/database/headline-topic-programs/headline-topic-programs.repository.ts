@@ -168,4 +168,36 @@ export class HeadlineTopicProgramsRepository
       updatedAt: new Date(),
     };
   }
+
+  /**
+   * ヘッドライントピック番組を更新する
+   * @param id 番組 ID
+   * @param programGenerateResult 番組ファイルの生成結果
+   * @param programUploadResult 番組ファイルのアップロード結果
+   * @returns 更新したヘッドライントピック番組
+   */
+  updateHeadlineTopicProgram(
+    id: string,
+    programGenerateResult: HeadlineTopicProgramGenerateResult,
+    programUploadResult: ProgramUploadResult,
+  ): Promise<HeadlineTopicProgram> {
+    this.logger.debug(
+      `HeadlineTopicProgramsRepository.updateHeadlineTopicProgram called`,
+      {
+        id,
+        programGenerateResult,
+        programUploadResult,
+      },
+    );
+    const scriptString = JSON.stringify(programGenerateResult.script);
+    return this.prisma.headlineTopicProgram.update({
+      where: { id },
+      data: {
+        script: scriptString as Prisma.InputJsonValue,
+        audioUrl: programUploadResult.audioUrl,
+        audioDuration: programGenerateResult.audioDuration,
+        updatedAt: new Date(),
+      },
+    });
+  }
 }

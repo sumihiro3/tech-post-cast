@@ -50,4 +50,17 @@ export interface IHeadlineTopicProgramsRepository {
     programGenerateResult: HeadlineTopicProgramGenerateResult,
     programUploadResult: ProgramUploadResult,
   ): Promise<HeadlineTopicProgram>;
+
+  /**
+   * ヘッドライントピック番組を更新する
+   * @param id 番組 ID
+   * @param programGenerateResult 番組ファイルの生成結果
+   * @param programUploadResult 番組ファイルのアップロード結果
+   * @returns 更新したヘッドライントピック番組
+   */
+  updateHeadlineTopicProgram(
+    id: string,
+    programGenerateResult: HeadlineTopicProgramGenerateResult,
+    programUploadResult: ProgramUploadResult,
+  ): Promise<HeadlineTopicProgram>;
 }

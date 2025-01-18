@@ -1,8 +1,11 @@
 import { AppConfigService } from '@/app-config/app-config.service';
-import { QiitaPostApiResponse } from '@/domains/qiita-posts/qiita-posts.entity';
-import { HeadlineTopicProgramMaker } from '@/domains/radio-program/headline-topic-program/headline-topic-program-maker';
-import { QiitaPostsRepository } from '@/infrastructure/database/qiita-posts/qiita-posts.repository';
-import { QiitaPostsApiClient } from '@/infrastructure/external-api/qiita-api/qiita-posts.api.client';
+import { HeadlineTopicProgramFindError } from '@/types/errors';
+import { QiitaPostApiResponse } from '@domains/qiita-posts/qiita-posts.entity';
+import { ProgramRegenerationType } from '@domains/radio-program/headline-topic-program';
+import { HeadlineTopicProgramMaker } from '@domains/radio-program/headline-topic-program/headline-topic-program-maker';
+import { HeadlineTopicProgramsRepository } from '@infrastructure/database/headline-topic-programs/headline-topic-programs.repository';
+import { QiitaPostsRepository } from '@infrastructure/database/qiita-posts/qiita-posts.repository';
+import { QiitaPostsApiClient } from '@infrastructure/external-api/qiita-api/qiita-posts.api.client';
 import { Injectable, Logger } from '@nestjs/common';
 import { HeadlineTopicProgram } from '@prisma/client';
 import { getYesterday, subtractDays } from '@tech-post-cast/commons';
@@ -22,6 +25,7 @@ export class HeadlineTopicProgramsService {
     private readonly qiitaPostsRepository: QiitaPostsRepository,
     private readonly qiitaPostsApiClient: QiitaPostsApiClient,
     private readonly headlineTopicProgramMaker: HeadlineTopicProgramMaker,
+    private readonly headlineTopicProgramsRepository: HeadlineTopicProgramsRepository,
   ) {}
 
   /**
@@ -76,6 +80,42 @@ export class HeadlineTopicProgramsService {
       this.logger.error(`エラーが発生しました`, error);
       throw error;
     }
+  }
+
+  /**
+   * ヘッドライントピック番組を再生成する
+   * @param programId 番組ID
+   * @param regenerationType 再生成種別
+   * @returns 再生成した番組
+   */
+  async regenerateHeadlineTopicProgram(
+    programId: string,
+    regenerationType: ProgramRegenerationType,
+  ): Promise<HeadlineTopicProgram> {
+    this.logger.debug(
+      `DailyHeadlineTopicsService.regenerateHeadlineTopicProgram called`,
+      {
+        programId,
+        regenerationType,
+      },
+    );
+    // 指定の番組を取得する
+    const program =
+      await this.headlineTopicProgramsRepository.findOne(programId);
+    if (!program) {
+      throw new HeadlineTopicProgramFindError(
+        `指定の番組 [${programId}] が見つかりませんでした`,
+      );
+    }
+    // 番組を再生成する
+    const regeneratedProgram =
+      await this.headlineTopicProgramMaker.regenerateProgram(
+        program,
+        regenerationType,
+      );
+    // LP の再生成実行をリクエストする
+    await this.requestLpDeploy();
+    return regeneratedProgram;
   }
 
   /**

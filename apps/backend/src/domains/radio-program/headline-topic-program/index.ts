@@ -107,3 +107,13 @@ export interface HeadlineTopicProgramGenerateResult {
 export interface ProgramUploadResult {
   audioUrl: string;
 }
+
+/** 番組の再生成種別 */
+export const ProgramRegenerationTypeEnum = [
+  'AUDIO_ONLY', // 音声のみ
+  'SCRIPT_AND_AUDIO', // 台本と音声
+] as const;
+
+/** 番組の再生成種別 */
+export type ProgramRegenerationType =
+  (typeof ProgramRegenerationTypeEnum)[number];
