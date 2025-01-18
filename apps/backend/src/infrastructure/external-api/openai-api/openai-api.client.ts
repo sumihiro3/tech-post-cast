@@ -1,19 +1,20 @@
 import { AppConfigService } from '@/app-config/app-config.service';
+import {
+  HeadlineTopicProgramError,
+  HeadlineTopicProgramGenerateScriptError,
+} from '@/types/errors';
 import { IQiitaPostApiResponse } from '@domains/qiita-posts/qiita-posts.entity';
 import {
   HeadlineTopicProgramScript,
   PostSummary,
 } from '@domains/radio-program/headline-topic-program';
 import { Injectable, Logger } from '@nestjs/common';
+import { QiitaPost } from '@prisma/client';
 import { getJapaneseDateStringWithWeekday } from '@tech-post-cast/commons';
 import * as fs from 'fs';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
-import {
-  HeadlineTopicProgramError,
-  HeadlineTopicProgramGenerateScriptError,
-} from '../../../types/errors';
 import { HeadlineTopicProgramScriptSchema, PostSummarySchema } from './schemas';
 
 @Injectable()
@@ -36,7 +37,9 @@ export class OpenAiApiClient {
    * @param post 記事
    * @returns 記事要約
    */
-  async summarizePost(post: IQiitaPostApiResponse): Promise<PostSummary> {
+  async summarizePost(
+    post: IQiitaPostApiResponse | QiitaPost,
+  ): Promise<PostSummary> {
     this.logger.debug(`OpenAiApiClient.summarizePost called`, { post });
     try {
       const systemPrompt = this.getPostSummarySystemPrompt(post);
@@ -79,7 +82,7 @@ export class OpenAiApiClient {
    * @param post 記事
    * @returns 記事要約のプロンプト
    */
-  getPostSummarySystemPrompt(post: IQiitaPostApiResponse): string {
+  getPostSummarySystemPrompt(post: IQiitaPostApiResponse | QiitaPost): string {
     this.logger.verbose(
       { post: post },
       `OpenAiApiClient.getPostSummarySystemPrompt called`,

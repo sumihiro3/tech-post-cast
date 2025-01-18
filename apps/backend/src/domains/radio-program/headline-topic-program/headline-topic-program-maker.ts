@@ -1,11 +1,18 @@
 import { AppConfigService } from '@/app-config/app-config.service';
+import {
+  HeadlineTopicProgramError,
+  HeadlineTopicProgramGenerateScriptError,
+  HeadlineTopicProgramRegenerateError,
+} from '@/types/errors';
 import { QiitaPostApiResponse } from '@domains/qiita-posts/qiita-posts.entity';
+import { ProgramRegenerationType } from '@domains/radio-program/headline-topic-program';
 import { HeadlineTopicProgramsRepository } from '@infrastructure/database/headline-topic-programs/headline-topic-programs.repository';
 import { QiitaPostsRepository } from '@infrastructure/database/qiita-posts/qiita-posts.repository';
 import { OpenAiApiClient } from '@infrastructure/external-api/openai-api/openai-api.client';
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { HeadlineTopicProgram } from '@prisma/client';
+import { HeadlineTopicProgram, QiitaPost } from '@prisma/client';
 import { formatDate } from '@tech-post-cast/commons';
+import { HeadlineTopicProgramWithQiitaPosts } from '@tech-post-cast/database';
 import {
   HeadlineTopicProgramGenerateResult,
   HeadlineTopicProgramMetadata,
@@ -71,7 +78,7 @@ export class HeadlineTopicProgramMaker {
         programDate,
         programAudioFilePaths,
       );
-      // 生成したヘッドライントピック番組の音声ファイルを S3 にアップロードする処理を追加
+      // 生成したヘッドライントピック番組の音声ファイルを S3 にアップロードする
       const uploadResult = await this.uploadProgramFiles(
         generateResult.audioFilePath,
         programDate,
@@ -101,12 +108,95 @@ export class HeadlineTopicProgramMaker {
   }
 
   /**
+   * ヘッドライントピック番組を再生成する
+   * @param program ヘッドライントピック番組
+   * @param regenerationType 再生成種別
+   * @returns 再生成したヘッドライントピック番組
+   */
+  async regenerateProgram(
+    program: HeadlineTopicProgramWithQiitaPosts,
+    regenerationType: ProgramRegenerationType,
+  ): Promise<HeadlineTopicProgram> {
+    this.logger.debug(`HeadlineTopicProgramMaker.regenerateProgram called`, {
+      programId: program.id,
+      regenerationType,
+    });
+    if (!regenerationType) {
+      throw new HeadlineTopicProgramRegenerateError(
+        `再生成種別が指定されていません`,
+      );
+    }
+    try {
+      let script: HeadlineTopicProgramScript;
+      const programDate = program.createdAt;
+      if (regenerationType === 'SCRIPT_AND_AUDIO') {
+        // 台本を再生成する場合
+        // 対象の記事を要約する
+        const summarizedPosts = await this.summarizePosts(program.posts);
+        // ヘッドライントピック番組の台本を生成する
+        script = await this.generateScript(programDate, summarizedPosts);
+      } else {
+        // 台本を再生成しない場合は、番組情報から台本を取得する
+        const scriptString = program.script;
+        script = JSON.parse(
+          scriptString.toString(),
+        ) as HeadlineTopicProgramScript;
+        if (!script) {
+          throw new HeadlineTopicProgramGenerateScriptError(
+            `番組情報 [${program.id}] から台本を取得できませんでした`,
+          );
+        }
+      }
+      // ヘッドライントピック番組の台本読み上げ音声ファイルを生成する
+      const programAudioFilePaths =
+        await this.generateProgramAudioFiles(script);
+      // BGM などを組み合わせてヘッドライントピック番組の音声ファイルを生成する
+      const generateResult = await this.generateProgramFiles(
+        script,
+        programDate,
+        programAudioFilePaths,
+      );
+      // 生成したヘッドライントピック番組の音声ファイルを S3 にアップロードする
+      const uploadResult = await this.uploadProgramFiles(
+        generateResult.audioFilePath,
+        programDate,
+      );
+      this.logger.log(`S3 に番組ファイルをアップロードしました`, {
+        uploadResult,
+      });
+      // DB に再生成したヘッドライントピック番組の情報を保存する
+      const regeneratedProgram =
+        await this.headlineTopicProgramsRepository.updateHeadlineTopicProgram(
+          program.id,
+          generateResult,
+          uploadResult,
+        );
+      this.logger.log(
+        `ヘッドライントピック番組 [${program.id}] を再生成しました`,
+        {
+          program: regeneratedProgram,
+        },
+      );
+      return regeneratedProgram;
+    } catch (error) {
+      const errorMessage = `ヘッドライントピック番組 [${program.id}] の再生成中にエラーが発生しました`;
+      this.logger.error(errorMessage, error, error.stack);
+      if (!(error instanceof HeadlineTopicProgramError)) {
+        error = new HeadlineTopicProgramRegenerateError(errorMessage, {
+          cause: error,
+        });
+      }
+      throw error;
+    }
+  }
+
+  /**
    * 対象記事を要約する
    * @param posts 対象記事
    * @returns 要約した記事
    */
   async summarizePosts(
-    posts: QiitaPostApiResponse[],
+    posts: QiitaPostApiResponse[] | QiitaPost[],
   ): Promise<QiitaPostApiResponse[]> {
     this.logger.debug(`HeadlineTopicProgramMaker.summarizePosts called`, {
       posts,
