@@ -6,7 +6,7 @@ v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-white(flat, rounded='lg')
     a(:href='`/headline-topic-programs/${program.id}`')
       | {{ program.title }}
   v-card-text.mt-2.mt-md-4.mb-2.mb-md-4
-    audio(controls, :src='program.audioUrl')
+    audio(controls, :src='program.audioUrl', preload='auto')
   v-tabs.mt-0(
     v-model='tab',
     background-color='transparent',
