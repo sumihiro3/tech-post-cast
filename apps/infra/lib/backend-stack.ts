@@ -78,6 +78,10 @@ export class TechPostCastBackendStack extends cdk.Stack {
             'assets/audio/headline-topic-programs/opening.mp3',
           HEADLINE_TOPIC_PROGRAM_ENDING_FILE_PATH:
             'assets/audio/headline-topic-programs/ending.mp3',
+          HEADLINE_TOPIC_PROGRAM_SE_SHORT_FILE_PATH:
+            'assets/audio/headline-topic-programs/se_short.mp3',
+          HEADLINE_TOPIC_PROGRAM_SE_LONG_FILE_PATH:
+            'assets/audio/headline-topic-programs/se_long.mp3',
           HEADLINE_TOPIC_PROGRAM_PICTURE_FILE_PATH:
             'assets/audio/headline-topic-programs/preview.jpg',
           PROGRAM_AUDIO_BUCKET_NAME: stage.programFileBucketName,
