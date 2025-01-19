@@ -163,9 +163,10 @@ export class TextToSpeechClient implements ITextToSpeechClient {
     // SSML を生成する
     const intro = `<speak>${script.intro}<break time="1000ms"/></speak>`;
     const postSummaries = script.posts.map((post) => {
-      return `<speak>${post.summary}<break time="1000ms"/></speak>`;
+      const summary = this.generateSsmlWithSubAlias(post.summary);
+      return `<speak>${summary}<break time="1000ms"/></speak>`;
     });
-    const ending = `<speak>${script.ending}<break time="200ms"/></speak>`;
+    const ending = `<speak>${this.generateSsmlWithSubAlias(script.ending)}<break time="200ms"/></speak>`;
     const result: HeadlineTopicProgramSsml = {
       intro,
       postSummaries,
@@ -175,6 +176,25 @@ export class TextToSpeechClient implements ITextToSpeechClient {
       result,
     });
     return result;
+  }
+
+  /**
+   * 特定の用語の読み方を <sub> で指定した SSML を生成する
+   * @param 読み上げる文字列
+   * @param 特定の用語の読み方を指定した SSML
+   */
+  generateSsmlWithSubAlias(text: string): string {
+    this.logger.debug(`TextToSpeechClient.generateSsmlWithSubAlias called`, {
+      text,
+    });
+    // 特定の用語の読み方を <sub> で指定した SSML を生成する
+    for (const alias of subAliasTable) {
+      text = text.replace(
+        alias.term,
+        `<sub alias="${alias.reading}">${alias.term}</sub> `,
+      );
+    }
+    return text;
   }
 }
 
@@ -195,3 +215,27 @@ export interface HeadlineTopicProgramSsml {
    */
   ending: string;
 }
+
+/**
+ * 用語と読み方の対応表
+ */
+export interface SubAliasTable {
+  /**
+   * 用語
+   */
+  term: string;
+  /**
+   * 読み方
+   */
+  reading: string;
+}
+
+/**
+ * 用語と読上げ文字列の対応表
+ */
+export const subAliasTable: SubAliasTable[] = [
+  { term: 'Qiita', reading: 'キータ' },
+  { term: 'VSCode', reading: 'ブイエスコード' },
+  { term: 'Cline', reading: 'クライン' },
+  { term: 'LINE', reading: 'ライン' },
+];
