@@ -7,6 +7,8 @@ import { z } from 'zod';
  * 記事の要約を表すスキーマ
  */
 export const PostSummarySchema = z.object({
+  postId: z.string().describe('記事の ID'),
+  title: z.string().describe('記事タイトル'),
   summary: z.string().describe('記事の要約'),
 });
 

@@ -10,9 +10,11 @@ export * from './headline-topic-program-maker';
  * 記事の要約を表すインターフェイス
  */
 export interface PostSummary {
-  /**
-   * 記事の要約
-   */
+  /** 記事ID */
+  postId: string;
+  /** 記事のタイトル */
+  title: string;
+  /** 記事の要約 */
   summary: string;
 }
 
