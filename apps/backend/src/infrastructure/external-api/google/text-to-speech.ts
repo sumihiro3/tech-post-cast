@@ -85,13 +85,15 @@ export class TextToSpeechClient implements ITextToSpeechClient {
       const introRequest = this.generateTextToSpeechRequest(ssmlList.intro);
       const introAudioFilePath = `${command.outputDir}/${now}_intro.mp3`;
       await this.synthesizeSpeech(introRequest, introAudioFilePath);
-      // 記事サマリの音声ファイルを生成する
-      const mainAudioFilePaths = ssmlList.postSummaries.map((ssml, index) => {
-        const request = this.generateTextToSpeechRequest(ssml);
-        const audioFilePath = `${command.outputDir}/${now}_post-${index + 1}.mp3`;
-        this.synthesizeSpeech(request, audioFilePath);
-        return audioFilePath;
-      });
+      // 記事紹介の音声ファイルを生成する
+      const postIntroductionAudioFilePaths = ssmlList.postSummaries.map(
+        (ssml, index) => {
+          const request = this.generateTextToSpeechRequest(ssml);
+          const audioFilePath = `${command.outputDir}/${now}_post-${index + 1}.mp3`;
+          this.synthesizeSpeech(request, audioFilePath);
+          return audioFilePath;
+        },
+      );
       // エンディング部分の音声ファイルを生成する
       const endingRequest = this.generateTextToSpeechRequest(ssmlList.ending);
       const endingAudioFilePath = `${command.outputDir}/${now}_ending.mp3`;
@@ -99,7 +101,7 @@ export class TextToSpeechClient implements ITextToSpeechClient {
       // 生成結果を返す
       const result: HeadlineTopicProgramAudioFilesGenerateResult = {
         introAudioFilePath,
-        mainAudioFilePaths,
+        postIntroductionAudioFilePaths,
         endingAudioFilePath,
       };
       this.logger.log(`ヘッドライントピック番組の音声ファイルを生成しました`, {
