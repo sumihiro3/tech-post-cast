@@ -37,6 +37,10 @@ describe('AppConfigService', () => {
                   'headline-topic-program-opening-file-path',
                 HEADLINE_TOPIC_PROGRAM_ENDING_FILE_PATH:
                   'headline-topic-program-ending-file-path',
+                HEADLINE_TOPIC_PROGRAM_SE_SHORT_FILE_PATH:
+                  'headline-topic-program-se-short-file-path',
+                HEADLINE_TOPIC_PROGRAM_SE_LONG_FILE_PATH:
+                  'headline-topic-program-se-long-file-path',
                 HEADLINE_TOPIC_PROGRAM_PICTURE_FILE_PATH:
                   'headline-topic-program-picture-file-path',
                 PROGRAM_AUDIO_BUCKET_NAME: 'program-audio-bucket-name',
@@ -167,6 +171,28 @@ describe('AppConfigService', () => {
     );
   });
 
+  it('HEADLINE_TOPIC_PROGRAM_SE_SHORT_FILE_PATH が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'HEADLINE_TOPIC_PROGRAM_SE_SHORT_FILE_PATH') return null;
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
+  it('HEADLINE_TOPIC_PROGRAM_SE_LONG_FILE_PATH が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'HEADLINE_TOPIC_PROGRAM_SE_LONG_FILE_PATH') return null;
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
   it('HEADLINE_TOPIC_PROGRAM_PICTURE_FILE_PATH が設定されていない場合、エラーをスローするべき', () => {
     jest.spyOn(configService, 'get').mockImplementation((key: string) => {
       if (key === 'HEADLINE_TOPIC_PROGRAM_PICTURE_FILE_PATH') return null;
@@ -253,6 +279,12 @@ describe('AppConfigService', () => {
     );
     expect(service.HeadlineTopicProgramEndingFilePath).toBe(
       'headline-topic-program-ending-file-path',
+    );
+    expect(service.HeadlineTopicProgramSeShortFilePath).toBe(
+      'headline-topic-program-se-short-file-path',
+    );
+    expect(service.HeadlineTopicProgramSeLongFilePath).toBe(
+      'headline-topic-program-se-long-file-path',
     );
     expect(service.HeadlineTopicProgramPictureFilePath).toBe(
       'headline-topic-program-picture-file-path',
