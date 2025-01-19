@@ -189,7 +189,7 @@ export class TextToSpeechClient implements ITextToSpeechClient {
     });
     // 特定の用語の読み方を <sub> で指定した SSML を生成する
     for (const alias of subAliasTable) {
-      text = text.replace(
+      text = text.replaceAll(
         alias.term,
         `<sub alias="${alias.reading}">${alias.term}</sub> `,
       );
