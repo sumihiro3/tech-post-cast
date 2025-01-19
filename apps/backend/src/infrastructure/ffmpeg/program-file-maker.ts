@@ -140,12 +140,11 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
     });
     try {
       const now = Date.now();
-      // 番組の音声ファイル群を結合する
-      const programAudioFiles = [
-        programAudioFilePaths.introAudioFilePath,
-        ...programAudioFilePaths.mainAudioFilePaths,
-        programAudioFilePaths.endingAudioFilePath,
-      ];
+      // メイン音声ファイルを構成する音声ファイルのリストを生成
+      const programAudioFiles = this.createProgramAudioFileList(
+        programAudioFilePaths,
+      );
+      // メイン音声ファイルを結合する
       const mainAudioFilePath = `${this.outputDir}/${now}_main_audio.mp3`;
       await this.concatAudioFiles(programAudioFiles, mainAudioFilePath, {
         artist: 'RadioProgram',
@@ -253,6 +252,49 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
         cause: error,
       });
     }
+  }
+
+  /**
+   * ヘッドライントピック番組のメイン音声ファイルを構成する音声ファイルのリストを生成する
+   * @param programAudioFilePaths ヘッドライントピック番組の音声ファイルパス群
+   * @returns メイン音声ファイルを構成する音声ファイルのリスト
+   */
+  createProgramAudioFileList(
+    programAudioFilePaths: HeadlineTopicProgramAudioFilesGenerateResult,
+  ): string[] {
+    this.logger.debug(
+      `FfmpegProgramFileMaker.createProgramAudioFileList called`,
+      { programAudioFilePaths },
+    );
+    // 話題の合間に入れる短い効果音ファイル
+    const seShortFilePath = this.appConfig.HeadlineTopicProgramSeShortFilePath;
+    // 記事紹介の間に効果音を入れる
+    const postIntroductionWithSeFilePaths: string[] = [];
+    for (
+      let i = 0;
+      i < programAudioFilePaths.postIntroductionAudioFilePaths.length;
+      i++
+    ) {
+      postIntroductionWithSeFilePaths.push(
+        programAudioFilePaths.postIntroductionAudioFilePaths[i],
+      );
+      // 最後の記事紹介の後には効果音は入れない
+      if (i < programAudioFilePaths.postIntroductionAudioFilePaths.length - 1) {
+        postIntroductionWithSeFilePaths.push(seShortFilePath);
+      }
+    }
+    // エンディング前に入れる長い効果音ファイル
+    const seLongFilePath = this.appConfig.HeadlineTopicProgramSeLongFilePath;
+    // 番組の音声ファイル群を結合する
+    const programAudioFiles = [
+      programAudioFilePaths.introAudioFilePath,
+      // 短い効果音
+      seShortFilePath,
+      ...postIntroductionWithSeFilePaths,
+      seLongFilePath,
+      programAudioFilePaths.endingAudioFilePath,
+    ];
+    return programAudioFiles;
   }
 
   /**

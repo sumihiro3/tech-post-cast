@@ -59,6 +59,16 @@ export class AppConfigService {
         'HEADLINE_TOPIC_PROGRAM_ENDING_FILE_PATH が設定されていません',
       );
     }
+    if (!this.HeadlineTopicProgramSeShortFilePath) {
+      throw new AppConfigValidationError(
+        'HEADLINE_TOPIC_PROGRAM_SE_SHORT_FILE_PATH が設定されていません',
+      );
+    }
+    if (!this.HeadlineTopicProgramSeLongFilePath) {
+      throw new AppConfigValidationError(
+        'HEADLINE_TOPIC_PROGRAM_SE_LONG_FILE_PATH が設定されていません',
+      );
+    }
     if (!this.HeadlineTopicProgramPictureFilePath) {
       throw new AppConfigValidationError(
         'HEADLINE_TOPIC_PROGRAM_PICTURE_FILE_PATH が設定されていません',
@@ -112,6 +122,10 @@ export class AppConfigService {
         this.HeadlineTopicProgramOpeningFilePath,
       HeadlineTopicProgramEndingFilePath:
         this.HeadlineTopicProgramEndingFilePath,
+      HeadlineTopicProgramSeShortFilePath:
+        this.HeadlineTopicProgramSeShortFilePath,
+      HeadlineTopicProgramSeLongFilePath:
+        this.HeadlineTopicProgramSeLongFilePath,
       HeadlineTopicProgramPictureFilePath:
         this.HeadlineTopicProgramPictureFilePath,
       ProgramAudioBucketName: this.ProgramAudioBucketName,
@@ -212,6 +226,20 @@ export class AppConfigService {
    */
   get HeadlineTopicProgramEndingFilePath(): string {
     return this.config.get<string>('HEADLINE_TOPIC_PROGRAM_ENDING_FILE_PATH');
+  }
+
+  /**
+   * 短い効果音ファイルのパス
+   */
+  get HeadlineTopicProgramSeShortFilePath(): string {
+    return this.config.get<string>('HEADLINE_TOPIC_PROGRAM_SE_SHORT_FILE_PATH');
+  }
+
+  /**
+   * 長い効果音ファイルのパス
+   */
+  get HeadlineTopicProgramSeLongFilePath(): string {
+    return this.config.get<string>('HEADLINE_TOPIC_PROGRAM_SE_LONG_FILE_PATH');
   }
 
   /**
