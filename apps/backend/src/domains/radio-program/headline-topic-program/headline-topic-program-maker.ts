@@ -148,13 +148,13 @@ export class HeadlineTopicProgramMaker {
         }
       }
       // ヘッドライントピック番組の台本読み上げ音声ファイルを生成する
-      const programAudioFilePaths =
+      const programAudioFilesGenerateResult =
         await this.generateProgramAudioFiles(script);
       // BGM などを組み合わせてヘッドライントピック番組の音声ファイルを生成する
       const generateResult = await this.generateProgramFiles(
         script,
         programDate,
-        programAudioFilePaths,
+        programAudioFilesGenerateResult,
       );
       // 生成したヘッドライントピック番組の音声ファイルを S3 にアップロードする
       const uploadResult = await this.uploadProgramFiles(
@@ -269,24 +269,27 @@ export class HeadlineTopicProgramMaker {
    * ヘッドライントピック番組の音声ファイルと動画ファイルを生成する
    * @param script 台本
    * @param programDate 番組日
-   * @param programAudioFilePaths 番組音声ファイルのパス一覧
+   * @param programAudioFileGenerateResult ヘッドライントピック番組の音声ファイル群生成結果
    * @return ヘッドライントピック番組ファイル生成結果
    */
   async generateProgramFiles(
     script: HeadlineTopicProgramScript,
     programDate: Date,
-    programAudioFilePaths: HeadlineTopicProgramAudioFilesGenerateResult,
+    programAudioFileGenerateResult: HeadlineTopicProgramAudioFilesGenerateResult,
   ): Promise<HeadlineTopicProgramGenerateResult> {
     this.logger.debug(`HeadlineTopicProgramMaker.generateProgramFiles called`, {
       title: script.title,
       programDate,
-      programAudioFilePaths,
+      programAudioFileGenerateResult,
     });
     const bgmAudioFilePath = this.appConfig.HeadlineTopicProgramBgmFilePath;
     const openingAudioFilePath =
       this.appConfig.HeadlineTopicProgramOpeningFilePath;
     const endingAudioFilePath =
       this.appConfig.HeadlineTopicProgramEndingFilePath;
+    const programAudioFilePaths = this.createProgramMainAudioFileList(
+      programAudioFileGenerateResult,
+    );
     const volumeRate = 2.5;
     const now = new Date();
     const programAudioFileName = `headline-topic-program_${now.getTime()}.mp3`;
@@ -316,6 +319,53 @@ export class HeadlineTopicProgramMaker {
     };
     this.logger.log(`ヘッドライントピック番組を生成しました`, { result });
     return result;
+  }
+
+  /**
+   * ヘッドライントピック番組のメイン音声ファイルを構成する音声ファイルのリストを生成する
+   * @param programAudioFilesGenerateResult ヘッドライントピック番組の音声ファイル群生成結果
+   * @returns メイン音声ファイルを構成する音声ファイルのリスト
+   */
+  createProgramMainAudioFileList(
+    programAudioFilesGenerateResult: HeadlineTopicProgramAudioFilesGenerateResult,
+  ): string[] {
+    this.logger.debug(
+      `FfmpegProgramFileMaker.createProgramMainAudioFileList called`,
+      { programAudioFilesGenerateResult },
+    );
+    // 話題の合間に入れる短い効果音ファイル
+    const seShortFilePath = this.appConfig.HeadlineTopicProgramSeShortFilePath;
+    // 記事紹介の間に効果音を入れる
+    const postIntroductionWithSeFilePaths: string[] = [];
+    for (
+      let i = 0;
+      i < programAudioFilesGenerateResult.postIntroductionAudioFilePaths.length;
+      i++
+    ) {
+      postIntroductionWithSeFilePaths.push(
+        programAudioFilesGenerateResult.postIntroductionAudioFilePaths[i],
+      );
+      // 最後の記事紹介の後には効果音は入れない
+      if (
+        i <
+        programAudioFilesGenerateResult.postIntroductionAudioFilePaths.length -
+          1
+      ) {
+        postIntroductionWithSeFilePaths.push(seShortFilePath);
+      }
+    }
+    // エンディング前に入れる長い効果音ファイル
+    const seLongFilePath = this.appConfig.HeadlineTopicProgramSeLongFilePath;
+    // 番組の音声ファイル群を結合する
+    const programAudioFiles = [
+      programAudioFilesGenerateResult.introAudioFilePath,
+      // 短い効果音
+      seShortFilePath,
+      ...postIntroductionWithSeFilePaths,
+      seLongFilePath,
+      programAudioFilesGenerateResult.endingAudioFilePath,
+    ];
+    return programAudioFiles;
   }
 
   /**

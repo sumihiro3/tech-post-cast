@@ -1,5 +1,8 @@
 import { formatDate } from '@tech-post-cast/commons';
-import { ProgramFileMetadata } from '../program-file-maker.interface';
+import {
+  ProgramFileChapter,
+  ProgramFileMetadata,
+} from '../program-file-maker.interface';
 
 export * from './headline-topic-program-maker';
 
@@ -61,6 +64,8 @@ export class HeadlineTopicProgramMetadata implements ProgramFileMetadata {
   language: string;
   /** filename */
   filename: string;
+  /** チャプター一覧 */
+  chapters?: ProgramFileChapter[];
 
   constructor(
     script: HeadlineTopicProgramScript,

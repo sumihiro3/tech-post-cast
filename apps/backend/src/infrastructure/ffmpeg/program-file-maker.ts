@@ -10,7 +10,6 @@ import {
   IProgramFileMaker,
   ProgramFileMetadata,
 } from '@domains/radio-program/program-file-maker.interface';
-import { HeadlineTopicProgramAudioFilesGenerateResult } from '@domains/radio-program/text-to-speech.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { formatDate } from '@tech-post-cast/commons';
 import * as ffmpeg from 'fluent-ffmpeg';
@@ -129,7 +128,7 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
    * @returns マージした音声ファイルのパス
    */
   async mergeMainAudioAndBgm(
-    programAudioFilePaths: HeadlineTopicProgramAudioFilesGenerateResult,
+    programAudioFilePaths: string[],
     bgmAudioFilePath: string,
     volumeRate: number,
   ): Promise<string> {
@@ -140,13 +139,9 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
     });
     try {
       const now = Date.now();
-      // メイン音声ファイルを構成する音声ファイルのリストを生成
-      const programAudioFiles = this.createProgramAudioFileList(
-        programAudioFilePaths,
-      );
       // メイン音声ファイルを結合する
       const mainAudioFilePath = `${this.outputDir}/${now}_main_audio.mp3`;
-      await this.concatAudioFiles(programAudioFiles, mainAudioFilePath, {
+      await this.concatAudioFiles(programAudioFilePaths, mainAudioFilePath, {
         artist: 'RadioProgram',
         album: 'HeadlineTopicProgram',
         albumArtist: 'HeadlineTopicProgram',
@@ -255,49 +250,6 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
   }
 
   /**
-   * ヘッドライントピック番組のメイン音声ファイルを構成する音声ファイルのリストを生成する
-   * @param programAudioFilePaths ヘッドライントピック番組の音声ファイルパス群
-   * @returns メイン音声ファイルを構成する音声ファイルのリスト
-   */
-  createProgramAudioFileList(
-    programAudioFilePaths: HeadlineTopicProgramAudioFilesGenerateResult,
-  ): string[] {
-    this.logger.debug(
-      `FfmpegProgramFileMaker.createProgramAudioFileList called`,
-      { programAudioFilePaths },
-    );
-    // 話題の合間に入れる短い効果音ファイル
-    const seShortFilePath = this.appConfig.HeadlineTopicProgramSeShortFilePath;
-    // 記事紹介の間に効果音を入れる
-    const postIntroductionWithSeFilePaths: string[] = [];
-    for (
-      let i = 0;
-      i < programAudioFilePaths.postIntroductionAudioFilePaths.length;
-      i++
-    ) {
-      postIntroductionWithSeFilePaths.push(
-        programAudioFilePaths.postIntroductionAudioFilePaths[i],
-      );
-      // 最後の記事紹介の後には効果音は入れない
-      if (i < programAudioFilePaths.postIntroductionAudioFilePaths.length - 1) {
-        postIntroductionWithSeFilePaths.push(seShortFilePath);
-      }
-    }
-    // エンディング前に入れる長い効果音ファイル
-    const seLongFilePath = this.appConfig.HeadlineTopicProgramSeLongFilePath;
-    // 番組の音声ファイル群を結合する
-    const programAudioFiles = [
-      programAudioFilePaths.introAudioFilePath,
-      // 短い効果音
-      seShortFilePath,
-      ...postIntroductionWithSeFilePaths,
-      seLongFilePath,
-      programAudioFilePaths.endingAudioFilePath,
-    ];
-    return programAudioFiles;
-  }
-
-  /**
    * 複数の音声ファイルを結合する
    * @param files 結合する音声ファイルのパス
    * @param outputPath 出力先のパス
@@ -334,6 +286,7 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
           '-ac 2', // ステレオ
           '-y', // 上書き許可
         ])
+        // TODO メタデータの指定をファイルで行うようにする
         // メタデータの埋め込み
         .outputOptions('-metadata', `artist=${metadata.artist}`)
         .outputOptions('-metadata', `album=${metadata.album}`)
