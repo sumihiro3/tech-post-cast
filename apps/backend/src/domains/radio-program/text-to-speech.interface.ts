@@ -24,9 +24,9 @@ export interface HeadlineTopicProgramAudioFilesGenerateResult {
    */
   introAudioFilePath: string;
   /**
-   * 記事サマリの音声ファイルパス一覧
+   * 記事紹介の音声ファイルパス一覧
    */
-  mainAudioFilePaths: string[];
+  postIntroductionAudioFilePaths: string[];
   /**
    * エンディング部の音声ファイルパス
    */
