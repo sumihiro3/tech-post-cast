@@ -26,6 +26,8 @@ model HeadlineTopicProgram {
   audioUrl      String   @default("") @map("audio_url") @db.VarChar(255)
   // 音声ファイルの長さ（ミリ秒）
   audioDuration Int      @default(0) @map("audio_duration")
+  // チャプター情報
+  chapters      Json     @default("[]") @db.Json
   // ヘッドライントピックの動画ファイルURL
   videoUrl      String   @default("") @map("video_url") @db.VarChar(255)
   // 画像URL
