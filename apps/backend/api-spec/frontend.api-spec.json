@@ -255,6 +255,31 @@
           "ending"
         ]
       },
+      "HeadlineTopicProgramChapterDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "タイトル",
+            "example": "タイトル"
+          },
+          "startTime": {
+            "type": "number",
+            "description": "チャプターの開始位置（ミリ秒）",
+            "example": 1000
+          },
+          "endTime": {
+            "type": "number",
+            "description": "チャプターの終了位置（ミリ秒）",
+            "example": 2000
+          }
+        },
+        "required": [
+          "title",
+          "startTime",
+          "endTime"
+        ]
+      },
       "QiitaPostDto": {
         "type": "object",
         "properties": {
@@ -321,6 +346,13 @@
               }
             ]
           },
+          "chapters": {
+            "description": "ヘッドライントピック番組のチャプター一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HeadlineTopicProgramChapterDto"
+            }
+          },
           "audioUrl": {
             "type": "string",
             "description": "ヘッドライントピックの音声ファイルURL",
@@ -365,6 +397,7 @@
           "id",
           "title",
           "script",
+          "chapters",
           "audioUrl",
           "audioDuration",
           "createdAt",

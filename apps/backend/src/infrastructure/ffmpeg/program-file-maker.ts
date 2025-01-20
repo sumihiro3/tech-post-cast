@@ -10,7 +10,6 @@ import {
   IProgramFileMaker,
   ProgramFileMetadata,
 } from '@domains/radio-program/program-file-maker.interface';
-import { HeadlineTopicProgramAudioFilesGenerateResult } from '@domains/radio-program/text-to-speech.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { formatDate } from '@tech-post-cast/commons';
 import * as ffmpeg from 'fluent-ffmpeg';
@@ -52,8 +51,11 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
           });
           reject(e);
         } else {
+          this.logger.debug(`音声ファイル [${filePath}] のメタデータ:`, {
+            metadata,
+          });
           const duration = metadata.format.duration;
-          const result = duration ? parseInt(duration) * 1000 : 0;
+          const result = duration ? parseFloat(duration) * 1000 : 0;
           this.logger.debug(`音声ファイル [${filePath}] の長さ: ${result} ms`);
           resolve(result);
         }
@@ -129,7 +131,7 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
    * @returns マージした音声ファイルのパス
    */
   async mergeMainAudioAndBgm(
-    programAudioFilePaths: HeadlineTopicProgramAudioFilesGenerateResult,
+    programAudioFilePaths: string[],
     bgmAudioFilePath: string,
     volumeRate: number,
   ): Promise<string> {
@@ -140,13 +142,9 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
     });
     try {
       const now = Date.now();
-      // メイン音声ファイルを構成する音声ファイルのリストを生成
-      const programAudioFiles = this.createProgramAudioFileList(
-        programAudioFilePaths,
-      );
       // メイン音声ファイルを結合する
       const mainAudioFilePath = `${this.outputDir}/${now}_main_audio.mp3`;
-      await this.concatAudioFiles(programAudioFiles, mainAudioFilePath, {
+      await this.concatAudioFiles(programAudioFilePaths, mainAudioFilePath, {
         artist: 'RadioProgram',
         album: 'HeadlineTopicProgram',
         albumArtist: 'HeadlineTopicProgram',
@@ -255,49 +253,6 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
   }
 
   /**
-   * ヘッドライントピック番組のメイン音声ファイルを構成する音声ファイルのリストを生成する
-   * @param programAudioFilePaths ヘッドライントピック番組の音声ファイルパス群
-   * @returns メイン音声ファイルを構成する音声ファイルのリスト
-   */
-  createProgramAudioFileList(
-    programAudioFilePaths: HeadlineTopicProgramAudioFilesGenerateResult,
-  ): string[] {
-    this.logger.debug(
-      `FfmpegProgramFileMaker.createProgramAudioFileList called`,
-      { programAudioFilePaths },
-    );
-    // 話題の合間に入れる短い効果音ファイル
-    const seShortFilePath = this.appConfig.HeadlineTopicProgramSeShortFilePath;
-    // 記事紹介の間に効果音を入れる
-    const postIntroductionWithSeFilePaths: string[] = [];
-    for (
-      let i = 0;
-      i < programAudioFilePaths.postIntroductionAudioFilePaths.length;
-      i++
-    ) {
-      postIntroductionWithSeFilePaths.push(
-        programAudioFilePaths.postIntroductionAudioFilePaths[i],
-      );
-      // 最後の記事紹介の後には効果音は入れない
-      if (i < programAudioFilePaths.postIntroductionAudioFilePaths.length - 1) {
-        postIntroductionWithSeFilePaths.push(seShortFilePath);
-      }
-    }
-    // エンディング前に入れる長い効果音ファイル
-    const seLongFilePath = this.appConfig.HeadlineTopicProgramSeLongFilePath;
-    // 番組の音声ファイル群を結合する
-    const programAudioFiles = [
-      programAudioFilePaths.introAudioFilePath,
-      // 短い効果音
-      seShortFilePath,
-      ...postIntroductionWithSeFilePaths,
-      seLongFilePath,
-      programAudioFilePaths.endingAudioFilePath,
-    ];
-    return programAudioFiles;
-  }
-
-  /**
    * 複数の音声ファイルを結合する
    * @param files 結合する音声ファイルのパス
    * @param outputPath 出力先のパス
@@ -323,8 +278,15 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
         .join('\n');
       fs.writeFileSync(listFilePath, fileListContent);
       await setTimeout(3 * 1000); // 3秒待機
+      // メタデータファイルを生成する
+      const metadataFilePath = await this.generateProgramMetadataFile(metadata);
       // 音声ファイルを結合する
       ffmpeg()
+        .input(metadataFilePath)
+        .inputOptions(['-f ffmetadata']) // ファイルリストから結合
+        .outputOptions([
+          '-map_metadata 0', // # 0 means copy whatever in the existing meta, 1 means ignore the existing
+        ])
         .input(listFilePath)
         .inputOptions(['-f concat', '-safe 0']) // ファイルリストから結合
         .outputOptions(['-c copy']) // 再エンコードなしで結合
@@ -334,15 +296,16 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
           '-ac 2', // ステレオ
           '-y', // 上書き許可
         ])
+        // TODO メタデータの指定をファイルで行うようにする
         // メタデータの埋め込み
-        .outputOptions('-metadata', `artist=${metadata.artist}`)
-        .outputOptions('-metadata', `album=${metadata.album}`)
-        .outputOptions('-metadata', `album_artist=${metadata.albumArtist}`)
-        .outputOptions('-metadata', `title=${metadata.title}`)
-        .outputOptions('-metadata', `date=${metadata.date}`)
-        .outputOptions('-metadata', `genre=${metadata.genre}`)
-        .outputOptions('-metadata', `language=${metadata.language}`)
-        .outputOptions('-metadata', `filename=${metadata.filename}`)
+        // .outputOptions('-metadata', `artist=${metadata.artist}`)
+        // .outputOptions('-metadata', `album=${metadata.album}`)
+        // .outputOptions('-metadata', `album_artist=${metadata.albumArtist}`)
+        // .outputOptions('-metadata', `title=${metadata.title}`)
+        // .outputOptions('-metadata', `date=${metadata.date}`)
+        // .outputOptions('-metadata', `genre=${metadata.genre}`)
+        // .outputOptions('-metadata', `language=${metadata.language}`)
+        // .outputOptions('-metadata', `filename=${metadata.filename}`)
         .save(outputPath)
         .on('start', (commandLine) => {
           this.logger.log(`音声ファイルの結合処理を開始します`);
@@ -368,6 +331,60 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
         })
         .run();
     });
+  }
+
+  /**
+   * 番組のメタデータファイルを生成する
+   * @param metadata 番組のメタデータ情報
+   * @param outputFilePath メタデータファイルの出力先ファイルパス
+   */
+  async generateProgramMetadataFile(
+    metadata: ProgramFileMetadata,
+  ): Promise<string> {
+    this.logger.debug(
+      `FfmpegProgramFileMaker.generateProgramMetadataFile called`,
+      {
+        metadata,
+      },
+    );
+    const now = Date.now();
+    const metadataFilePath = `${this.outputDir}/${now}_metadata.txt`;
+    // FFMPEG のメタデータファイル形式に変換
+    // @see https://ffmpeg.org//ffmpeg-formats.html#Metadata-2
+    let metadataString = `;FFMETADATA1
+title=${metadata.title}
+artist=${metadata.artist}
+album=${metadata.album}
+album_artist=${metadata.albumArtist}
+date=${metadata.date}
+genre=${metadata.genre}
+language=${metadata.language}
+filename=${metadata.filename}
+`;
+    // チャプター部分のメタデータを追加
+    const chapterStrings = [];
+    if (metadata.chapters) {
+      for (const chapter of metadata.chapters) {
+        chapterStrings.push(
+          `[CHAPTER]
+TIMEBASE=1/1000
+START=${chapter.startTime}
+END=${chapter.endTime}
+title=${chapter.title}
+`,
+        );
+      }
+      // チャプター部分と結合する
+      metadataString += chapterStrings.join('');
+    }
+    this.logger.debug(`メタデータファイルの内容: ${metadataString}`);
+    fs.writeFileSync(metadataFilePath, metadataString);
+    // 3秒待機
+    await setTimeout(3 * 1000);
+    this.logger.log(
+      `番組のメタデータファイルを生成しました: ${metadataFilePath}`,
+    );
+    return metadataFilePath;
   }
 
   /**

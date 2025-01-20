@@ -1,5 +1,9 @@
 import { formatDate } from '@tech-post-cast/commons';
-import { ProgramFileMetadata } from '../program-file-maker.interface';
+import {
+  ProgramFileChapter,
+  ProgramFileMetadata,
+} from '../program-file-maker.interface';
+import { HeadlineTopicProgramAudioFilesGenerateResult } from '../text-to-speech.interface';
 
 export * from './headline-topic-program-maker';
 
@@ -7,9 +11,11 @@ export * from './headline-topic-program-maker';
  * 記事の要約を表すインターフェイス
  */
 export interface PostSummary {
-  /**
-   * 記事の要約
-   */
+  /** 記事ID */
+  postId: string;
+  /** 記事のタイトル */
+  title: string;
+  /** 記事の要約 */
   summary: string;
 }
 
@@ -39,6 +45,24 @@ export interface HeadlineTopicProgramScript {
 }
 
 /**
+ * ヘッドライントピック番組のチャプター情報生成に必要となる情報を表すインターフェイス
+ */
+export interface HeadlineTopicProgramChapterInfo {
+  /** 番組の台本 */
+  script: HeadlineTopicProgramScript;
+  /** 番組の音声ファイルの生成結果 */
+  programAudioFileGenerateResult: HeadlineTopicProgramAudioFilesGenerateResult;
+  /** 番組オープニングBGMのファイルパス */
+  openingBgmFilePath: string;
+  /** 番組エンディングBGMのファイルパス */
+  endingBgmFilePath: string;
+  /** 短い効果音のファイルパス */
+  seShortFilePath: string;
+  /** 長い効果音のファイルパス */
+  seLongFilePath: string;
+}
+
+/**
  * ヘッドライントピック番組の情報を表すクラス
  * ffmpeg で音声ファイル、動画ファイルに埋め込むメタデータ情報
  */
@@ -61,12 +85,15 @@ export class HeadlineTopicProgramMetadata implements ProgramFileMetadata {
   language: string;
   /** filename */
   filename: string;
+  /** チャプター一覧 */
+  chapters?: ProgramFileChapter[];
 
   constructor(
     script: HeadlineTopicProgramScript,
     artistName: string,
     programDate: Date,
     fileName: string,
+    chapters: ProgramFileChapter[],
   ) {
     this.artist = artistName;
     this.album = 'ヘッドライントピック';
@@ -76,6 +103,7 @@ export class HeadlineTopicProgramMetadata implements ProgramFileMetadata {
     this.genre = 'Technology';
     this.language = 'jpn';
     this.filename = fileName;
+    this.chapters = chapters;
   }
 }
 
@@ -99,6 +127,8 @@ export interface HeadlineTopicProgramGenerateResult {
    * 台本
    */
   script: HeadlineTopicProgramScript;
+  /** チャプター一覧 */
+  chapters: ProgramFileChapter[];
 }
 
 /**

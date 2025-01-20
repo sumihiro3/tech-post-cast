@@ -11,8 +11,9 @@ Content-Type: application/json
 Authorization: Bearer xxxxxxxxxxxffffffffffff
 
 {
-  "programId": "cm62ydq0000003j3ddlvpni8u",
-  "regenerationType": "SCRIPT_AND_AUDIO"
+  "programId": "cm61kc4jc0000l40z19ymy5cm",
+  "regenerationType": "AUDIO_ONLY"
 }
 
+# "regenerationType": "SCRIPT_AND_AUDIO"
 # "regenerationType": "AUDIO_ONLY"

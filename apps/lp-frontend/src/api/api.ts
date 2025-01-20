@@ -26,6 +26,31 @@ import { BASE_PATH, COLLECTION_FORMATS, BaseAPI, RequiredError, operationServerM
 /**
  * 
  * @export
+ * @interface HeadlineTopicProgramChapterDto
+ */
+export interface HeadlineTopicProgramChapterDto {
+    /**
+     * タイトル
+     * @type {string}
+     * @memberof HeadlineTopicProgramChapterDto
+     */
+    'title': string;
+    /**
+     * チャプターの開始位置（ミリ秒）
+     * @type {number}
+     * @memberof HeadlineTopicProgramChapterDto
+     */
+    'startTime': number;
+    /**
+     * チャプターの終了位置（ミリ秒）
+     * @type {number}
+     * @memberof HeadlineTopicProgramChapterDto
+     */
+    'endTime': number;
+}
+/**
+ * 
+ * @export
  * @interface HeadlineTopicProgramDto
  */
 export interface HeadlineTopicProgramDto {
@@ -47,6 +72,12 @@ export interface HeadlineTopicProgramDto {
      * @memberof HeadlineTopicProgramDto
      */
     'script': HeadlineTopicProgramScriptDto;
+    /**
+     * ヘッドライントピック番組のチャプター一覧
+     * @type {Array<HeadlineTopicProgramChapterDto>}
+     * @memberof HeadlineTopicProgramDto
+     */
+    'chapters': Array<HeadlineTopicProgramChapterDto>;
     /**
      * ヘッドライントピックの音声ファイルURL
      * @type {string}

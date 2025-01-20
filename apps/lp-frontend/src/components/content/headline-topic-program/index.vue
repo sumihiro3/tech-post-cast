@@ -6,7 +6,16 @@ v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-white(flat, rounded='lg')
     a(:href='`/headline-topic-programs/${program.id}`')
       | {{ program.title }}
   v-card-text.mt-2.mt-md-4.mb-2.mb-md-4
-    audio(controls, :src='program.audioUrl', preload='auto')
+    audio(
+      ref='player',
+      controls,
+      preload='auto',
+      @timeupdate='updateCurrentChapter',
+      @play='isPlaying = true',
+      @pause='isPlaying = false',
+      @ended='isPlaying = false'
+    )
+      source(:src='program.audioUrl', type='audio/mpeg')
   v-tabs.mt-0(
     v-model='tab',
     background-color='transparent',
@@ -15,6 +24,8 @@ v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-white(flat, rounded='lg')
   )
     v-tab.text-none.text-grey-darken-4(value='posts')
       | 紹介記事
+    v-tab.text-none.text-grey-darken-4(value='chapters')
+      | チャプター
     v-tab.text-none.text-grey-darken-4(v-if='showScript', value='script')
       | 番組の台本
   v-tabs-window(v-model='tab')
@@ -32,6 +43,26 @@ v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-white(flat, rounded='lg')
           v-list-item-title.text-body-1.text-md-subtitle-1.font-weight-bold.text-wrap.ml-4.ml-md-8
             a(:href='post.url', target='_blank')
               | {{ post.title }}
+    //- チャプター一覧
+    v-tabs-window-item(
+      v-if='program.chapters && program.chapters.length > 0',
+      value='chapters'
+    )
+      ol.chapter-list
+        li.ml-4.ml-md-6.mt-2(
+          v-for='(chapter, index) in program.chapters',
+          :key='index',
+          :class='{ "active-chapter": currentChapterIndex === index }'
+        )
+          a.text-left.text-grey-darken-4(
+            @click='seekTo(chapter.startTime / 1000)'
+          ) 
+            | {{ chapter.title }}
+            //- 現在再生中のチャプターを示すアイコン
+            v-icon.ml-1.mb-1(
+              v-if='isPlaying && index === currentChapterIndex',
+              color='primary'
+            ) mdi-volume-high
     //- 番組の台本
     v-tabs-window-item(v-if='showScript', value='script')
       p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1
@@ -51,6 +82,41 @@ const { utcToJstDateString } = useDateUtil();
 
 const tab = ref('posts');
 
+// Audio Player
+const player = ref<HTMLAudioElement | null>(null);
+// 再生状態
+const isPlaying = ref(false);
+
+/**
+ * 音声ファイルを指定時間へ移動して再生する
+ * @param time 開始時間
+ */
+const seekTo = (time: number) => {
+  console.debug('seekTo', { time });
+  if (player.value) {
+    player.value.currentTime = time;
+    player.value.play();
+  }
+};
+
+// 現在のチャプターインデックス
+const currentChapterIndex = ref(-1);
+
+// 再生時間を監視して現在のチャプターを更新
+const updateCurrentChapter = () => {
+  console.debug('updateCurrentChapter', {
+    currentTime: player.value?.currentTime,
+  });
+  const currentTime = player.value!.currentTime;
+  const index = props.program.chapters.findIndex((chapter, i) => {
+    const startTime = chapter.startTime / 1000;
+    const endTime = chapter.endTime / 1000;
+    return currentTime >= startTime && currentTime < endTime;
+  });
+  currentChapterIndex.value = index;
+  console.debug('currentChapterIndex', { currentChapterIndex: index });
+};
+
 const props = defineProps<{
   program: HeadlineTopicProgramDto;
   showScript?: boolean;
@@ -61,8 +127,12 @@ const props = defineProps<{
 audio {
   width: 100%;
 }
-.post-list {
-  list-style: disc;
+ol.chapter-list {
+  list-style-position: outside;
   padding-left: 10px;
+}
+li.active-chapter {
+  background-color: #edeeee;
+  font-weight: bold;
 }
 </style>

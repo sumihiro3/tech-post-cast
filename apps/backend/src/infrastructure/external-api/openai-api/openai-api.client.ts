@@ -11,11 +11,14 @@ import {
 import { Injectable, Logger } from '@nestjs/common';
 import { QiitaPost } from '@prisma/client';
 import { getJapaneseDateStringWithWeekday } from '@tech-post-cast/commons';
+import {
+  HeadlineTopicProgramScriptSchema,
+  PostSummarySchema,
+} from '@tech-post-cast/database';
 import * as fs from 'fs';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
-import { HeadlineTopicProgramScriptSchema, PostSummarySchema } from './schemas';
 
 @Injectable()
 export class OpenAiApiClient {
@@ -236,6 +239,9 @@ export class OpenAiApiClient {
     - 文中に「Qiita」「qiita」が出てきた場合は「キータ」と読みます
 - 難しい漢字は読み手が間違えないように、ひらがなで書きます
 - 読み上げ用の原稿なので、URL や Markdown の記法、改行コード（\n など）は含めないでください
+- 出力のうち 'posts' 部分は、'PostSummarySchema' に準拠してください
+    - 'posts' 部分に出力するのは紹介記事の要約のみです
+    - 'postId' は記事のID、'title' は記事のタイトル、'summary' は記事の要約を出力してください
 - 出力する文字数の下限は3000文字（この文字数は遵守してください）
 - 出力する文字数の上限は4000文字（この文字数は遵守してください）
 
@@ -249,6 +255,10 @@ ${date}
     // 今日紹介する記事を組み立てる
     const postsScript = posts.map((post, index) => {
       return `#### ${index + 1}つ目の記事
+
+##### 記事ID
+
+${post.id}
 
 ##### タイトル
 
