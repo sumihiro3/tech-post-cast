@@ -10,6 +10,7 @@ import { TextToSpeechClient as TTSClient } from '@google-cloud/text-to-speech';
 import { google } from '@google-cloud/text-to-speech/build/protos/protos';
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
+import { setTimeout } from 'timers/promises';
 
 /**
  * Text to speech client
@@ -51,6 +52,7 @@ export class TextToSpeechClient implements ITextToSpeechClient {
       }
       // 音声ファイルを出力する
       fs.writeFileSync(outputFilePath, response.audioContent, 'binary');
+      await setTimeout(1000);
     } catch (error) {
       const errorMessage = `音声ファイル生成に失敗しました`;
       this.logger.error(errorMessage, { error });
@@ -238,4 +240,5 @@ export const subAliasTable: SubAliasTable[] = [
   { term: 'VSCode', reading: 'ブイエスコード' },
   { term: 'Cline', reading: 'クライン' },
   { term: 'LINE', reading: 'ライン' },
+  { term: 'schema', reading: 'スキーマ' },
 ];

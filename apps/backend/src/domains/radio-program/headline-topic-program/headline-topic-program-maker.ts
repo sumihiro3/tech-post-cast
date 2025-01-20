@@ -5,14 +5,21 @@ import {
   HeadlineTopicProgramRegenerateError,
 } from '@/types/errors';
 import { QiitaPostApiResponse } from '@domains/qiita-posts/qiita-posts.entity';
-import { ProgramRegenerationType } from '@domains/radio-program/headline-topic-program';
+import {
+  HeadlineTopicProgramChapterInfo,
+  ProgramRegenerationType,
+} from '@domains/radio-program/headline-topic-program';
 import { HeadlineTopicProgramsRepository } from '@infrastructure/database/headline-topic-programs/headline-topic-programs.repository';
 import { QiitaPostsRepository } from '@infrastructure/database/qiita-posts/qiita-posts.repository';
 import { OpenAiApiClient } from '@infrastructure/external-api/openai-api/openai-api.client';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { HeadlineTopicProgram, QiitaPost } from '@prisma/client';
 import { formatDate } from '@tech-post-cast/commons';
-import { HeadlineTopicProgramWithQiitaPosts } from '@tech-post-cast/database';
+import {
+  HeadlineTopicProgramWithQiitaPosts,
+  parseHeadlineTopicProgramScript,
+} from '@tech-post-cast/database';
+import { setTimeout } from 'timers/promises';
 import {
   HeadlineTopicProgramGenerateResult,
   HeadlineTopicProgramMetadata,
@@ -23,7 +30,10 @@ import {
   IProgramFileUploader,
   ProgramFileUploadCommand,
 } from '../file-uploader.interface';
-import { IProgramFileMaker } from '../program-file-maker.interface';
+import {
+  IProgramFileMaker,
+  ProgramFileChapter,
+} from '../program-file-maker.interface';
 import {
   HeadlineTopicProgramAudioFilesGenerateCommand,
   HeadlineTopicProgramAudioFilesGenerateResult,
@@ -137,10 +147,8 @@ export class HeadlineTopicProgramMaker {
         script = await this.generateScript(programDate, summarizedPosts);
       } else {
         // 台本を再生成しない場合は、番組情報から台本を取得する
-        const scriptString = program.script;
-        script = JSON.parse(
-          scriptString.toString(),
-        ) as HeadlineTopicProgramScript;
+        const s = parseHeadlineTopicProgramScript(program.script);
+        script = s as HeadlineTopicProgramScript;
         if (!script) {
           throw new HeadlineTopicProgramGenerateScriptError(
             `番組情報 [${program.id}] から台本を取得できませんでした`,
@@ -148,13 +156,13 @@ export class HeadlineTopicProgramMaker {
         }
       }
       // ヘッドライントピック番組の台本読み上げ音声ファイルを生成する
-      const programAudioFilePaths =
+      const programAudioFilesGenerateResult =
         await this.generateProgramAudioFiles(script);
       // BGM などを組み合わせてヘッドライントピック番組の音声ファイルを生成する
       const generateResult = await this.generateProgramFiles(
         script,
         programDate,
-        programAudioFilePaths,
+        programAudioFilesGenerateResult,
       );
       // 生成したヘッドライントピック番組の音声ファイルを S3 にアップロードする
       const uploadResult = await this.uploadProgramFiles(
@@ -269,35 +277,50 @@ export class HeadlineTopicProgramMaker {
    * ヘッドライントピック番組の音声ファイルと動画ファイルを生成する
    * @param script 台本
    * @param programDate 番組日
-   * @param programAudioFilePaths 番組音声ファイルのパス一覧
+   * @param programAudioFileGenerateResult ヘッドライントピック番組の音声ファイル群生成結果
    * @return ヘッドライントピック番組ファイル生成結果
    */
   async generateProgramFiles(
     script: HeadlineTopicProgramScript,
     programDate: Date,
-    programAudioFilePaths: HeadlineTopicProgramAudioFilesGenerateResult,
+    programAudioFileGenerateResult: HeadlineTopicProgramAudioFilesGenerateResult,
   ): Promise<HeadlineTopicProgramGenerateResult> {
     this.logger.debug(`HeadlineTopicProgramMaker.generateProgramFiles called`, {
       title: script.title,
       programDate,
-      programAudioFilePaths,
+      programAudioFileGenerateResult,
     });
+    await setTimeout(3 * 1000); // 番組音声ファイル書き出しまでに時間を要するケースがあるため3秒待つ
     const bgmAudioFilePath = this.appConfig.HeadlineTopicProgramBgmFilePath;
     const openingAudioFilePath =
       this.appConfig.HeadlineTopicProgramOpeningFilePath;
     const endingAudioFilePath =
       this.appConfig.HeadlineTopicProgramEndingFilePath;
+    const programAudioFilePaths = this.createProgramMainAudioFileList(
+      programAudioFileGenerateResult,
+    );
     const volumeRate = 2.5;
     const now = new Date();
     const programAudioFileName = `headline-topic-program_${now.getTime()}.mp3`;
     const outputFilePath = `${this.outputDir}/${programAudioFileName}`;
+    // 番組音声ファイルのチャプターを生成する
+    const chapters = await this.generateProgramChapters({
+      script,
+      programAudioFileGenerateResult,
+      openingBgmFilePath: openingAudioFilePath,
+      endingBgmFilePath: endingAudioFilePath,
+      seShortFilePath: this.appConfig.HeadlineTopicProgramSeShortFilePath,
+      seLongFilePath: this.appConfig.HeadlineTopicProgramSeLongFilePath,
+    });
     // ラジオ番組のメタデータ情報
     const metadata = new HeadlineTopicProgramMetadata(
       script,
       'Tech Post Cast',
       programDate,
       programAudioFileName,
+      chapters,
     );
+    // 番組音声ファイルを生成
     const audioResult = await this.programFileMaker.generateProgramAudioFile({
       programAudioFilePaths,
       bgmAudioFilePath,
@@ -313,8 +336,143 @@ export class HeadlineTopicProgramMaker {
       audioFilePath: outputFilePath,
       audioDuration: audioResult.duration,
       script,
+      chapters,
     };
     this.logger.log(`ヘッドライントピック番組を生成しました`, { result });
+    return result;
+  }
+
+  /**
+   * ヘッドライントピック番組のメイン音声ファイルを構成する音声ファイルのリストを生成する
+   * @param programAudioFilesGenerateResult ヘッドライントピック番組の音声ファイル群生成結果
+   * @returns メイン音声ファイルを構成する音声ファイルのリスト
+   */
+  createProgramMainAudioFileList(
+    programAudioFilesGenerateResult: HeadlineTopicProgramAudioFilesGenerateResult,
+  ): string[] {
+    this.logger.debug(
+      `HeadlineTopicProgramMaker.createProgramMainAudioFileList called`,
+      { programAudioFilesGenerateResult },
+    );
+    // 話題の合間に入れる短い効果音ファイル
+    const seShortFilePath = this.appConfig.HeadlineTopicProgramSeShortFilePath;
+    // 記事紹介の間に効果音を入れる
+    const postIntroductionWithSeFilePaths: string[] = [];
+    for (
+      let i = 0;
+      i < programAudioFilesGenerateResult.postIntroductionAudioFilePaths.length;
+      i++
+    ) {
+      postIntroductionWithSeFilePaths.push(
+        programAudioFilesGenerateResult.postIntroductionAudioFilePaths[i],
+      );
+      // 最後の記事紹介の後には効果音は入れない
+      if (
+        i <
+        programAudioFilesGenerateResult.postIntroductionAudioFilePaths.length -
+          1
+      ) {
+        postIntroductionWithSeFilePaths.push(seShortFilePath);
+      }
+    }
+    // エンディング前に入れる長い効果音ファイル
+    const seLongFilePath = this.appConfig.HeadlineTopicProgramSeLongFilePath;
+    // 番組の音声ファイル群を結合する
+    const programAudioFiles = [
+      programAudioFilesGenerateResult.introAudioFilePath,
+      // 短い効果音
+      seShortFilePath,
+      ...postIntroductionWithSeFilePaths,
+      seLongFilePath,
+      programAudioFilesGenerateResult.endingAudioFilePath,
+    ];
+    return programAudioFiles;
+  }
+
+  /**
+   * ヘッドライントピック番組のチャプター情報を生成する
+   * @param chapterInfo ヘッドライントピック番組のチャプター情報生成に必要となる情報
+   * @returns ヘッドライントピック番組のチャプター情報
+   */
+  async generateProgramChapters(
+    chapterInfo: HeadlineTopicProgramChapterInfo,
+  ): Promise<ProgramFileChapter[]> {
+    this.logger.debug(
+      `HeadlineTopicProgramMaker.generateProgramChapters called`,
+      {
+        chapterInfo,
+      },
+    );
+    const result: ProgramFileChapter[] = [];
+    const seShortDuration = await this.programFileMaker.getAudioDuration(
+      chapterInfo.seShortFilePath,
+    );
+    // オープニングBGM 部分のチャプター
+    const openingEndTime = await this.programFileMaker.getAudioDuration(
+      chapterInfo.openingBgmFilePath,
+    );
+    const openingChapter: ProgramFileChapter = {
+      title: 'オープニング',
+      startTime: 0,
+      endTime: openingEndTime,
+    };
+    this.logger.debug(`オープニング部分のチャプター`, { openingChapter });
+    result.push(openingChapter);
+    // イントロ部分のチャプター
+    const introDuration = await this.programFileMaker.getAudioDuration(
+      chapterInfo.programAudioFileGenerateResult.introAudioFilePath,
+    );
+    const introEndTime = openingEndTime + introDuration + seShortDuration;
+    const introChapter: ProgramFileChapter = {
+      title: 'イントロ',
+      startTime: openingEndTime,
+      endTime: introEndTime,
+    };
+    this.logger.debug(`イントロ部分のチャプター`, { introChapter });
+    result.push(introChapter);
+    // 紹介記事部分のチャプター
+    const posts = chapterInfo.script.posts;
+    const postIntroductionAudioFilePaths =
+      chapterInfo.programAudioFileGenerateResult.postIntroductionAudioFilePaths;
+    let postIntroductionStartTime = introEndTime; // 紹介記事の開始位置
+    for (let i = 0; i < posts.length; i++) {
+      const post = posts[i];
+      const postAudioFilePath = postIntroductionAudioFilePaths[i];
+      const postDuration =
+        await this.programFileMaker.getAudioDuration(postAudioFilePath);
+      // 効果音の長さ（最後の記事以外は短い効果音の時間を入れる）
+      const seDuration = i < posts.length - 1 ? seShortDuration : 0;
+      const endTime = postIntroductionStartTime + postDuration + seDuration;
+      const postIntroductionChapter: ProgramFileChapter = {
+        title: `紹介記事 ${i + 1}: ${post.title}`,
+        startTime: postIntroductionStartTime,
+        endTime,
+      };
+      postIntroductionStartTime = endTime;
+      this.logger.debug(`紹介記事部分のチャプター`, {
+        postIntroductionChapter,
+      });
+      result.push(postIntroductionChapter);
+    }
+    // エンディング部分のチャプター
+    const endingStartTime = postIntroductionStartTime;
+    const seLongDuration = await this.programFileMaker.getAudioDuration(
+      chapterInfo.seLongFilePath,
+    );
+    const endingDuration = await this.programFileMaker.getAudioDuration(
+      chapterInfo.programAudioFileGenerateResult.endingAudioFilePath,
+    );
+    const endingBgmDuration = await this.programFileMaker.getAudioDuration(
+      chapterInfo.endingBgmFilePath,
+    );
+    const endingChapter: ProgramFileChapter = {
+      title: 'エンディング',
+      startTime: endingStartTime,
+      endTime:
+        endingStartTime + seLongDuration + endingDuration + endingBgmDuration,
+    };
+    this.logger.debug(`エンディング部分のチャプター`, { endingChapter });
+    result.push(endingChapter);
     return result;
   }
 

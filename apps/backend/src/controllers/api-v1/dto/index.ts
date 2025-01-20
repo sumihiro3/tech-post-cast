@@ -1,5 +1,10 @@
+import { Logger } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
-import { HeadlineTopicProgramWithQiitaPosts } from '@tech-post-cast/database';
+import {
+  HeadlineTopicProgramWithQiitaPosts,
+  parseHeadlineTopicProgramChapters,
+  parseHeadlineTopicProgramScript,
+} from '@tech-post-cast/database';
 import { Transform } from 'class-transformer';
 import {
   IsDate,
@@ -103,6 +108,44 @@ export class HeadlineTopicProgramScriptDto {
 }
 
 /**
+ * ヘッドライントピック番組のチャプターを表すDTO
+ */
+export class HeadlineTopicProgramChapterDto {
+  /**
+   * タイトル
+   */
+  @ApiProperty({
+    description: 'タイトル',
+    example: 'タイトル',
+    required: true,
+  })
+  @IsString()
+  title: string;
+
+  /**
+   * チャプターの開始位置（ミリ秒）
+   */
+  @ApiProperty({
+    description: 'チャプターの開始位置（ミリ秒）',
+    example: 1000,
+    required: true,
+  })
+  @IsNumber()
+  startTime: number;
+
+  /**
+   * チャプターの終了位置（ミリ秒）
+   */
+  @ApiProperty({
+    description: 'チャプターの終了位置（ミリ秒）',
+    example: 2000,
+    required: true,
+  })
+  @IsNumber()
+  endTime: number;
+}
+
+/**
  * Qiita の記事を表すDTO
  */
 export class QiitaPostDto {
@@ -178,6 +221,8 @@ export class QiitaPostDto {
  * ヘッドライントピック番組のDTO
  */
 export class HeadlineTopicProgramDto {
+  private readonly logger = new Logger(HeadlineTopicProgramDto.name);
+
   @ApiProperty({
     description: '番組ID',
     example: 'sample-program-id',
@@ -202,6 +247,14 @@ export class HeadlineTopicProgramDto {
   })
   @IsObject()
   script: HeadlineTopicProgramScriptDto;
+
+  @ApiProperty({
+    description: 'ヘッドライントピック番組のチャプター一覧',
+    required: true,
+    type: [HeadlineTopicProgramChapterDto],
+  })
+  @IsObject()
+  chapters: HeadlineTopicProgramChapterDto[];
 
   @ApiProperty({
     description: 'ヘッドライントピックの音声ファイルURL',
@@ -281,25 +334,28 @@ export class HeadlineTopicProgramDto {
     dto.createdAt = entity.createdAt;
     dto.updatedAt = entity.updatedAt;
     // 台本
-    const scriptString = entity.script as HeadlineTopicProgramScriptType | null;
-    if (!scriptString) {
-      throw new Error('台本がありません');
-    }
-    const s = JSON.parse(
-      scriptString.toString(),
-    ) as HeadlineTopicProgramScriptType;
-    const script = new HeadlineTopicProgramScriptDto();
-    script.title = s.title;
-    script.intro = s.intro;
-    script.ending = s.ending;
-    if (s.posts && s.posts.length > 0) {
-      script.posts = s.posts.map((p) => {
-        const post = new PostSummaryDto();
-        post.summary = p.summary;
-        return post;
-      });
-    }
-    dto.script = script;
+    // バリデーションと型変換
+    const script = parseHeadlineTopicProgramScript(entity.script);
+    const s = new HeadlineTopicProgramScriptDto();
+    s.title = script.title;
+    s.intro = script.intro;
+    s.posts = script.posts.map((p) => {
+      const post = new PostSummaryDto();
+      post.summary = p.summary;
+      return post;
+    });
+    s.ending = script.ending;
+    dto.script = s;
+    // チャプター
+    // バリデーションと型変換
+    const chapters = parseHeadlineTopicProgramChapters(entity.chapters);
+    dto.chapters = chapters.map((c) => {
+      const chapter = new HeadlineTopicProgramChapterDto();
+      chapter.title = c.title;
+      chapter.startTime = c.startTime;
+      chapter.endTime = c.endTime;
+      return chapter;
+    });
     // Qiita 記事
     dto.posts = entity.posts.map((p) => {
       const post = new QiitaPostDto();
@@ -327,20 +383,3 @@ export class HeadlineTopicProgramsCountDto {
   @IsNumber()
   count: number;
 }
-
-/**
- * ヘッドライントピック番組で紹介した Qiita の記事の要約を表す型
- */
-type PostSummaryType = {
-  summary: string;
-};
-
-/**
- * ヘッドライントピック番組の台本を表す型
- */
-type HeadlineTopicProgramScriptType = {
-  title: string;
-  intro: string;
-  posts: PostSummaryType[];
-  ending: string;
-};

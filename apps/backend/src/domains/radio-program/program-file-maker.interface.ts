@@ -1,4 +1,22 @@
-import { HeadlineTopicProgramAudioFilesGenerateResult } from './text-to-speech.interface';
+/**
+ * 番組ファイルのチャプター情報
+ */
+export interface ProgramFileChapter {
+  /**
+   * チャプター名
+   */
+  title: string;
+
+  /**
+   * チャプター開始位置（ミリ秒）
+   */
+  startTime: number;
+
+  /**
+   * チャプター終了位置（ミリ秒）
+   */
+  endTime: number;
+}
 
 /**
  * 番組ファイルのメタデータ
@@ -22,6 +40,8 @@ export interface ProgramFileMetadata {
   language: string;
   /** filename */
   filename: string;
+  /** チャプター一覧 */
+  chapters?: ProgramFileChapter[];
 }
 
 /**
@@ -29,9 +49,9 @@ export interface ProgramFileMetadata {
  */
 export interface GenerateProgramAudioFileCommand {
   /**
-   * ヘッドライントピック番組の音声ファイルパス群
+   * 番組の音声ファイルパス群
    */
-  programAudioFilePaths: HeadlineTopicProgramAudioFilesGenerateResult;
+  programAudioFilePaths: string[];
 
   /**
    * BGM音声ファイルのパス
