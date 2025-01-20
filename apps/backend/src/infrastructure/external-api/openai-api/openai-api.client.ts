@@ -11,11 +11,14 @@ import {
 import { Injectable, Logger } from '@nestjs/common';
 import { QiitaPost } from '@prisma/client';
 import { getJapaneseDateStringWithWeekday } from '@tech-post-cast/commons';
+import {
+  HeadlineTopicProgramScriptSchema,
+  PostSummarySchema,
+} from '@tech-post-cast/database';
 import * as fs from 'fs';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
-import { HeadlineTopicProgramScriptSchema, PostSummarySchema } from './schemas';
 
 @Injectable()
 export class OpenAiApiClient {

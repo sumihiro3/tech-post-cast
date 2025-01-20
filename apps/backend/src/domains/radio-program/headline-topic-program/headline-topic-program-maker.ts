@@ -15,7 +15,10 @@ import { OpenAiApiClient } from '@infrastructure/external-api/openai-api/openai-
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { HeadlineTopicProgram, QiitaPost } from '@prisma/client';
 import { formatDate } from '@tech-post-cast/commons';
-import { HeadlineTopicProgramWithQiitaPosts } from '@tech-post-cast/database';
+import {
+  HeadlineTopicProgramWithQiitaPosts,
+  parseHeadlineTopicProgramScript,
+} from '@tech-post-cast/database';
 import { setTimeout } from 'timers/promises';
 import {
   HeadlineTopicProgramGenerateResult,
@@ -144,10 +147,8 @@ export class HeadlineTopicProgramMaker {
         script = await this.generateScript(programDate, summarizedPosts);
       } else {
         // 台本を再生成しない場合は、番組情報から台本を取得する
-        const scriptString = program.script;
-        script = JSON.parse(
-          scriptString.toString(),
-        ) as HeadlineTopicProgramScript;
+        const s = parseHeadlineTopicProgramScript(program.script);
+        script = s as HeadlineTopicProgramScript;
         if (!script) {
           throw new HeadlineTopicProgramGenerateScriptError(
             `番組情報 [${program.id}] から台本を取得できませんでした`,
@@ -406,9 +407,6 @@ export class HeadlineTopicProgramMaker {
     const seShortDuration = await this.programFileMaker.getAudioDuration(
       chapterInfo.seShortFilePath,
     );
-    const seLongDuration = await this.programFileMaker.getAudioDuration(
-      chapterInfo.seLongFilePath,
-    );
     // オープニングBGM 部分のチャプター
     const openingEndTime = await this.programFileMaker.getAudioDuration(
       chapterInfo.openingBgmFilePath,
@@ -442,9 +440,8 @@ export class HeadlineTopicProgramMaker {
       const postAudioFilePath = postIntroductionAudioFilePaths[i];
       const postDuration =
         await this.programFileMaker.getAudioDuration(postAudioFilePath);
-      // 効果音の長さ（最後の記事以外は短い効果音、最後の記事は長い効果音を入れる
-      const seDuration =
-        i < posts.length - 1 ? seShortDuration : seLongDuration;
+      // 効果音の長さ（最後の記事以外は短い効果音の時間を入れる）
+      const seDuration = i < posts.length - 1 ? seShortDuration : 0;
       const endTime = postIntroductionStartTime + postDuration + seDuration;
       const postIntroductionChapter: ProgramFileChapter = {
         title: `紹介記事 ${i + 1}: ${post.title}`,
@@ -459,13 +456,20 @@ export class HeadlineTopicProgramMaker {
     }
     // エンディング部分のチャプター
     const endingStartTime = postIntroductionStartTime;
+    const seLongDuration = await this.programFileMaker.getAudioDuration(
+      chapterInfo.seLongFilePath,
+    );
     const endingDuration = await this.programFileMaker.getAudioDuration(
       chapterInfo.programAudioFileGenerateResult.endingAudioFilePath,
+    );
+    const endingBgmDuration = await this.programFileMaker.getAudioDuration(
+      chapterInfo.endingBgmFilePath,
     );
     const endingChapter: ProgramFileChapter = {
       title: 'エンディング',
       startTime: endingStartTime,
-      endTime: endingStartTime + endingDuration,
+      endTime:
+        endingStartTime + seLongDuration + endingDuration + endingBgmDuration,
     };
     this.logger.debug(`エンディング部分のチャプター`, { endingChapter });
     result.push(endingChapter);

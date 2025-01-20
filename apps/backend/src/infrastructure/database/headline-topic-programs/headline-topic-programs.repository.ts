@@ -154,10 +154,10 @@ export class HeadlineTopicProgramsRepository
         programUploadResult,
       },
     );
-    const scriptString = JSON.stringify(programGenerateResult.script);
     return {
       title: programGenerateResult.script.title,
-      script: scriptString as Prisma.InputJsonValue,
+      script: programGenerateResult.script as unknown as Prisma.InputJsonValue,
+      chapters: programGenerateResult.chapters as unknown as Prisma.JsonArray,
       audioUrl: programUploadResult.audioUrl,
       audioDuration: programGenerateResult.audioDuration,
       videoUrl: '',
@@ -189,11 +189,12 @@ export class HeadlineTopicProgramsRepository
         programUploadResult,
       },
     );
-    const scriptString = JSON.stringify(programGenerateResult.script);
     return this.prisma.headlineTopicProgram.update({
       where: { id },
       data: {
-        script: scriptString as Prisma.InputJsonValue,
+        script:
+          programGenerateResult.script as unknown as Prisma.InputJsonValue,
+        chapters: programGenerateResult.chapters as unknown as Prisma.JsonArray,
         audioUrl: programUploadResult.audioUrl,
         audioDuration: programGenerateResult.audioDuration,
         updatedAt: new Date(),
