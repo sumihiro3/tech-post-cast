@@ -24,7 +24,10 @@ v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-white(flat, rounded='lg')
   )
     v-tab.text-none.text-grey-darken-4(value='posts')
       | 紹介記事
-    v-tab.text-none.text-grey-darken-4(value='chapters')
+    v-tab.text-none.text-grey-darken-4(
+      v-if='hasChapters(program)',
+      value='chapters'
+    )
       | チャプター
     v-tab.text-none.text-grey-darken-4(v-if='showScript', value='script')
       | 番組の台本
@@ -44,10 +47,7 @@ v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-white(flat, rounded='lg')
             a(:href='post.url', target='_blank')
               | {{ post.title }}
     //- チャプター一覧
-    v-tabs-window-item(
-      v-if='program.chapters && program.chapters.length > 0',
-      value='chapters'
-    )
+    v-tabs-window-item(v-if='hasChapters(program)', value='chapters')
       ol.chapter-list
         li.ml-4.ml-md-6.mt-2(
           v-for='(chapter, index) in program.chapters',
@@ -86,6 +86,17 @@ const tab = ref('posts');
 const player = ref<HTMLAudioElement | null>(null);
 // 再生状態
 const isPlaying = ref(false);
+// 現在のチャプターインデックス
+const currentChapterIndex = ref(-1);
+
+/**
+ * 番組にチャプター情報が含まれているかを判定する
+ * @param program ヘッドライントピック番組
+ * @returns チャプター情報が含まれているか
+ */
+const hasChapters = (program: HeadlineTopicProgramDto) => {
+  return program.chapters && program.chapters.length > 0;
+};
 
 /**
  * 音声ファイルを指定時間へ移動して再生する
@@ -99,10 +110,9 @@ const seekTo = (time: number) => {
   }
 };
 
-// 現在のチャプターインデックス
-const currentChapterIndex = ref(-1);
-
-// 再生時間を監視して現在のチャプターを更新
+/**
+ * 再生時間を監視して現在のチャプターを更新する
+ */
 const updateCurrentChapter = () => {
   console.debug('updateCurrentChapter', {
     currentTime: player.value?.currentTime,
