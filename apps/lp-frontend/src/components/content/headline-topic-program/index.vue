@@ -106,7 +106,13 @@ const currentChapterIndex = ref(-1);
 const updateCurrentChapter = () => {
   console.debug('updateCurrentChapter', {
     currentTime: player.value?.currentTime,
+    ended: player.value?.ended,
   });
+  if (!player.value || player.value.ended) {
+    // 再生終了時はチャプターをリセット
+    currentChapterIndex.value = -1;
+    return;
+  }
   const currentTime = player.value!.currentTime;
   const index = props.program.chapters.findIndex((chapter, i) => {
     const startTime = chapter.startTime / 1000;
