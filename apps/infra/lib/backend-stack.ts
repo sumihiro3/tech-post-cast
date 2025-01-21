@@ -54,8 +54,10 @@ export class TechPostCastBackendStack extends cdk.Stack {
         environment: {
           // 環境変数
           PORT: '3000',
-          // V1 API
-          V1_API_ACCESS_TOKEN: stage.backendApiAccessToken,
+          // API token for frontend API v1
+          V1_API_ACCESS_TOKEN: stage.v1ApiAccessToken,
+          // API token for backend API
+          BACKEND_API_ACCESS_TOKEN: stage.backendApiAccessToken,
           // Database
           DATABASE_URL: stage.databaseUrl,
           SHOW_QUERY_LOGS: 'true',

@@ -14,9 +14,14 @@ export class StageConfig {
   /** スタック名 */
   readonly stackName: string;
 
+  /** V1 API Access Token */
+  get v1ApiAccessToken(): string {
+    return process.env.V1_API_ACCESS_TOKEN || '';
+  }
+
   /** Backend API Access Token */
   get backendApiAccessToken(): string {
-    return process.env.V1_API_ACCESS_TOKEN || '';
+    return process.env.BACKEND_API_ACCESS_TOKEN || '';
   }
 
   /** Qiita API Access Token */
@@ -130,7 +135,8 @@ export class StageConfig {
       suffixWithUnderBar: this.suffixWithUnderBar,
       suffixLarge: this.suffixLarge,
       stackName: this.stackName,
-      V1_API_ACCESS_TOKEN: this.backendApiAccessToken,
+      V1_API_ACCESS_TOKEN: this.v1ApiAccessToken,
+      BACKEND_API_ACCESS_TOKEN: this.backendApiAccessToken,
       QIITA_API_ACCESS_TOKEN: this.qiitaApiAccessToken,
       OPENAI_API_KEY: this.openAiApiKey,
       DATABASE_URL: this.databaseUrl,
