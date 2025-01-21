@@ -21,6 +21,7 @@ describe('AppConfigService', () => {
               // ここで定義したキーが、ConfigService の get メソッドに渡される
               const configKeys = {
                 V1_API_ACCESS_TOKEN: 'v1-token',
+                BACKEND_API_ACCESS_TOKEN: 'backend-token',
                 QIITA_API_ACCESS_TOKEN: 'qiita-api-access-token',
                 DATABASE_URL: 'https://example-database.url',
                 SHOW_QUERY_LOGS: true,
@@ -82,6 +83,17 @@ describe('AppConfigService', () => {
       if (key === 'V1_API_ACCESS_TOKEN') return null;
       return 'some-value';
     });
+  });
+
+  it('BACKEND_API_ACCESS_TOKEN が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'BACKEND_API_ACCESS_TOKEN') return null;
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
   });
 
   it('DATABASE_URL が設定されていない場合、エラーをスローするべき', () => {
