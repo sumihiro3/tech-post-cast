@@ -18,18 +18,16 @@ v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-white(flat, rounded='lg')
       source(:src='program.audioUrl', type='audio/mpeg')
   v-tabs.mt-0(
     v-model='tab',
-    background-color='transparent',
     align-tabs='center',
-    fixed-tabs
+    bg-color='transparent',
+    color='primary',
+    grow
   )
-    v-tab.text-none.text-grey-darken-4(value='posts')
+    v-tab.text-b(value='posts')
       | 紹介記事
-    v-tab.text-none.text-grey-darken-4(
-      v-if='hasChapters(program)',
-      value='chapters'
-    )
+    v-tab(v-if='hasChapters(program)', value='chapters')
       | チャプター
-    v-tab.text-none.text-grey-darken-4(v-if='showScript', value='script')
+    v-tab(v-if='showScript', value='script')
       | 番組の台本
   v-tabs-window(v-model='tab')
     //- 紹介記事一覧
