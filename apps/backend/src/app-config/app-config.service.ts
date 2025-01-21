@@ -13,6 +13,11 @@ export class AppConfigService {
         'V1_API_ACCESS_TOKEN が設定されていません',
       );
     }
+    if (!this.BackendApiToken) {
+      throw new AppConfigValidationError(
+        'BACKEND_API_ACCESS_TOKEN が設定されていません',
+      );
+    }
     if (!this.DatabaseUrl) {
       throw new AppConfigValidationError('DATABASE_URL が設定されていません');
     }
@@ -109,6 +114,7 @@ export class AppConfigService {
     // 設定値のログ出力
     this.logger.log('AppConfigService initialized', {
       V1ApiToken: this.V1ApiToken,
+      BackendApiToken: this.BackendApiToken,
       DatabaseUrl: this.DatabaseUrl,
       ShowQueryLogs: this.ShowQueryLogs,
       QiitaAccessToken: this.QiitaAccessToken,
@@ -139,12 +145,20 @@ export class AppConfigService {
   }
 
   /**
-   * Bearer Token
+   * V1 API の Bearer Token
    * for ApiV1
    * @returns Bearer Token
    */
   get V1ApiToken(): string {
     return this.config.get<string>('V1_API_ACCESS_TOKEN');
+  }
+
+  /**
+   * Backend API の Bearer Token
+   * @returns Bearer Token
+   */
+  get BackendApiToken(): string {
+    return this.config.get<string>('BACKEND_API_ACCESS_TOKEN');
   }
 
   /**
