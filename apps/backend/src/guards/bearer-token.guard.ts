@@ -21,10 +21,7 @@ export abstract class BearerGuardBase implements CanActivate {
   getBearerTokenFromRequest(request: Request): string {
     this.__logger.debug(`BearerGuardBase.getTokenFromRequest called`);
     let token = request.headers.authorization;
-    Logger.debug(`Authorization header value: ${token}`);
-    // if (token instanceof Array) {
-    //   token = token[0];
-    // }
+    this.__logger.debug(`Authorization header value: ${token}`);
     // token が Bearer トークンであることを確認
     if (!token || !token.startsWith('Bearer ')) {
       Logger.warn(`Bearer トークンではありません: ${token}`);
@@ -82,5 +79,21 @@ export class ApiV1BearerTokenGuard extends BearerGuardBase {
   protected getBearerToken(): string {
     this.logger.debug(`ApiV1BearerTokenGuard.getBearerToken called!`);
     return this.config.get<string>('V1_API_ACCESS_TOKEN');
+  }
+}
+
+/**
+ * Backend API 用の Bearer token を検証する Guard
+ */
+export class BackendBearerTokenGuard extends BearerGuardBase {
+  private readonly logger = new Logger(BackendBearerTokenGuard.name);
+
+  constructor(@Inject(ConfigService) private readonly config: ConfigService) {
+    super();
+  }
+
+  protected getBearerToken(): string {
+    this.logger.debug(`BackendBearerTokenGuard.getBearerToken called!`);
+    return this.config.get<string>('BACKEND_API_ACCESS_TOKEN');
   }
 }

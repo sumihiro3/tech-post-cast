@@ -1,3 +1,4 @@
+import { BackendBearerTokenGuard } from '@/guards/bearer-token.guard';
 import {
   Body,
   Controller,
@@ -5,6 +6,7 @@ import {
   Logger,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiHeader, ApiOperation } from '@nestjs/swagger';
 import {
@@ -35,6 +37,7 @@ export class HeadlineTopicProgramsController {
     example: 'Bearer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
     required: true,
   })
+  @UseGuards(BackendBearerTokenGuard)
   async createProgram(
     @Body() dto: HeadlineTopicCreateRequestDto,
   ): Promise<void> {
@@ -76,6 +79,7 @@ export class HeadlineTopicProgramsController {
     example: 'Bearer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
     required: true,
   })
+  @UseGuards(BackendBearerTokenGuard)
   async regenerateProgram(
     @Body() dto: HeadlineTopicRegenerateRequestDto,
   ): Promise<void> {

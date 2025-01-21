@@ -135,7 +135,12 @@ export default defineNuxtConfig({
         );
       });
     },
+    // nuxt-gtag
+    'nuxt-gtag',
   ],
+  gtag: {
+    id: process.env.GA_MEASUREMENT_ID,
+  },
   vite: {
     vue: {
       template: {

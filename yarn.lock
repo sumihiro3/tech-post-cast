@@ -9775,6 +9775,16 @@ nuxi@^3.15.0:
   resolved "https://registry.yarnpkg.com/nuxi/-/nuxi-3.17.0.tgz#4e098673efb4779149f27266418df51f5d0853e1"
   integrity sha512-umfGtKSIPGFDzp0qBSNA0wsigIBXqVe/pbZ5xmk5d+DTYaoPptcTxulfOYFWqMlIwyzsLMsBLrd8a6dIxEiw1g==
 
+nuxt-gtag@^3.0.2:
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/nuxt-gtag/-/nuxt-gtag-3.0.2.tgz#1ea9f2ae747ef46fcf85debdff9c4e40535725b3"
+  integrity sha512-0Spu/rffPxW7REebkjE22qQOuVZIQuyIuvd61InDdJU+d+gRIqWhrUuKBWdk43N/J1elj+cTK2kEdk5FQX7vdQ==
+  dependencies:
+    "@nuxt/kit" "^3.14.1592"
+    defu "^6.1.4"
+    pathe "^1.1.2"
+    ufo "^1.5.4"
+
 nuxt@^3.14.1592:
   version "3.14.1592"
   resolved "https://registry.yarnpkg.com/nuxt/-/nuxt-3.14.1592.tgz#0f94132b7e0ffe9087b37392f295e2c7d5d05ee3"
