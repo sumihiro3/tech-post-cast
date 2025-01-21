@@ -1,14 +1,22 @@
-@baseUrl = http://localhost:3000
+##################################################
+# ヘッドライントピック番組生成APIの実行
+##################################################
+
+# ローカル環境
+@baseUrl = {{$dotenv BACKEND_BASE_URL_LOCAL}}
+@apiToken = {{$dotenv BACKEND_API_TOKEN_LOCAL}}
+
+# 開発環境
+# @baseUrl = {{$dotenv BACKEND_BASE_URL_DEV}}
+# @apiToken = {{$dotenv BACKEND_API_TOKEN_DEV}}
 
 # 本番環境
-# @baseUrl = https://p0eui4ddrg.execute-api.ap-northeast-1.amazonaws.com/
-# 開発環境
-# @baseUrl = https://6oqfli27vg.execute-api.ap-northeast-1.amazonaws.com/
+# @baseUrl = {{$dotenv BACKEND_BASE_URL_PROD}}
+# @apiToken = {{$dotenv BACKEND_API_TOKEN_PROD}}
 
 POST {{baseUrl}}/headline-topic-programs
-# x-amzn-lambda-context: {"request_id":"85203a83-e02c-4284-b6dd-3f0def1ae128","deadline":1723132633704}
 Content-Type: application/json
-Authorization: Bearer xxxxxxxxxxxffffffffffff
+Authorization: Bearer {{apiToken}}
 
 {
   "daysAgo": 0
