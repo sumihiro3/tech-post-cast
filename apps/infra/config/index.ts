@@ -84,6 +84,20 @@ export class StageConfig {
   }
 
   /**
+   * AWS Chatbot のワークスペースID
+   */
+  get awsChatbotSlackWorkspaceId(): string {
+    return process.env.AWS_CHATBOT_SLACK_WORKSPACE_ID || '';
+  }
+
+  /**
+   * エラー通知先の Slack チャンネルID
+   */
+  get slackChannelId(): string {
+    return process.env.SLACK_CHANNEL_ID || '';
+  }
+
+  /**
    * 環境が本番環境かどうかを判定する
    * 本番環境の場合は true を返す
    * @returns 環境が本番環境かどうか
@@ -149,6 +163,8 @@ export class StageConfig {
       PROGRAM_AUDIO_FILE_URL_PREFIX: this.programFileUrlPrefix,
       LP_DEPLOY_HOOK_URL: this.lpDeployHookUrl,
       GCP_CREDENTIALS_FILE_PATH: this.gcpCredentialsFilePath,
+      AWS_CHATBOT_SLACK_WORKSPACE_ID: this.awsChatbotSlackWorkspaceId,
+      SLACK_CHANNEL_ID: this.slackChannelId,
     });
   }
 }
