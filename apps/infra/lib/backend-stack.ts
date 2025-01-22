@@ -2,11 +2,16 @@ import * as cdk from 'aws-cdk-lib';
 import { RemovalPolicy } from 'aws-cdk-lib';
 import * as apiGatewayV2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as apiGatewayV2Integration from 'aws-cdk-lib/aws-apigatewayv2-integrations';
+import * as chatbot from 'aws-cdk-lib/aws-chatbot';
+import * as cloudWatch from 'aws-cdk-lib/aws-cloudwatch';
+import * as cloudWatchActions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as cloudWatchLogs from 'aws-cdk-lib/aws-logs';
+import * as sns from 'aws-cdk-lib/aws-sns';
 import { Construct } from 'constructs';
 import { StageConfig } from '../config';
 
@@ -128,6 +133,62 @@ export class TechPostCastBackendStack extends cdk.Stack {
       value: backendGateway.url ?? 'NO URL',
       exportName: backendApiUrlExportName,
     });
+
+    // エラー通知用の SNS トピック
+    const errorTopic = new sns.Topic(this, 'TechPostCastErrorTopic', {
+      displayName: `TechPostCastErrorTopic${stage.suffixLarge}`,
+      topicName: `TechPostCastErrorTopic${stage.suffixLarge}`,
+    });
+    // Chatbot用のIAMロール・ポリシー
+    const chatbotRole = new iam.Role(this, 'TechPostCastChatbotRole', {
+      roleName: `TechPostCastChatbotRole${stage.suffixLarge}`,
+      assumedBy: new iam.ServicePrincipal('chatbot.amazonaws.com'),
+    });
+    chatbotRole.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName(
+        'CloudWatchLogsReadOnlyAccess',
+      ),
+    );
+    chatbotRole.addToPolicy(
+      new iam.PolicyStatement({
+        resources: ['*'],
+        actions: [
+          'cloudwatch:Describe*',
+          'cloudwatch:Get*',
+          'cloudwatch:List*',
+        ],
+      }),
+    );
+    // Chatbot設定
+    const cb = new chatbot.SlackChannelConfiguration(
+      this,
+      'TechPostCastSlackChannelConfiguration',
+      {
+        slackChannelConfigurationName: `TechPostCastSlackChannelConfiguration${stage.suffixLarge}`,
+        slackWorkspaceId: stage.awsChatbotSlackWorkspaceId,
+        slackChannelId: stage.slackChannelId,
+        notificationTopics: [errorTopic],
+        loggingLevel: chatbot.LoggingLevel.INFO,
+        role: chatbotRole,
+      },
+    );
+    // CloudWatchアラーム
+    const backendLambdaErrorAlarm = new cloudWatch.Alarm(
+      this,
+      'TechPostCastBackendLambdaErrorAlarm',
+      {
+        alarmName: `TechPostCastBackendLambdaErrorAlarm${stage.suffixLarge}`,
+        alarmDescription: `TechPostCast's backend lambda error log alarm for ${stage.name}`,
+        threshold: 1,
+        evaluationPeriods: 1,
+        metric: backendLambda.metricErrors(),
+        datapointsToAlarm: 1,
+        treatMissingData: cloudWatch.TreatMissingData.NOT_BREACHING,
+      },
+    );
+    backendLambdaErrorAlarm.addAlarmAction(
+      new cloudWatchActions.SnsAction(errorTopic),
+    );
 
     // EventBridge
     // EventBridge から BackendLambda へイベント送信する
