@@ -10,9 +10,15 @@ enabled = true
 
 [env.dev]
 name = "line-bot-dev"
+routes = [
+	{ pattern = "line-bot-develop.techpostcast.com", custom_domain = true }
+]
 
 [env.prod]
 name = "line-bot"
+routes = [
+	{ pattern = "line-bot.techpostcast.com", custom_domain = true }
+]
 
 # [vars]
 # MY_VAR = "my-variable"
