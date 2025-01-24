@@ -5,6 +5,7 @@ import { S3ProgramFileUploader } from '@infrastructure/external-api/aws/s3';
 import { TextToSpeechClient } from '@infrastructure/external-api/google/text-to-speech';
 import { OpenAiApiClient } from '@infrastructure/external-api/openai-api/openai-api.client';
 import { QiitaPostsApiClient } from '@infrastructure/external-api/qiita-api/qiita-posts.api.client';
+import { TwitterApiClient } from '@infrastructure/external-api/x/twitter-api.client';
 import { FfmpegProgramFileMaker } from '@infrastructure/ffmpeg/program-file-maker';
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '@tech-post-cast/database';
@@ -21,6 +22,7 @@ import { HeadlineTopicProgramsService } from './headline-topic-programs.service'
     QiitaPostsApiClient,
     HeadlineTopicProgramMaker,
     OpenAiApiClient,
+    TwitterApiClient,
     {
       provide: 'ProgramFileMaker',
       useClass: FfmpegProgramFileMaker,
