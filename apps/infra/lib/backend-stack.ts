@@ -99,8 +99,16 @@ export class TechPostCastBackendStack extends cdk.Stack {
           CLOUDFLARE_R2_ENDPOINT: stage.cloudflareR2Endpoint,
           // LP 再生成実行用の Deploy Hook URL
           LP_DEPLOY_HOOK_URL: stage.lpDeployHookUrl,
+          // LP のベース URL
+          LP_BASE_URL: stage.lpBaseUrl,
           // Google Cloud
           GCP_CREDENTIALS_FILE_PATH: stage.gcpCredentialsFilePath,
+          // X へのポスト設定
+          POST_TO_X: stage.postToX,
+          X_API_KEY: stage.xApiKey,
+          X_API_SECRET: stage.xApiSecret,
+          X_API_ACCESS_TOKEN: stage.xApiAccessToken,
+          X_API_ACCESS_SECRET: stage.xApiAccessSecret,
         },
       },
     );
