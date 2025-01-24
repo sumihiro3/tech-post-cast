@@ -1,8 +1,8 @@
 import { AppConfigService } from '@/app-config/app-config.service';
+import { TwitterApiError } from '@/types/errors';
 import { Injectable, Logger } from '@nestjs/common';
 import { HeadlineTopicProgram } from '@prisma/client';
 import { TwitterApi } from 'twitter-api-v2';
-import { TwitterApiError } from '../../../types/errors';
 
 @Injectable()
 export class TwitterApiClient {
@@ -11,6 +11,12 @@ export class TwitterApiClient {
   private readonly client: TwitterApi;
 
   constructor(private readonly appConfig: AppConfigService) {
+    if (!this.appConfig.PostToX) {
+      this.logger.log(
+        `X へのポスト設定が無効になっているため、TwitterApiClient は初期化されません`,
+      );
+      return;
+    }
     this.client = new TwitterApi({
       appKey: this.appConfig.XApiKey,
       appSecret: this.appConfig.XApiSecret,
