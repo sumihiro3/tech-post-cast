@@ -78,9 +78,39 @@ export class StageConfig {
     return process.env.LP_DEPLOY_HOOK_URL || '';
   }
 
+  /** LP のベース URL */
+  get lpBaseUrl(): string {
+    return process.env.LP_BASE_URL || '';
+  }
+
   /** Google Cloud の認証キーファイル配置パス */
   get gcpCredentialsFilePath(): string {
     return process.env.GCP_CREDENTIALS_FILE_PATH || '';
+  }
+
+  /** 新しい番組を配信した時に X（Twitter）へポストするかどうか */
+  get postToX(): string {
+    return process.env.POST_TO_X || '';
+  }
+
+  /** X API Key */
+  get xApiKey(): string {
+    return process.env.X_API_KEY || '';
+  }
+
+  /** XApiSecret */
+  get xApiSecret(): string {
+    return process.env.X_API_SECRET || '';
+  }
+
+  /** XApiAccessToken */
+  get xApiAccessToken(): string {
+    return process.env.X_API_ACCESS_TOKEN || '';
+  }
+
+  /** X API Access Secret */
+  get xApiAccessSecret(): string {
+    return process.env.X_API_ACCESS_SECRET || '';
   }
 
   /**

@@ -6,6 +6,7 @@ import { HeadlineTopicProgramMaker } from '@domains/radio-program/headline-topic
 import { HeadlineTopicProgramsRepository } from '@infrastructure/database/headline-topic-programs/headline-topic-programs.repository';
 import { QiitaPostsRepository } from '@infrastructure/database/qiita-posts/qiita-posts.repository';
 import { QiitaPostsApiClient } from '@infrastructure/external-api/qiita-api/qiita-posts.api.client';
+import { TwitterApiClient } from '@infrastructure/external-api/x/twitter-api.client';
 import { Injectable, Logger } from '@nestjs/common';
 import { HeadlineTopicProgram } from '@prisma/client';
 import { getYesterday, subtractDays } from '@tech-post-cast/commons';
@@ -26,6 +27,7 @@ export class HeadlineTopicProgramsService {
     private readonly qiitaPostsApiClient: QiitaPostsApiClient,
     private readonly headlineTopicProgramMaker: HeadlineTopicProgramMaker,
     private readonly headlineTopicProgramsRepository: HeadlineTopicProgramsRepository,
+    private readonly twitterApiClient: TwitterApiClient,
   ) {}
 
   /**
@@ -75,9 +77,14 @@ export class HeadlineTopicProgramsService {
       });
       // LP の再生成実行をリクエストする
       await this.requestLpDeploy();
+      // ポストを送信する
+      await this.twitterApiClient.postNewHeadlineTopicProgram(program);
       return program;
     } catch (error) {
-      this.logger.error(`エラーが発生しました`, error);
+      this.logger.error(
+        `ヘッドライントピック番組の生成中にエラーが発生しました`,
+        error,
+      );
       throw error;
     }
   }
