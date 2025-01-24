@@ -241,4 +241,5 @@ export const subAliasTable: SubAliasTable[] = [
   { term: 'Cline', reading: 'クライン' },
   { term: 'LINE', reading: 'ライン' },
   { term: 'schema', reading: 'スキーマ' },
+  { term: 'IaC', reading: 'アイエーシー' },
 ];
