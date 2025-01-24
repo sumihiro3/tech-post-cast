@@ -106,10 +106,33 @@ export class AppConfigService {
         'LP_DEPLOY_HOOK_URL が設定されていません',
       );
     }
+    if (!this.LpBaseUrl) {
+      throw new AppConfigValidationError('LP_BASE_URL が設定されていません');
+    }
     if (!this.GoogleCloudCredentialsFilePath) {
       throw new AppConfigValidationError(
         'GCP_CREDENTIALS_FILE_PATH が設定されていません',
       );
+    }
+    // X
+    if (this.PostToX) {
+      this.logger.log('新しい番組を X へポストする設定が有効です');
+      if (!this.XApiKey) {
+        throw new AppConfigValidationError('X_API_KEY が設定されていません');
+      }
+      if (!this.XApiSecret) {
+        throw new AppConfigValidationError('X_API_SECRET が設定されていません');
+      }
+      if (!this.XApiAccessToken) {
+        throw new AppConfigValidationError(
+          'X_API_ACCESS_TOKEN が設定されていません',
+        );
+      }
+      if (!this.XApiAccessSecret) {
+        throw new AppConfigValidationError(
+          'X_API_ACCESS_SECRET が設定されていません',
+        );
+      }
     }
     // 設定値のログ出力
     this.logger.log('AppConfigService initialized', {
@@ -140,7 +163,13 @@ export class AppConfigService {
       CloudflareSecretAccessKey: this.CloudflareSecretAccessKey,
       CloudflareR2Endpoint: this.CloudflareR2Endpoint,
       LpDeployHookUrl: this.LpDeployHookUrl,
+      LpBaseUrl: this.LpBaseUrl,
       GoogleCloudCredentialsFilePath: this.GoogleCloudCredentialsFilePath,
+      PostToX: this.PostToX,
+      XApiKey: this.XApiKey,
+      XApiSecret: this.XApiSecret,
+      XApiAccessToken: this.XApiAccessToken,
+      XApiAccessSecret: this.XApiAccessSecret,
     });
   }
 
@@ -306,9 +335,55 @@ export class AppConfigService {
   }
 
   /**
+   * LP のベース URL
+   */
+  get LpBaseUrl(): string {
+    return this.config.get<string>('LP_BASE_URL');
+  }
+
+  /**
    * Google Cloud の認証キーファイルのパス
    */
   get GoogleCloudCredentialsFilePath(): string {
     return this.config.get<string>('GCP_CREDENTIALS_FILE_PATH');
+  }
+
+  /**
+   * 新しい番組を配信した時に X（Twitter）へポストするかどうか
+   */
+  get PostToX(): boolean {
+    let result = this.config.get<boolean>('POST_TO_X');
+    if (!result) {
+      result = false;
+    }
+    return result;
+  }
+
+  /**
+   * X API Key
+   */
+  get XApiKey(): string {
+    return this.config.get<string>('X_API_KEY');
+  }
+
+  /**
+   * X API Secret
+   */
+  get XApiSecret(): string {
+    return this.config.get<string>('X_API_SECRET');
+  }
+
+  /**
+   * X API Access Token
+   */
+  get XApiAccessToken(): string {
+    return this.config.get<string>('X_API_ACCESS_TOKEN');
+  }
+
+  /**
+   * X API Access Secret
+   */
+  get XApiAccessSecret(): string {
+    return this.config.get<string>('X_API_ACCESS_SECRET');
   }
 }

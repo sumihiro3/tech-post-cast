@@ -50,7 +50,13 @@ describe('AppConfigService', () => {
                 CLOUDFLARE_SECRET_ACCESS_KEY: 'cloudflare-secret-access-key',
                 CLOUDFLARE_R2_ENDPOINT: 'cloudflare-r2-endpoint',
                 LP_DEPLOY_HOOK_URL: 'lp-deploy-hook-url',
+                LP_BASE_URL: 'lp-base-url',
                 GCP_CREDENTIALS_FILE_PATH: 'gcp-credentials-file-path',
+                POST_TO_X: true,
+                X_API_KEY: 'x-api-key',
+                X_API_SECRET: 'x-api-secret',
+                X_API_ACCESS_TOKEN: 'x-api-access-token',
+                X_API_ACCESS_SECRET: 'x-api-access-secret',
               };
               return configKeys[key];
             }),
@@ -262,10 +268,79 @@ describe('AppConfigService', () => {
     );
   });
 
+  it('LP_BASE_URL が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'LP_BASE_URL') return null;
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
   it('GCP_CREDENTIALS_FILE_PATH が設定されていない場合、エラーをスローするべき', () => {
     jest.spyOn(configService, 'get').mockImplementation((key: string) => {
       if (key === 'GCP_CREDENTIALS_FILE_PATH') return null;
       return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
+  it('POST_TO_X が設定されていない場合、false を返すべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'POST_TO_X') return null;
+      return 'some-value';
+    });
+
+    const appConfigService = new AppConfigService(configService);
+    expect(appConfigService.PostToX).toBe(false);
+  });
+
+  it('X_API_KEY が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'X_API_KEY') return null;
+      if (key === 'POST_TO_X') return 'true'; // POST_TO_X が true の場合、X_API_KEY が必要
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
+  it('X_API_SECRET が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'X_API_SECRET') return null;
+      if (key === 'POST_TO_X') return 'true'; // POST_TO_X が true の場合、X_API_SECRET が必要
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
+  it('X_API_ACCESS_TOKEN が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'X_API_ACCESS_TOKEN') return null;
+      if (key === 'POST_TO_X') return 'true'; // POST_TO_X が true の場合、X_API_ACCESS_TOKEN が必要
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
+  it('X_API_ACCESS_SECRET が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'X_API_ACCESS_SECRET') return null;
+      if (key === 'POST_TO_X') return 'true'; // POST_TO_X が true の場合、X_API_ACCESS_SECRET が必要
+      return;
     });
 
     expect(() => new AppConfigService(configService)).toThrow(
@@ -311,8 +386,14 @@ describe('AppConfigService', () => {
     );
     expect(service.CloudflareR2Endpoint).toBe('cloudflare-r2-endpoint');
     expect(service.LpDeployHookUrl).toBe('lp-deploy-hook-url');
+    expect(service.LpBaseUrl).toBe('lp-base-url');
     expect(service.GoogleCloudCredentialsFilePath).toBe(
       'gcp-credentials-file-path',
     );
+    expect(service.PostToX).toBe(true);
+    expect(service.XApiKey).toBe('x-api-key');
+    expect(service.XApiSecret).toBe('x-api-secret');
+    expect(service.XApiAccessToken).toBe('x-api-access-token');
+    expect(service.XApiAccessSecret).toBe('x-api-access-secret');
   });
 });
