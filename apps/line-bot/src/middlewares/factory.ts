@@ -24,6 +24,8 @@ export type HonoEnv = {
     DATABASE_URL: string;
     /** 番組ファイルの URL プレフィックス */
     PROGRAM_FILE_URL_PREFIX: string;
+    /** LP の URL プレフィックス */
+    LP_URL_PREFIX: string;
   };
 };
 

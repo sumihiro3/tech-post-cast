@@ -113,9 +113,11 @@ const createLatestProgramMessage = async (
       },
     ];
   }
+  const lpUrlPrefix = context.env.LP_URL_PREFIX;
   const programFileUrlPrefix = context.env.PROGRAM_FILE_URL_PREFIX;
   const imageUrl = `${programFileUrlPrefix}/TechPostCast_Main_gradation.png`;
-  const programUrl = latestProgram.audioUrl;
+  const programAudioUrl = latestProgram.audioUrl;
+  const programPageUrl = `${lpUrlPrefix}/headline-topic-programs/${latestProgram.id}`;
   const flex: messagingApi.FlexMessage = {
     type: 'flex',
     altText: `ヘッドライントピック：${latestProgram.title}`,
@@ -135,7 +137,7 @@ const createLatestProgramMessage = async (
           },
           {
             type: 'text',
-            text: formatDate(latestProgram.createdAt, 'YYYY/MM/DD'),
+            text: formatDate(latestProgram.createdAt, 'YYYY.M.D'),
             align: 'end',
             size: 'xs',
           },
@@ -149,7 +151,7 @@ const createLatestProgramMessage = async (
         aspectMode: 'cover',
         action: {
           type: 'uri',
-          uri: programUrl,
+          uri: programPageUrl,
         },
       },
       footer: {
@@ -163,8 +165,8 @@ const createLatestProgramMessage = async (
             height: 'sm',
             action: {
               type: 'uri',
-              label: '番組を再生する',
-              uri: programUrl,
+              label: '番組を聴く',
+              uri: programAudioUrl,
             },
           },
           {
@@ -173,9 +175,9 @@ const createLatestProgramMessage = async (
             height: 'sm',
             action: {
               type: 'postback',
-              label: '紹介記事',
+              label: '紹介記事を見る',
               data: `type=headlineTopicProgram&id=${latestProgram.id}`,
-              displayText: '紹介記事',
+              displayText: '紹介記事を見る',
               inputOption: 'closeRichMenu',
             },
           },
