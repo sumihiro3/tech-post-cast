@@ -121,6 +121,28 @@ export default defineNuxtConfig({
       podcastAuthorName: process.env.PODCAST_AUTHOR_NAME,
       podcastAuthorEmail: process.env.PODCAST_AUTHOR_EMAIL,
       podcastProgramDescription: process.env.PODCAST_PROGRAM_DESCRIPTION,
+      podcastUrls: [
+        {
+          title: 'Spotify',
+          icon: 'mdi-spotify',
+          link: 'https://open.spotify.com/show/5RpulDOnvdqKdZc5rZ9jzD?si=c1qN4IknSVeLZYZRUGVz_A',
+        },
+        {
+          title: 'Amazon Music',
+          icon: 'mdi-music',
+          link: 'https://music.amazon.co.jp/podcasts/edd04dca-b387-41a3-9bb2-fbd183f01f5d/techpostcast',
+        },
+        {
+          title: 'Apple Music',
+          icon: 'mdi-apple',
+          link: 'https://podcasts.apple.com/us/podcast/tech-post-cast/id1790035669',
+        },
+        {
+          title: 'YouTube',
+          icon: 'mdi-youtube',
+          link: 'https://www.youtube.com/playlist?list=PLtafUFEHRNL_yFrmYht9Bw1Sec2T8m2Sv',
+        },
+      ],
     },
   },
   modules: [
