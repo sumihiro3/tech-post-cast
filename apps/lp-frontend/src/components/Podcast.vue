@@ -5,7 +5,7 @@ v-card.mt-1.pt-1.pb-2(flat, width='100%', color='background')
     .text-subtitle-1.font-weight-bold.text-grey-darken-1.mb-1
       | 各種 Podcast サービスでも配信中！
     div
-      v-btn.text-none.text-subtitle-2.text-white.font-weight-bold.mr-2.podcast-button(
+      v-btn.text-none.text-subtitle-2.text-white.font-weight-bold.mr-2.mb-1.podcast-button(
         v-for='podcast in podcasts',
         :key='podcast.title',
         :href='podcast.link',
