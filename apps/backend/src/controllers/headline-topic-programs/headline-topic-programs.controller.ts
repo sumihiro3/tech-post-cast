@@ -29,7 +29,7 @@ export class HeadlineTopicProgramsController {
   @Post()
   @ApiOperation({
     operationId: 'HeadlineTopicProgramsController.createProgram',
-    summary: '端末使用者を更新する',
+    summary: 'ヘッドライントピック番組を生成する',
   })
   @ApiHeader({
     name: 'Authorization',
@@ -53,6 +53,7 @@ export class HeadlineTopicProgramsController {
       const program =
         await this.headlineTopicProgramsService.createHeadlineTopicProgram(
           programDate,
+          dto.updateLp,
         );
       this.logger.log(`ヘッドライントピック番組の生成が完了しました！`, {
         id: program.id,

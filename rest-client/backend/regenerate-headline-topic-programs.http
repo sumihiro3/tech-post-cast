@@ -20,8 +20,9 @@ Content-Type: application/json
 Authorization: Bearer {{apiToken}}
 
 {
-  "programId": "cm66iaprv00003jhk9ht3fh1m",
-  "regenerationType": "SCRIPT_AND_AUDIO"
+  "programId": "cm62qbrtg0000k10z1s1cug91",
+  "regenerationType": "SCRIPT_AND_AUDIO",
+  "updateLp": true
 }
 
 # "regenerationType": "SCRIPT_AND_AUDIO"
