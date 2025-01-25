@@ -1,14 +1,13 @@
 // import this after install `@mdi/font` package
 import '@mdi/font/css/materialdesignicons.css';
 import { createVuetify, type ThemeDefinition } from 'vuetify';
-import colors from 'vuetify/lib/util/colors.mjs';
 import 'vuetify/styles';
 
 const techPostCastLightTheme: ThemeDefinition = {
   colors: {
     background: '#F5F6F6',
     primary: '#55C500',
-    secondary: colors.teal.darken1, // #26A69A
+    secondary: '#2B6300',
     anchor: '#8c9eff',
   },
 };
