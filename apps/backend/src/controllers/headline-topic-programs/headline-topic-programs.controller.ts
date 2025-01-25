@@ -94,6 +94,7 @@ export class HeadlineTopicProgramsController {
         await this.headlineTopicProgramsService.regenerateHeadlineTopicProgram(
           dto.programId,
           dto.regenerationType,
+          dto.updateLp,
         );
       this.logger.log(
         `ヘッドライントピック番組 [${program.id}] の再生成が完了しました！`,
