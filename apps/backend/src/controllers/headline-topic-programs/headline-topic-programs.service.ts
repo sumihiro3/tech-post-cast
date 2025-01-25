@@ -33,12 +33,19 @@ export class HeadlineTopicProgramsService {
   /**
    * ヘッドライントピック番組を生成する
    * @param programDate 番組日
+   * @param updateLp LP の再生成を行うかどうか
+   * @returns 生成した番組
    */
   async createHeadlineTopicProgram(
     programDate: Date,
+    updateLp: boolean = true,
   ): Promise<HeadlineTopicProgram> {
     this.logger.debug(
       `DailyHeadlineTopicsService.createDailyHeadlineTopics called`,
+      {
+        programDate,
+        updateLp,
+      },
     );
     try {
       // 記事の取得期間を算出
@@ -76,7 +83,13 @@ export class HeadlineTopicProgramsService {
         program,
       });
       // LP の再生成実行をリクエストする
-      await this.requestLpDeploy();
+      if (updateLp) {
+        await this.requestLpDeploy();
+      } else {
+        this.logger.log(`LP の再生成をスキップします`, {
+          updateLp,
+        });
+      }
       // ポストを送信する
       await this.twitterApiClient.postNewHeadlineTopicProgram(program);
       return program;
@@ -93,17 +106,20 @@ export class HeadlineTopicProgramsService {
    * ヘッドライントピック番組を再生成する
    * @param programId 番組ID
    * @param regenerationType 再生成種別
+   * @param updateLp LP の再生成を行うかどうか
    * @returns 再生成した番組
    */
   async regenerateHeadlineTopicProgram(
     programId: string,
     regenerationType: ProgramRegenerationType,
+    updateLp: boolean = true,
   ): Promise<HeadlineTopicProgram> {
     this.logger.debug(
       `DailyHeadlineTopicsService.regenerateHeadlineTopicProgram called`,
       {
         programId,
         regenerationType,
+        updateLp,
       },
     );
     // 指定の番組を取得する
@@ -121,7 +137,13 @@ export class HeadlineTopicProgramsService {
         regenerationType,
       );
     // LP の再生成実行をリクエストする
-    await this.requestLpDeploy();
+    if (updateLp) {
+      await this.requestLpDeploy();
+    } else {
+      this.logger.log(`LP の再生成をスキップします`, {
+        updateLp,
+      });
+    }
     return regeneratedProgram;
   }
 

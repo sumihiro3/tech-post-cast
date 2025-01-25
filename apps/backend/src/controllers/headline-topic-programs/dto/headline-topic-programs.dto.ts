@@ -8,7 +8,14 @@ import {
   subtractDays,
   TIME_ZONE_JST,
 } from '@tech-post-cast/commons';
-import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 /**
  * ヘッドライントピック番組の生成要求DTO
@@ -24,6 +31,16 @@ export class HeadlineTopicCreateRequestDto {
   @Min(0)
   @IsOptional()
   daysAgo?: number;
+
+  @ApiProperty({
+    description: '番組の作成後にLPを更新するかどうか',
+    example: true,
+    default: true,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  updateLp?: boolean;
 
   /**
    * 作成する番組の対象日付を取得する
@@ -59,4 +76,14 @@ export class HeadlineTopicRegenerateRequestDto {
   })
   @IsEnum(ProgramRegenerationTypeEnum)
   regenerationType: ProgramRegenerationType;
+
+  @ApiProperty({
+    description: '番組の再生成後にLPを更新するかどうか',
+    example: true,
+    default: true,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  updateLp?: boolean;
 }
