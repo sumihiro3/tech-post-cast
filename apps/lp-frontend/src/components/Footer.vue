@@ -35,28 +35,10 @@ v-card.mt-6(flat, width='100%')
 </template>
 
 <script lang="ts" setup>
-const podcasts = [
-  {
-    title: 'Spotify',
-    icon: 'mdi-spotify',
-    link: 'https://open.spotify.com/show/5RpulDOnvdqKdZc5rZ9jzD?si=c1qN4IknSVeLZYZRUGVz_A',
-  },
-  {
-    title: 'Amazon Music',
-    icon: 'mdi-music',
-    link: 'https://music.amazon.co.jp/podcasts/edd04dca-b387-41a3-9bb2-fbd183f01f5d/techpostcast',
-  },
-  {
-    title: 'Apple Music',
-    icon: 'mdi-apple',
-    link: 'https://music.amazon.co.jp/podcasts/edd04dca-b387-41a3-9bb2-fbd183f01f5d/techpostcast',
-  },
-  {
-    title: 'YouTube',
-    icon: 'mdi-youtube',
-    link: 'https://music.amazon.co.jp/podcasts/edd04dca-b387-41a3-9bb2-fbd183f01f5d/techpostcast',
-  },
-];
+import type { Podcast } from '@/types';
+
+const app = useNuxtApp();
+const podcasts = app.$config.public.podcastUrls as Podcast[];
 const specialThanks = [
   {
     title: 'BGM：MusMus',

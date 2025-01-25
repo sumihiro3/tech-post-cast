@@ -1,9 +1,9 @@
 <template lang="pug">
 v-app
   v-main
-    v-container(fluid)
+    v-container.ma-0.pa-0(fluid)
       Header
-      slot
+      slot.ma-0.pa-0
       Footer
 </template>
 
