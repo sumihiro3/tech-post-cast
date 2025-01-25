@@ -49,12 +49,12 @@ const podcasts = [
   {
     title: 'Apple Music',
     icon: 'mdi-apple',
-    link: 'https://music.amazon.co.jp/podcasts/edd04dca-b387-41a3-9bb2-fbd183f01f5d/techpostcast',
+    link: 'https://podcasts.apple.com/us/podcast/tech-post-cast/id1790035669',
   },
   {
     title: 'YouTube',
     icon: 'mdi-youtube',
-    link: 'https://music.amazon.co.jp/podcasts/edd04dca-b387-41a3-9bb2-fbd183f01f5d/techpostcast',
+    link: 'https://www.youtube.com/playlist?list=PLtafUFEHRNL_yFrmYht9Bw1Sec2T8m2Sv',
   },
 ];
 const specialThanks = [
