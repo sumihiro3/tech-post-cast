@@ -19,5 +19,6 @@ Content-Type: application/json
 Authorization: Bearer {{apiToken}}
 
 {
-  "daysAgo": 0
+  "daysAgo": 10,
+  "updateLp": true
 }
