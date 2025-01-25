@@ -13,9 +13,8 @@ v-card.mt-6(flat, width='100%')
       :href='podcast.link',
       flat,
       target='_blank'
-    )
-      v-icon.mr-2 {{ podcast.icon }}
-      | {{ podcast.title }}
+      :prepend-icon='podcast.icon'
+    ) {{ podcast.title }}
   //- Special Thanks
   v-container.text-left.pl-6(cols='6')
     .text-subtitle-1.font-weight-bold.text-grey-darken-1
@@ -26,9 +25,8 @@ v-card.mt-6(flat, width='100%')
       :href='thanks.link',
       flat,
       target='_blank'
-    )
-      v-icon.mr-2 {{ thanks.icon }}
-      | {{ thanks.title }}
+      :prepend-icon='thanks.icon'
+    ) {{ thanks.title }}
   v-container.text-left.pl-10(cols='10')
     .text-center.mt-4.text-subtitle-2.text-md-subtitle-1.text-grey-darken-1
       | All rights are reserved &copy; {{ new Date().getFullYear() }}, TEP Lab

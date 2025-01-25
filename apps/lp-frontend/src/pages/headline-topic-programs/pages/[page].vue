@@ -1,5 +1,11 @@
 <template lang="pug">
 div
+  Podcast.mb-4
+  Pagination.mb-2(
+    :currentPage='currentPage',
+    :pages='pages || 0',
+    linkPrefix='/headline-topic-programs/pages'
+  )
   v-row(v-if='programs', align='center')
     v-col(cols='0', sm='2', lg='3')
     v-col(cols='12', sm='8', lg='6')
