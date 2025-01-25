@@ -1,5 +1,5 @@
 <template lang="pug">
-div
+div.pa-0.ma-0
   HeroHeader
   v-row(v-if='programs', align='center')
     v-col(cols='0', sm='2', lg='3')
