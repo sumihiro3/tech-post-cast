@@ -1,8 +1,16 @@
 import type { HeadlineTopicProgram } from '@prisma/client';
+import dayjs from 'dayjs';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
 import { writeFileSync } from 'fs';
 import type { Nitro } from 'nitropack';
 import path from 'path';
 import RSS from 'rss';
+
+dayjs.extend(timezone);
+dayjs.extend(utc);
+
+const DATE_FORMAT = 'YYYY.M.D';
 
 export default async function generateSpotifyRssFeed(nitro: Nitro) {
   console.log('Generating Spotify RSS feed');
@@ -69,11 +77,13 @@ export default async function generateSpotifyRssFeed(nitro: Nitro) {
     // ヘッドライントピック番組の再生時間（ミリ秒）を 秒に変換する
     const duration = program.audioDuration;
     const seconds = Math.floor(duration / 1000);
+    // 日付
+    const programPublishedAt = utcToJstDateString(program.createdAt);
     // 番組ページのURLを生成する
     const programUrl = `${lpUrl}/headline-topic-programs/${program.id}`;
     feed.item({
-      title: program.title,
-      description: `紹介記事: ${programUrl}`,
+      title: `${programPublishedAt} ${program.title}`,
+      description: `今回の紹介記事など詳しくはこちら。\n\n${programUrl}`,
       guid: program.id,
       url: programUrl,
       date: program.createdAt,
@@ -109,7 +119,7 @@ async function getHeadlineTopicProgramList(): Promise<HeadlineTopicProgram[]> {
   console.debug('getHeadlineTopicProgramList called');
   const apiUrl = process.env.API_BASE_URL;
   const token = process.env.API_ACCESS_TOKEN;
-  const rssItemCount = 20;
+  const rssItemCount = 30;
   const lpUrl = process.env.LP_BASE_URL;
   console.log(`API_BASE_URL: ${apiUrl}`);
   console.log(`API_ACCESS_TOKEN: ${token}`);
@@ -134,4 +144,19 @@ async function getHeadlineTopicProgramList(): Promise<HeadlineTopicProgram[]> {
     `ヘッドライントピック番組一覧（${programs.length}件）を取得しました`,
   );
   return programs;
+}
+
+/**
+ * UTC の日付を日本時間の日付文字列に変換する
+ * @param dt UTC の日付
+ */
+function utcToJstDateString(dt: Date, format?: string): string {
+  console.debug(`utcToJstDateString called!: [${dt}]`);
+  try {
+    const d = dayjs(dt).tz('Asia/Tokyo');
+    return d.format(format ? format : DATE_FORMAT);
+  } catch (error) {
+    console.error(`UTC 日付の変換処理に失敗しました`, error);
+    return dayjs(dt).toString();
+  }
 }
