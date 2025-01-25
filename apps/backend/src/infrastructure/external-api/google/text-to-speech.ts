@@ -189,6 +189,10 @@ export class TextToSpeechClient implements ITextToSpeechClient {
     this.logger.debug(`TextToSpeechClient.generateSsmlWithSubAlias called`, {
       text,
     });
+    // SSML 生成時には、バッククォートを削除する
+    // Text-to-Speech API はバッククォートを読み上げるため
+    // 台本としては可読性の観点からバッククォートは残しておくので、SSML 生成時にだけ削除する
+    text = text.replaceAll('`', '');
     // 特定の用語の読み方を <sub> で指定した SSML を生成する
     for (const alias of subAliasTable) {
       text = text.replaceAll(
