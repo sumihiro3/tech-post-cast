@@ -1,7 +1,9 @@
 import { AppConfigService } from '@/app-config/app-config.service';
 import {
-  HeadlineTopicProgramError,
-  HeadlineTopicProgramGenerateScriptError,
+  GenerateProgramScriptError,
+  OpenAiApiError,
+  ProgramScriptValidationError,
+  SummarizePostError,
 } from '@/types/errors';
 import { IQiitaPostApiResponse } from '@domains/qiita-posts/qiita-posts.entity';
 import {
@@ -29,10 +31,19 @@ export class OpenAiApiClient {
    */
   private openAi: OpenAI;
 
-  constructor(private readonly appConfig: AppConfigService) {
-    this.openAi = new OpenAI({
-      apiKey: this.appConfig.OpenAiApiKey,
-    });
+  constructor(private readonly appConfig: AppConfigService) {}
+
+  /**
+   * OpenAI クライアントを取得する
+   * @returns OpenAI クライアント
+   */
+  getOpenAiClient(): OpenAI {
+    if (!this.openAi) {
+      this.openAi = new OpenAI({
+        apiKey: this.appConfig.OpenAiApiKey,
+      });
+    }
+    return this.openAi;
   }
 
   /**
@@ -63,8 +74,7 @@ export class OpenAiApiClient {
         response_format: zodResponseFormat(PostSummarySchema, 'summary'),
       };
       const chatCompletion =
-        await this.openAi.beta.chat.completions.parse(params);
-      // await this.openAi.chat.completions.create(params);
+        await this.getOpenAiClient().beta.chat.completions.parse(params);
       this.logger.debug(`記事を要約しました`, {
         chatCompletion: chatCompletion,
       });
@@ -74,9 +84,11 @@ export class OpenAiApiClient {
       > as PostSummary;
       return summary;
     } catch (error) {
-      this.logger.error(`記事の要約に失敗しました`, { error });
-      // TODO エラークラスを作成して返す
-      throw error;
+      const errorMessage = `記事の要約に失敗しました`;
+      this.logger.error(errorMessage, { error });
+      throw new SummarizePostError(errorMessage, {
+        cause: error,
+      });
     }
   }
 
@@ -139,36 +151,135 @@ export class OpenAiApiClient {
         ),
       };
       const chatCompletion =
-        await this.openAi.beta.chat.completions.parse(params);
+        await this.getOpenAiClient().beta.chat.completions.parse(params);
       this.logger.debug(`ヘッドライントピック番組の台本を生成しました`, {
         chatCompletion: chatCompletion,
       });
       // 指定したスキーマで生成結果を取得する
-      const script = chatCompletion.choices[0]?.message.parsed as z.infer<
+      let script = chatCompletion.choices[0]?.message.parsed as z.infer<
         typeof HeadlineTopicProgramScriptSchema
       > as HeadlineTopicProgramScript;
-      if (!script) {
-        throw new HeadlineTopicProgramGenerateScriptError(
-          `台本が生成されませんでした`,
-        );
-      } else if (script.posts.length < posts.length) {
-        throw new HeadlineTopicProgramGenerateScriptError(
-          `記事数よりも少ない記事の要約が生成されました [${script.posts.length} < ${posts.length}]`,
-        );
-      }
+      // 台本の検証を行う
+      script = this.validateHeadlineTopicProgramScript(script, posts);
       return script;
     } catch (error) {
       const errorMessage = `ヘッドライントピック番組の台本生成に失敗しました`;
       this.logger.error(errorMessage, { error }, error.stack);
-      if (error instanceof HeadlineTopicProgramError) {
+      if (error instanceof OpenAiApiError) {
         throw error;
       }
       // 独自エラークラスで返す
-      throw new HeadlineTopicProgramGenerateScriptError(
-        `台本の生成に失敗しました`,
-        { cause: error },
+      throw new GenerateProgramScriptError(`台本の生成に失敗しました`, {
+        cause: error,
+      });
+    }
+  }
+
+  /**
+   * ヘッドライントピック番組の台本の検証を行う
+   * @param script 台本
+   * @param posts 記事一覧
+   * @returns 検証後の台本
+   */
+  validateHeadlineTopicProgramScript(
+    script: HeadlineTopicProgramScript,
+    posts: IQiitaPostApiResponse[],
+  ): HeadlineTopicProgramScript {
+    this.logger.verbose(
+      `OpenAiApiClient.validateHeadlineTopicProgramScript called`,
+      { script, posts },
+    );
+    if (!script) {
+      throw new ProgramScriptValidationError(`台本が存在しません`);
+    }
+    if (script.posts.length < posts.length) {
+      throw new OpenAiApiError(
+        `記事数よりも少ない記事の要約が生成されました [${script.posts.length} < ${posts.length}]`,
       );
     }
+    // 生成された台本にある記事ID と対象記事のID が一致しているか検証する
+    const postIds = posts.map((post) => post.id);
+    script.posts.forEach((post) => {
+      if (!postIds.includes(post.postId)) {
+        this.logger.warn(`生成された台本に存在しない記事ID が含まれています`, {
+          post,
+        });
+      }
+    });
+    // 記事の要約が複数含まれている場合があるため、対象記事の要約を一つずつ取得する
+    const postSummaries: PostSummary[] = [];
+    for (const p of posts) {
+      // 対象記事の要約を取得する
+      const filteredPostSummaries = this.getPostSummariesByPostId(
+        p.id,
+        script.posts,
+      );
+      if (filteredPostSummaries.length === 0) {
+        throw new ProgramScriptValidationError(
+          `生成された台本に記事ID [${p.id}] が含まれていません`,
+        );
+      }
+      // 複数ある場合は要約文が長いものを残す
+      if (filteredPostSummaries.length > 1) {
+        this.logger.warn(`記事ID [${p.id}] は複数の記事要約が存在します`, {
+          filteredPostSummaries,
+        });
+        const longestPostSummary = this.getLongestPostSummary(
+          filteredPostSummaries,
+        );
+        // 要約文が無い場合はエラーを返す
+        if (
+          !longestPostSummary.summary ||
+          longestPostSummary.summary.length === 0
+        ) {
+          throw new ProgramScriptValidationError(
+            `記事ID [${p.id}] の要約文が空です`,
+          );
+        }
+        postSummaries.push(longestPostSummary);
+      } else {
+        postSummaries.push(filteredPostSummaries[0]);
+      }
+    }
+    script.posts = postSummaries;
+    return script;
+  }
+
+  /**
+   * 指定した記事IDの記事要約を取得する
+   * 複数ある場合はすべて取得する
+   * @param postId 記事ID
+   * @param posts 記事一覧
+   * @returns 記事要約
+   */
+  getPostSummariesByPostId(
+    postId: string,
+    posts: PostSummary[],
+  ): PostSummary[] {
+    this.logger.verbose(`OpenAiApiClient.getPostSummariesByPostId called`, {
+      postId,
+      posts,
+    });
+    const postSummaries = posts.filter((post) => post.postId === postId);
+    return postSummaries;
+  }
+
+  /**
+   * 指定の記事要約のうち、要約文が最も長いものを取得する
+   * @param postSummaries 記事要約
+   * @returns 要約文が最も長い記事要約
+   */
+  getLongestPostSummary(postSummaries: PostSummary[]): PostSummary {
+    this.logger.verbose(`OpenAiApiClient.getLongestPostSummary called`, {
+      postSummaries,
+    });
+    let longestPostSummary = postSummaries[0];
+    for (let i = 1; i < postSummaries.length; i++) {
+      if (longestPostSummary.summary.length < postSummaries[i].summary.length) {
+        longestPostSummary = postSummaries[i];
+      }
+    }
+    return longestPostSummary;
   }
 
   /**
@@ -221,7 +332,7 @@ export class OpenAiApiClient {
 - 必ず ${posts.length} 本すべての記事を紹介します（厳守してください）
 - 'posts' に含まれる記事のみ紹介してください（それ以外の記事は紹介しないでください）
     - ただし、同じ記事を2回以上紹介しないでください
-- 紹介記事の冒頭は「最初の記事は {記事のタイトル} です。」のように始めてください
+- 紹介記事の冒頭は「最初の記事は 『{記事のタイトル}』 です。」のように始めてください
 - 何番目の記事であるか、最後の記事であるかが分かるようにしてください
 - 必ず記事のタイトルを伝えます
 - 1つの記事につき500文字程度で話します
@@ -232,7 +343,8 @@ export class OpenAiApiClient {
 - 最後に締めの挨拶です
 - 今日紹介した記事を簡単におさらいします
     - 必ず ${posts.length} 本の記事を振り返ります
-- 紹介記事へのリンクは「紹介記事欄」にあることを伝えます
+    - それぞれの記事のタイトルと、要約を簡潔に振り返ります
+- 番組で紹介した記事へのリンクは「紹介記事欄」にあることを伝えます
 - 番組への感想を募集していることを伝えます
 - 最後に「ポステルでした。次の番組でお会いしましょう。」と締めくくります
 
@@ -291,7 +403,7 @@ ${post.summary}
       `OpenAiApiClient.generateHeadlineTopicProgramAudioFile called`,
     );
     // 音声ファイルを生成
-    const response = await this.openAi.audio.speech.create({
+    const response = await this.getOpenAiClient().audio.speech.create({
       model: 'tts-1-hd',
       voice: 'nova',
       input: this.getHeadlineTopicProgramScriptText(script),
