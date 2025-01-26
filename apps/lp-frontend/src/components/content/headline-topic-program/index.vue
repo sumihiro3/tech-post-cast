@@ -63,14 +63,19 @@ v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-white(flat, rounded='lg')
             ) mdi-volume-high
     //- 番組の台本
     v-tabs-window-item(v-if='showScript', value='script')
-      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1
+      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1(
+        :class='{ "active-chapter-script": currentChapterIndex === 1 }'
+      )
         | {{ program.script.intro }}
       p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1(
         v-for='(post, index) in program.script.posts',
         :key='index'
+        :class='{ "active-chapter-script": currentChapterIndex === index + 2 }'
       )
         | {{ post.summary }}
-      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1
+      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1(
+        :class='{ "active-chapter-script": currentChapterIndex === program.script.posts.length + 2 }'
+      )
         | {{ program.script.ending }}
 </template>
 
@@ -145,7 +150,7 @@ ol.chapter-list {
   list-style-position: outside;
   padding-left: 10px;
 }
-li.active-chapter {
+li.active-chapter, p.active-chapter-script {
   background-color: #edeeee;
   font-weight: bold;
 }
