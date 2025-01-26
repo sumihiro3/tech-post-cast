@@ -11,8 +11,8 @@ export const useGetHeadlineTopicProgramCount = async (
   console.debug(`useGetHeadlineTopicProgramCount called`);
   const token = app.$config.public.apiAccessToken;
   const bearerToken = `Bearer ${token}`;
-  const getProgramResponse =
-    await app.$apiV1.getHeadlineTopicProgramsCount(bearerToken);
+  const getProgramResponse
+    = await app.$apiV1.getHeadlineTopicProgramsCount(bearerToken);
   const dto = getProgramResponse.data;
   console.log(`ヘッドライントピック番組の件数`, { count: dto.count });
   return dto.count;

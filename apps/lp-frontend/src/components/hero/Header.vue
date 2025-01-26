@@ -17,11 +17,9 @@ Podcast
 </template>
 
 <script lang="ts" setup>
-import type { Podcast } from '@/types';
 import { useDisplay } from 'vuetify';
 
 const app = useNuxtApp();
 const { mobile } = useDisplay();
 const siteName = app.$config.public.siteName;
-const podcasts = app.$config.public.podcastUrls as Podcast[];
 </script>

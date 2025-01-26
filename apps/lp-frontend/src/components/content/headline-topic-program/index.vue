@@ -54,7 +54,7 @@ v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-white(flat, rounded='lg')
         )
           a.text-left.text-grey-darken-4(
             @click='seekTo(chapter.startTime / 1000)'
-          ) 
+          )
             | {{ chapter.title }}
             //- 現在再生中のチャプターを示すアイコン
             v-icon.ml-1.mb-1(
@@ -63,14 +63,19 @@ v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-white(flat, rounded='lg')
             ) mdi-volume-high
     //- 番組の台本
     v-tabs-window-item(v-if='showScript', value='script')
-      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1
+      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1(
+        :class='{ "active-chapter-script": currentChapterIndex === 1 }'
+      )
         | {{ program.script.intro }}
       p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1(
         v-for='(post, index) in program.script.posts',
         :key='index'
+        :class='{ "active-chapter-script": currentChapterIndex === index + 2 }'
       )
         | {{ post.summary }}
-      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1
+      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1(
+        :class='{ "active-chapter-script": currentChapterIndex === program.script.posts.length + 2 }'
+      )
         | {{ program.script.ending }}
 </template>
 
@@ -92,7 +97,7 @@ const currentChapterIndex = ref(-1);
  * @param program ヘッドライントピック番組
  * @returns チャプター情報が含まれているか
  */
-const hasChapters = (program: HeadlineTopicProgramDto) => {
+const hasChapters = (program: HeadlineTopicProgramDto): boolean => {
   return program.chapters && program.chapters.length > 0;
 };
 
@@ -100,7 +105,7 @@ const hasChapters = (program: HeadlineTopicProgramDto) => {
  * 音声ファイルを指定時間へ移動して再生する
  * @param time 開始時間
  */
-const seekTo = (time: number) => {
+const seekTo = (time: number): void => {
   console.debug('seekTo', { time });
   if (player.value) {
     player.value.currentTime = time;
@@ -111,7 +116,7 @@ const seekTo = (time: number) => {
 /**
  * 再生時間を監視して現在のチャプターを更新する
  */
-const updateCurrentChapter = () => {
+const updateCurrentChapter = (): void => {
   console.debug('updateCurrentChapter', {
     currentTime: player.value?.currentTime,
     ended: player.value?.ended,
@@ -122,7 +127,7 @@ const updateCurrentChapter = () => {
     return;
   }
   const currentTime = player.value!.currentTime;
-  const index = props.program.chapters.findIndex((chapter, i) => {
+  const index = props.program.chapters.findIndex((chapter, _i) => {
     const startTime = chapter.startTime / 1000;
     const endTime = chapter.endTime / 1000;
     return currentTime >= startTime && currentTime < endTime;
@@ -145,7 +150,7 @@ ol.chapter-list {
   list-style-position: outside;
   padding-left: 10px;
 }
-li.active-chapter {
+li.active-chapter, p.active-chapter-script {
   background-color: #edeeee;
   font-weight: bold;
 }

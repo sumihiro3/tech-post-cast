@@ -2,6 +2,7 @@
 import '@mdi/font/css/materialdesignicons.css';
 import { createVuetify, type ThemeDefinition } from 'vuetify';
 import 'vuetify/styles';
+import '~/styles/main.scss';
 
 const techPostCastLightTheme: ThemeDefinition = {
   colors: {
