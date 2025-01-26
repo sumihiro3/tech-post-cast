@@ -20,6 +20,14 @@ export class TextToSpeechClient implements ITextToSpeechClient {
   private readonly logger = new Logger(TextToSpeechClient.name);
 
   /**
+   * 絵文字を検出するための正規表現
+   */
+  regEmoji = new RegExp(
+    /[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/,
+    'g',
+  );
+
+  /**
    * Text to speech client
    */
   private ttsClient: TTSClient;
@@ -189,10 +197,12 @@ export class TextToSpeechClient implements ITextToSpeechClient {
     this.logger.debug(`TextToSpeechClient.generateSsmlWithSubAlias called`, {
       text,
     });
-    // SSML 生成時には、バッククォートを削除する
-    // Text-to-Speech API はバッククォートを読み上げるため
-    // 台本としては可読性の観点からバッククォートは残しておくので、SSML 生成時にだけ削除する
+    // SSML 生成時には、バッククォートと絵文字を削除する
+    // Text-to-Speech API はバッククォートと絵文字を読み上げるため
+    // 台本としては可読性の観点からそれらは残しておくので、SSML 生成時にだけ削除する
     text = text.replaceAll('`', '');
+    // 絵文字を削除する
+    text = this.removeEmoji(text);
     // 特定の用語の読み方を <sub> で指定した SSML を生成する
     for (const alias of subAliasTable) {
       text = text.replaceAll(
@@ -201,6 +211,15 @@ export class TextToSpeechClient implements ITextToSpeechClient {
       );
     }
     return text;
+  }
+
+  /**
+   * 文字列中の絵文字を削除して返す
+   * @param text 文字列
+   * @returns 絵文字を削除した文字列
+   */
+  removeEmoji(text: string): string {
+    return text.replace(this.regEmoji, '');
   }
 }
 
