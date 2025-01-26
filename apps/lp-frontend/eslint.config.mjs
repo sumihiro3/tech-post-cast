@@ -23,6 +23,7 @@ export default withNuxt(
       // '@stylistic/brace-style': ['error', '1tbs', { allowSingleLine: true }],
       '@stylistic/brace-style': 'error',
       '@typescript-eslint/ban-ts-comment': 'off',
+      '@typescript-eslint/explicit-function-return-type': 'error',
     },
   },
   stylistic.configs.customize({

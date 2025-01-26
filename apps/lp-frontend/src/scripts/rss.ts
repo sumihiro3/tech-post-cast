@@ -12,6 +12,7 @@ dayjs.extend(utc);
 
 const DATE_FORMAT = 'YYYY.M.D';
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export default async function generateSpotifyRssFeed(nitro: Nitro) {
   console.log('Generating Spotify RSS feed');
   if (!nitro._prerenderedRoutes) {

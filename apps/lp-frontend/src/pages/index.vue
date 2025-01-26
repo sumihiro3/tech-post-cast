@@ -23,7 +23,7 @@ import { useGetCurrentPagePrograms } from '@/composables/headline-topic-programs
 const app = useNuxtApp();
 const currentPage = ref(1);
 
-const { data, error } = await useAsyncData(
+const { data } = await useAsyncData(
   `headline-topic-programs:${currentPage.value}`,
   async () => {
     try {

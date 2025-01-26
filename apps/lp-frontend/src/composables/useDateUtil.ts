@@ -8,6 +8,7 @@ dayjs.extend(utc);
 const DATE_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 const DATE_FORMAT = 'YYYY-M-D';
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const useDateUtil = () => {
   /**
    * タイムスタンプから日付文字列に変換する

@@ -92,7 +92,7 @@ const currentChapterIndex = ref(-1);
  * @param program ヘッドライントピック番組
  * @returns チャプター情報が含まれているか
  */
-const hasChapters = (program: HeadlineTopicProgramDto) => {
+const hasChapters = (program: HeadlineTopicProgramDto): boolean => {
   return program.chapters && program.chapters.length > 0;
 };
 
@@ -100,7 +100,7 @@ const hasChapters = (program: HeadlineTopicProgramDto) => {
  * 音声ファイルを指定時間へ移動して再生する
  * @param time 開始時間
  */
-const seekTo = (time: number) => {
+const seekTo = (time: number): void => {
   console.debug('seekTo', { time });
   if (player.value) {
     player.value.currentTime = time;
@@ -111,7 +111,7 @@ const seekTo = (time: number) => {
 /**
  * 再生時間を監視して現在のチャプターを更新する
  */
-const updateCurrentChapter = () => {
+const updateCurrentChapter = (): void => {
   console.debug('updateCurrentChapter', {
     currentTime: player.value?.currentTime,
     ended: player.value?.ended,
