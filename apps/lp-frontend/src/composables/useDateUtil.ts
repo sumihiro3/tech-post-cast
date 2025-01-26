@@ -8,6 +8,7 @@ dayjs.extend(utc);
 const DATE_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 const DATE_FORMAT = 'YYYY-M-D';
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const useDateUtil = () => {
   /**
    * タイムスタンプから日付文字列に変換する
@@ -25,7 +26,8 @@ export const useDateUtil = () => {
     try {
       const d = dayjs(timestamp).tz('Asia/Tokyo');
       return d.format(format ? format : DATE_TIME_FORMAT);
-    } catch (error) {
+    }
+    catch (error) {
       console.error(`タイムスタンプの変換処理に失敗しました`, error);
       return dayjs(timestamp).toString();
     }
@@ -40,7 +42,8 @@ export const useDateUtil = () => {
     try {
       const d = dayjs.utc(dateString).tz('Asia/Tokyo');
       return d.format(format ? format : DATE_FORMAT);
-    } catch (error) {
+    }
+    catch (error) {
       console.error(`UTC の日付文字列の変換処理に失敗しました`, error);
       return dayjs.utc(dateString).toString();
     }

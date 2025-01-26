@@ -12,6 +12,7 @@ dayjs.extend(utc);
 
 const DATE_FORMAT = 'YYYY.M.D';
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export default async function generateSpotifyRssFeed(nitro: Nitro) {
   console.log('Generating Spotify RSS feed');
   if (!nitro._prerenderedRoutes) {
@@ -155,7 +156,8 @@ function utcToJstDateString(dt: Date, format?: string): string {
   try {
     const d = dayjs(dt).tz('Asia/Tokyo');
     return d.format(format ? format : DATE_FORMAT);
-  } catch (error) {
+  }
+  catch (error) {
     console.error(`UTC 日付の変換処理に失敗しました`, error);
     return dayjs(dt).toString();
   }

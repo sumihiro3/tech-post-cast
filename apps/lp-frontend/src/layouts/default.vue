@@ -7,21 +7,6 @@ v-app
       Footer
 </template>
 
-<style lang="css">
-a {
-  text-decoration: none;
-}
-a:hover {
-  text-decoration: underline;
-}
-a:link {
-  color: #212121;
-}
-a:visited {
-  color: #757575;
-}
-</style>
-
 <script setup lang="ts">
 useHead({
   link: [
@@ -37,3 +22,18 @@ useHead({
   ],
 });
 </script>
+
+<style lang="css">
+a {
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+a:link {
+  color: #212121;
+}
+a:visited {
+  color: #757575;
+}
+</style>

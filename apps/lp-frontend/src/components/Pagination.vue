@@ -1,41 +1,41 @@
 <template lang="pug">
-nav(v-if='pages > 1')
+nav(v-if='props.pages > 1')
   ul.pagination
     //- 最初のページへのリンク
     li
-      a(:href='`${linkPrefix}/1`')
+      a(:href='`${props.linkPrefix}/1`')
         span(aria-hidden='true') «
     //- 1ページ目へのリンク
-    li(v-if='currentPage > 1')
-      a(:href='`${linkPrefix}/1`')
+    li(v-if='props.currentPage > 1')
+      a(:href='`${props.linkPrefix}/1`')
         | 1
     //- 現在のページが最初のページより2ページ後の場合は...を表示
-    li(v-if='currentPage - 1 >= 3')
+    li(v-if='props.currentPage - 1 >= 3')
       span.pagination-skip
         | ...
     //- 現在のページより1ページ前へのリンク
-    li(v-if='currentPage > 2')
-      a(:href='`${linkPrefix}/${currentPage - 1}`')
-        | {{ currentPage - 1 }}
+    li(v-if='props.currentPage > 2')
+      a(:href='`${props.linkPrefix}/${props.currentPage - 1}`')
+        | {{ props.currentPage - 1 }}
     //- 現在のページ
     li
-      a.active(:href='`${linkPrefix}/${currentPage}`')
-        | {{ currentPage }}
+      a.active(:href='`${props.linkPrefix}/${props.currentPage}`')
+        | {{ props.currentPage }}
     //- 現在のページより1ページ後へのリンク
-    li(v-if='pages > currentPage + 1')
-      a(:href='`${linkPrefix}/${currentPage + 1}`')
-        | {{ currentPage + 1 }}
+    li(v-if='props.pages > props.currentPage + 1')
+      a(:href='`${props.linkPrefix}/${props.currentPage + 1}`')
+        | {{ props.currentPage + 1 }}
     //- 現在のページが最後のページより2ページ前の場合は...を表示
-    li(v-if='pages > currentPage + 2')
+    li(v-if='props.pages > props.currentPage + 2')
       span.pagination-skip
         | ...
     //- 最後のページへのリンク
-    li(v-if='pages > currentPage')
-      a(:href='`${linkPrefix}/${pages}`')
-        | {{ pages }}
+    li(v-if='props.pages > props.currentPage')
+      a(:href='`${props.linkPrefix}/${props.pages}`')
+        | {{ props.pages }}
     //- 最後のページへのリンク
     li
-      a(:href='`${linkPrefix}/${pages}`')
+      a(:href='`${props.linkPrefix}/${props.pages}`')
         span(aria-hidden='true') »
 </template>
 
@@ -48,8 +48,6 @@ const props = defineProps<{
   /** リンクのPrefix */
   linkPrefix: string;
 }>();
-
-const maxVisiblePages = 3;
 </script>
 
 <style lang="css" scoped>

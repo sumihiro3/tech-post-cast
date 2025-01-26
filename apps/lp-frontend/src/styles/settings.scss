@@ -1,0 +1,3 @@
+@use 'vuetify/settings' with (
+  $button-elevation: ('default': 2, 'hover': 8, 'active': 8)
+  );
