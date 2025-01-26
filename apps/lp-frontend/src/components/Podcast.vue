@@ -10,7 +10,6 @@ v-card.mt-1.pt-1.pb-2(flat, width='100%', color='background')
         :key='podcast.title',
         :href='podcast.link',
         color='secondary',
-        flat,
         target='_blank'
         :prepend-icon='podcast.icon'
       ) {{ podcast.title }}
@@ -23,7 +22,7 @@ const app = useNuxtApp();
 const podcasts = app.$config.public.podcastUrls as Podcast[];
 </script>
 
-<style lang="css" scoped>
+<style lang="scss" scoped>
 .podcast-button:hover {
   text-decoration: none;
 }
