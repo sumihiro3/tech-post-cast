@@ -54,7 +54,7 @@ v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-white(flat, rounded='lg')
         )
           a.text-left.text-grey-darken-4(
             @click='seekTo(chapter.startTime / 1000)'
-          ) 
+          )
             | {{ chapter.title }}
             //- 現在再生中のチャプターを示すアイコン
             v-icon.ml-1.mb-1(
@@ -122,7 +122,7 @@ const updateCurrentChapter = () => {
     return;
   }
   const currentTime = player.value!.currentTime;
-  const index = props.program.chapters.findIndex((chapter, i) => {
+  const index = props.program.chapters.findIndex((chapter, _i) => {
     const startTime = chapter.startTime / 1000;
     const endTime = chapter.endTime / 1000;
     return currentTime >= startTime && currentTime < endTime;

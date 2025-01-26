@@ -16,7 +16,6 @@ v-card.mt-1.pt-1.pb-2(flat, width='100%', color='background')
       ) {{ podcast.title }}
   </template>
 
-
 <script lang="ts" setup>
 import type { Podcast } from '@/types';
 

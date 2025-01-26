@@ -27,7 +27,8 @@ const { data: program } = await useAsyncData<HeadlineTopicProgramDto>(
       // 指定されたIDの番組情報を取得
       const dto = await useGetHeadlineTopicProgram(app, programId);
       return { ...dto };
-    } catch (error) {
+    }
+    catch (error) {
       console.error(`番組 [${programId}] の取得に失敗しました。`, error);
       if (error instanceof Error) {
         console.error(error.message, error.stack);

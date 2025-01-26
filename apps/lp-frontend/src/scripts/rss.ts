@@ -155,7 +155,8 @@ function utcToJstDateString(dt: Date, format?: string): string {
   try {
     const d = dayjs(dt).tz('Asia/Tokyo');
     return d.format(format ? format : DATE_FORMAT);
-  } catch (error) {
+  }
+  catch (error) {
     console.error(`UTC 日付の変換処理に失敗しました`, error);
     return dayjs(dt).toString();
   }

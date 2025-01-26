@@ -94,13 +94,13 @@ export default defineNuxtConfig({
       failOnError: true,
     },
     hooks: {
-      compiled: generateSpotifyRssFeed,
+      'compiled': generateSpotifyRssFeed,
       'prerender:config': async (nitroConfig: NitroConfig) => {
         console.log('Nitro hook [prerender:config] called');
         console.dir(nitroConfig, { depth: undefined });
         // ヘッドライントピック番組一覧の各ページのルートを追加
-        const headlineTopicProgramListRoutes =
-          await getHeadlineTopicProgramListPageRoutes();
+        const headlineTopicProgramListRoutes
+          = await getHeadlineTopicProgramListPageRoutes();
         nitroConfig.prerender?.routes?.push(...headlineTopicProgramListRoutes);
       },
     },
@@ -159,6 +159,8 @@ export default defineNuxtConfig({
     },
     // nuxt-gtag
     'nuxt-gtag',
+    // '@nuxt/eslint'
+    '@nuxt/eslint',
   ],
   gtag: {
     id: process.env.GA_MEASUREMENT_ID,

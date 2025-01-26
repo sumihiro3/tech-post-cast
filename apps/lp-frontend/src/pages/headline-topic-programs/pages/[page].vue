@@ -29,15 +29,16 @@ const app = useNuxtApp();
 const route = useRoute();
 const currentPage = ref(route.params.page ? Number(route.params.page) : 1);
 
-const { data, error } = await useAsyncData(
-  `headline-topic-programs:${currentPage}`,
+const { data } = await useAsyncData(
+  `headline-topic-programs:${currentPage.value}`,
   async () => {
     try {
       const result = await useGetCurrentPagePrograms(app, currentPage.value);
       return { programs: result.programs, pages: result.pages };
-    } catch (error) {
+    }
+    catch (error) {
       console.error(
-        `${currentPage}ページ目の番組一覧の取得に失敗しました。`,
+        `${currentPage.value}ページ目の番組一覧の取得に失敗しました。`,
         error,
       );
       if (error instanceof Error) {
