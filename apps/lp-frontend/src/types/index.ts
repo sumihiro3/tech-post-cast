@@ -8,3 +8,8 @@ export type Podcast = {
   icon: string;
   link: string;
 };
+
+/**
+ * SNS サービスを表す型
+ */
+export type Sns = Podcast;

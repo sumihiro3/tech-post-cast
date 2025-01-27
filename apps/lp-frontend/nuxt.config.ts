@@ -125,6 +125,18 @@ export default defineNuxtConfig({
           link: 'https://www.youtube.com/playlist?list=PLtafUFEHRNL_yFrmYht9Bw1Sec2T8m2Sv',
         },
       ],
+      snsUrls: [
+        {
+          title: 'X',
+          icon: 'mdi-twitter',
+          link: 'https://x.com/techpostcast',
+        },
+        {
+          title: 'LINE',
+          icon: 'mdi-chat-outline',
+          link: 'https://lin.ee/a1dD32a',
+        },
+      ],
     },
   },
   modules: [

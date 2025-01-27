@@ -15,6 +15,18 @@ v-card.mt-6(flat, width='100%')
       target='_blank'
       :prepend-icon='podcast.icon'
     ) {{ podcast.title }}
+  //- SNS
+  v-container.text-left.pl-6(cols='6')
+    .text-subtitle-1.font-weight-bold.text-grey-darken-1
+      | SNS
+    v-btn.text-none.text-subtitle-2.text-grey-darken-1.footer-button(
+      v-for='sns in snsList',
+      :key='sns.title',
+      :href='sns.link',
+      flat,
+      target='_blank'
+      :prepend-icon='sns.icon'
+    ) {{ sns.title }}
   //- Special Thanks
   v-container.text-left.pl-6(cols='6')
     .text-subtitle-1.font-weight-bold.text-grey-darken-1
@@ -33,10 +45,11 @@ v-card.mt-6(flat, width='100%')
 </template>
 
 <script lang="ts" setup>
-import type { Podcast } from '@/types';
+import type { Podcast, Sns } from '@/types';
 
 const app = useNuxtApp();
 const podcasts = app.$config.public.podcastUrls as Podcast[];
+const snsList = app.$config.public.snsUrls as Sns[];
 const specialThanks = [
   {
     title: 'BGM：MusMus',
