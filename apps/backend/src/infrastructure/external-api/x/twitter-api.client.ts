@@ -56,9 +56,10 @@ export class TwitterApiClient {
       const programPageUrl = `${lpBaseUrl}/headline-topic-programs/${program.id}`;
       // 番組時間（ミリ秒→分）
       const minutes = Math.floor(program.audioDuration / 60 / 1000);
-      const tweet = `こんにちは。#TechPostCast のポステルです。
-最新のラジオ番組『${program.title}』を配信しました！
-#Qiita で人気の記事を${minutes}分ほどで紹介しています。ぜひ通勤や散歩などのスキマ時間にご視聴ください。
+      const tweet = `こんにちは、#TechPostCast のポステルです！  
+最新のラジオ番組『${program.title}』を配信しました📻✨
+#Qiita で話題の記事を${minutes}分でサクッとご紹介。  
+通勤や散歩のお供に、ぜひお楽しみください！🎧 
 #Podcast
 
 ${programPageUrl}`;
