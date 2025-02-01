@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { HeadlineTopicProgramWithNeighbors } from '@domains/radio-program/headline-topic-program';
 import { ApiProperty } from '@nestjs/swagger';
 import {
   HeadlineTopicProgramWithQiitaPosts,
@@ -221,8 +221,6 @@ export class QiitaPostDto {
  * ヘッドライントピック番組のDTO
  */
 export class HeadlineTopicProgramDto {
-  private readonly logger = new Logger(HeadlineTopicProgramDto.name);
-
   @ApiProperty({
     description: '番組ID',
     example: 'sample-program-id',
@@ -382,4 +380,52 @@ export class HeadlineTopicProgramsCountDto {
   })
   @IsNumber()
   count: number;
+}
+
+/**
+ * 指定のヘッドライントピック番組と前日・翌日のヘッドライントピック番組を表すDTO
+ */
+export class HeadlineTopicProgramWithNeighborsDto {
+  @ApiProperty({
+    description: '前日のヘッドライントピック番組',
+    required: true,
+    type: HeadlineTopicProgramDto,
+  })
+  @IsObject()
+  previous: HeadlineTopicProgramDto;
+
+  @ApiProperty({
+    description: '指定のヘッドライントピック番組',
+    required: true,
+    type: HeadlineTopicProgramDto,
+  })
+  @IsObject()
+  target: HeadlineTopicProgramDto;
+
+  @ApiProperty({
+    description: '翌日のヘッドライントピック番組',
+    required: true,
+    type: HeadlineTopicProgramDto,
+  })
+  @IsObject()
+  next: HeadlineTopicProgramDto;
+
+  /**
+   * HeadlineTopicProgramWithNeighbors から生成する
+   * @param entity HeadlineTopicProgramWithNeighbors
+   * @returns DTO
+   */
+  static createFromEntity(
+    entity: HeadlineTopicProgramWithNeighbors,
+  ): HeadlineTopicProgramWithNeighborsDto {
+    const dto = new HeadlineTopicProgramWithNeighborsDto();
+    dto.previous = entity.previous
+      ? HeadlineTopicProgramDto.createFromEntity(entity.previous)
+      : null;
+    dto.target = HeadlineTopicProgramDto.createFromEntity(entity.target);
+    dto.next = entity.next
+      ? HeadlineTopicProgramDto.createFromEntity(entity.next)
+      : null;
+    return dto;
+  }
 }

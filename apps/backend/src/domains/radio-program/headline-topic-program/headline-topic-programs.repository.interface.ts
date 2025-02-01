@@ -1,6 +1,10 @@
 import { HeadlineTopicProgram, QiitaPost } from '@prisma/client';
 import { HeadlineTopicProgramWithQiitaPosts } from '@tech-post-cast/database';
-import { HeadlineTopicProgramGenerateResult, ProgramUploadResult } from '.';
+import {
+  HeadlineTopicProgramGenerateResult,
+  HeadlineTopicProgramWithNeighbors,
+  ProgramUploadResult,
+} from '.';
 
 /**
  * ヘッドライントピック番組のリポジトリインターフェース
@@ -12,6 +16,13 @@ export interface IHeadlineTopicProgramsRepository {
    * @returns ヘッドライントピック番組
    */
   findOne(id: string): Promise<HeadlineTopicProgramWithQiitaPosts>;
+
+  /**
+   * 指定のヘッドライントピック番組および、前後の日付の番組を取得する
+   * @param id ヘッドライントピック番組 ID
+   * @returns ヘッドライントピック番組および、前後の日付の番組
+   */
+  findWithNeighbors(id: string): Promise<HeadlineTopicProgramWithNeighbors>;
 
   /**
    * ヘッドライントピック番組の件数を取得する
