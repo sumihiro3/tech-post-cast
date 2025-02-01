@@ -15,6 +15,7 @@ import {
   HeadlineTopicProgramDto,
   HeadlineTopicProgramsCountDto,
   HeadlineTopicProgramsFindRequestDto,
+  HeadlineTopicProgramWithNeighborsDto,
 } from './dto';
 
 @Controller('api/v1')
@@ -129,6 +130,69 @@ export class ApiV1Controller {
     } catch (error) {
       const errorMessage =
         'ヘッドライントピック番組の番組ID一覧の取得に失敗しました';
+      this.logger.error(errorMessage, error, error.stack);
+      throw new InternalServerErrorException(errorMessage);
+    }
+  }
+
+  @Get('headline-topic-programs/:id/neighbors')
+  @ApiOperation({
+    operationId: 'getHeadlineTopicProgramWithNeighbors',
+    summary: '指定のヘッドライントピック番組および、前後の日付の番組を取得する',
+  })
+  @ApiHeader({
+    name: 'authorization',
+    description: 'Bearer Token',
+    example: 'Bearer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description: '処理成功',
+    type: HeadlineTopicProgramWithNeighborsDto,
+  })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 404, description: 'Not found' })
+  @UseGuards(ApiV1BearerTokenGuard)
+  async getHeadlineTopicProgramNeighbors(
+    @Param('id') id: string,
+  ): Promise<HeadlineTopicProgramWithNeighborsDto> {
+    this.logger.debug(
+      'ApiV1Controller.getHeadlineTopicProgramNeighbors called',
+      {
+        id,
+      },
+    );
+    try {
+      // 指定のヘッドライントピック番組および、前後の番組を取得
+      const result =
+        await this.service.getHeadlineTopicProgramWithNeighbors(id);
+      this.logger.log(
+        `指定のヘッドライントピック番組および、前後の番組を取得しました`,
+        {
+          previous: {
+            id: result.previous?.id,
+            title: result.previous?.title,
+            createdAt: result.previous?.createdAt,
+          },
+          target: {
+            id: result.target.id,
+            title: result.target.title,
+            createdAt: result.target.createdAt,
+          },
+          next: {
+            id: result.next?.id,
+            title: result.next?.title,
+            createdAt: result.next?.createdAt,
+          },
+        },
+      );
+      // DTO へ変換
+      const dto = HeadlineTopicProgramWithNeighborsDto.createFromEntity(result);
+      return dto;
+    } catch (error) {
+      const errorMessage =
+        'ヘッドライントピック番組および、前後の番組の取得に失敗しました';
       this.logger.error(errorMessage, error, error.stack);
       throw new InternalServerErrorException(errorMessage);
     }

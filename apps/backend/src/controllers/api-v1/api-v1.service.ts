@@ -2,6 +2,7 @@ import { HeadlineTopicProgramFindError } from '@/types/errors/headline-topic-pro
 import { IHeadlineTopicProgramsRepository } from '@domains/radio-program/headline-topic-program/headline-topic-programs.repository.interface';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { HeadlineTopicProgramWithQiitaPosts } from '@tech-post-cast/database';
+import { HeadlineTopicProgramWithNeighbors } from '../../domains/radio-program/headline-topic-program';
 import { HeadlineTopicProgramsFindRequestDto } from './dto';
 
 @Injectable()
@@ -33,6 +34,38 @@ export class ApiV1Service {
       return result;
     } catch (error) {
       const errorMessage = 'ヘッドライントピック番組の取得に失敗しました';
+      this.logger.error(errorMessage, error, error.stack);
+      throw new HeadlineTopicProgramFindError(errorMessage, { cause: error });
+    }
+  }
+
+  /**
+   * 指定のヘッドライントピック番組および、前後の日付の番組を取得する
+   * @param id ヘッドライントピック番組 ID
+   * @returns ヘッドライントピック番組および、前後の日付の番組
+   */
+  async getHeadlineTopicProgramWithNeighbors(
+    id: string,
+  ): Promise<HeadlineTopicProgramWithNeighbors> {
+    this.logger.debug(
+      'ApiV1Service.getHeadlineTopicProgramWithNeighbors called',
+      {
+        id,
+      },
+    );
+    try {
+      const result =
+        await this.headlineTopicProgramsRepository.findWithNeighbors(id);
+      this.logger.debug(
+        `指定のヘッドライントピック番組 [${id}] および、前後の日付の番組を取得しました`,
+        {
+          result,
+        },
+      );
+      return result;
+    } catch (error) {
+      const errorMessage =
+        'ヘッドライントピック番組および、前後の日付の番組の取得に失敗しました';
       this.logger.error(errorMessage, error, error.stack);
       throw new HeadlineTopicProgramFindError(errorMessage, { cause: error });
     }

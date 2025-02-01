@@ -1,5 +1,6 @@
 import {
   HeadlineTopicProgramGenerateResult,
+  HeadlineTopicProgramWithNeighbors,
   ProgramUploadResult,
 } from '@domains/radio-program/headline-topic-program';
 import { IHeadlineTopicProgramsRepository } from '@domains/radio-program/headline-topic-program/headline-topic-programs.repository.interface';
@@ -96,6 +97,61 @@ export class HeadlineTopicProgramsRepository
       result,
     });
     return result.map((r) => r.id);
+  }
+
+  /**
+   * 指定のヘッドライントピック番組の、前日と翌日の番組を取得する
+   * @param id 基準となるヘッドライントピック番組 ID
+   * @returns 前日と翌日の番組
+   */
+  async findWithNeighbors(
+    id: string,
+  ): Promise<HeadlineTopicProgramWithNeighbors> {
+    this.logger.debug(
+      `HeadlineTopicProgramsRepository.findWithNeighbors called`,
+      { id },
+    );
+    // 基準となる番組を取得
+    const target = await this.findOne(id);
+    // 前日と翌日の番組を取得
+    const [previous, next] = await Promise.all([
+      this.prisma.headlineTopicProgram.findFirst({
+        where: {
+          createdAt: { lt: target.createdAt },
+        },
+        orderBy: [{ createdAt: 'desc' }, { updatedAt: 'desc' }],
+        include: {
+          posts: {
+            orderBy: { likesCount: 'desc' },
+          },
+        },
+      }),
+      this.prisma.headlineTopicProgram.findFirst({
+        where: {
+          createdAt: { gt: target.createdAt },
+        },
+        orderBy: [{ createdAt: 'asc' }, { updatedAt: 'desc' }],
+        include: {
+          posts: {
+            orderBy: { likesCount: 'desc' },
+          },
+        },
+      }),
+    ]);
+    this.logger.debug(`指定の番組および、前日と翌日の番組を取得しました`, {
+      previous: {
+        id: previous?.id,
+        title: previous?.title,
+        createdAt: previous?.createdAt,
+      },
+      target: {
+        id: target.id,
+        title: target.title,
+        createdAt: target.createdAt,
+      },
+      next: { id: next?.id, title: next?.title, createdAt: next?.createdAt },
+    });
+    return { previous, target, next };
   }
 
   /**

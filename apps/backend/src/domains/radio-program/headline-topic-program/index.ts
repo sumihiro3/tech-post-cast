@@ -1,4 +1,5 @@
 import { formatDate } from '@tech-post-cast/commons';
+import { HeadlineTopicProgramWithQiitaPosts } from '@tech-post-cast/database';
 import {
   ProgramFileChapter,
   ProgramFileMetadata,
@@ -105,6 +106,18 @@ export class HeadlineTopicProgramMetadata implements ProgramFileMetadata {
     this.filename = fileName;
     this.chapters = chapters;
   }
+}
+
+/**
+ * 指定のヘッドライントピック番組および、前後の日付の番組を表すインターフェイス
+ */
+export interface HeadlineTopicProgramWithNeighbors {
+  /** 前日の番組 */
+  previous: HeadlineTopicProgramWithQiitaPosts | null;
+  /** 指定の番組 */
+  target: HeadlineTopicProgramWithQiitaPosts;
+  /** 翌日の番組 */
+  next: HeadlineTopicProgramWithQiitaPosts | null;
 }
 
 /**
