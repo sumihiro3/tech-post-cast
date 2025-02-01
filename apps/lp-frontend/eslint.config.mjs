@@ -5,6 +5,9 @@ import withNuxt from './.nuxt/eslint.config.mjs';
 const eslintrc = new FlatCompat();
 
 export default withNuxt(
+  {
+    ignores: ['api/**/*.ts', 'api/**/*.js', 'api/**/*.vue'],
+  },
   ...eslintrc.extends('plugin:vue-pug/vue3-recommended'),
   {
     files: ['**/*.vue'],
