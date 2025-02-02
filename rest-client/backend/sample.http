@@ -19,3 +19,11 @@ Authorization: Bearer xxxxxxxxxxxffffffffffff
 POST {{baseUrl}}/sample/upload
 Content-Type: application/json
 Authorization: Bearer xxxxxxxxxxxffffffffffff
+
+###
+
+# @name VectorizeScript
+@programId = cm68xudxy0000i511p4rfzbal
+POST {{baseUrl}}/sample/vectorize-script/{{programId}}
+Content-Type: application/json
+Authorization: Bearer xxxxxxxxxxxffffffffffff
