@@ -23,7 +23,15 @@ Authorization: Bearer xxxxxxxxxxxffffffffffff
 ###
 
 # @name VectorizeScript
-@programId = cm68xudxy0000i511p4rfzbal
+@programId = cm68z7wq70000le0zpwdg45d6
 POST {{baseUrl}}/sample/vectorize-script/{{programId}}
+Content-Type: application/json
+Authorization: Bearer xxxxxxxxxxxffffffffffff
+
+###
+
+# @name FindSimilarPrograms
+@programId = cm68x5jnz0000l810nhpl19qt
+GET {{baseUrl}}/sample/find-similar-programs/{{programId}}
 Content-Type: application/json
 Authorization: Bearer xxxxxxxxxxxffffffffffff
