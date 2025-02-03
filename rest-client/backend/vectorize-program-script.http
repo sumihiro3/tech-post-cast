@@ -1,0 +1,21 @@
+##################################################
+# ヘッドライントピック番組の台本をベクトルデータに変換するAPIの実行
+##################################################
+
+# ローカル環境
+@baseUrl = {{$dotenv BACKEND_BASE_URL_LOCAL}}
+@apiToken = {{$dotenv BACKEND_API_TOKEN_LOCAL}}
+
+# 開発環境
+# @baseUrl = {{$dotenv BACKEND_BASE_URL_DEV}}
+# @apiToken = {{$dotenv BACKEND_API_TOKEN_DEV}}
+
+# 本番環境
+# @baseUrl = {{$dotenv BACKEND_BASE_URL_PROD}}
+# @apiToken = {{$dotenv BACKEND_API_TOKEN_PROD}}
+
+@programId = cm6ax82tu0000ny0tnvein3v1
+
+POST  {{baseUrl}}/headline-topic-programs/vectorize-script/{{programId}}
+Content-Type: application/json
+Authorization: Bearer {{apiToken}}

@@ -41,7 +41,7 @@ export class HeadlineTopicProgramsService {
     updateLp: boolean = true,
   ): Promise<HeadlineTopicProgram> {
     this.logger.debug(
-      `DailyHeadlineTopicsService.createDailyHeadlineTopics called`,
+      `HeadlineTopicProgramsService.createDailyHeadlineTopics called`,
       {
         programDate,
         updateLp,
@@ -115,7 +115,7 @@ export class HeadlineTopicProgramsService {
     updateLp: boolean = true,
   ): Promise<HeadlineTopicProgram> {
     this.logger.debug(
-      `DailyHeadlineTopicsService.regenerateHeadlineTopicProgram called`,
+      `HeadlineTopicProgramsService.regenerateHeadlineTopicProgram called`,
       {
         programId,
         regenerationType,
@@ -157,10 +157,13 @@ export class HeadlineTopicProgramsService {
     posts: QiitaPostApiResponse[],
     count: number,
   ): Promise<QiitaPostApiResponse[]> {
-    this.logger.verbose(`DailyHeadlineTopicsService.findPopularPosts called`, {
-      posts,
-      count,
-    });
+    this.logger.verbose(
+      `HeadlineTopicProgramsService.findPopularPosts called`,
+      {
+        posts,
+        count,
+      },
+    );
     // 公開済みかつ、いいね数が多い記事を取得
     const popularPosts = posts
       .filter((post) => !post.private)
@@ -173,7 +176,7 @@ export class HeadlineTopicProgramsService {
    * LP の再生成をリクエストする
    */
   async requestLpDeploy(): Promise<void> {
-    this.logger.debug(`DailyHeadlineTopicsService.requestLpDeploy called`);
+    this.logger.debug(`HeadlineTopicProgramsService.requestLpDeploy called`);
     try {
       const url = this.appConfig.LpDeployHookUrl;
       // LP の再生成リクエストを送信する
@@ -201,5 +204,28 @@ export class HeadlineTopicProgramsService {
       }
       throw error;
     }
+  }
+
+  /**
+   * ヘッドライントピック番組台本のベクトル化を行う
+   * @param id ヘッドライントピック番組 ID
+   */
+  async vectorizeHeadlineTopicProgramScript(id: string): Promise<void> {
+    this.logger.debug(
+      `HeadlineTopicProgramsService.vectorizeHeadlineTopicProgramScript called`,
+      { id },
+    );
+    // 指定の番組を取得する
+    const program = await this.headlineTopicProgramsRepository.findOne(id);
+    if (!program) {
+      throw new HeadlineTopicProgramFindError(
+        `指定の番組 [${id}] が見つかりませんでした`,
+      );
+    }
+    // 台本のベクトル化を行う
+    await this.headlineTopicProgramMaker.vectorizeProgram(program);
+    this.logger.log(
+      `ヘッドライントピック番組 [${id}] 台本のベクトル化が完了しました！`,
+    );
   }
 }
