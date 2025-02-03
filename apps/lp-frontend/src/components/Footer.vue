@@ -39,6 +39,22 @@ v-card.mt-6(flat, width='100%')
       target='_blank'
       :prepend-icon='thanks.icon'
     ) {{ thanks.title }}
+  //- 開発・運営
+  v-container.text-left.pl-6(cols='6')
+    .text-subtitle-1.font-weight-bold.text-grey-darken-1
+      | 開発・運営
+    v-btn.text-none.text-subtitle-2.text-grey-darken-1.footer-button(
+      href='https://x.com/sumihiro3',
+      flat,
+      target='_blank'
+      prepend-icon='mdi-web'
+    ) TEP Lab & @sumihiro3
+  //- 注意事項
+  v-container.text-center(cols='12')
+    .d-inline-block
+    span.text-body-2.text-md-body-1.font-weight-medium.text-grey-darken-2
+      | ※ AIがラジオ番組の台本生成や発声しているため、内容は間違っている可能性があります
+  //- Copy Right
   v-container.text-left.pl-10(cols='10')
     .text-center.mt-4.text-subtitle-2.text-md-subtitle-1.text-grey-darken-1
       | All rights are reserved &copy; {{ new Date().getFullYear() }}, TEP Lab

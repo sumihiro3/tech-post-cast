@@ -9,9 +9,9 @@ v-card.mt-0.pt-0(flat, width='100%', color='background')
     h1.text-h6.text-md-h4.font-weight-bold.mt-2.mb-4
       | 話題のQiita記事をAIラジオで毎日配信
     .text-body-1.text-md-subtitle-1.text-grey-darken-2.mb-1
-      | AIがQiitaの人気記事を10分でわかりやすく解説。
+      | 毎朝7時に最新エピソードをお届け！
       br
-      | 毎朝7時に最新エピソードをお届けします！
+      | AIのMC「ポステル」がQiitaの人気記事を10分でわかりやすく解説します
 //- Podcasts
 Podcast
 </template>
