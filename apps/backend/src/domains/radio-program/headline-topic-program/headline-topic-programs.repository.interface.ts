@@ -1,9 +1,14 @@
-import { HeadlineTopicProgram, QiitaPost } from '@prisma/client';
+import {
+  HeadlineTopicProgram,
+  HeadlineTopicProgramScriptVector,
+  QiitaPost,
+} from '@prisma/client';
 import { HeadlineTopicProgramWithQiitaPosts } from '@tech-post-cast/database';
 import {
   HeadlineTopicProgramGenerateResult,
   HeadlineTopicProgramWithNeighbors,
   ProgramUploadResult,
+  VectorizeResult,
 } from '.';
 
 /**
@@ -74,4 +79,24 @@ export interface IHeadlineTopicProgramsRepository {
     programGenerateResult: HeadlineTopicProgramGenerateResult,
     programUploadResult: ProgramUploadResult,
   ): Promise<HeadlineTopicProgram>;
+
+  /**
+   * ヘッドライントピック番組の台本のベクトルデータを設定する
+   * @param id 番組 ID
+   * @param vectorizeResult ベクトル化結果
+   * @returns 設定したヘッドライントピック番組の台本ベクトルデータ
+   */
+  setHeadlineTopicProgramScriptVector(
+    id: string,
+    vectorizeResult: VectorizeResult,
+  ): Promise<HeadlineTopicProgramScriptVector>;
+
+  /**
+   * 指定のヘッドライントピックと似た番組を取得する
+   * @param id ヘッドライントピック番組 ID
+   * @returns 類似番組一覧
+   */
+  findSimilarPrograms(
+    id: string,
+  ): Promise<HeadlineTopicProgramWithQiitaPosts[]>;
 }

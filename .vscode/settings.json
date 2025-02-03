@@ -14,5 +14,5 @@
     "javascript",
     "typescript",
   ],
-  "eslint.workingDirectories": [{ "mode": "auto" }],
+  "eslint.workingDirectories": ["apps/lp-frontend", { "mode": "auto" }],
 }

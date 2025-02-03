@@ -9,19 +9,20 @@ import { IQiitaPostApiResponse } from '@domains/qiita-posts/qiita-posts.entity';
 import {
   HeadlineTopicProgramScript,
   PostSummary,
+  VectorizeResult,
 } from '@domains/radio-program/headline-topic-program';
 import { Injectable, Logger } from '@nestjs/common';
-import { QiitaPost } from '@prisma/client';
+import { HeadlineTopicProgram, QiitaPost } from '@prisma/client';
 import { getJapaneseDateStringWithWeekday } from '@tech-post-cast/commons';
 import {
   HeadlineTopicProgramScriptSchema,
+  parseHeadlineTopicProgramScript,
   PostSummarySchema,
 } from '@tech-post-cast/database';
 import * as fs from 'fs';
 import OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
-
 @Injectable()
 export class OpenAiApiClient {
   private readonly logger = new Logger(OpenAiApiClient.name);
@@ -428,13 +429,59 @@ ${post.summary}
       `OpenAiApiClient.getHeadlineTopicProgramScriptText called`,
     );
     const postSummaries = script.posts.map((post) => {
-      return `${post.summary} 。。。。`;
+      return `${post.summary}`;
     });
     const postSummariesText = postSummaries.join('\n');
     // 台本を組み立てる
-    const scriptText = `${script.intro}。。。。
-    ${postSummariesText}。。。。
+    const scriptText = `${script.intro}
+    ${postSummariesText}
     ${script.ending}`;
     return scriptText;
+  }
+
+  /**
+   * ヘッドライントピック番組の台本をベクトル化する
+   * @param program 番組
+   * @returns 台本のベクトル
+   */
+  async vectorizeHeadlineTopicProgramScript(
+    program: HeadlineTopicProgram,
+  ): Promise<VectorizeResult> {
+    this.logger.debug(
+      `OpenAiApiClient.vectorizeHeadlineTopicProgramScript called`,
+      {
+        id: program.id,
+        title: program.title,
+      },
+    );
+    const script = parseHeadlineTopicProgramScript(
+      program.script,
+    ) as HeadlineTopicProgramScript;
+    // 台本をベクトル化
+    const response = await this.getOpenAiClient().embeddings.create({
+      model: 'text-embedding-3-small',
+      input: this.getHeadlineTopicProgramScriptText(script),
+      encoding_format: 'float',
+    });
+    const vector = response.data[0].embedding;
+    if (!vector) {
+      const errorMessage = `ベクトルが取得できませんでした`;
+      this.logger.error(errorMessage, {
+        id: program.id,
+        title: program.title,
+        response,
+      });
+      throw new OpenAiApiError(`ベクトルが取得できませんでした`);
+    }
+    this.logger.debug(`ヘッドライントピック番組の台本をベクトル化しました`, {
+      object: response.object,
+      totalToken: response.usage.total_tokens,
+    });
+    const result: VectorizeResult = {
+      vector,
+      totalTokens: response.usage.total_tokens,
+      model: response.model,
+    };
+    return result;
   }
 }

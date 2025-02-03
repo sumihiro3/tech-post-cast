@@ -3,14 +3,17 @@ import {
   HeadlineTopicProgramScript,
   PostSummary,
 } from '@domains/radio-program/headline-topic-program';
+import { HeadlineTopicProgramsRepository } from '@infrastructure/database/headline-topic-programs/headline-topic-programs.repository';
 import { S3ProgramFileUploader } from '@infrastructure/external-api/aws/s3';
 import { OpenAiApiClient } from '@infrastructure/external-api/openai-api/openai-api.client';
 import { QiitaPostsApiClient } from '@infrastructure/external-api/qiita-api/qiita-posts.api.client';
 import {
   Controller,
+  Get,
   Inject,
   InternalServerErrorException,
   Logger,
+  Param,
   Post,
 } from '@nestjs/common';
 
@@ -23,6 +26,7 @@ export class SampleController {
     private readonly qiitaPostsApiClient: QiitaPostsApiClient,
     @Inject('ProgramFileUploader')
     private readonly s3ProgramFileUploader: S3ProgramFileUploader,
+    private readonly headlineTopicProgramsRepository: HeadlineTopicProgramsRepository,
   ) {}
 
   @Post('summary')
@@ -81,6 +85,72 @@ export class SampleController {
       return script;
     } catch (error) {
       const errorMessage = `記事の要約の生成中にエラーが発生しました`;
+      this.logger.error(errorMessage, { error }, error.stack);
+      throw new InternalServerErrorException(errorMessage);
+    }
+  }
+
+  @Post('vectorize-script/:id')
+  async vectorizeScript(@Param('id') id: string) {
+    this.logger.debug(`SampleController.vectorizeScript called`, {
+      id,
+    });
+    try {
+      const program = await this.headlineTopicProgramsRepository.findOne(id);
+      this.logger.debug(`番組情報を取得しました`, {
+        id: program.id,
+        title: program.title,
+      });
+      const vector =
+        await this.openAiApiClient.vectorizeHeadlineTopicProgramScript(program);
+      // ベクトルデータ化結果のダミー
+      // const vector: VectorizeResult = {
+      //   model: 'gpt-3.5-turbo',
+      //   totalTokens: 1000,
+      //   vector: [0.888, 0.2, 0.3, 0.4, 0.5],
+      // };
+      this.logger.debug(`番組台本のベクトルデータ化が完了しました`, { vector });
+      const result =
+        await this.headlineTopicProgramsRepository.setHeadlineTopicProgramScriptVector(
+          program.id,
+          vector,
+        );
+      this.logger.debug(`番組台本のベクトルデータを登録しました`, { result });
+      return {
+        message: `番組台本のベクトルデータ化が完了しました`,
+        vector: {
+          id: program.id,
+          title: program.title,
+          model: vector.model,
+          tokens: vector.totalTokens,
+        },
+      };
+    } catch (error) {
+      const errorMessage = `番組台本のベクトルデータ化中にエラーが発生しました`;
+      this.logger.error(errorMessage, { error }, error.stack);
+      throw new InternalServerErrorException(errorMessage);
+    }
+  }
+
+  @Get('find-similar-programs/:id')
+  async findSimilarPrograms(@Param('id') id: string) {
+    this.logger.debug(`SampleController.findSimilarPrograms called`, {
+      id,
+    });
+    try {
+      const program = await this.headlineTopicProgramsRepository.findOne(id);
+      this.logger.debug(`番組情報を取得しました`, {
+        id: program.id,
+        title: program.title,
+      });
+      const similarPrograms =
+        await this.headlineTopicProgramsRepository.findSimilarPrograms(
+          program.id,
+        );
+      this.logger.debug(`${similarPrograms.length} 件の類似番組を取得しました`);
+      return similarPrograms;
+    } catch (error) {
+      const errorMessage = `類似番組の取得中にエラーが発生しました`;
       this.logger.error(errorMessage, { error }, error.stack);
       throw new InternalServerErrorException(errorMessage);
     }

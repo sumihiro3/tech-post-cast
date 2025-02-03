@@ -4,6 +4,7 @@ import {
   Controller,
   InternalServerErrorException,
   Logger,
+  Param,
   Patch,
   Post,
   UseGuards,
@@ -105,6 +106,45 @@ export class HeadlineTopicProgramsController {
       );
     } catch (error) {
       const errorMessage = `ヘッドライントピック番組の再生成中にエラーが発生しました`;
+      this.logger.error(errorMessage, { error }, error.stack);
+      throw new InternalServerErrorException(errorMessage);
+    }
+  }
+
+  /**
+   * ヘッドライントピック番組台本のベクトル化を行う
+   * @param id ヘッドライントピック番組 ID
+   */
+  @Post('vectorize-script/:id')
+  @ApiOperation({
+    operationId: 'HeadlineTopicProgramsController.vectorizeScript',
+    summary: 'ヘッドライントピック番組台本のベクトル化を行う',
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: '認証トークン',
+    example: 'Bearer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    required: true,
+  })
+  @UseGuards(BackendBearerTokenGuard)
+  async vectorizeScript(@Param('id') id: string): Promise<void> {
+    this.logger.debug(
+      `HeadlineTopicProgramsController.vectorizeScript called`,
+      { id },
+    );
+    try {
+      // ヘッドライントピック番組台本のベクトル化を行う
+      await this.headlineTopicProgramsService.vectorizeHeadlineTopicProgramScript(
+        id,
+      );
+      this.logger.log(
+        `ヘッドライントピック番組 [${id}] 台本のベクトル化が完了しました！`,
+        {
+          id,
+        },
+      );
+    } catch (error) {
+      const errorMessage = `ヘッドライントピック番組台本のベクトル化中にエラーが発生しました`;
       this.logger.error(errorMessage, { error }, error.stack);
       throw new InternalServerErrorException(errorMessage);
     }
