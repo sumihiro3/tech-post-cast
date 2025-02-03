@@ -6,7 +6,7 @@ import {
 import { HeadlineTopicProgramWithQiitaPosts } from '@tech-post-cast/database';
 import {
   HeadlineTopicProgramGenerateResult,
-  HeadlineTopicProgramWithNeighbors,
+  HeadlineTopicProgramWithSimilarAndNeighbors,
   ProgramUploadResult,
   VectorizeResult,
 } from '.';
@@ -23,11 +23,13 @@ export interface IHeadlineTopicProgramsRepository {
   findOne(id: string): Promise<HeadlineTopicProgramWithQiitaPosts>;
 
   /**
-   * 指定のヘッドライントピック番組および、前後の日付の番組を取得する
+   * 指定のヘッドライントピック番組と、その類似番組および、前後の日付の番組を取得する
    * @param id ヘッドライントピック番組 ID
-   * @returns ヘッドライントピック番組および、前後の日付の番組
+   * @returns ヘッドライントピック番組と、その類似番組および、前後の日付の番組
    */
-  findWithNeighbors(id: string): Promise<HeadlineTopicProgramWithNeighbors>;
+  findWithSimilarAndNeighbors(
+    id: string,
+  ): Promise<HeadlineTopicProgramWithSimilarAndNeighbors>;
 
   /**
    * ヘッドライントピック番組の件数を取得する

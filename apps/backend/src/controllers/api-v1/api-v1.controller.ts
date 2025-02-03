@@ -15,7 +15,7 @@ import {
   HeadlineTopicProgramDto,
   HeadlineTopicProgramsCountDto,
   HeadlineTopicProgramsFindRequestDto,
-  HeadlineTopicProgramWithNeighborsDto,
+  HeadlineTopicProgramWithSimilarAndNeighborsDto,
 } from './dto';
 
 @Controller('api/v1')
@@ -135,10 +135,11 @@ export class ApiV1Controller {
     }
   }
 
-  @Get('headline-topic-programs/:id/neighbors')
+  @Get('headline-topic-programs/:id/similar-and-neighbors')
   @ApiOperation({
-    operationId: 'getHeadlineTopicProgramWithNeighbors',
-    summary: '指定のヘッドライントピック番組および、前後の日付の番組を取得する',
+    operationId: 'getHeadlineTopicProgramWithSimilarAndNeighbors',
+    summary:
+      '指定のヘッドライントピック番組と、その類似番組および、前後の日付の番組を取得する',
   })
   @ApiHeader({
     name: 'authorization',
@@ -149,24 +150,24 @@ export class ApiV1Controller {
   @ApiResponse({
     status: 200,
     description: '処理成功',
-    type: HeadlineTopicProgramWithNeighborsDto,
+    type: HeadlineTopicProgramWithSimilarAndNeighborsDto,
   })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 404, description: 'Not found' })
   @UseGuards(ApiV1BearerTokenGuard)
-  async getHeadlineTopicProgramNeighbors(
+  async getHeadlineTopicProgramWithSimilarAndNeighbors(
     @Param('id') id: string,
-  ): Promise<HeadlineTopicProgramWithNeighborsDto> {
+  ): Promise<HeadlineTopicProgramWithSimilarAndNeighborsDto> {
     this.logger.debug(
-      'ApiV1Controller.getHeadlineTopicProgramNeighbors called',
+      'ApiV1Controller.getHeadlineTopicProgramWithSimilarAndNeighbors called',
       {
         id,
       },
     );
     try {
-      // 指定のヘッドライントピック番組および、前後の番組を取得
+      // 指定のヘッドライントピック番組と、その類似番組および、前後の番組を取得する
       const result =
-        await this.service.getHeadlineTopicProgramWithNeighbors(id);
+        await this.service.getHeadlineTopicProgramWithSimilarAndNeighbors(id);
       this.logger.log(
         `指定のヘッドライントピック番組および、前後の番組を取得しました`,
         {
@@ -188,7 +189,8 @@ export class ApiV1Controller {
         },
       );
       // DTO へ変換
-      const dto = HeadlineTopicProgramWithNeighborsDto.createFromEntity(result);
+      const dto =
+        HeadlineTopicProgramWithSimilarAndNeighborsDto.createFromEntity(result);
       return dto;
     } catch (error) {
       const errorMessage =

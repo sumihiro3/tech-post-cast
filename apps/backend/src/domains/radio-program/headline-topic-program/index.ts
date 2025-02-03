@@ -109,9 +109,11 @@ export class HeadlineTopicProgramMetadata implements ProgramFileMetadata {
 }
 
 /**
- * 指定のヘッドライントピック番組および、前後の日付の番組を表すインターフェイス
+ * 指定のヘッドライントピック番組と、その類似番組および、前後の日付の番組を表すインターフェイス
  */
-export interface HeadlineTopicProgramWithNeighbors {
+export interface HeadlineTopicProgramWithSimilarAndNeighbors {
+  /** 類似番組 */
+  similar: HeadlineTopicProgramWithQiitaPosts[];
   /** 前日の番組 */
   previous: HeadlineTopicProgramWithQiitaPosts | null;
   /** 指定の番組 */
