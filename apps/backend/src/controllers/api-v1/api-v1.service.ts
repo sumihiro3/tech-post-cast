@@ -2,7 +2,7 @@ import { HeadlineTopicProgramFindError } from '@/types/errors/headline-topic-pro
 import { IHeadlineTopicProgramsRepository } from '@domains/radio-program/headline-topic-program/headline-topic-programs.repository.interface';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { HeadlineTopicProgramWithQiitaPosts } from '@tech-post-cast/database';
-import { HeadlineTopicProgramWithNeighbors } from '../../domains/radio-program/headline-topic-program';
+import { HeadlineTopicProgramWithSimilarAndNeighbors } from '../../domains/radio-program/headline-topic-program';
 import { HeadlineTopicProgramsFindRequestDto } from './dto';
 
 @Injectable()
@@ -40,24 +40,26 @@ export class ApiV1Service {
   }
 
   /**
-   * 指定のヘッドライントピック番組および、前後の日付の番組を取得する
+   * 指定のヘッドライントピック番組と、その類似番組および、前後の日付の番組を取得する
    * @param id ヘッドライントピック番組 ID
-   * @returns ヘッドライントピック番組および、前後の日付の番組
+   * @returns ヘッドライントピック番組と、その類似番組および、前後の日付の番組
    */
-  async getHeadlineTopicProgramWithNeighbors(
+  async getHeadlineTopicProgramWithSimilarAndNeighbors(
     id: string,
-  ): Promise<HeadlineTopicProgramWithNeighbors> {
+  ): Promise<HeadlineTopicProgramWithSimilarAndNeighbors> {
     this.logger.debug(
-      'ApiV1Service.getHeadlineTopicProgramWithNeighbors called',
+      'ApiV1Service.getHeadlineTopicProgramWithSimilarAndNeighbors called',
       {
         id,
       },
     );
     try {
       const result =
-        await this.headlineTopicProgramsRepository.findWithNeighbors(id);
+        await this.headlineTopicProgramsRepository.findWithSimilarAndNeighbors(
+          id,
+        );
       this.logger.debug(
-        `指定のヘッドライントピック番組 [${id}] および、前後の日付の番組を取得しました`,
+        `指定のヘッドライントピック番組 [${id}] と、その類似番組および、前後の日付の番組を取得しました`,
         {
           result,
         },
@@ -65,7 +67,7 @@ export class ApiV1Service {
       return result;
     } catch (error) {
       const errorMessage =
-        'ヘッドライントピック番組および、前後の日付の番組の取得に失敗しました';
+        'ヘッドライントピック番組と、その類似番組および、前後の日付の番組の取得に失敗しました';
       this.logger.error(errorMessage, error, error.stack);
       throw new HeadlineTopicProgramFindError(errorMessage, { cause: error });
     }

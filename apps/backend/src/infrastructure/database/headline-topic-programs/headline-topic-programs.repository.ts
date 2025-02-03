@@ -1,6 +1,6 @@
 import {
   HeadlineTopicProgramGenerateResult,
-  HeadlineTopicProgramWithNeighbors,
+  HeadlineTopicProgramWithSimilarAndNeighbors,
   ProgramUploadResult,
   VectorizeResult,
 } from '@domains/radio-program/headline-topic-program';
@@ -106,21 +106,24 @@ export class HeadlineTopicProgramsRepository
   }
 
   /**
-   * 指定のヘッドライントピック番組の、前日と翌日の番組を取得する
-   * @param id 基準となるヘッドライントピック番組 ID
-   * @returns 前日と翌日の番組
+   * 指定のヘッドライントピック番組と、その類似番組および、前後の日付の番組を取得する
+   * @param id ヘッドライントピック番組 ID
+   * @returns ヘッドライントピック番組と、その類似番組および、前後の日付の番組
    */
-  async findWithNeighbors(
+  async findWithSimilarAndNeighbors(
     id: string,
-  ): Promise<HeadlineTopicProgramWithNeighbors> {
+  ): Promise<HeadlineTopicProgramWithSimilarAndNeighbors> {
     this.logger.debug(
-      `HeadlineTopicProgramsRepository.findWithNeighbors called`,
+      `HeadlineTopicProgramsRepository.findWithSimilarAndNeighbors called`,
       { id },
     );
     // 基準となる番組を取得
     const target = await this.findOne(id);
     // 前日と翌日の番組を取得
-    const [previous, next] = await Promise.all([
+    const [similar, previous, next] = await Promise.all([
+      // 類似番組を取得
+      this.findSimilarPrograms(id),
+      // 前日の番組を取得
       this.prisma.headlineTopicProgram.findFirst({
         where: {
           createdAt: { lt: target.createdAt },
@@ -132,6 +135,7 @@ export class HeadlineTopicProgramsRepository
           },
         },
       }),
+      // 翌日の番組を取得
       this.prisma.headlineTopicProgram.findFirst({
         where: {
           createdAt: { gt: target.createdAt },
@@ -144,20 +148,26 @@ export class HeadlineTopicProgramsRepository
         },
       }),
     ]);
-    this.logger.debug(`指定の番組および、前日と翌日の番組を取得しました`, {
-      previous: {
-        id: previous?.id,
-        title: previous?.title,
-        createdAt: previous?.createdAt,
+    this.logger.debug(
+      `指定の番組と、その類似番組および、前日と翌日の番組を取得しました`,
+      {
+        similar: similar.map((p) => {
+          return { id: p.id, title: p.title };
+        }),
+        previous: {
+          id: previous?.id,
+          title: previous?.title,
+          createdAt: previous?.createdAt,
+        },
+        target: {
+          id: target.id,
+          title: target.title,
+          createdAt: target.createdAt,
+        },
+        next: { id: next?.id, title: next?.title, createdAt: next?.createdAt },
       },
-      target: {
-        id: target.id,
-        title: target.title,
-        createdAt: target.createdAt,
-      },
-      next: { id: next?.id, title: next?.title, createdAt: next?.createdAt },
-    });
-    return { previous, target, next };
+    );
+    return { similar, previous, target, next };
   }
 
   /**
