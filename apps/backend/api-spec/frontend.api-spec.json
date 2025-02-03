@@ -134,9 +134,9 @@
         ]
       }
     },
-    "/api/v1/headline-topic-programs/{id}/neighbors": {
+    "/api/v1/headline-topic-programs/{id}/similar-and-neighbors": {
       "get": {
-        "operationId": "getHeadlineTopicProgramWithNeighbors",
+        "operationId": "getHeadlineTopicProgramWithSimilarAndNeighbors",
         "parameters": [
           {
             "name": "id",
@@ -162,7 +162,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HeadlineTopicProgramWithNeighborsDto"
+                  "$ref": "#/components/schemas/HeadlineTopicProgramWithSimilarAndNeighborsDto"
                 }
               }
             }
@@ -174,7 +174,7 @@
             "description": "Not found"
           }
         },
-        "summary": "指定のヘッドライントピック番組および、前後の日付の番組を取得する",
+        "summary": "指定のヘッドライントピック番組と、その類似番組および、前後の日付の番組を取得する",
         "tags": [
           "ApiV1"
         ]
@@ -451,9 +451,16 @@
           "posts"
         ]
       },
-      "HeadlineTopicProgramWithNeighborsDto": {
+      "HeadlineTopicProgramWithSimilarAndNeighborsDto": {
         "type": "object",
         "properties": {
+          "similar": {
+            "description": "類似のヘッドライントピック番組",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HeadlineTopicProgramDto"
+            }
+          },
           "previous": {
             "description": "前日のヘッドライントピック番組",
             "allOf": [
@@ -480,6 +487,7 @@
           }
         },
         "required": [
+          "similar",
           "previous",
           "target",
           "next"
