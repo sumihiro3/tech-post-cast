@@ -155,25 +155,31 @@ export interface HeadlineTopicProgramScriptDto {
 /**
  * 
  * @export
- * @interface HeadlineTopicProgramWithNeighborsDto
+ * @interface HeadlineTopicProgramWithSimilarAndNeighborsDto
  */
-export interface HeadlineTopicProgramWithNeighborsDto {
+export interface HeadlineTopicProgramWithSimilarAndNeighborsDto {
+    /**
+     * 類似のヘッドライントピック番組
+     * @type {Array<HeadlineTopicProgramDto>}
+     * @memberof HeadlineTopicProgramWithSimilarAndNeighborsDto
+     */
+    'similar': Array<HeadlineTopicProgramDto>;
     /**
      * 前日のヘッドライントピック番組
      * @type {HeadlineTopicProgramDto}
-     * @memberof HeadlineTopicProgramWithNeighborsDto
+     * @memberof HeadlineTopicProgramWithSimilarAndNeighborsDto
      */
     'previous': HeadlineTopicProgramDto;
     /**
      * 指定のヘッドライントピック番組
      * @type {HeadlineTopicProgramDto}
-     * @memberof HeadlineTopicProgramWithNeighborsDto
+     * @memberof HeadlineTopicProgramWithSimilarAndNeighborsDto
      */
     'target': HeadlineTopicProgramDto;
     /**
      * 翌日のヘッドライントピック番組
      * @type {HeadlineTopicProgramDto}
-     * @memberof HeadlineTopicProgramWithNeighborsDto
+     * @memberof HeadlineTopicProgramWithSimilarAndNeighborsDto
      */
     'next': HeadlineTopicProgramDto;
 }
@@ -333,18 +339,18 @@ export const ApiV1ApiAxiosParamCreator = function (configuration?: Configuration
         },
         /**
          * 
-         * @summary 指定のヘッドライントピック番組および、前後の日付の番組を取得する
+         * @summary 指定のヘッドライントピック番組と、その類似番組および、前後の日付の番組を取得する
          * @param {string} id 
          * @param {string} authorization Bearer Token
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getHeadlineTopicProgramWithNeighbors: async (id: string, authorization: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        getHeadlineTopicProgramWithSimilarAndNeighbors: async (id: string, authorization: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'id' is not null or undefined
-            assertParamExists('getHeadlineTopicProgramWithNeighbors', 'id', id)
+            assertParamExists('getHeadlineTopicProgramWithSimilarAndNeighbors', 'id', id)
             // verify required parameter 'authorization' is not null or undefined
-            assertParamExists('getHeadlineTopicProgramWithNeighbors', 'authorization', authorization)
-            const localVarPath = `/api/v1/headline-topic-programs/{id}/neighbors`
+            assertParamExists('getHeadlineTopicProgramWithSimilarAndNeighbors', 'authorization', authorization)
+            const localVarPath = `/api/v1/headline-topic-programs/{id}/similar-and-neighbors`
                 .replace(`{${"id"}}`, encodeURIComponent(String(id)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -497,16 +503,16 @@ export const ApiV1ApiFp = function(configuration?: Configuration) {
         },
         /**
          * 
-         * @summary 指定のヘッドライントピック番組および、前後の日付の番組を取得する
+         * @summary 指定のヘッドライントピック番組と、その類似番組および、前後の日付の番組を取得する
          * @param {string} id 
          * @param {string} authorization Bearer Token
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getHeadlineTopicProgramWithNeighbors(id: string, authorization: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<HeadlineTopicProgramWithNeighborsDto>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getHeadlineTopicProgramWithNeighbors(id, authorization, options);
+        async getHeadlineTopicProgramWithSimilarAndNeighbors(id: string, authorization: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<HeadlineTopicProgramWithSimilarAndNeighborsDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getHeadlineTopicProgramWithSimilarAndNeighbors(id, authorization, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['ApiV1Api.getHeadlineTopicProgramWithNeighbors']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['ApiV1Api.getHeadlineTopicProgramWithSimilarAndNeighbors']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -570,14 +576,14 @@ export const ApiV1ApiFactory = function (configuration?: Configuration, basePath
         },
         /**
          * 
-         * @summary 指定のヘッドライントピック番組および、前後の日付の番組を取得する
+         * @summary 指定のヘッドライントピック番組と、その類似番組および、前後の日付の番組を取得する
          * @param {string} id 
          * @param {string} authorization Bearer Token
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getHeadlineTopicProgramWithNeighbors(id: string, authorization: string, options?: RawAxiosRequestConfig): AxiosPromise<HeadlineTopicProgramWithNeighborsDto> {
-            return localVarFp.getHeadlineTopicProgramWithNeighbors(id, authorization, options).then((request) => request(axios, basePath));
+        getHeadlineTopicProgramWithSimilarAndNeighbors(id: string, authorization: string, options?: RawAxiosRequestConfig): AxiosPromise<HeadlineTopicProgramWithSimilarAndNeighborsDto> {
+            return localVarFp.getHeadlineTopicProgramWithSimilarAndNeighbors(id, authorization, options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -638,15 +644,15 @@ export class ApiV1Api extends BaseAPI {
 
     /**
      * 
-     * @summary 指定のヘッドライントピック番組および、前後の日付の番組を取得する
+     * @summary 指定のヘッドライントピック番組と、その類似番組および、前後の日付の番組を取得する
      * @param {string} id 
      * @param {string} authorization Bearer Token
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof ApiV1Api
      */
-    public getHeadlineTopicProgramWithNeighbors(id: string, authorization: string, options?: RawAxiosRequestConfig) {
-        return ApiV1ApiFp(this.configuration).getHeadlineTopicProgramWithNeighbors(id, authorization, options).then((request) => request(this.axios, this.basePath));
+    public getHeadlineTopicProgramWithSimilarAndNeighbors(id: string, authorization: string, options?: RawAxiosRequestConfig) {
+        return ApiV1ApiFp(this.configuration).getHeadlineTopicProgramWithSimilarAndNeighbors(id, authorization, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
