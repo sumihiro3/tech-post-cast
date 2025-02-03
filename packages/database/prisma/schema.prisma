@@ -6,12 +6,13 @@
 
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
+  previewFeatures = ["driverAdapters", "postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector()]
 }
 
 // ヘッドライントピック番組
@@ -40,8 +41,31 @@ model HeadlineTopicProgram {
   // 紹介している投稿の一覧
   posts QiitaPost[]
 
+  // 台本のベクトルデータ
+  scriptVector HeadlineTopicProgramScriptVector?
+
   // テーブル名
   @@map("headline_topic_programs")
+}
+
+// ヘッドライントピック番組台本のベクトルデータ
+model HeadlineTopicProgramScriptVector {
+  // ヘッドライントピック番組のID
+  id          String                @id @db.VarChar(100)
+  // ベクトルデータ
+  vector      Unsupported("vector")
+  // ベクトル化のモデル名
+  model       String                @map("model")
+  // ベクトル化に使用されたトークン数
+  totalTokens Int                   @map("total_tokens")
+  // ベクトルデータの作成日時
+  createdAt   DateTime              @default(now()) @map("created_at")
+
+  // ベクトル化対象のヘッドライントピック番組
+  headlineTopicProgram HeadlineTopicProgram @relation(fields: [id], references: [id])
+
+  // テーブル名
+  @@map("headline_topic_program_vectors")
 }
 
 // Qiita の記事
