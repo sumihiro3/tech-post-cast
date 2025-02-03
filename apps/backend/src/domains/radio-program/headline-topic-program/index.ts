@@ -160,3 +160,23 @@ export const ProgramRegenerationTypeEnum = [
 /** 番組の再生成種別 */
 export type ProgramRegenerationType =
   (typeof ProgramRegenerationTypeEnum)[number];
+
+/**
+ * 番組台本のベクトルデータ化結果
+ */
+export interface VectorizeResult {
+  /**
+   * ベクトルデータ化された番組台本
+   */
+  vector: number[];
+
+  /**
+   * ベクトルデータ化のモデル名
+   */
+  model: string;
+
+  /**
+   * ベクトルデータ化に使用されたトークン数
+   */
+  totalTokens: number;
+}

@@ -109,6 +109,12 @@ export class HeadlineTopicProgramMaker {
           uploadResult,
         );
       this.logger.log(`ヘッドライントピック番組を生成しました`, { program });
+      // ヘッドライントピック番組の第本データをベクトル化する
+      await this.vectorizeProgram(program);
+      this.logger.log(`ヘッドライントピック番組のベクトル化が完了しました`, {
+        id: program.id,
+        title: program.title,
+      });
       return program;
     } catch (error) {
       const errorMessage = `ヘッドライントピック番組の生成中にエラーが発生しました`;
@@ -513,5 +519,31 @@ export class HeadlineTopicProgramMaker {
     return {
       audioUrl,
     };
+  }
+
+  /**
+   * ヘッドライントピック番組の台本をベクトル化して DB に登録する
+   * @param program ヘッドライントピック番組
+   */
+  async vectorizeProgram(program: HeadlineTopicProgram): Promise<void> {
+    this.logger.debug(`HeadlineTopicProgramMaker.vectorizeProgram called`, {
+      program,
+    });
+    // 台本をベクトル化する
+    const vector =
+      await this.openAiApiClient.vectorizeHeadlineTopicProgramScript(program);
+    // ベクトルを DB に登錋する
+    await this.headlineTopicProgramsRepository.setHeadlineTopicProgramScriptVector(
+      program.id,
+      vector,
+    );
+    this.logger.log(`ヘッドライントピック番組のベクトル化が完了しました`, {
+      programId: program.id,
+      vector: {
+        model: vector.model,
+        length: vector.vector.length,
+        tokens: vector.totalTokens,
+      },
+    });
   }
 }

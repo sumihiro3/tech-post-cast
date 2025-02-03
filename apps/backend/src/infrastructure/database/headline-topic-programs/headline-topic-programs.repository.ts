@@ -2,10 +2,16 @@ import {
   HeadlineTopicProgramGenerateResult,
   HeadlineTopicProgramWithNeighbors,
   ProgramUploadResult,
+  VectorizeResult,
 } from '@domains/radio-program/headline-topic-program';
 import { IHeadlineTopicProgramsRepository } from '@domains/radio-program/headline-topic-program/headline-topic-programs.repository.interface';
 import { Injectable, Logger } from '@nestjs/common';
-import { HeadlineTopicProgram, Prisma, QiitaPost } from '@prisma/client';
+import {
+  HeadlineTopicProgram,
+  HeadlineTopicProgramScriptVector,
+  Prisma,
+  QiitaPost,
+} from '@prisma/client';
 import {
   HeadlineTopicProgramWithQiitaPosts,
   PrismaService,
@@ -257,4 +263,100 @@ export class HeadlineTopicProgramsRepository
       },
     });
   }
+
+  /**
+   * ヘッドライントピック番組の台本のベクトルデータを設定する
+   * @param id 番組 ID
+   * @param vectorizeResult ベクトル化結果
+   * @returns 設定したヘッドライントピック番組の台本ベクトルデータ
+   */
+  async setHeadlineTopicProgramScriptVector(
+    id: string,
+    vectorizeResult: VectorizeResult,
+  ): Promise<HeadlineTopicProgramScriptVector> {
+    this.logger.debug(
+      `HeadlineTopicProgramsRepository.setHeadlineTopicProgramScriptVector called`,
+      { id, model: vectorizeResult.model, tokens: vectorizeResult.totalTokens },
+    );
+    // Transaction で更新する
+    const result = await this.prisma.$transaction(async (prisma) => {
+      // HeadlineTopicProgramScriptVector に指定の番組IDのデータが有れば削除する
+      const record = await prisma.headlineTopicProgramScriptVector.findUnique({
+        where: { id },
+      });
+      if (record) {
+        await prisma.headlineTopicProgramScriptVector.delete({
+          where: { id },
+        });
+      }
+      // ベクトルデータを文字列化する
+      const vectorData = JSON.stringify(vectorizeResult.vector);
+      // HeadlineTopicProgramScriptVector に新しいベクトルデータを登録する
+      await prisma.$executeRaw`INSERT INTO headline_topic_program_vectors (id, vector, model, total_tokens) VALUES (${id}, ${vectorData}::vector, ${vectorizeResult.model}, ${vectorizeResult.totalTokens});`;
+      // ベクトル化結果を取得する
+      return prisma.headlineTopicProgramScriptVector.findUnique({
+        where: { id },
+      });
+    });
+    this.logger.log(`番組台本のベクトルデータを更新しました`, {
+      id: result.id,
+      model: result.model,
+      totalTokens: result.totalTokens,
+    });
+    return result;
+  }
+
+  /**
+   * 指定のヘッドライントピックと似た番組を取得する
+   * @param id ヘッドライントピック番組 ID
+   * @returns 類似番組一覧
+   */
+  async findSimilarPrograms(
+    id: string,
+  ): Promise<HeadlineTopicProgramWithQiitaPosts[]> {
+    this.logger.debug(
+      `HeadlineTopicProgramsRepository.findSimilarPrograms called`,
+      { id },
+    );
+    // 類似番組を台本のベクトルデータを使って検索する
+    const findSimilarResult = await this.prisma.$queryRaw<
+      FindSimilarProgramsResult[]
+    >`SELECT id, vector::text, 1 - (vector <-> (SELECT vector FROM headline_topic_program_vectors WHERE id = ${id})) AS similarity FROM headline_topic_program_vectors ORDER BY vector <-> (SELECT vector FROM headline_topic_program_vectors WHERE id = ${id}) LIMIT 4`;
+    // 類似番組の ID 一覧を取得する
+    const ids = findSimilarResult.map((r) => r.id);
+    // 指定された番組は除外する
+    const similarProgramIds = ids.filter((r) => r !== id);
+    this.logger.debug(`類似番組の ID 一覧を取得しました`, {
+      similarProgramIds,
+    });
+    // 類似番組を取得する
+    const similarPrograms = await this.prisma.headlineTopicProgram.findMany({
+      where: { id: { in: similarProgramIds } },
+      include: {
+        posts: {
+          orderBy: { likesCount: 'desc' },
+        },
+      },
+    });
+    // 類似度で並び替え
+    similarPrograms.sort((a, b) => {
+      const aSimilarity = findSimilarResult.find(
+        (r) => r.id === a.id,
+      )?.similarity;
+      const bSimilarity = findSimilarResult.find(
+        (r) => r.id === b.id,
+      )?.similarity;
+      return aSimilarity && bSimilarity ? bSimilarity - aSimilarity : 0;
+    });
+    return similarPrograms;
+  }
+}
+
+/**
+ * 類似番組検索結果
+ */
+interface FindSimilarProgramsResult {
+  id: string;
+  vector: string;
+  similarity: number;
 }
