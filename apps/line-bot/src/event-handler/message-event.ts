@@ -116,8 +116,7 @@ const createLatestProgramMessage = async (
   const lpUrlPrefix = context.env.LP_URL_PREFIX;
   const programFileUrlPrefix = context.env.PROGRAM_FILE_URL_PREFIX;
   const imageUrl = `${programFileUrlPrefix}/TechPostCast_Main_gradation.png`;
-  const programAudioUrl = latestProgram.audioUrl;
-  const programPageUrl = `${lpUrlPrefix}/headline-topic-programs/${latestProgram.id}`;
+  const programPageUrl = `${lpUrlPrefix}/headline-topic-programs/${latestProgram.id}?tab=chapters`;
   const flex: messagingApi.FlexMessage = {
     type: 'flex',
     altText: `ヘッドライントピック：${latestProgram.title}`,
@@ -166,7 +165,7 @@ const createLatestProgramMessage = async (
             action: {
               type: 'uri',
               label: '番組を聴く',
-              uri: programAudioUrl,
+              uri: programPageUrl,
             },
           },
           {
