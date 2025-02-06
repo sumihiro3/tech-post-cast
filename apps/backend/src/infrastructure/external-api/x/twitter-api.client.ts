@@ -11,7 +11,7 @@ export class TwitterApiClient {
   private readonly client: TwitterApi;
 
   constructor(private readonly appConfig: AppConfigService) {
-    if (!this.appConfig.PostToX) {
+    if (this.appConfig.PostToX !== true) {
       this.logger.log(
         `X へのポスト設定が無効になっているため、TwitterApiClient は初期化されません`,
       );

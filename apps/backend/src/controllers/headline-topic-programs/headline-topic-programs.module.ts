@@ -1,6 +1,7 @@
 import { HeadlineTopicProgramMaker } from '@domains/radio-program/headline-topic-program/headline-topic-program-maker';
 import { HeadlineTopicProgramsRepository } from '@infrastructure/database/headline-topic-programs/headline-topic-programs.repository';
 import { QiitaPostsRepository } from '@infrastructure/database/qiita-posts/qiita-posts.repository';
+import { TermsRepository } from '@infrastructure/database/terms/terms.repository';
 import { S3ProgramFileUploader } from '@infrastructure/external-api/aws/s3';
 import { TextToSpeechClient } from '@infrastructure/external-api/google/text-to-speech';
 import { OpenAiApiClient } from '@infrastructure/external-api/openai-api/openai-api.client';
@@ -19,6 +20,7 @@ import { HeadlineTopicProgramsService } from './headline-topic-programs.service'
     HeadlineTopicProgramsService,
     QiitaPostsRepository,
     HeadlineTopicProgramsRepository,
+    TermsRepository,
     QiitaPostsApiClient,
     HeadlineTopicProgramMaker,
     OpenAiApiClient,
