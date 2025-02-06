@@ -8,7 +8,9 @@ import {
 } from '@domains/radio-program/text-to-speech.interface';
 import { TextToSpeechClient as TTSClient } from '@google-cloud/text-to-speech';
 import { google } from '@google-cloud/text-to-speech/build/protos/protos';
+import { TermsRepository } from '@infrastructure/database/terms/terms.repository';
 import { Injectable, Logger } from '@nestjs/common';
+import { Term } from '@prisma/client';
 import * as fs from 'fs';
 import { setTimeout } from 'timers/promises';
 
@@ -32,7 +34,13 @@ export class TextToSpeechClient implements ITextToSpeechClient {
    */
   private ttsClient: TTSClient;
 
-  constructor(private readonly appConfig: AppConfigService) {
+  /** 用語と読み方のペア一覧 */
+  private terms: Term[];
+
+  constructor(
+    private readonly appConfig: AppConfigService,
+    private readonly termsRepository: TermsRepository,
+  ) {
     this.ttsClient = new TTSClient({
       keyFilename: this.appConfig.GoogleCloudCredentialsFilePath,
     });
@@ -89,7 +97,9 @@ export class TextToSpeechClient implements ITextToSpeechClient {
         fs.mkdirSync(command.outputDir, { recursive: true });
       }
       // ヘッドライントピック番組の SSML 群を生成する
-      const ssmlList = this.generateHeadlineTopicProgramSsml(command.script);
+      const ssmlList = await this.generateHeadlineTopicProgramSsml(
+        command.script,
+      );
       const now = Date.now();
       // イントロ部分の音声ファイルを生成する
       const introRequest = this.generateTextToSpeechRequest(ssmlList.intro);
@@ -163,20 +173,21 @@ export class TextToSpeechClient implements ITextToSpeechClient {
    * @param script 台本
    * @returns ヘッドライントピック番組各パート用の SSML 生成結果
    */
-  generateHeadlineTopicProgramSsml(
+  async generateHeadlineTopicProgramSsml(
     script: HeadlineTopicProgramScript,
-  ): HeadlineTopicProgramSsml {
+  ): Promise<HeadlineTopicProgramSsml> {
     this.logger.debug(
       `TextToSpeechClient.generateHeadlineTopicProgramSsml called`,
       { script },
     );
     // SSML を生成する
     const intro = `<speak>${script.intro}<break time="1000ms"/></speak>`;
-    const postSummaries = script.posts.map((post) => {
-      const summary = this.generateSsmlWithSubAlias(post.summary);
-      return `<speak>${summary}<break time="1000ms"/></speak>`;
-    });
-    const ending = `<speak>${this.generateSsmlWithSubAlias(script.ending)}<break time="200ms"/></speak>`;
+    const postSummaries: string[] = [];
+    for (const post of script.posts) {
+      const summary = await this.generateSsmlWithSubAlias(post.summary);
+      postSummaries.push(`<speak>${summary}<break time="1000ms"/></speak>`);
+    }
+    const ending = `<speak>${await this.generateSsmlWithSubAlias(script.ending)}<break time="200ms"/></speak>`;
     const result: HeadlineTopicProgramSsml = {
       intro,
       postSummaries,
@@ -193,7 +204,7 @@ export class TextToSpeechClient implements ITextToSpeechClient {
    * @param 読み上げる文字列
    * @param 特定の用語の読み方を指定した SSML
    */
-  generateSsmlWithSubAlias(text: string): string {
+  async generateSsmlWithSubAlias(text: string): Promise<string> {
     this.logger.debug(`TextToSpeechClient.generateSsmlWithSubAlias called`, {
       text,
     });
@@ -204,10 +215,14 @@ export class TextToSpeechClient implements ITextToSpeechClient {
     // 絵文字を削除する
     text = this.removeEmoji(text);
     // 特定の用語の読み方を <sub> で指定した SSML を生成する
-    for (const alias of subAliasTable) {
+    const terms = await this.getTerms();
+    for (const term of terms) {
+      this.logger.debug(
+        `用語 [${term.term}] の読み方を [${term.reading}] に指定します`,
+      );
       text = text.replaceAll(
-        alias.term,
-        `<sub alias="${alias.reading}">${alias.term}</sub> `,
+        term.term,
+        `<sub alias="${term.reading}">${term.term}</sub> `,
       );
     }
     return text;
@@ -220,6 +235,20 @@ export class TextToSpeechClient implements ITextToSpeechClient {
    */
   removeEmoji(text: string): string {
     return text.replace(this.regEmoji, '');
+  }
+
+  /**
+   * 用語と読み方のペア一覧を取得する
+   * @returns 用語と読み方のペア一覧
+   */
+  async getTerms(): Promise<Term[]> {
+    this.logger.debug(`TextToSpeechClient.getTerms called`);
+    if (!this.terms) {
+      // インスタンス変数で保持していない場合は、
+      // データベースから用語と読み方のペア一覧を取得する
+      this.terms = await this.termsRepository.find();
+    }
+    return this.terms;
   }
 }
 
@@ -240,29 +269,3 @@ export interface HeadlineTopicProgramSsml {
    */
   ending: string;
 }
-
-/**
- * 用語と読み方の対応表
- */
-export interface SubAliasTable {
-  /**
-   * 用語
-   */
-  term: string;
-  /**
-   * 読み方
-   */
-  reading: string;
-}
-
-/**
- * 用語と読上げ文字列の対応表
- */
-export const subAliasTable: SubAliasTable[] = [
-  { term: 'Qiita', reading: 'キータ' },
-  { term: 'VSCode', reading: 'ブイエスコード' },
-  { term: 'Cline', reading: 'クライン' },
-  { term: 'LINE', reading: 'ライン' },
-  { term: 'schema', reading: 'スキーマ' },
-  { term: 'IaC', reading: 'アイエーシー' },
-];

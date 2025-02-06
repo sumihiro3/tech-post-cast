@@ -11,6 +11,7 @@ import { AppService } from './app.service';
 import { ApiV1Module } from './controllers/api-v1/api-v1.module';
 import { EventsModule } from './controllers/events/events.module';
 import { HeadlineTopicProgramsModule } from './controllers/headline-topic-programs/headline-topic-programs.module';
+import { TermsModule } from './controllers/terms/terms.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { HeadlineTopicProgramsModule } from './controllers/headline-topic-progra
     HeadlineTopicProgramsModule,
     EventsModule,
     ApiV1Module,
+    TermsModule,
     // 実装確認時に使う Module（デプロイする際にはコメントアウトしておくこと）
     // SampleModule,
   ],

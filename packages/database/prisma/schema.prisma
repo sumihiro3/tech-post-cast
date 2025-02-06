@@ -127,3 +127,20 @@ model LineUser {
   // テーブル名
   @@map("line_users")
 }
+
+// 用語と読み方のペア
+model Term {
+  // ID
+  id        Int      @id @default(autoincrement())
+  // 用語
+  term      String   @db.VarChar(255)
+  // 読み方
+  reading   String   @db.VarChar(255)
+  // 作成日時
+  createdAt DateTime @default(now())
+  // 最終更新日時
+  updatedAt DateTime @updatedAt
+
+  // テーブル名
+  @@map("terms")
+}
