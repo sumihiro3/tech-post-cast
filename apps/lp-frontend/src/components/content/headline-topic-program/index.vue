@@ -81,9 +81,26 @@ v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-white(flat, rounded='lg')
 
 <script lang="ts" setup>
 import type { HeadlineTopicProgramDto } from '@/api';
+
+interface Properties {
+  /** ヘッドライントピック番組 */
+  program: HeadlineTopicProgramDto;
+  /** 番組の台本を表示するか */
+  showScript?: boolean;
+  /** ページ初期表示のタブ */
+  initialTab?: string;
+}
+
+/** コンポーネントのプロパティ */
+const props = withDefaults(defineProps<Properties>(), {
+  showScript: false,
+  initialTab: 'posts',
+  autoPlay: false,
+});
+
 const { utcToJstDateString } = useDateUtil();
 
-const tab = ref('posts');
+const tab = ref(props.initialTab);
 
 // Audio Player
 const player = ref<HTMLAudioElement | null>(null);
@@ -135,11 +152,6 @@ const updateCurrentChapter = (): void => {
   currentChapterIndex.value = index;
   console.debug('currentChapterIndex', { currentChapterIndex: index });
 };
-
-const props = defineProps<{
-  program: HeadlineTopicProgramDto;
-  showScript?: boolean;
-}>();
 </script>
 
 <style lang="css" scoped>
