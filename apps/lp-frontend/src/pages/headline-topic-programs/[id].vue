@@ -8,7 +8,6 @@ div(v-if='result && result.target')
         :key='result.target.id',
         :program='result.target',
         :showScript='true'
-        :initialTab="initialTab"
       )
     v-col(cols='0', sm='2').mb-0.pb-0
   //- 類似番組
@@ -57,9 +56,6 @@ const app = useNuxtApp();
 const route = useRoute();
 const { id } = route.params;
 const programId = Array.isArray(id) ? id[0] : id;
-
-// クエリパラメーターからヘッドライントピック番組の初期表示タブを取得する
-const initialTab = route.query.tab ? String(route.query.tab) : 'posts';
 
 const { data: result } = await useAsyncData<HeadlineTopicProgramWithSimilarAndNeighborsDto>(
   `headline-topic-program:${programId}`,

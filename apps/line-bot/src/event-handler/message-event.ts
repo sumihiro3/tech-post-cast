@@ -116,7 +116,7 @@ const createLatestProgramMessage = async (
   const lpUrlPrefix = context.env.LP_URL_PREFIX;
   const programFileUrlPrefix = context.env.PROGRAM_FILE_URL_PREFIX;
   const imageUrl = `${programFileUrlPrefix}/TechPostCast_Main_gradation.png`;
-  const programPageUrl = `${lpUrlPrefix}/headline-topic-programs/${latestProgram.id}?tab=chapters`;
+  const programPageUrl = `${lpUrlPrefix}/headline-topic-programs/${latestProgram.id}`;
   const flex: messagingApi.FlexMessage = {
     type: 'flex',
     altText: `ヘッドライントピック：${latestProgram.title}`,
