@@ -9,4 +9,10 @@ export interface IListenerLettersRepository {
    * @returns 未紹介のお便り
    */
   findUnintroducedLetters(): Promise<ListenerLetter[]>;
+
+  /**
+   * 指定のお便りを紹介済みにする
+   * @param letters 紹介済みにするお便り
+   */
+  updateIntroducedLetters(letters: ListenerLetter[]): Promise<void>;
 }
