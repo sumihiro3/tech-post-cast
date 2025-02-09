@@ -41,8 +41,8 @@ import {
 } from '../text-to-speech.interface';
 
 @Injectable()
-export class HeadlineTopicProgramMaker {
-  private readonly logger = new Logger(HeadlineTopicProgramMaker.name);
+export class HeadlineTopicProgramBuilder {
+  private readonly logger = new Logger(HeadlineTopicProgramBuilder.name);
   // 生成したファイルの出力先ディレクトリ
   private readonly outputDir;
 
@@ -62,21 +62,22 @@ export class HeadlineTopicProgramMaker {
   }
 
   /**
-   * ヘッドライントピック番組を生成する
+   * ヘッドライントピック番組を構築する
    * @params programDate 番組日
    * @param posts 番組で紹介する Qiita 記事一覧
    * @returns ヘッドライントピック番組
    */
-  async generateProgram(
+  async buildProgram(
     programDate: Date,
     posts: QiitaPostApiResponse[],
   ): Promise<HeadlineTopicProgram> {
-    this.logger.debug(`HeadlineTopicProgramMaker.generateProgram called`, {
+    this.logger.debug(`HeadlineTopicProgramMaker.buildProgram called`, {
       programDate,
     });
     try {
       // 対象の記事を要約する
       const summarizedPosts = await this.summarizePosts(posts);
+      // TODO 未紹介のお便りを取得する
       // ヘッドライントピック番組の台本を生成する
       const script = await this.generateScript(programDate, summarizedPosts);
       // ヘッドライントピック番組の台本読み上げ音声ファイルを生成する

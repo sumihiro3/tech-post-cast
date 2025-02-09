@@ -2,7 +2,7 @@ import { AppConfigService } from '@/app-config/app-config.service';
 import { HeadlineTopicProgramFindError } from '@/types/errors';
 import { QiitaPostApiResponse } from '@domains/qiita-posts/qiita-posts.entity';
 import { ProgramRegenerationType } from '@domains/radio-program/headline-topic-program';
-import { HeadlineTopicProgramMaker } from '@domains/radio-program/headline-topic-program/headline-topic-program-maker';
+import { HeadlineTopicProgramBuilder } from '@domains/radio-program/headline-topic-program/headline-topic-program-builder';
 import { HeadlineTopicProgramsRepository } from '@infrastructure/database/headline-topic-programs/headline-topic-programs.repository';
 import { QiitaPostsRepository } from '@infrastructure/database/qiita-posts/qiita-posts.repository';
 import { QiitaPostsApiClient } from '@infrastructure/external-api/qiita-api/qiita-posts.api.client';
@@ -25,7 +25,7 @@ export class HeadlineTopicProgramsService {
     private readonly appConfig: AppConfigService,
     private readonly qiitaPostsRepository: QiitaPostsRepository,
     private readonly qiitaPostsApiClient: QiitaPostsApiClient,
-    private readonly headlineTopicProgramMaker: HeadlineTopicProgramMaker,
+    private readonly headlineTopicProgramMaker: HeadlineTopicProgramBuilder,
     private readonly headlineTopicProgramsRepository: HeadlineTopicProgramsRepository,
     private readonly twitterApiClient: TwitterApiClient,
   ) {}
@@ -75,7 +75,7 @@ export class HeadlineTopicProgramsService {
       });
       // ヘッドライントピック番組を生成する
       this.logger.log(`ヘッドライントピック番組のファイル生成を開始します`);
-      const program = await this.headlineTopicProgramMaker.generateProgram(
+      const program = await this.headlineTopicProgramMaker.buildProgram(
         programDate,
         popularPosts,
       );

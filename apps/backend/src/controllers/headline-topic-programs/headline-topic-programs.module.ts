@@ -1,4 +1,4 @@
-import { HeadlineTopicProgramMaker } from '@domains/radio-program/headline-topic-program/headline-topic-program-maker';
+import { HeadlineTopicProgramBuilder } from '@domains/radio-program/headline-topic-program/headline-topic-program-builder';
 import { HeadlineTopicProgramsRepository } from '@infrastructure/database/headline-topic-programs/headline-topic-programs.repository';
 import { QiitaPostsRepository } from '@infrastructure/database/qiita-posts/qiita-posts.repository';
 import { TermsRepository } from '@infrastructure/database/terms/terms.repository';
@@ -22,7 +22,7 @@ import { HeadlineTopicProgramsService } from './headline-topic-programs.service'
     HeadlineTopicProgramsRepository,
     TermsRepository,
     QiitaPostsApiClient,
-    HeadlineTopicProgramMaker,
+    HeadlineTopicProgramBuilder,
     OpenAiApiClient,
     TwitterApiClient,
     {
