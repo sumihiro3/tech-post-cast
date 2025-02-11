@@ -17,6 +17,7 @@ export const findLatest = async (
       },
     },
     orderBy: {
+      createdAt: 'desc',
       updatedAt: 'desc',
     },
     include: {
