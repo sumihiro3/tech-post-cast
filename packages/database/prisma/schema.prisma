@@ -121,6 +121,8 @@ model LineUser {
   pictureUrl  String?  @map("picture_url") @db.VarChar(255)
   // LINE ユーザーの言語
   language    String?  @db.VarChar(10)
+  // 最後に利用されたペンネーム
+  lastPenName String?  @map("last_pen_name") @db.VarChar(50)
   // LINE ユーザーの作成日時
   createdAt   DateTime @map("created_at")
   // LINE ユーザーの最終更新日時
@@ -156,8 +158,8 @@ model ListenerLetter {
   id        String   @id @default(cuid()) @db.VarChar(100)
   // お便りの本文
   body      String
-  // お便りの送信者の名前
-  sender    String   @db.VarChar(50)
+  // お便りを送信したユーザーのペンネーム
+  penName   String   @db.VarChar(50)
   // お便りの送信者のLINE ユーザーID
   senderId  String?  @map("sender_id") @db.VarChar(50)
   // お便りの送信日時

@@ -8,7 +8,7 @@ export interface ListenerLetterCreateRequest {
   body: string;
 
   /** お便りの送信者の名前 */
-  sender: string;
+  penName: string;
 
   /** お便りの送信者のLINE ユーザーID */
   senderId: string;
@@ -30,7 +30,7 @@ export const create = async (
   const result = await prisma.listenerLetter.create({
     data: {
       body: request.body,
-      sender: request.sender,
+      penName: request.penName,
       senderId: request.senderId,
       sentAt: request.sentAt,
       createdAt: now,
