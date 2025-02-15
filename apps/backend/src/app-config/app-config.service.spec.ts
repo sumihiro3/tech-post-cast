@@ -24,7 +24,7 @@ describe('AppConfigService', () => {
                 BACKEND_API_ACCESS_TOKEN: 'backend-token',
                 QIITA_API_ACCESS_TOKEN: 'qiita-api-access-token',
                 DATABASE_URL: 'https://example-database.url',
-                SHOW_QUERY_LOGS: true,
+                SHOW_QUERY_LOGS: 'true',
                 OPENAI_API_KEY: 'openai-api-key',
                 OPEN_AI_SUMMARIZATION_MODEL: 'gpt-4o-mini',
                 OPEN_AI_SCRIPT_GENERATION_MODEL: 'gpt-4o-mini',
@@ -52,7 +52,7 @@ describe('AppConfigService', () => {
                 LP_DEPLOY_HOOK_URL: 'lp-deploy-hook-url',
                 LP_BASE_URL: 'lp-base-url',
                 GCP_CREDENTIALS_FILE_PATH: 'gcp-credentials-file-path',
-                POST_TO_X: true,
+                POST_TO_X: 'true',
                 X_API_KEY: 'x-api-key',
                 X_API_SECRET: 'x-api-secret',
                 X_API_ACCESS_TOKEN: 'x-api-access-token',
@@ -300,6 +300,16 @@ describe('AppConfigService', () => {
     expect(appConfigService.PostToX).toBe(false);
   });
 
+  it('POST_TO_X が true の場合、PostToX が true を返すべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'POST_TO_X') return 'true';
+      return 'some-value';
+    });
+
+    const appConfigService = new AppConfigService(configService);
+    expect(appConfigService.PostToX).toBeTruthy();
+  });
+
   it('X_API_KEY が設定されていない場合、エラーをスローするべき', () => {
     jest.spyOn(configService, 'get').mockImplementation((key: string) => {
       if (key === 'X_API_KEY') return null;
@@ -390,7 +400,7 @@ describe('AppConfigService', () => {
     expect(service.GoogleCloudCredentialsFilePath).toBe(
       'gcp-credentials-file-path',
     );
-    expect(service.PostToX).toBe(true);
+    expect(service.PostToX).toBeTruthy();
     expect(service.XApiKey).toBe('x-api-key');
     expect(service.XApiSecret).toBe('x-api-secret');
     expect(service.XApiAccessToken).toBe('x-api-access-token');
