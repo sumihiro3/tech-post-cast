@@ -1,0 +1,37 @@
+{
+  "folders": [
+    {
+      "name": "root",
+      "path": "."
+    },
+    {
+      "name": "backend",
+      "path": "apps/backend"
+    },
+    {
+      "name": "infra",
+      "path": "apps/infra"
+    },
+    {
+      "name": "line-bot",
+      "path": "apps/line-bot"
+    },
+    {
+      "name": "lp-frontend",
+      "path": "apps/lp-frontend"
+    },
+    {
+      "name": "commons",
+      "path": "packages/commons"
+    },
+    {
+      "name": "database",
+      "path": "packages/database"
+    }
+  ],
+  "settings": {
+    "jest.runMode": "on-demand",
+    "jest.jestCommandLine": "yarn test",
+    "jest.disabledWorkspaceFolders": ["root"]
+  }
+}
