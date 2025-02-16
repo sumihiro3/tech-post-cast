@@ -300,6 +300,16 @@ describe('AppConfigService', () => {
     expect(appConfigService.PostToX).toBe(false);
   });
 
+  it('POST_TO_X に true 以外が設定されている場合は、false を返すべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'POST_TO_X') return 'false';
+      return 'some-value';
+    });
+
+    const appConfigService = new AppConfigService(configService);
+    expect(appConfigService.PostToX).toBe(false);
+  });
+
   it('POST_TO_X が true の場合、PostToX が true を返すべき', () => {
     jest.spyOn(configService, 'get').mockImplementation((key: string) => {
       if (key === 'POST_TO_X') return 'true';
