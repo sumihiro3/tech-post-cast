@@ -17,6 +17,10 @@
       "path": "apps/line-bot"
     },
     {
+      "name": "liff-frontend",
+      "path": "apps/liff-frontend"
+    },
+    {
       "name": "lp-frontend",
       "path": "apps/lp-frontend"
     },
