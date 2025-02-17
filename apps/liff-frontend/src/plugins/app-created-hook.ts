@@ -12,12 +12,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     if (!liffId) {
       throw new Error('LIFF IDがセットされていません。');
     }
-    // const NODE_ENV = runtimeConfig.public.NODE_ENV;
-    // if (NODE_ENV !== 'production') {
-    //   // Liff inspector
-    //   liff.use(new LIFFInspectorPlugin());
-    // }
-    // LIFF init
+    // LIFF の初期化
     try {
       console.log(`LIFF の初期化を開始します: ${liffId}`);
       await liff.init({ liffId });
