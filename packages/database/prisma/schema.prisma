@@ -128,9 +128,6 @@ model LineUser {
   // LINE ユーザーの最終更新日時
   updatedAt   DateTime @map("updated_at")
 
-  // LINE ユーザーが送信したお便り
-  letters ListenerLetter[]
-
   // テーブル名
   @@map("line_users")
 }
@@ -171,10 +168,8 @@ model ListenerLetter {
   // お便りの最終更新日時
   updatedAt DateTime @map("updated_at")
 
-  // お便りを送信した LINE ユーザー
-  senderUser LineUser?             @relation(fields: [senderId], references: [id])
   // お便りを紹介したヘッドライントピック番組
-  program    HeadlineTopicProgram? @relation(fields: [programId], references: [id])
+  program HeadlineTopicProgram? @relation(fields: [programId], references: [id])
 
   // テーブル名
   @@map("listener_letters")
