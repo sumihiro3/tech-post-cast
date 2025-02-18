@@ -1,7 +1,12 @@
+import { getLineProfile, verifyLiffAccessToken } from '@/external-api/line';
 import { HonoEnv } from '@/middlewares/factory';
-import { ListenerLetterCreateRequest } from '@/repositories/listener-letters.repository';
+import {
+  create,
+  ListenerLetterCreateRequest,
+} from '@/repositories/listener-letters.repository';
 import { SendListenerLetterSchema } from '@/schemas';
 import { OpenAPIHono, z } from '@hono/zod-openapi';
+import { ListenerLetter } from '@prisma/client';
 import { Context } from 'hono';
 import { sendListenerLetterRoute } from './routes';
 
@@ -16,20 +21,37 @@ listenerLettersApi.openapi(
     try {
       const validatedBody = await context.req.json<SendListenerLetterSchema>();
       const { body, penName } = validatedBody;
-      const prisma = context.var.prismaClient;
-      const createRequest: ListenerLetterCreateRequest = {
-        body,
-        penName,
-        senderId: 'dummy',
-        sentAt: new Date(),
-      };
-      // const letter = await create(createRequest, prisma);
-      const letter = {
-        id: 'dummy',
-        body,
-        penName,
-        sentAt: new Date(),
-      };
+      const bearerToken = context.req.header('authorization');
+      if (!bearerToken) {
+        return context.json(
+          {
+            message: 'Bearer トークンが指定されていません',
+          },
+          400,
+        );
+      }
+      // Verify LIFF access token
+      const token = bearerToken.split(' ')[1];
+      const validToken = await verifyLiffAccessToken(token);
+      if (!validToken) {
+        return context.json(
+          {
+            message: 'Bearer トークンが不正です',
+          },
+          401,
+        );
+      }
+      const profile = await getLineProfile(token);
+      // リスナーからのお便りを新規登録する
+      const letter = await createListenerLetter(
+        {
+          body,
+          penName,
+          senderId: profile.userId,
+          sentAt: new Date(),
+        },
+        context,
+      );
       console.log(`リスナーからのお便りを新規登録しました`, {
         letter,
       });
@@ -66,3 +88,24 @@ listenerLettersApi.doc('/doc', {
     title: 'Tech Post Cast LIFF API',
   },
 });
+
+/**
+ * リスナーからのお便りを新規登録する
+ * @param request ListenerLetterCreateRequest
+ * @param context Context<HonoEnv>
+ * @returns 新規登録したお便り
+ */
+async function createListenerLetter(
+  request: ListenerLetterCreateRequest,
+  context: Context<HonoEnv>,
+): Promise<ListenerLetter> {
+  console.debug(`listener-letters-api.createListenerLetter called`, {
+    request,
+  });
+  const prisma = context.var.prismaClient;
+  const letter = await create(request, prisma);
+  console.log(`リスナーからのお便りを新規登録しました`, {
+    letter,
+  });
+  return letter;
+}
