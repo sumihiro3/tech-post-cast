@@ -1,0 +1,128 @@
+{
+  "openapi": "3.0.0",
+  "externalDocs": {
+    "description": "Tech Post Cast LIFF API",
+    "url": "http://localhost:8787"
+  },
+  "info": {
+    "version": "0.0.1",
+    "title": "Tech Post Cast LIFF API"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8787/",
+      "description": "Local server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "ListenerLetterSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "penName": {
+            "type": "string"
+          },
+          "sentAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "body",
+          "penName",
+          "sentAt"
+        ]
+      },
+      "ErrorResponseSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "stackTrace": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "SendListenerLetterSchema": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 200,
+            "example": "こんにちは"
+          },
+          "penName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "example": "太郎"
+          }
+        },
+        "required": [
+          "body",
+          "penName"
+        ]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/api/liff/listener-letters": {
+      "post": {
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendListenerLetterSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "リスナーからのお便りを送信した",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListenerLetterSchema"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseSchema"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

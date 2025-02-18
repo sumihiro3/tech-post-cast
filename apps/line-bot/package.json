@@ -7,16 +7,19 @@
     "tail:dev": "wrangler tail --format=pretty --env=dev",
     "deploy:prod": "wrangler deploy --minify --env=prod",
     "tail:prod": "wrangler tail --format=pretty --env=prod",
-    "test": "jest --detectOpenHandles"
+    "test": "jest --detectOpenHandles",
+    "generate:api-spec": "npx tsx ./tools/generate-api-spec.ts"
   },
   "dependencies": {
+    "@hono/zod-openapi": "^0.18.4",
     "@line/bot-sdk": "^9.5.0",
     "@neondatabase/serverless": "^0.10.4",
     "@prisma/adapter-neon": "^6.1.0",
     "@tech-post-cast/commons": "*",
     "@tech-post-cast/database": "*",
     "hono": "^4.6.16",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241218.0",
@@ -28,7 +31,7 @@
     "eslint": "^8.0.0",
     "jest": "^29.5.0",
     "prettier": "^3.0.0",
-    "ts-jest": "^29.2.5",
-    "wrangler": "^3.105.0"
+    "wrangler": "3.109.1",
+    "ts-jest": "^29.2.5"
   }
 }
