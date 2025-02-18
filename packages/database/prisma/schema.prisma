@@ -121,8 +121,6 @@ model LineUser {
   pictureUrl  String?  @map("picture_url") @db.VarChar(255)
   // LINE ユーザーの言語
   language    String?  @db.VarChar(10)
-  // 最後に利用されたペンネーム
-  lastPenName String?  @map("last_pen_name") @db.VarChar(50)
   // LINE ユーザーの作成日時
   createdAt   DateTime @map("created_at")
   // LINE ユーザーの最終更新日時
