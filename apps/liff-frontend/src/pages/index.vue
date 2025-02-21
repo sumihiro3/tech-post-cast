@@ -2,6 +2,7 @@
   <div>
     <LineLoginButton />
     <LineProfile />
+    <NuxtLink to="listener-letters">Letter</NuxtLink>
   </div>
 </template>
 
