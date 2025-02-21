@@ -56,7 +56,7 @@ export default defineNuxtConfig({
   ssr: true,
   app: {
     head: {
-      title: 'TechPostCast',
+      title: 'Tech Post Cast',
       htmlAttrs: {
         lang: 'ja',
       },
