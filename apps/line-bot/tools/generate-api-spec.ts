@@ -32,6 +32,6 @@ const openAPIObjectConfig = {
 
 const openApiSpecObject = app.getOpenAPIDocument(openAPIObjectConfig);
 fs.writeFileSync(
-  'api-spec/liff-api-spec.json',
+  'api-spec/liff.api-spec.json',
   JSON.stringify(openApiSpecObject, undefined, 2),
 );
