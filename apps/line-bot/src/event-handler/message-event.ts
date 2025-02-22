@@ -34,6 +34,11 @@ export const handleMessageEvent = async (
 const LATEST_PROGRAM_MESSAGE = '最新のヘッドライントピック';
 
 /**
+ * お便り投稿時のメッセージ
+ */
+const LETTER_SENT_MESSAGE = 'お便りを投稿しました！';
+
+/**
  * TextMessage の受信時処理
  * @param context Context
  * @param event MessageEvent
@@ -54,9 +59,14 @@ const handleTextMessageEvent = async (
   if (message && LATEST_PROGRAM_MESSAGE === messageString.toLowerCase()) {
     // 最新の番組情報を取得する
     replyMessages = await createLatestProgramMessage(context);
+  } else if (message && messageString.startsWith(LETTER_SENT_MESSAGE)) {
+    // お便り投稿時のメッセージの場合は、投稿のお礼を返信する
+    replyMessages = createTextMessage(
+      `お便りの投稿ありがとうございました！\n番組で紹介させていただきますので、お楽しみに！`,
+    );
   } else {
     // 番組情報の要求以外はオウム返し
-    replyMessages = createEchoMessage(messageString);
+    replyMessages = createTextMessage(messageString);
   }
   // メッセージを返信する
   const client = context.var.lineClient;
@@ -71,12 +81,12 @@ const handleTextMessageEvent = async (
 };
 
 /**
- * オウム返しのテキストメッセージを生成する
+ * テキストメッセージを生成する
  * @param text テキスト
  * @returns テキストメッセージ
  */
-const createEchoMessage = (text: string): messagingApi.TextMessage[] => {
-  console.debug(`event-handler.message-event.createEchoMessage called`, {
+const createTextMessage = (text: string): messagingApi.TextMessage[] => {
+  console.debug(`event-handler.message-event.createTextMessage called`, {
     text,
   });
   return [

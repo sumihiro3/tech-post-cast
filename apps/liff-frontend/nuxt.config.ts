@@ -31,6 +31,7 @@ export default defineNuxtConfig({
       NODE_ENV: process.env.NODE_ENV,
       LOG_LEVEL: process.env.LOG_LEVEL,
       LIFF_ID: process.env.LIFF_ID,
+      apiUrl: process.env.API_BASE_URL,
     },
   },
   modules: [

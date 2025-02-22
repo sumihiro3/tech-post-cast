@@ -6,7 +6,7 @@ import { z } from '@hono/zod-openapi';
 export const SendListenerLetterSchema = z
   .object({
     /** お便りの本文 */
-    body: z.string().min(5).max(200).openapi({ example: 'こんにちは' }),
+    body: z.string().min(5).max(500).openapi({ example: 'こんにちは' }),
 
     /** お便りの送信者の名前 */
     penName: z.string().min(1).max(20).openapi({ example: '太郎' }),
