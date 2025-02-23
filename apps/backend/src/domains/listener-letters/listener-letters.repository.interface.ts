@@ -9,15 +9,22 @@ export interface IListenerLettersRepository {
    * 送信日時が古い順に取得する
    * @returns 未紹介のお便り
    */
-  findUnintroduced(): Promise<ListenerLetter[]>;
+  findUnintroduced(): Promise<ListenerLetter>;
+
+  /**
+   * 指定の番組で紹介されたお便りを取得する
+   * @param program 紹介された番組
+   * @returns 紹介されたお便り
+   */
+  findIntroduced(program: HeadlineTopicProgram): Promise<ListenerLetter>;
 
   /**
    * 指定のお便りを紹介済みにする
-   * @param letters 紹介済みにするお便り
+   * @param letter 紹介済みにするお便り
    * @param お便りを紹介した番組
    */
   updateAsIntroduced(
-    letters: ListenerLetter[],
+    letter: ListenerLetter,
     program: HeadlineTopicProgram,
   ): Promise<void>;
 }
