@@ -4,6 +4,7 @@ import {
   HeadlineTopicProgramGenerateScriptError,
   HeadlineTopicProgramRegenerateError,
 } from '@/types/errors';
+import { IListenerLettersRepository } from '@domains/listener-letters/listener-letters.repository.interface';
 import { QiitaPostApiResponse } from '@domains/qiita-posts/qiita-posts.entity';
 import {
   HeadlineTopicProgramChapterInfo,
@@ -13,7 +14,11 @@ import { HeadlineTopicProgramsRepository } from '@infrastructure/database/headli
 import { QiitaPostsRepository } from '@infrastructure/database/qiita-posts/qiita-posts.repository';
 import { OpenAiApiClient } from '@infrastructure/external-api/openai-api/openai-api.client';
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { HeadlineTopicProgram, QiitaPost } from '@prisma/client';
+import {
+  HeadlineTopicProgram,
+  ListenerLetter,
+  QiitaPost,
+} from '@prisma/client';
 import { formatDate } from '@tech-post-cast/commons';
 import {
   HeadlineTopicProgramWithQiitaPosts,
@@ -51,6 +56,8 @@ export class HeadlineTopicProgramBuilder {
     private readonly qiitaPostsRepository: QiitaPostsRepository,
     private readonly openAiApiClient: OpenAiApiClient,
     private readonly headlineTopicProgramsRepository: HeadlineTopicProgramsRepository,
+    @Inject('ListenerLettersRepository')
+    private readonly listenerLettersRepository: IListenerLettersRepository,
     @Inject('ProgramFileMaker')
     private readonly programFileMaker: IProgramFileMaker,
     @Inject('ProgramFileUploader')
@@ -77,9 +84,14 @@ export class HeadlineTopicProgramBuilder {
     try {
       // 対象の記事を要約する
       const summarizedPosts = await this.summarizePosts(posts);
-      // TODO 未紹介のお便りを取得する
+      // 未紹介のお便りを取得する
+      const letter = await this.listenerLettersRepository.findUnintroduced();
       // ヘッドライントピック番組の台本を生成する
-      const script = await this.generateScript(programDate, summarizedPosts);
+      const script = await this.generateScript(
+        programDate,
+        summarizedPosts,
+        letter,
+      );
       // ヘッドライントピック番組の台本読み上げ音声ファイルを生成する
       const programAudioFilePaths =
         await this.generateProgramAudioFiles(script);
@@ -110,6 +122,16 @@ export class HeadlineTopicProgramBuilder {
           uploadResult,
         );
       this.logger.log(`ヘッドライントピック番組を生成しました`, { program });
+      // リスナーからのお便りを紹介済みにする
+      if (letter) {
+        await this.listenerLettersRepository.updateAsIntroduced(
+          letter,
+          program,
+        );
+        this.logger.log(`リスナーからのお便りを紹介済みにしました`, {
+          letter,
+        });
+      }
       // ヘッドライントピック番組の第本データをベクトル化する
       await this.vectorizeProgram(program);
       this.logger.log(`ヘッドライントピック番組のベクトル化が完了しました`, {
@@ -148,10 +170,17 @@ export class HeadlineTopicProgramBuilder {
       const programDate = program.createdAt;
       if (regenerationType === 'SCRIPT_AND_AUDIO') {
         // 台本を再生成する場合
+        // リスナーからのお便りを取得する
+        const letter =
+          await this.listenerLettersRepository.findIntroduced(program);
         // 対象の記事を要約する
         const summarizedPosts = await this.summarizePosts(program.posts);
         // ヘッドライントピック番組の台本を生成する
-        script = await this.generateScript(programDate, summarizedPosts);
+        script = await this.generateScript(
+          programDate,
+          summarizedPosts,
+          letter,
+        );
       } else {
         // 台本を再生成しない場合は、番組情報から台本を取得する
         const s = parseHeadlineTopicProgramScript(program.script);
@@ -232,21 +261,25 @@ export class HeadlineTopicProgramBuilder {
    * 台本を生成する
    * @param programDate 番組日
    * @param posts 要約した記事一覧
+   * @param letter リスナーからのお便り
    * @returns 台本
    */
   async generateScript(
     programDate: Date,
     posts: QiitaPostApiResponse[],
+    letter?: ListenerLetter,
   ): Promise<HeadlineTopicProgramScript> {
     this.logger.debug(`HeadlineTopicProgramMaker.generateScript called`, {
       programDate,
       posts,
+      letter,
     });
     // 台本を生成する
     const script =
       await this.openAiApiClient.generateHeadlineTopicProgramScript(
         programDate,
         posts,
+        letter,
       );
     this.logger.debug(`台本を生成しました`, { script });
     return script;

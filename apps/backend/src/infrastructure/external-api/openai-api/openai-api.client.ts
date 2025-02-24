@@ -12,7 +12,11 @@ import {
   VectorizeResult,
 } from '@domains/radio-program/headline-topic-program';
 import { Injectable, Logger } from '@nestjs/common';
-import { HeadlineTopicProgram, QiitaPost } from '@prisma/client';
+import {
+  HeadlineTopicProgram,
+  ListenerLetter,
+  QiitaPost,
+} from '@prisma/client';
 import { getJapaneseDateStringWithWeekday } from '@tech-post-cast/commons';
 import {
   HeadlineTopicProgramScriptSchema,
@@ -121,11 +125,13 @@ export class OpenAiApiClient {
    * ヘッドライントピック番組の台本を生成する
    * @param programDate 番組日
    * @param posts 記事一覧
+   * @param letter リスナーからのお便り
    * @returns 台本
    */
   async generateHeadlineTopicProgramScript(
     programDate: Date,
     posts: IQiitaPostApiResponse[],
+    letter?: ListenerLetter,
   ): Promise<HeadlineTopicProgramScript> {
     this.logger.verbose(
       `OpenAiApiClient.createDailyHeadlineTopicsScript called`,
@@ -135,10 +141,18 @@ export class OpenAiApiClient {
       const prompt = this.getHeadlineTopicProgramScriptSystemPrompt(
         programDate,
         posts,
+        letter,
+      );
+      this.logger.log(
+        `ヘッドライントピック番組の台本作成用プロンプトを生成しました`,
+        {
+          prompt,
+        },
       );
       const params: OpenAI.Chat.ChatCompletionCreateParams = {
         model: this.appConfig.OpenAiScriptGenerationModel,
         temperature: 0.8,
+        // max_tokens: 4000,
         messages: [
           {
             role: 'user',
@@ -287,11 +301,13 @@ export class OpenAiApiClient {
    *「今日のヘッドライントピックス」の台本生成用システムプロンプトを取得する
    * @param programDate 番組日
    * @param posts 記事一覧
+   * @param letter リスナーからのお便り
    * @returns 台本生成用プロンプト
    */
   getHeadlineTopicProgramScriptSystemPrompt(
     programDate: Date,
     posts: IQiitaPostApiResponse[],
+    letter?: ListenerLetter,
   ): string {
     this.logger.verbose(
       { posts: posts },
@@ -299,6 +315,19 @@ export class OpenAiApiClient {
     );
     const programName = 'Tech Post Cast';
     const date = getJapaneseDateStringWithWeekday(programDate);
+    let letterText = '（なし）';
+    if (letter) {
+      letterText = `
+#### ペンネーム
+
+${letter.penName}
+
+#### お便りの内容
+
+${letter.body}
+`;
+    }
+    // 台本生成のシステムプロンプトを組み立てる
     const instruction = `
 ## Instruction
 
@@ -324,6 +353,9 @@ export class OpenAiApiClient {
     - 冒頭は「こんにちは、Tech Post Cast のポステルです。」のように言います
 - 挨拶では、今日の日付（月、日、曜日）を添えて、今日の日付に応じた雑談を30秒程度します
     - 「如月」や「師走」などの和風月名は使わないでください
+- 「リスナーからのお便り」がある場合は、必ずお便りの内容を読み上げます（厳守してください）
+    - 「リスナーからのお便り」は、「ペンネーム」、「お便りの内容」の順番に正確に読み上げます
+    - 読み上げた後に、ポステルとして感想にリアクションしたり質問に答えたりします
 - そして、Qiita（キータ） で今日のヘッドライントピックとしてトレンドの記事を紹介することを伝えます
 - 今日紹介する記事の本数（${posts.length} 本）を伝えます
 
@@ -366,6 +398,10 @@ export class OpenAiApiClient {
 ### 今日の日付
 
 ${date}
+
+### リスナーからのお便り
+
+${letterText}
 
 ### 紹介する記事
 
