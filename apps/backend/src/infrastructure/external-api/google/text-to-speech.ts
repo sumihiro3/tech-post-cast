@@ -218,7 +218,9 @@ export class TextToSpeechClient implements ITextToSpeechClient {
     // 絵文字を削除する
     text = this.removeEmoji(text);
     // 句点を読み上げ後に一時停止する
-    text = text.replaceAll('。', '。<break time="200ms"/>');
+    text = text.replaceAll('。', '。<break time="600ms"/>');
+    text = text.replaceAll('、', '、<break time="400ms"/>');
+    text = text.replaceAll('！', '！<break time="400ms"/>');
     // 特定の用語の読み方を <sub> で指定した SSML を生成する
     const terms = await this.getTerms();
     for (const term of terms) {
