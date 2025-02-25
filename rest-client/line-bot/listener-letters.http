@@ -1,0 +1,12 @@
+@baseUrl = http://localhost:8787
+
+@liffAccessToken = some-access-token
+
+POST {{baseUrl}}/api/liff/listener-letters
+Content-Type: application/json
+Authorization: Bearer {{liffAccessToken}}
+
+{
+  "body": "Hello, World!",
+  "penName": "John Doe"
+}

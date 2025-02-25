@@ -1,9 +1,17 @@
 import { middleware, webhook } from '@line/bot-sdk';
 import { Context } from 'hono';
+import { cors } from 'hono/cors';
+import { listenerLettersApi } from './api/liff/listener-letters';
 import { handleWebhookEvent } from './event-handler';
 import factory, { HonoEnv } from './middlewares/factory';
 
 const app = factory.createApp();
+
+// API に対して CORS ヘッダを返す
+app.use('/api/*', async (c, next) => {
+  const corsMiddlewareHandler = cors();
+  return corsMiddlewareHandler(c, next);
+});
 
 app.get('/', (c) => {
   console.debug(`GET / called`, {
@@ -37,5 +45,8 @@ app.post('/webhook', async (context: Context<HonoEnv>) => {
   );
   return context.text('OK');
 });
+
+// LIFF アプリより送信されたお便りを新規登録するエンドポイント
+app.route('/api/liff/listener-letters', listenerLettersApi);
 
 export default app;

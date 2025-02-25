@@ -1,5 +1,5 @@
 import { AppConfigService } from '@/app-config/app-config.service';
-import { HeadlineTopicProgramMaker } from '@domains/radio-program/headline-topic-program';
+import { HeadlineTopicProgramBuilder } from '@domains/radio-program/headline-topic-program';
 import { QiitaPostsApiClient } from '@infrastructure/external-api/qiita-api/qiita-posts.api.client';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MockFunctionMetadata, ModuleMocker } from 'jest-mock';
@@ -10,7 +10,7 @@ const moduleMocker = new ModuleMocker(global);
 describe('HeadlineTopicProgramsService', () => {
   let service: HeadlineTopicProgramsService;
   let qiitaPostsApiClient: QiitaPostsApiClient;
-  let headlineTopicProgramMaker: HeadlineTopicProgramMaker;
+  let headlineTopicProgramMaker: HeadlineTopicProgramBuilder;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -26,10 +26,10 @@ describe('HeadlineTopicProgramsService', () => {
           return {
             // ここに Mock したいメソッドを記述する
           } as QiitaPostsApiClient;
-        } else if (token === HeadlineTopicProgramMaker) {
+        } else if (token === HeadlineTopicProgramBuilder) {
           return {
             // ここに Mock したいメソッドを記述する
-          } as HeadlineTopicProgramMaker;
+          } as HeadlineTopicProgramBuilder;
         }
         if (typeof token === 'function') {
           const mockMetadata = moduleMocker.getMetadata(
@@ -45,8 +45,8 @@ describe('HeadlineTopicProgramsService', () => {
       HeadlineTopicProgramsService,
     );
     qiitaPostsApiClient = module.get<QiitaPostsApiClient>(QiitaPostsApiClient);
-    headlineTopicProgramMaker = module.get<HeadlineTopicProgramMaker>(
-      HeadlineTopicProgramMaker,
+    headlineTopicProgramMaker = module.get<HeadlineTopicProgramBuilder>(
+      HeadlineTopicProgramBuilder,
     );
   });
 

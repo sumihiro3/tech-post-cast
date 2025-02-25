@@ -21,7 +21,7 @@ export const upsert = async (
   request: LineUserUpsertRequest,
   prisma: PrismaClient,
 ): Promise<LineUser> => {
-  console.debug(`line-users-repository.findLatest called`);
+  console.debug(`line-users-repository.upsert called`, { request });
   const now = new Date();
   // LINE USER を新規登録または更新する
   const result = await prisma.lineUser.upsert({
@@ -40,7 +40,7 @@ export const upsert = async (
     },
     update: createUpdateLineUserQuery(request),
   });
-  console.debug(`LINE USER を新規登録または更新しました`, {
+  console.log(`LINE USER を新規登録または更新しました`, {
     result,
   });
   return result;
