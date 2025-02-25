@@ -34,6 +34,7 @@ RUN mkdir -p /tmp/headline-topic-programs
 
 # 依存ライブラリをコピー
 COPY --from=builder /build/node_modules node_modules
+COPY --from=builder /build/apps/backend/node_modules/ node_modules/
 # apps/backend のビルド結果をコンテナー内にコピー
 COPY --from=builder /build/apps/backend/dist dist
 # apps/backend の package.json をコンテナー内にコピー
