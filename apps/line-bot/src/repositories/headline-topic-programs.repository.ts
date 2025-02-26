@@ -16,10 +16,7 @@ export const findLatest = async (
         not: undefined,
       },
     },
-    orderBy: {
-      createdAt: 'desc',
-      updatedAt: 'desc',
-    },
+    orderBy: [{ createdAt: 'desc' }, { updatedAt: 'desc' }],
     include: {
       posts: true,
     },
