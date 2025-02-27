@@ -22,7 +22,7 @@
         | 📮 お便りを投稿する 📮
       div.text-body-2
         | Tech Post Cast へお便りを投稿してください！<br />
-        | いただいたお便りは、AI MC ポステルが番組内で紹介いたします。
+        | いただいたお便りは、AIのMC「ポステル」が番組内で紹介いたします。
     v-col(cols="12")
       //- ログイン済みの場合は、お便りを投稿するフォームを表示する
       v-text-field(
@@ -41,15 +41,18 @@
     v-col(cols="12")
       v-btn(color="primary", block @click="sendLetter")
         | 投稿する
+    v-footer.bg-grey-lighten-1(app)
+      v-row(justify="center" no-gutters)
+        v-col.text-center.mt-4(cols="12")
+          | All rights are reserved &copy; {{ new Date().getFullYear() }}, TEP Lab
 </template>
 
 <script setup lang="ts">
 import { useNuxtApp } from '#app';
-import { reactive } from 'vue';
-import { useVuelidate } from '@vuelidate/core';
-import { helpers, required, minLength, maxLength } from '@vuelidate/validators';
-import LineLoginButton from '~/components/line-login-button.vue';
 import type { ListenerLetterSchema } from '@/api';
+import { useVuelidate } from '@vuelidate/core';
+import { helpers, maxLength, minLength, required } from '@vuelidate/validators';
+import { reactive } from 'vue';
 
 const nuxtApp = useNuxtApp();
 const liff = nuxtApp.$liff;
@@ -77,7 +80,7 @@ onMounted(async () => {
     return;
   }
   // LIFF Access token を取得する
-  liffAccessToken.value = await liff.getAccessToken();
+  liffAccessToken.value = await liff.getAccessToken()!;
   // ユーザーのプロフィール情報を取得する
   const profile = await liff.getProfile();
   if (profile) {
@@ -90,19 +93,19 @@ const rules = {
   penName: {
     required: helpers.withMessage('ペンネームを入力してください', required),
     minLength: helpers.withMessage(
-      ({ $params }: string) => `ペンネームは${$params.min}文字以上で入力してください`, minLength(3),
+      params => `ペンネームは${params.$params.min}文字以上で入力してください`, minLength(3),
     ),
     maxLength: helpers.withMessage(
-      ({ $params }: string) => `ペンネームは${$params.max}文字以内で入力してください`, maxLength(50),
+      params => `ペンネームは${params.$params.max}文字以内で入力してください`, maxLength(50),
     ),
   },
   body: {
     required: helpers.withMessage('お便りの内容を入力してください', required),
     minLength: helpers.withMessage(
-      ({ $params }: string) => `お便りの内容は${$params.min}文字以上で入力してください`, minLength(10),
+      params => `お便りの内容は${params.$params.min}文字以上で入力してください`, minLength(10),
     ),
     maxLength: helpers.withMessage(
-      ({ $params }: string) => `お便りの内容は${$params.max}文字以内で入力してください`, maxLength(500),
+      params => `お便りの内容は${params.$params.max}文字以内で入力してください`, maxLength(200),
     ),
   },
 };
@@ -112,7 +115,7 @@ const v$ = useVuelidate(rules, state);
 /**
  * お便りを投稿する処理
  */
-const sendLetter = async (): void => {
+const sendLetter = async (): Promise<void> => {
   const isFormCorrect = await v$.value.$validate();
   if (!isFormCorrect) return;
 
