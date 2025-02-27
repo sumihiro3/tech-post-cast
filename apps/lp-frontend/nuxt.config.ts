@@ -115,7 +115,7 @@ export default defineNuxtConfig({
           link: 'https://music.amazon.co.jp/podcasts/edd04dca-b387-41a3-9bb2-fbd183f01f5d/techpostcast',
         },
         {
-          title: 'Apple Music',
+          title: 'Apple Podcasts',
           icon: 'mdi-apple',
           link: 'https://podcasts.apple.com/us/podcast/tech-post-cast/id1790035669',
         },
