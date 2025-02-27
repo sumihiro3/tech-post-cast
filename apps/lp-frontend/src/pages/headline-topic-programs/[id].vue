@@ -95,4 +95,15 @@ useSeoMeta({
   twitterCard: 'summary_large_image',
   twitterImage: ogpImage,
 });
+
+// oEmbed 用のリンクを設定
+const siteUrl = app.$config.public.lpUrl;
+useHead({
+  link: [{
+    rel: 'alternate',
+    type: 'application/json+oembed',
+    href: `${siteUrl}/oembed/headline-topic-programs/${programId}.json`,
+    title: `${title}`,
+  }],
+});
 </script>
