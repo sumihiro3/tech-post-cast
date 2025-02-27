@@ -1,14 +1,16 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-import type { NitroConfig } from 'nitropack';
+import type { Nitro, NitroConfig } from 'nitropack';
 import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify';
 import type { HeadlineTopicProgramsCountDto } from './src/api';
+import generateOembedJsonFiles from './src/scripts/oembed';
 import generateSpotifyRssFeed from './src/scripts/rss';
 
 /**
  * ヘッドライントピック番組一覧の各ページのルートを取得する
- * @returns `/?page={page}` のルートの配列を返す
+ * @returns `/pages/{page}` のルートの配列を返す
  */
 const getHeadlineTopicProgramListPageRoutes = async (): Promise<string[]> => {
+  console.log('getHeadlineTopicProgramListPageRoutes called');
   const apiUrl = process.env.API_BASE_URL;
   const token = process.env.API_ACCESS_TOKEN;
   const programsPerPage = Number(process.env.PROGRAMS_PER_PAGE || 10);
@@ -76,7 +78,6 @@ export default defineNuxtConfig({
       failOnError: true,
     },
     hooks: {
-      'compiled': generateSpotifyRssFeed,
       'prerender:config': async (nitroConfig: NitroConfig) => {
         console.log('Nitro hook [prerender:config] called');
         console.dir(nitroConfig, { depth: undefined });
@@ -84,6 +85,12 @@ export default defineNuxtConfig({
         const headlineTopicProgramListRoutes
           = await getHeadlineTopicProgramListPageRoutes();
         nitroConfig.prerender?.routes?.push(...headlineTopicProgramListRoutes);
+      },
+      'compiled': async (nitro: Nitro) => {
+        // Podcast サービス用の RSS フィードを生成する
+        await generateSpotifyRssFeed(nitro);
+        // 各番組ページ用の oEmbed JSON ファイルを生成する
+        await generateOembedJsonFiles(nitro);
       },
     },
   },

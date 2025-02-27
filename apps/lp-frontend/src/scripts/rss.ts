@@ -1,19 +1,14 @@
-import type { HeadlineTopicProgram } from '@prisma/client';
-import dayjs from 'dayjs';
-import timezone from 'dayjs/plugin/timezone';
-import utc from 'dayjs/plugin/utc';
 import { writeFileSync } from 'fs';
 import type { Nitro } from 'nitropack';
 import path from 'path';
 import RSS from 'rss';
+import { getHeadlineTopicProgramList, utcToJstDateString } from '.';
 
-dayjs.extend(timezone);
-dayjs.extend(utc);
-
-const DATE_FORMAT = 'YYYY.M.D';
-
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export default async function generateSpotifyRssFeed(nitro: Nitro) {
+/**
+ * Podcast サービス用の RSS フィードを生成する
+ * @param nitro Nitro
+ */
+export default async function generateSpotifyRssFeed(nitro: Nitro): Promise<void> {
   console.log('Generating Spotify RSS feed');
   if (!nitro._prerenderedRoutes) {
     console.warn('No pre-rendered routes found');
@@ -31,7 +26,7 @@ export default async function generateSpotifyRssFeed(nitro: Nitro) {
   // RSS フィードのファイル名
   const feedFileName = 'rss.xml';
   // ヘッドライントピック番組一覧を取得
-  const programs = await getHeadlineTopicProgramList();
+  const programs = await getHeadlineTopicProgramList(30);
   // RSSフィードを生成
   const feed = new RSS({
     title,
@@ -110,55 +105,4 @@ export default async function generateSpotifyRssFeed(nitro: Nitro) {
   const feedString = feed.xml({ indent: true }); // RSSフィードを文字列に変換する
   // RSSフィードをファイルに書き込む
   writeFileSync(path.join(publicDir, feedFileName), feedString);
-}
-
-/**
- * ヘッドライントピック番組の一覧を取得する
- * @returns ヘッドライントピック番組の一覧
- */
-async function getHeadlineTopicProgramList(): Promise<HeadlineTopicProgram[]> {
-  console.debug('getHeadlineTopicProgramList called');
-  const apiUrl = process.env.API_BASE_URL;
-  const token = process.env.API_ACCESS_TOKEN;
-  const rssItemCount = 30;
-  const lpUrl = process.env.LP_BASE_URL;
-  console.log(`API_BASE_URL: ${apiUrl}`);
-  console.log(`API_ACCESS_TOKEN: ${token}`);
-  console.log(`RSS_ITEM_COUNT: ${rssItemCount}`);
-  if (!apiUrl || !token || !lpUrl) {
-    console.warn(
-      'API_BASE_URL または API_ACCESS_TOKEN または LP_BASE_URL が設定されていません',
-    );
-    return [];
-  }
-  const response = await fetch(
-    `${apiUrl}/api/v1/headline-topic-programs?page=1&limit=${rssItemCount}`,
-    {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token!}`,
-      },
-    },
-  );
-  const programs = (await response.json()) as HeadlineTopicProgram[];
-  console.log(
-    `ヘッドライントピック番組一覧（${programs.length}件）を取得しました`,
-  );
-  return programs;
-}
-
-/**
- * UTC の日付を日本時間の日付文字列に変換する
- * @param dt UTC の日付
- */
-function utcToJstDateString(dt: Date, format?: string): string {
-  console.debug(`utcToJstDateString called!: [${dt}]`);
-  try {
-    const d = dayjs(dt).tz('Asia/Tokyo');
-    return d.format(format ? format : DATE_FORMAT);
-  }
-  catch (error) {
-    console.error(`UTC 日付の変換処理に失敗しました`, error);
-    return dayjs(dt).toString();
-  }
 }
