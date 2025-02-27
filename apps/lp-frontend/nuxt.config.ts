@@ -103,6 +103,7 @@ export default defineNuxtConfig({
       podcastAuthorName: process.env.PODCAST_AUTHOR_NAME,
       podcastAuthorEmail: process.env.PODCAST_AUTHOR_EMAIL,
       podcastProgramDescription: process.env.PODCAST_PROGRAM_DESCRIPTION,
+      listenerLetterFormUrl: process.env.LISTENER_LETTER_FORM_URL,
       podcastUrls: [
         {
           title: 'Spotify',

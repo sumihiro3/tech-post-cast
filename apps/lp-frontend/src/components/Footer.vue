@@ -15,6 +15,16 @@ v-card.mt-6(flat, width='100%')
       target='_blank'
       :prepend-icon='podcast.icon'
     ) {{ podcast.title }}
+  //- お便りフォーム
+  v-container.text-left.pl-6(cols='6')
+    .text-subtitle-1.font-weight-bold.text-grey-darken-1
+      | 番組にお便りを送る
+    v-btn.text-none.text-subtitle-2.text-grey-darken-1.footer-button(
+      :href='listenerLetterFormUrl',
+      target='_blank'
+      flat,
+      prepend-icon='mdi-email'
+    ) お便りフォーム（LINE 公式アカウント）
   //- SNS
   v-container.text-left.pl-6(cols='6')
     .text-subtitle-1.font-weight-bold.text-grey-darken-1
@@ -65,6 +75,7 @@ import type { Podcast, Sns } from '@/types';
 
 const app = useNuxtApp();
 const podcasts = app.$config.public.podcastUrls as Podcast[];
+const listenerLetterFormUrl = app.$config.public.listenerLetterFormUrl as string;
 const snsList = app.$config.public.snsUrls as Sns[];
 const specialThanks = [
   {
