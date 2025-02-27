@@ -12,6 +12,11 @@ v-card.mt-0.pt-0(flat, width='100%', color='background')
       | 毎朝7時に最新エピソードをお届け！
       br
       | AIのMC「ポステル」がQiitaの人気記事を10分でわかりやすく解説します
+      br
+      b
+        a(
+          :href="listenerLetterFormUrl" target="_blank") 📮番組へのお便り📮
+      | もお待ちしています！
 //- Podcasts
 Podcast
 </template>
@@ -22,4 +27,5 @@ import { useDisplay } from 'vuetify';
 const app = useNuxtApp();
 const { mobile } = useDisplay();
 const siteName = app.$config.public.siteName;
+const listenerLetterFormUrl = app.$config.public.listenerLetterFormUrl as string;
 </script>
