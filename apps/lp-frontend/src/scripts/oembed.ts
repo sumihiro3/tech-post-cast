@@ -40,9 +40,9 @@ export default async function generateOembedJsonFiles(nitro: Nitro): Promise<voi
       thumbnail_url: thumbnailImageUrl,
       thumbnail_width: 600,
       thumbnail_height: 600,
-      html: `<iframe src="${lpUrl}/headline-topic-programs/embed/${program.id}" width="600" height="400" frameborder="0" allowfullscreen></iframe>`,
-      width: 600,
-      height: 400,
+      html: `<iframe id="techpostcast-frame" src="${lpUrl}/headline-topic-programs/embed/${program.id}" allowfullscreen="true" style="width:100%;height:600px;border:1px #ccc solid;border-radius:10px;"></iframe>`,
+      width: '100%',
+      height: 600,
     };
 
     const filePath = path.resolve(outputDirPath, `${program.id}.json`);
