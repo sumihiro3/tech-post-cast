@@ -154,7 +154,7 @@ describe('TextToSpeechClient', () => {
   describe('formatAudioText', () => {
     test('音声テキストを整形する', async () => {
       // arrange
-      const text = 'Hello。 term';
+      const text = `<Hello。 term！？>""'&&&`;
       const term = { term: 'term', reading: 'reading' };
       const terms = [term];
       textToSpeechClient.getTerms = jest.fn().mockResolvedValue(terms);
@@ -163,7 +163,7 @@ describe('TextToSpeechClient', () => {
       const result = await textToSpeechClient.formatAudioText(text);
 
       // assert
-      const formattedText = `Hello。<break time="200ms"/> <sub alias="${term.reading}">${term.term}</sub> `;
+      const formattedText = `&lt;Hello。<break time="600ms"/> <sub alias="${term.reading}">${term.term}</sub> ！<break time="600ms"/>？<break time="600ms"/>&gt;&quot;&quot;&apos;&amp;&amp;&amp;`;
       expect(result).toBe(formattedText);
       expect(textToSpeechClient.getTerms).toHaveBeenCalledTimes(1);
     });

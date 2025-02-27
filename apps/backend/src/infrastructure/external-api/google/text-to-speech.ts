@@ -201,8 +201,9 @@ export class TextToSpeechClient implements ITextToSpeechClient {
 
   /**
    * 音声文章の整形処理を実施する
+   *   - SSML 予約文字をエスケープする
    *   - 音声読上げ時に不要となる文字を削除する
-   *   - 句点を読み上げ後に一時停止する
+   *   - 句読点などの読み上げ後に空白時間を入れる
    *   - 特定の用語の読み方を <sub> で指定する
    * @param 読み上げる文字列
    * @param 音声読み上げ用に整形された文字列
@@ -211,6 +212,20 @@ export class TextToSpeechClient implements ITextToSpeechClient {
     this.logger.debug(`TextToSpeechClient.formatAudioText called`, {
       text,
     });
+    // SSML 予約文字をエスケープする
+    // https://cloud.google.com/text-to-speech/docs/ssml?hl=ja#reserve_characters
+    // 文字	エスケープコード
+    // &	&amp;
+    // "	&quot;
+    // '	&apos;
+    // <	&lt;
+    // >	&gt;
+    text = text
+      .replaceAll('&', '&amp;') // & は最初にエスケープする
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&apos;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;');
     // SSML 生成時にはバッククォートと絵文字を削除する
     // Text-to-Speech API はバッククォートと絵文字を読み上げるため
     // 台本としては可読性の観点からそれらは残しておくので、SSML 生成時にだけ削除する
@@ -218,9 +233,10 @@ export class TextToSpeechClient implements ITextToSpeechClient {
     // 絵文字を削除する
     text = this.removeEmoji(text);
     // 句点を読み上げ後に一時停止する
-    text = text.replaceAll('。', '。<break time="600ms"/>');
     text = text.replaceAll('、', '、<break time="400ms"/>');
-    text = text.replaceAll('！', '！<break time="400ms"/>');
+    text = text.replaceAll('。', '。<break time="600ms"/>');
+    text = text.replaceAll('！', '！<break time="600ms"/>');
+    text = text.replaceAll('？', '？<break time="600ms"/>');
     // 特定の用語の読み方を <sub> で指定した SSML を生成する
     const terms = await this.getTerms();
     for (const term of terms) {
