@@ -76,6 +76,10 @@ export class HeadlineTopicProgramsRepository
       page,
       limit,
     });
+    // limit <= 0 の場合は全件を取得する
+    if (limit <= 0) {
+      limit = await this.count();
+    }
     const result = await this.prisma.headlineTopicProgram.findMany({
       take: limit,
       skip: (page - 1) * limit,
