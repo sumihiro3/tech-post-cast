@@ -71,7 +71,7 @@ export class TechPostCastBackendStack extends cdk.Stack {
           // OpenAI
           OPENAI_API_KEY: stage.openAiApiKey,
           OPEN_AI_SUMMARIZATION_MODEL: 'gpt-4o-mini',
-          OPEN_AI_SCRIPT_GENERATION_MODEL: 'gpt-4o-mini',
+          OPEN_AI_SCRIPT_GENERATION_MODEL: 'gpt-4o',
           // ffmpeg
           FFMPEG_PATH: '/usr/bin/ffmpeg',
           FFPROBE_PATH: '/usr/bin/ffprobe',

@@ -184,10 +184,10 @@ export class TextToSpeechClient implements ITextToSpeechClient {
     const intro = `<speak>${script.intro}<break time="1000ms"/></speak>`;
     const postSummaries: string[] = [];
     for (const post of script.posts) {
-      const summary = await this.generateSsmlWithSubAlias(post.summary);
+      const summary = await this.formatAudioText(post.summary);
       postSummaries.push(`<speak>${summary}<break time="1000ms"/></speak>`);
     }
-    const ending = `<speak>${await this.generateSsmlWithSubAlias(script.ending)}<break time="200ms"/></speak>`;
+    const ending = `<speak>${await this.formatAudioText(script.ending)}<break time="200ms"/></speak>`;
     const result: HeadlineTopicProgramSsml = {
       intro,
       postSummaries,
@@ -200,20 +200,27 @@ export class TextToSpeechClient implements ITextToSpeechClient {
   }
 
   /**
-   * 特定の用語の読み方を <sub> で指定した SSML を生成する
+   * 音声文章の整形処理を実施する
+   *   - 音声読上げ時に不要となる文字を削除する
+   *   - 句点を読み上げ後に一時停止する
+   *   - 特定の用語の読み方を <sub> で指定する
    * @param 読み上げる文字列
-   * @param 特定の用語の読み方を指定した SSML
+   * @param 音声読み上げ用に整形された文字列
    */
-  async generateSsmlWithSubAlias(text: string): Promise<string> {
-    this.logger.debug(`TextToSpeechClient.generateSsmlWithSubAlias called`, {
+  async formatAudioText(text: string): Promise<string> {
+    this.logger.debug(`TextToSpeechClient.formatAudioText called`, {
       text,
     });
-    // SSML 生成時には、バッククォートと絵文字を削除する
+    // SSML 生成時にはバッククォートと絵文字を削除する
     // Text-to-Speech API はバッククォートと絵文字を読み上げるため
     // 台本としては可読性の観点からそれらは残しておくので、SSML 生成時にだけ削除する
     text = text.replaceAll('`', '');
     // 絵文字を削除する
     text = this.removeEmoji(text);
+    // 句点を読み上げ後に一時停止する
+    text = text.replaceAll('。', '。<break time="600ms"/>');
+    text = text.replaceAll('、', '、<break time="400ms"/>');
+    text = text.replaceAll('！', '！<break time="400ms"/>');
     // 特定の用語の読み方を <sub> で指定した SSML を生成する
     const terms = await this.getTerms();
     for (const term of terms) {

@@ -115,7 +115,7 @@ export class AppConfigService {
       );
     }
     // X
-    if (this.PostToX) {
+    if (this.PostToX === true) {
       this.logger.log('新しい番組を X へポストする設定が有効です');
       if (!this.XApiKey) {
         throw new AppConfigValidationError('X_API_KEY が設定されていません');
@@ -201,7 +201,12 @@ export class AppConfigService {
    * SQL ログを出力するかどうか
    */
   get ShowQueryLogs(): boolean {
-    return this.config.get<boolean>('SHOW_QUERY_LOGS');
+    const showQueryLogs = this.config.get<string>('SHOW_QUERY_LOGS');
+    let result = false;
+    if (showQueryLogs === 'true') {
+      result = true;
+    }
+    return result;
   }
 
   /**
@@ -352,9 +357,10 @@ export class AppConfigService {
    * 新しい番組を配信した時に X（Twitter）へポストするかどうか
    */
   get PostToX(): boolean {
-    let result = this.config.get<boolean>('POST_TO_X');
-    if (!result) {
-      result = false;
+    const postToX = this.config.get<string>('POST_TO_X');
+    let result = false;
+    if (postToX === 'true') {
+      result = true;
     }
     return result;
   }

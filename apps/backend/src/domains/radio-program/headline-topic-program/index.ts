@@ -6,7 +6,7 @@ import {
 } from '../program-file-maker.interface';
 import { HeadlineTopicProgramAudioFilesGenerateResult } from '../text-to-speech.interface';
 
-export * from './headline-topic-program-maker';
+export * from './headline-topic-program-builder';
 
 /**
  * 記事の要約を表すインターフェイス

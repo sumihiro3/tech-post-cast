@@ -8,6 +8,11 @@
         "generatorName": "typescript-axios",
         "inputSpec": "apps/backend/api-spec/frontend.api-spec.json",
         "output": "apps/lp-frontend/src/api"
+      },
+      "liff": {
+        "generatorName": "typescript-axios",
+        "inputSpec": "apps/line-bot/api-spec/liff.api-spec.json",
+        "output": "apps/liff-frontend/src/api"
       }
     }
   }

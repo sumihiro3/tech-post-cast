@@ -43,6 +43,8 @@ model HeadlineTopicProgram {
 
   // 台本のベクトルデータ
   scriptVector HeadlineTopicProgramScriptVector?
+  // 番組で紹介されたお便り
+  letters      ListenerLetter[]
 
   // テーブル名
   @@map("headline_topic_programs")
@@ -143,4 +145,30 @@ model Term {
 
   // テーブル名
   @@map("terms")
+}
+
+// リスナーからのお便り
+model ListenerLetter {
+  // お便りの一意なID
+  id        String   @id @default(cuid()) @db.VarChar(100)
+  // お便りの本文
+  body      String
+  // お便りを送信したユーザーのペンネーム
+  penName   String   @db.VarChar(50)
+  // お便りの送信者のLINE ユーザーID
+  senderId  String?  @map("sender_id") @db.VarChar(50)
+  // お便りの送信日時
+  sentAt    DateTime @default(now()) @map("sent_at")
+  // お便りを紹介したヘッドライントピック番組のID
+  programId String?  @map("program_id") @db.VarChar(100)
+  // お便りの作成日時
+  createdAt DateTime @map("created_at")
+  // お便りの最終更新日時
+  updatedAt DateTime @map("updated_at")
+
+  // お便りを紹介したヘッドライントピック番組
+  program HeadlineTopicProgram? @relation(fields: [programId], references: [id])
+
+  // テーブル名
+  @@map("listener_letters")
 }
