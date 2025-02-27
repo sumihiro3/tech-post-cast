@@ -103,6 +103,7 @@ export default defineNuxtConfig({
       podcastAuthorName: process.env.PODCAST_AUTHOR_NAME,
       podcastAuthorEmail: process.env.PODCAST_AUTHOR_EMAIL,
       podcastProgramDescription: process.env.PODCAST_PROGRAM_DESCRIPTION,
+      listenerLetterFormUrl: process.env.LISTENER_LETTER_FORM_URL,
       podcastUrls: [
         {
           title: 'Spotify',
@@ -115,7 +116,7 @@ export default defineNuxtConfig({
           link: 'https://music.amazon.co.jp/podcasts/edd04dca-b387-41a3-9bb2-fbd183f01f5d/techpostcast',
         },
         {
-          title: 'Apple Music',
+          title: 'Apple Podcasts',
           icon: 'mdi-apple',
           link: 'https://podcasts.apple.com/us/podcast/tech-post-cast/id1790035669',
         },
