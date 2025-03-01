@@ -36,6 +36,12 @@
   "settings": {
     "jest.runMode": "on-demand",
     "jest.jestCommandLine": "yarn test",
-    "jest.disabledWorkspaceFolders": ["root"]
+    "jest.disabledWorkspaceFolders": [
+      "root"
+    ],
+    "markdown-preview-enhanced.hideDefaultVSCodeMarkdownPreviewButtons": false,
+    "markdown.marp.themes": [
+      "docs/slides/styles/custom.css"
+    ]
   }
 }
