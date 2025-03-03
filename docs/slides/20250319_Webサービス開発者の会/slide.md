@@ -3,6 +3,8 @@ marp: true
 theme: custom
 _class: lead
 paginate: true
+size: 16:9
+style: section { font-size: 30px; }
 ---
 
 # Tech Post Cast
@@ -27,10 +29,13 @@ Sumihiro Kagawa
 # 目次
 
 - 自己紹介
-- サービス概要
-- 開発のきっかけ
-- こだわったこと
+- Tech Post Cast とは
+- DEMO
+- こだわりポイント
 - システム構成
+    - 実行環境構成
+    - ソフトウェア構成
+- AI ラジオ番組生成フロー
 - 開発スケジュール
 - 運用コスト
 
@@ -46,12 +51,13 @@ Sumihiro Kagawa
 
 - 名前
     - 加川　澄廣
+- 居住地
+    - 兵庫県
 - 所属
     - 株式会社ブレイブテクノロジー　取締役
         - LINE ミニアプリを使った順番待ちサービスなどの開発責任者
 - 認定
-    - LINE API Expert
-        - 2020年〜
+    - LINE API Expert (2019年〜)
 
     </div>
 
@@ -69,11 +75,11 @@ td { padding: 10px}
 | いつ | 何をしていたか |
 | :---- | :---- |
 | 大学生 | 商学部経営学科 |
-| 新卒 | 簿記の資格を活かしたく、経理部で財務・経理のお仕事 |
+| 新卒 | 簿記の資格を活かしたく在阪企業の経理部で財務・経理に従事した |
 | 27歳 | プログラマーへ転職し東京へ |
 | 〜35歳 | 請負開発や SES で開発、設計、リーダー、アーキテクト等を担当した |
-| 〜48歳 | IT コンサルで主に PM を担当した（製造業、電子書籍、自治体など） |
-| 43歳頃 | 関西に戻り、LINE API での開発やハッカソン、ものづくりに目覚める<br />LINE API Expert に認定いただく |
+| 〜48歳 | IT コンサルで主に PM を担当した（製造業、電子書籍サービス、自治体など） |
+| 43歳頃 | 関西に戻り、LINE API での開発やハッカソン、ものづくりに目覚める<br />その結果、LINE API Expert に認定いただく |
 | 48歳〜 | LINE ミニアプリを使った順番待ちサービスの開発責任者 |
 | 2025年 | Tech Post Cast を個人開発してリリース |
 
@@ -83,4 +89,110 @@ td { padding: 10px}
 
 ---
 
-# fuga  
+# こだわりポイント
+
+---
+
+![bg 80%](../../システム構成図.drawio.png)
+
+---
+
+# ソフトウェア構成
+
+<div class="two-column">
+<div class="column">
+
+## フロントエンド
+
+- Nuxt3 (SSG)
+    - サービスサイト
+- Nuxt3 (SPA)
+    - リスナー投稿フォーム
+- Vuetify
+- TypeScript
+
+</div>
+
+<div class="column">
+
+## バックエンド
+
+- NestJS（番組生成用バックエンド）
+- Hono（LINE API 用バックエンド）
+- Prisma
+- TypeScript
+- FFmpeg
+    - 音声ファイル編集・合成
+- AWS Lambda Web Adapter
+
+</div>
+</div>
+
+---
+
+# AI ラジオ番組生成フロー
+
+<div class="two-column">
+<div class="column">
+
+1. 定時（6:55）に生成処理開始 (EventBridge→Lambda)
+1. Qiita から人気記事を取得（Qiita API）
+1. 記事内容を要約（gpt-4o-mini）
+1. リスナーからのお便り取得 (DB)
+1. 番組の台本生成（gpt-4o）
+1. 番組音声を生成（Google TTS）
+
+</div>
+
+<div class="column">
+
+7. BGM, 効果音と合成し、チャプター付与（FFmpeg）
+1. 番組音声ファイルをアップロード（Cloudflare R2）
+1. 番組台本のベクトル化、DB 更新 (DB)
+1. サイトの再生成（Nuxt3 SSG）
+1. RSS 経由で Podcast 番組更新（Nuxt3 SSG）
+1. 番組公開のポスト（Twitter API）
+
+</div>
+</div>
+
+---
+
+# 開発スケジュール
+
+※ TODO: 表にする
+
+- 11月初
+    - 検討開始。頭の中で妄想する
+- 11/20
+    - サービス概要や要件を書き出し始める
+- 11/29
+    - リポジトリ作成した
+- 12/17
+    - 番組生成ロジックの初版を実装した
+- 1/12
+    - サイト生成と Podcast サービスへの番組登録を自動化した
+- 1/14
+    - 音声合成を OpenAI TTS から Google TTS へ変更した
+- 2/1
+    - Tech Post Cast リリース
+
+---
+
+<style scoped>
+table { table-layout: auto; display:table; font-size: 24px; margin: 30px }
+td { padding: 10px }
+</style>
+
+# 運用コスト（2025.2）
+
+| 対象 | 料金（ドル/月） | 備考 |
+| :---- | ----: | :---- |
+| AWS <br /> (ECR, Lambda, CloudWatch, CDK etc.) | 0.70 | ECR: 0.65 |
+| Google Cloud (Speech-to-Text) | 0.00 | 約13万文字 / 1M文字 |
+| Cloudflare (Workers, Pages, R2) | 0.00 | |
+| OpenAI API <br /> (gpt-4o, gpt-4o-mini, text-embedding-3-small) | 0.47 | 287 requests <br/> 1.4M tokens |
+| Neon (PostgreSQL) | 0.00 | |
+| 合計 | 1.17 | ≒ 181円 |
+
+※開発での試用を含める
