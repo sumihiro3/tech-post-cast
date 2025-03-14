@@ -105,6 +105,17 @@ img { max-width: 36%; height: auto; display: block; margin: 0 auto; }
 
 <style scoped>
 h2 { font-size: 32px; margin-bottom: 10px; }
+img { max-width: 20%; height: auto; display: block; margin: 0 auto; }
+</style>
+
+## 主な機能
+
+- 毎朝7時に自動で番組を生成して配信する（約10分番組）
+- Qiita人気記事を AI のパーソナリティが解説する
+- BGM・効果音で本物のラジオ番組のように演出する
+- リスナーからのお便りを紹介する
+
+---
 </style>
 
 ## 主な特徴
