@@ -1,0 +1,83 @@
+sequenceDiagram
+    participant AWS_EB as EventBridge
+    box rgba(33,66,99,0.04) Backend App on AWS Lambda
+        participant NestJS
+        participant FFmpeg
+    end
+    participant Qiita_API as Qiita API
+    participant OpenAI_API as OpenAI API
+    participant DB
+    participant Google_TTS as Google TTS
+    participant R2 as Cloudflare R2
+    participant CF_Pages as Cloudflare Pages
+    participant Twitter
+
+    activate AWS_EB
+    AWS_EB->>NestJS: 毎朝6:55にトリガー
+    deactivate AWS_EB
+    
+    activate NestJS
+    NestJS->>Qiita_API: 人気記事を取得
+    activate Qiita_API
+    Qiita_API-->>NestJS: 
+    deactivate Qiita_API
+    
+    NestJS->>OpenAI_API: 記事内容の要約依頼 (GPT-4o-mini)
+    activate OpenAI_API
+    OpenAI_API-->>NestJS: 
+    deactivate OpenAI_API
+    
+    NestJS->>DB: リスナーからのお便り取得
+    activate DB
+    DB-->>NestJS: 
+    deactivate DB
+    
+    NestJS->>OpenAI_API: 番組台本生成 (GPT-4o)
+    activate OpenAI_API
+    OpenAI_API-->>NestJS: 
+    deactivate OpenAI_API
+    
+    NestJS->>Google_TTS: 音声合成依頼
+    activate Google_TTS
+    Google_TTS-->>NestJS: 
+    deactivate Google_TTS
+    
+    NestJS->>FFmpeg: BGM・効果音と合成、チャプター付与
+    activate FFmpeg
+    FFmpeg-->>NestJS: 
+    deactivate FFmpeg
+    
+    NestJS->>R2: 番組音声ファイルをアップロード
+    activate R2
+    R2-->>NestJS: 
+    deactivate R2
+    NestJS->>DB: 番組情報を保存
+    activate DB
+    DB-->>NestJS: 
+    deactivate DB
+    
+    NestJS->>OpenAI_API: 番組台本をベクトル化 (text-embedding-3-small)
+    activate OpenAI_API
+    OpenAI_API-->>NestJS: 
+    deactivate OpenAI_API
+    
+    NestJS->>DB: 番組台本ベクトルデータを保存
+    activate DB
+    DB-->>NestJS: 
+    deactivate DB
+    
+    NestJS->>CF_Pages: サービスサイト再生成
+    activate CF_Pages
+    CF_Pages-->>NestJS: 
+    deactivate CF_Pages
+    
+    NestJS->>CF_Pages: RSS更新でPodcast番組登録
+    activate CF_Pages
+    CF_Pages-->>NestJS: 
+    deactivate CF_Pages
+    
+    NestJS->>Twitter: 番組公開ポスト
+    activate Twitter
+    Twitter-->>NestJS: 
+    deactivate Twitter
+    deactivate NestJS
