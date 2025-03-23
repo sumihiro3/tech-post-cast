@@ -5,6 +5,10 @@
       "path": "."
     },
     {
+      "name": "api-backend",
+      "path": "apps/api-backend"
+    },
+    {
       "name": "backend",
       "path": "apps/backend"
     },
