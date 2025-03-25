@@ -17,6 +17,10 @@
     "format": "eslint --fix . "
   },
   "dependencies": {
+    "@clerk/localizations": "^3.13.1",
+    "@clerk/nuxt": "^1.4.3",
+    "@clerk/types": "^4.49.1",
+    "@clerk/vue": "^1.4.2",
     "@mdi/font": "^7.4.47",
     "dayjs": "^1.11.13",
     "nuxt": "^3.14.1592",

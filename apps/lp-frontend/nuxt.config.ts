@@ -1,4 +1,5 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { jaJP } from '@clerk/localizations';
 import type { Nitro, NitroConfig } from 'nitropack';
 import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify';
 import type { HeadlineTopicProgramsCountDto } from './src/api';
@@ -56,6 +57,18 @@ export default defineNuxtConfig({
     transpile: ['vuetify'],
   },
   ssr: true,
+  // ルート別のレンダリング戦略
+  routeRules: {
+    // パブリックページ: SSG
+    '/': { prerender: true },
+    '/headline-topic-programs/**': { prerender: true },
+
+    // アプリページ: SPA (クライアントサイドのみ)
+    '/app/**': { ssr: false },
+
+    // API関連: SSRなし、キャッシュなし
+    '/api/**': { ssr: false, cache: false },
+  },
   app: {
     head: {
       title: 'Tech Post Cast',
@@ -161,11 +174,16 @@ export default defineNuxtConfig({
         );
       });
     },
+    // Clerk
+    '@clerk/nuxt',
     // nuxt-gtag
     'nuxt-gtag',
     // '@nuxt/eslint'
     '@nuxt/eslint',
   ],
+  clerk: {
+    localization: jaJP,
+  },
   gtag: {
     id: process.env.GA_MEASUREMENT_ID,
   },
