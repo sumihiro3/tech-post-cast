@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  Inject,
   Injectable,
   Logger,
   UnauthorizedException,
@@ -8,43 +9,75 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 
-/**
- * ApiV1 のアクセス制限を行うガード
- * Bearer Token による認証を行う
- */
 @Injectable()
-export class ApiV1BearerTokenGuard implements CanActivate {
-  private readonly logger = new Logger(ApiV1BearerTokenGuard.name);
+export abstract class BearerGuardBase implements CanActivate {
+  private readonly __logger = new Logger(BearerGuardBase.name);
 
-  constructor(private configService: ConfigService) {}
+  /**
+   * リクエストオブジェクトより Bearer token を取得する
+   * @param request リクエストオブジェクト
+   * @returns token
+   */
+  getBearerTokenFromRequest(request: Request): string {
+    this.__logger.debug(`BearerGuardBase.getTokenFromRequest called`);
+    let token = request.headers.authorization;
+    this.__logger.debug(`Authorization header value: ${token}`);
+    // token が Bearer トークンであることを確認
+    if (!token || !token.startsWith('Bearer ')) {
+      Logger.warn(`Bearer トークンではありません: ${token}`);
+      return '';
+    }
+    token = token.slice(7);
+    this.__logger.debug(
+      `HTTP Request ヘッダーから Bearer token を抽出しました`,
+      {
+        token,
+      },
+    );
+    return token;
+  }
 
-  canActivate(context: ExecutionContext): boolean {
-    // リクエストを取得する
-    const req = context.switchToHttp().getRequest<Request>();
-    // 認証ヘッダーを取得する
-    const authHeader = req.headers.authorization;
-    this.logger.debug('authHeader', { authHeader });
-    if (!authHeader) {
-      throw new UnauthorizedException('Authorization header not found');
-    }
-    // Bearer トークンかどうかを確認する
-    if (!authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Invalid token format');
-    }
-    // トークンを取得する
-    const token = authHeader.slice(7);
-    this.logger.debug('token', { token });
-    // トークンが空の場合はエラー
-    if (!token) {
-      throw new UnauthorizedException('Token is empty');
-    }
-    // .env から ApiV1 のトークンを取得する
-    const configApiToken = this.configService.get<string>('API_V1_TOKEN');
-    this.logger.debug('configApiToken', { configApiToken });
-    // 認証トークンとマッチするかどうかを確認する
-    if (token !== configApiToken) {
-      throw new UnauthorizedException('Invalid token');
+  /**
+   * Bearer token を取得する
+   * @returns Bearer token
+   * @abstract
+   */
+  protected abstract getBearerToken(): string;
+
+  /**
+   * リクエストヘッダーより Bearer token を取得し、検証結果を返す Guard
+   * @param context Context
+   * @returns 検証結果
+   */
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    this.__logger.debug(`BearerGuardBase.canActivate called!`);
+    const request = context.switchToHttp().getRequest();
+    // Get Bearer token
+    const token = this.getBearerTokenFromRequest(request);
+    // Verify API Key
+    const BEARER_TOKEN = this.getBearerToken();
+    this.__logger.debug(`BEARER_TOKEN: ${BEARER_TOKEN}`);
+    if (BEARER_TOKEN !== token) {
+      throw new UnauthorizedException(
+        `Bearer token の認証が失敗しました: ${token}`,
+      );
     }
     return true;
+  }
+}
+
+/**
+ * API v1 用の Bearer token を検証する Guard
+ */
+export class ApiV1BearerTokenGuard extends BearerGuardBase {
+  private readonly logger = new Logger(ApiV1BearerTokenGuard.name);
+
+  constructor(@Inject(ConfigService) private readonly config: ConfigService) {
+    super();
+  }
+
+  protected getBearerToken(): string {
+    this.logger.debug(`ApiV1BearerTokenGuard.getBearerToken called!`);
+    return this.config.get<string>('V1_API_ACCESS_TOKEN');
   }
 }
