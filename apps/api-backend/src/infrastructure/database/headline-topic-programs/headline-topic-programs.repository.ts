@@ -2,16 +2,10 @@ import {
   HeadlineTopicProgramGenerateResult,
   HeadlineTopicProgramWithSimilarAndNeighbors,
   ProgramUploadResult,
-  VectorizeResult,
 } from '@domains/radio-program/headline-topic-program';
 import { IHeadlineTopicProgramsRepository } from '@domains/radio-program/headline-topic-program/headline-topic-programs.repository.interface';
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  HeadlineTopicProgram,
-  HeadlineTopicProgramScriptVector,
-  Prisma,
-  QiitaPost,
-} from '@prisma/client';
+import { HeadlineTopicProgram, Prisma, QiitaPost } from '@prisma/client';
 import {
   HeadlineTopicProgramWithQiitaPosts,
   PrismaService,
@@ -282,50 +276,6 @@ export class HeadlineTopicProgramsRepository
     });
     this.logger.debug(
       `ヘッドライントピック番組を更新しました: ${result.id}`,
-      result,
-    );
-    return result;
-  }
-
-  /**
-   * ヘッドライントピック番組の台本のベクトルデータを設定する
-   * @param id 番組 ID
-   * @param vectorizeResult ベクトル化結果
-   * @returns 設定したヘッドライントピック番組の台本ベクトルデータ
-   */
-  async setHeadlineTopicProgramScriptVector(
-    id: string,
-    vectorizeResult: VectorizeResult,
-  ): Promise<HeadlineTopicProgramScriptVector> {
-    this.logger.debug(
-      `HeadlineTopicProgramsRepository.setHeadlineTopicProgramScriptVector called`,
-      {
-        id,
-        vector: vectorizeResult.vector,
-      },
-    );
-    // Transaction で更新する
-    const result = await this.prisma.$transaction(async (prisma) => {
-      // HeadlineTopicProgramScriptVector に指定の番組IDのデータが有れば削除する
-      const record = await prisma.headlineTopicProgramScriptVector.findUnique({
-        where: { id },
-      });
-      if (record) {
-        await prisma.headlineTopicProgramScriptVector.delete({
-          where: { id },
-        });
-      }
-      // ベクトルデータを文字列化する
-      const vectorData = JSON.stringify(vectorizeResult.vector);
-      // HeadlineTopicProgramScriptVector に新しいベクトルデータを登録する
-      await prisma.$executeRaw`INSERT INTO headline_topic_program_vectors (id, vector, model, total_tokens, created_at) VALUES (${id}, ${vectorData}::vector, 'openai', 0, NOW());`;
-      // ベクトル化結果を取得する
-      return prisma.headlineTopicProgramScriptVector.findUnique({
-        where: { id },
-      });
-    });
-    this.logger.debug(
-      `ヘッドライントピック番組の台本ベクトルデータを更新しました: ${result.id}`,
       result,
     );
     return result;

@@ -1,16 +1,6 @@
 import { HeadlineTopicProgramWithQiitaPosts } from '@tech-post-cast/database';
 
 /**
- * ヘッドライントピック番組のベクトル化結果
- */
-export interface VectorizeResult {
-  /**
-   * ベクトル
-   */
-  vector: number[];
-}
-
-/**
  * ヘッドライントピック番組とその類似番組および前後の番組
  */
 export interface HeadlineTopicProgramWithSimilarAndNeighbors {
