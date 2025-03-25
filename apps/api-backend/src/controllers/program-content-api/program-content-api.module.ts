@@ -1,12 +1,15 @@
 import { HeadlineTopicProgramsRepository } from '@/infrastructure/database/headline-topic-programs/headline-topic-programs.repository';
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '@tech-post-cast/database';
-import { LegacyApiV1Controller } from '../program-content-api/program-content-api.controller';
-import { ProgramContentApiService } from '../program-content-api/program-content-api.service';
+import {
+  LegacyApiV1Controller,
+  ProgramContentApiController,
+} from './program-content-api.controller';
+import { ProgramContentApiService } from './program-content-api.service';
 
 @Module({
   imports: [PrismaModule],
-  controllers: [LegacyApiV1Controller],
+  controllers: [ProgramContentApiController, LegacyApiV1Controller],
   providers: [
     ProgramContentApiService,
     {
@@ -15,4 +18,4 @@ import { ProgramContentApiService } from '../program-content-api/program-content
     },
   ],
 })
-export class ApiV1Module {}
+export class ProgramContentApiModule {}

@@ -6,8 +6,8 @@ import { HeadlineTopicProgramWithQiitaPosts } from '@tech-post-cast/database';
 import { HeadlineTopicProgramsFindRequestDto } from './dto';
 
 @Injectable()
-export class ApiV1Service {
-  private readonly logger = new Logger(ApiV1Service.name);
+export class ProgramContentApiService {
+  private readonly logger = new Logger(ProgramContentApiService.name);
 
   constructor(
     @Inject('HeadlineTopicProgramsRepository')
@@ -22,7 +22,10 @@ export class ApiV1Service {
   async getHeadlineTopicProgram(
     id: string,
   ): Promise<HeadlineTopicProgramWithQiitaPosts> {
-    this.logger.debug('ApiV1Service.getHeadlineTopicProgram called', { id });
+    this.logger.debug(
+      'ProgramContentApiService.getHeadlineTopicProgram called',
+      { id },
+    );
     try {
       const result = await this.headlineTopicProgramsRepository.findOne(id);
       this.logger.debug(
@@ -48,7 +51,7 @@ export class ApiV1Service {
     id: string,
   ): Promise<HeadlineTopicProgramWithSimilarAndNeighbors> {
     this.logger.debug(
-      'ApiV1Service.getHeadlineTopicProgramWithSimilarAndNeighbors called',
+      'ProgramContentApiService.getHeadlineTopicProgramWithSimilarAndNeighbors called',
       {
         id,
       },
@@ -78,7 +81,9 @@ export class ApiV1Service {
    * @returns ヘッドライントピック番組の件数
    */
   async getHeadlineTopicProgramsCounts(): Promise<number> {
-    this.logger.debug('ApiV1Service.getHeadlineTopicProgramsCounts called');
+    this.logger.debug(
+      'ProgramContentApiService.getHeadlineTopicProgramsCounts called',
+    );
     try {
       const result = await this.headlineTopicProgramsRepository.count();
       this.logger.debug('ヘッドライントピック番組の件数を取得しました', {
@@ -100,7 +105,10 @@ export class ApiV1Service {
   async getHeadlineTopicPrograms(
     dto: HeadlineTopicProgramsFindRequestDto,
   ): Promise<HeadlineTopicProgramWithQiitaPosts[]> {
-    this.logger.debug('ApiV1Service.getHeadlineTopicPrograms called', { dto });
+    this.logger.debug(
+      'ProgramContentApiService.getHeadlineTopicPrograms called',
+      { dto },
+    );
     try {
       const result = await this.headlineTopicProgramsRepository.find(
         dto.page,
@@ -120,7 +128,9 @@ export class ApiV1Service {
    * @returns ヘッドライントピック番組のID一覧
    */
   async getHeadlineTopicProgramIds(): Promise<string[]> {
-    this.logger.debug('ApiV1Service.getHeadlineTopicProgramIds called');
+    this.logger.debug(
+      'ProgramContentApiService.getHeadlineTopicProgramIds called',
+    );
     try {
       const result = await this.headlineTopicProgramsRepository.findIds();
       this.logger.debug('ヘッドライントピック番組のID一覧を取得しました', {

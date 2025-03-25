@@ -67,7 +67,25 @@ export abstract class BearerGuardBase implements CanActivate {
 }
 
 /**
- * API v1 用の Bearer token を検証する Guard
+ * プログラムコンテンツAPI用の Bearer token を検証する Guard
+ */
+export class ProgramContentApiBearerTokenGuard extends BearerGuardBase {
+  private readonly logger = new Logger(ProgramContentApiBearerTokenGuard.name);
+
+  constructor(@Inject(ConfigService) private readonly config: ConfigService) {
+    super();
+  }
+
+  protected getBearerToken(): string {
+    this.logger.debug(
+      `ProgramContentApiBearerTokenGuard.getBearerToken called!`,
+    );
+    return this.config.get<string>('PROGRAM_CONTENT_API_ACCESS_TOKEN');
+  }
+}
+
+/**
+ * @deprecated ApiV1BearerTokenGuard は ProgramContentApiBearerTokenGuard に置き換えられました
  */
 export class ApiV1BearerTokenGuard extends BearerGuardBase {
   private readonly logger = new Logger(ApiV1BearerTokenGuard.name);
@@ -78,6 +96,18 @@ export class ApiV1BearerTokenGuard extends BearerGuardBase {
 
   protected getBearerToken(): string {
     this.logger.debug(`ApiV1BearerTokenGuard.getBearerToken called!`);
-    return this.config.get<string>('V1_API_ACCESS_TOKEN');
+
+    // 新しい環境変数を優先して使用し、なければ旧環境変数を使用する
+    const token =
+      this.config.get<string>('PROGRAM_CONTENT_API_ACCESS_TOKEN') ||
+      this.config.get<string>('V1_API_ACCESS_TOKEN');
+
+    if (!token) {
+      this.logger.warn(
+        '環境変数 PROGRAM_CONTENT_API_ACCESS_TOKEN または V1_API_ACCESS_TOKEN が設定されていません',
+      );
+    }
+
+    return token;
   }
 }
