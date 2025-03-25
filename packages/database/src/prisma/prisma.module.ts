@@ -1,6 +1,6 @@
-import { ConfigService } from '@nestjs/config';
-import { PrismaService } from './prisma.service';
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { PrismaClientManager, PrismaService } from './';
 
 @Module({
   providers: [{
@@ -8,8 +8,8 @@ import { Module } from '@nestjs/common';
       return new PrismaService(config)
     },
     provide: PrismaService,
-    inject: [ConfigService]
-  }],
-  exports: [PrismaService],
+    inject: [ConfigService],
+  }, PrismaClientManager],
+  exports: [PrismaService, PrismaClientManager],
 })
 export class PrismaModule {}
