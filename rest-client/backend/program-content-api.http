@@ -1,9 +1,5 @@
 ##################################################
-# 旧 API (Api V1) の呼び出し
-##################################################
-# 注意: これらのエンドポイントは非推奨です。
-# 新しいエンドポイント /api/program-content/ を使用してください。
-# 後方互換性のために /api/v1/ エンドポイントは一時的に維持されています。
+# プログラムコンテンツ API の実行
 ##################################################
 
 # ローカル環境
@@ -20,33 +16,34 @@
 
 
 ### ヘッドライントピック番組の件数を取得する
-GET {{baseUrl}}/api/v1/headline-topic-programs/count
+GET {{baseUrl}}/api/program-content/headline-topic-programs/count
 Content-Type: application/json
 Authorization: Bearer {{apiToken}}
 
 ### ヘッドライントピック番組の一覧を取得する
 @limit=10
 @page=1
-GET {{baseUrl}}/api/v1/headline-topic-programs?limit={{limit}}&page={{page}}
+GET {{baseUrl}}/api/program-content/headline-topic-programs?limit={{limit}}&page={{page}}
 Content-Type: application/json
 Authorization: Bearer {{apiToken}}
 
 ### ヘッドライントピック番組の番組ID一覧を取得する
-GET {{baseUrl}}/api/v1/headline-topic-program-ids
+GET {{baseUrl}}/api/program-content/headline-topic-program-ids
 Content-Type: application/json
 Authorization: Bearer {{apiToken}}
 
 ### 指定のヘッドライントピック番組を取得する
 @postId = cm6d7ey420000jx0ypb6sivhu
-GET {{baseUrl}}/api/v1/headline-topic-programs/{{postId}}
+GET {{baseUrl}}/api/program-content/headline-topic-programs/{{postId}}
 Content-Type: application/json
 Authorization: Bearer {{apiToken}}
 
 ### 指定のヘッドライントピック番組と、その類似番組および、前後の日付の番組を取得する
 @postId = cm68y9le50001i511o4v1d1yp
-GET {{baseUrl}}/api/v1/headline-topic-programs/{{postId}}/similar-and-neighbors
+GET {{baseUrl}}/api/program-content/headline-topic-programs/{{postId}}/similar-and-neighbors
 Content-Type: application/json
 Authorization: Bearer {{apiToken}}
+
 
 # APIの名称変更に伴い、環境変数も変更されました。
 # 旧: V1_API_ACCESS_TOKEN, V1_API_TOKEN_LOCAL, V1_API_TOKEN_DEV, V1_API_TOKEN_PROD

@@ -1,11 +1,13 @@
 import { MiddlewareConsumer, Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import {
   CustomLoggerModule,
   RequestLoggingMiddleware,
 } from '@tech-post-cast/commons';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { ApiV1Module } from './controllers/api-v1/api-v1.module';
+import { ProgramContentApiModule } from './controllers/program-content-api/program-content-api.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import {
       envFilePath: `.env`,
     }),
     CustomLoggerModule,
+    ProgramContentApiModule,
+    ApiV1Module,
   ],
   controllers: [AppController],
   providers: [AppService],

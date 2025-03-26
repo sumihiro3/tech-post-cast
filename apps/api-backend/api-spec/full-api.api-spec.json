@@ -1,0 +1,742 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "AppController_getHello",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "App"
+        ]
+      }
+    },
+    "/api/program-content/headline-topic-programs/count": {
+      "get": {
+        "operationId": "getHeadlineTopicProgramsCount",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "description": "Bearer Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "処理成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeadlineTopicProgramsCountDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "summary": "ヘッドライントピック番組の件数を取得する",
+        "tags": [
+          "ProgramContentApi"
+        ]
+      }
+    },
+    "/api/program-content/headline-topic-programs": {
+      "get": {
+        "operationId": "getHeadlineTopicPrograms",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "description": "ページあたりに取得する番組の数",
+            "schema": {
+              "default": 10,
+              "example": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "ページ番号",
+            "schema": {
+              "default": 1,
+              "example": 0,
+              "type": "number"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "description": "Bearer Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "処理成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HeadlineTopicProgramDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "summary": "ヘッドライントピック番組の一覧を取得する",
+        "tags": [
+          "ProgramContentApi"
+        ]
+      }
+    },
+    "/api/program-content/headline-topic-program-ids": {
+      "get": {
+        "operationId": "getHeadlineTopicProgramIds",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "description": "Bearer Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "処理成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "summary": "ヘッドライントピック番組の番組ID一覧を取得する",
+        "tags": [
+          "ProgramContentApi"
+        ]
+      }
+    },
+    "/api/program-content/headline-topic-programs/{id}/similar-and-neighbors": {
+      "get": {
+        "operationId": "getHeadlineTopicProgramWithSimilarAndNeighbors",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "description": "Bearer Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "処理成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeadlineTopicProgramWithSimilarAndNeighborsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
+        "summary": "指定のヘッドライントピック番組と、その類似番組および、前後の日付の番組を取得する",
+        "tags": [
+          "ProgramContentApi"
+        ]
+      }
+    },
+    "/api/program-content/headline-topic-programs/{id}": {
+      "get": {
+        "operationId": "getHeadlineTopicProgram",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "description": "Bearer Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "処理成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeadlineTopicProgramDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
+        "summary": "指定のヘッドライントピック番組を取得する",
+        "tags": [
+          "ProgramContentApi"
+        ]
+      }
+    },
+    "/api/v1/headline-topic-programs/count": {
+      "get": {
+        "deprecated": true,
+        "operationId": "legacyGetHeadlineTopicProgramsCount",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "description": "Bearer Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "処理成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeadlineTopicProgramsCountDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "summary": "[非推奨] ヘッドライントピック番組の件数を取得する",
+        "tags": [
+          "CompatibilityApi"
+        ]
+      }
+    },
+    "/api/v1/headline-topic-programs": {
+      "get": {
+        "deprecated": true,
+        "operationId": "legacyGetHeadlineTopicPrograms",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "description": "ページあたりに取得する番組の数",
+            "schema": {
+              "default": 10,
+              "example": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "ページ番号",
+            "schema": {
+              "default": 1,
+              "example": 0,
+              "type": "number"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "description": "Bearer Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "処理成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HeadlineTopicProgramDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "summary": "[非推奨] ヘッドライントピック番組の一覧を取得する",
+        "tags": [
+          "CompatibilityApi"
+        ]
+      }
+    },
+    "/api/v1/headline-topic-program-ids": {
+      "get": {
+        "deprecated": true,
+        "operationId": "legacyGetHeadlineTopicProgramIds",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "description": "Bearer Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "処理成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "summary": "[非推奨] ヘッドライントピック番組の番組ID一覧を取得する",
+        "tags": [
+          "CompatibilityApi"
+        ]
+      }
+    },
+    "/api/v1/headline-topic-programs/{id}/similar-and-neighbors": {
+      "get": {
+        "deprecated": true,
+        "operationId": "legacyGetHeadlineTopicProgramWithSimilarAndNeighbors",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "description": "Bearer Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "処理成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeadlineTopicProgramWithSimilarAndNeighborsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
+        "summary": "[非推奨] 指定のヘッドライントピック番組と、その類似番組および、前後の日付の番組を取得する",
+        "tags": [
+          "CompatibilityApi"
+        ]
+      }
+    },
+    "/api/v1/headline-topic-programs/{id}": {
+      "get": {
+        "deprecated": true,
+        "operationId": "legacyGetHeadlineTopicProgram",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "description": "Bearer Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "処理成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeadlineTopicProgramDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
+        "summary": "[非推奨] 指定のヘッドライントピック番組を取得する",
+        "tags": [
+          "CompatibilityApi"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "TechPostCast API",
+    "description": "TechPostCast API for frontend application",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "HeadlineTopicProgramsCountDto": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "number",
+            "description": "番組数",
+            "example": 100
+          }
+        },
+        "required": [
+          "count"
+        ]
+      },
+      "PostSummaryDto": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string",
+            "description": "記事の要約",
+            "example": "記事の要約"
+          }
+        },
+        "required": [
+          "summary"
+        ]
+      },
+      "HeadlineTopicProgramScriptDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "タイトル",
+            "example": "タイトル"
+          },
+          "intro": {
+            "type": "string",
+            "description": "イントロダクション",
+            "example": "イントロダクション"
+          },
+          "posts": {
+            "description": "紹介記事の要約",
+            "example": [
+              {
+                "summary": "記事の要約"
+              }
+            ],
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PostSummaryDto"
+            }
+          },
+          "ending": {
+            "type": "string",
+            "description": "エンディング",
+            "example": "エンディング"
+          }
+        },
+        "required": [
+          "title",
+          "intro",
+          "posts",
+          "ending"
+        ]
+      },
+      "HeadlineTopicProgramChapterDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "タイトル",
+            "example": "タイトル"
+          },
+          "startTime": {
+            "type": "number",
+            "description": "チャプターの開始位置（ミリ秒）",
+            "example": 1000
+          },
+          "endTime": {
+            "type": "number",
+            "description": "チャプターの終了位置（ミリ秒）",
+            "example": 2000
+          }
+        },
+        "required": [
+          "title",
+          "startTime",
+          "endTime"
+        ]
+      },
+      "QiitaPostDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Qiita 記事ID",
+            "example": "sample-post-id"
+          },
+          "title": {
+            "type": "string",
+            "description": "タイトル",
+            "example": "タイトル"
+          },
+          "url": {
+            "type": "string",
+            "description": "URL",
+            "example": "https://example.com"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "記事が作成された日時",
+            "example": "2021-01-01T00:00:00Z"
+          },
+          "authorName": {
+            "type": "string",
+            "description": "記事投稿者のユーザ名",
+            "example": "user-name"
+          },
+          "authorId": {
+            "type": "string",
+            "description": "記事投稿者のユーザID",
+            "example": "user-id"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "url",
+          "createdAt",
+          "authorName",
+          "authorId"
+        ]
+      },
+      "HeadlineTopicProgramDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "番組ID",
+            "example": "sample-program-id"
+          },
+          "title": {
+            "type": "string",
+            "description": "タイトル",
+            "example": "サンプル番組"
+          },
+          "script": {
+            "description": "台本",
+            "example": "番組の台本",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HeadlineTopicProgramScriptDto"
+              }
+            ]
+          },
+          "chapters": {
+            "description": "ヘッドライントピック番組のチャプター一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HeadlineTopicProgramChapterDto"
+            }
+          },
+          "audioUrl": {
+            "type": "string",
+            "description": "ヘッドライントピックの音声ファイルURL",
+            "example": "https://example.com/sample.mp3"
+          },
+          "audioDuration": {
+            "type": "number",
+            "description": "音声ファイルの長さ（ミリ秒）",
+            "example": 1000
+          },
+          "videoUrl": {
+            "type": "string",
+            "description": "ヘッドライントピックの動画ファイルURL",
+            "example": "https://example.com/sample.mp4"
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "画像URL",
+            "example": "https://example.com/sample.jpg"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "今日のヘッドライントピックが作成された日時",
+            "example": "2021-01-01T00:00:00Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "最終更新日時",
+            "example": "2021-01-01T00:00:00Z"
+          },
+          "posts": {
+            "description": "紹介している投稿の一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QiitaPostDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "script",
+          "chapters",
+          "audioUrl",
+          "audioDuration",
+          "createdAt",
+          "updatedAt",
+          "posts"
+        ]
+      },
+      "HeadlineTopicProgramWithSimilarAndNeighborsDto": {
+        "type": "object",
+        "properties": {
+          "similar": {
+            "description": "類似のヘッドライントピック番組",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HeadlineTopicProgramDto"
+            }
+          },
+          "previous": {
+            "description": "前日のヘッドライントピック番組",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HeadlineTopicProgramDto"
+              }
+            ]
+          },
+          "target": {
+            "description": "指定のヘッドライントピック番組",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HeadlineTopicProgramDto"
+              }
+            ]
+          },
+          "next": {
+            "description": "翌日のヘッドライントピック番組",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HeadlineTopicProgramDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "similar",
+          "previous",
+          "target",
+          "next"
+        ]
+      }
+    }
+  }
+}
