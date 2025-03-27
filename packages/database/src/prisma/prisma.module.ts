@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaClientManager, PrismaService } from './';
+import { PrismaClientManager } from './prisma-client-manager';
+import { PrismaService } from './prisma.service';
 
 @Module({
   providers: [{
