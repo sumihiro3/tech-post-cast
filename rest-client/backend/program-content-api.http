@@ -3,16 +3,16 @@
 ##################################################
 
 # ローカル環境
-@baseUrl = {{$dotenv BACKEND_BASE_URL_LOCAL}}
-@apiToken = {{$dotenv PROGRAM_CONTENT_API_TOKEN_LOCAL}}
+@baseUrl = {{$dotenv FRONTEND_API_BASE_URL_LOCAL}}
+@apiToken = {{$dotenv FRONTEND_API_TOKEN_LOCAL}}
 
 # 開発環境
-# @baseUrl = {{$dotenv BACKEND_BASE_URL_DEV}}
-# @apiToken = {{$dotenv PROGRAM_CONTENT_API_TOKEN_DEV}}
+# @baseUrl = {{$dotenv FRONTEND_API_BASE_URL_DEV}}
+# @apiToken = {{$dotenv FRONTEND_API_TOKEN_DEV}}
 
 # 本番環境
-# @baseUrl = {{$dotenv BACKEND_BASE_URL_PROD}}
-# @apiToken = {{$dotenv PROGRAM_CONTENT_API_TOKEN_PROD}}
+# @baseUrl = {{$dotenv FRONTEND_API_BASE_URL_PROD}}
+# @apiToken = {{$dotenv FRONTEND_API_TOKEN_PROD}}
 
 
 ### ヘッドライントピック番組の件数を取得する
