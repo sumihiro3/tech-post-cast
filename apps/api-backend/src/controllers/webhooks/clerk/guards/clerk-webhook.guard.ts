@@ -1,3 +1,4 @@
+import { WebhookEvent } from '@clerk/backend';
 import {
   CanActivate,
   ExecutionContext,
@@ -39,11 +40,12 @@ export class ClerkWebhookGuard implements CanActivate {
     try {
       // Webhookの検証
       const payload = JSON.stringify(request.body);
-      this.webhook.verify(payload, {
+      const webhookEvent = this.webhook.verify(payload, {
         'svix-id': svixId as string,
         'svix-timestamp': svixTimestamp as string,
         'svix-signature': svixSignature as string,
-      });
+      }) as WebhookEvent;
+      request.webhook = webhookEvent;
       return true;
     } catch (error) {
       const errorMessage = `Clerk からの Webhook の検証に失敗しました`;
