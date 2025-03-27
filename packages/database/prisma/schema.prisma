@@ -172,3 +172,28 @@ model ListenerLetter {
   // テーブル名
   @@map("listener_letters")
 }
+
+// アプリケーションの一般ユーザー
+model AppUser {
+  // ユーザーの一意なID（ClerkのユーザーID）
+  id           String    @id @db.VarChar(50)
+  // ユーザーの姓
+  firstName    String?   @map("first_name") @db.VarChar(50)
+  // ユーザーの名
+  lastName     String?   @map("last_name") @db.VarChar(50)
+  // ユーザーのメールアドレス
+  email        String?   @db.VarChar(255)
+  // ユーザーのプロフィール画像URL
+  imageUrl     String?   @map("image_url") @db.VarChar(255)
+  // ユーザーが有効かどうかを表すフラグ
+  isActive     Boolean   @default(true) @map("is_active")
+  // ユーザーの作成日時
+  createdAt    DateTime  @map("created_at")
+  // ユーザーの最終更新日時
+  updatedAt    DateTime  @map("updated_at")
+  // 最後にサインインした日時
+  lastSignInAt DateTime? @map("last_sign_in_at")
+
+  // テーブル名
+  @@map("app_users")
+}

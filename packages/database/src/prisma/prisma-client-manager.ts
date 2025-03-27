@@ -1,12 +1,18 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { Prisma } from '@prisma/client';
-import { PrismaService, prismaTransactionClientStorage } from '.';
+import { prismaTransactionClientStorage } from './prisma-transaction-client-storage';
+import { PrismaService } from './prisma.service';
 
 @Injectable()
 export class PrismaClientManager {
+  private readonly prisma: PrismaService;
+
   constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.prisma = new PrismaService(this.configService);
+  }
 
   /**
    * PrismaClient を取得する
@@ -36,7 +42,9 @@ export class PrismaClientManager {
   try {
     const prismaTransactionClient = this.getPrismaTransactionClient();
     // トランザクションクライアントが存在する場合は、そのクライアントを使用してトランザクション処理を実行する
-    if (prismaTransactionClient) return await fn();
+    if (prismaTransactionClient) {
+      return await fn();
+    }
     // トランザクションクライアントが存在しない場合は、
     // 新しいトランザクションクライアントを作成してトランザクション処理を実行する
     return await this.prisma.$transaction(

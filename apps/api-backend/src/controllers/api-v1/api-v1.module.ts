@@ -1,18 +1,11 @@
-import { HeadlineTopicProgramsRepository } from '@/infrastructure/database/headline-topic-programs/headline-topic-programs.repository';
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '@tech-post-cast/database';
-import { LegacyApiV1Controller } from '../program-content-api/program-content-api.controller';
-import { ProgramContentApiService } from '../program-content-api/program-content-api.service';
+import { ProgramContentApiModule } from '../program-content-api/program-content-api.module';
+import { LegacyApiV1Controller } from './legacy-api-v1.controller';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, ProgramContentApiModule],
   controllers: [LegacyApiV1Controller],
-  providers: [
-    ProgramContentApiService,
-    {
-      provide: 'HeadlineTopicProgramsRepository',
-      useClass: HeadlineTopicProgramsRepository,
-    },
-  ],
 })
 export class ApiV1Module {}
+
