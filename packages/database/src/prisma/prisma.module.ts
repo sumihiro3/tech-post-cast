@@ -10,7 +10,15 @@ import { PrismaService } from './prisma.service';
     },
     provide: PrismaService,
     inject: [ConfigService],
-  }, PrismaClientManager],
+  },
+  {
+    provide: PrismaClientManager,
+    useFactory: (config: ConfigService) => {
+      return new PrismaClientManager(config);
+    },
+    inject: [ConfigService],
+  },
+],
   exports: [PrismaService, PrismaClientManager],
 })
 export class PrismaModule {}
