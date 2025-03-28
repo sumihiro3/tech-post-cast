@@ -194,6 +194,40 @@ model AppUser {
   // 最後にサインインした日時
   lastSignInAt DateTime? @map("last_sign_in_at")
 
+  subscriptions Subscription[]
+
   // テーブル名
   @@map("app_users")
+}
+
+// 料金プラン
+model Plan {
+  id          String   @id @default(cuid()) @db.VarChar(50)
+  name        String   @db.VarChar(100)
+  price       Int // 月額金額（円）
+  description String   @db.VarChar(255)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+// ユーザーサブスクリプション
+model Subscription {
+  id        String    @id @default(cuid()) @db.VarChar(50)
+  userId    String    @map("user_id") @db.VarChar(50)
+  planId    String    @map("plan_id") @db.VarChar(50)
+  startDate DateTime  @default(now()) @map("start_date")
+  endDate   DateTime? @map("end_date")
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  user AppUser @relation(fields: [userId], references: [id])
+  plan Plan    @relation(fields: [planId], references: [id])
+
+  @@map("subscriptions")
 }
