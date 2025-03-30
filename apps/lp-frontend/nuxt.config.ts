@@ -63,6 +63,9 @@ export default defineNuxtConfig({
     '/': { prerender: true },
     '/headline-topic-programs/**': { prerender: true },
 
+    // ログインページ: SSR
+    '/login': { ssr: true },
+
     // アプリページ: SPA (クライアントサイドのみ)
     '/app/**': { ssr: false },
 
