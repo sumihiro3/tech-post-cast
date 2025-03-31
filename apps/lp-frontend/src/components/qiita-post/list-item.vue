@@ -1,5 +1,4 @@
 <template lang="pug">
-
 v-card(
   class="mb-4"
   elevation="0"
@@ -8,39 +7,40 @@ v-card(
     .d-flex
       v-avatar(size="64" class="mr-4")
         v-img(
-          :src="article.authorAvatar"
-          :alt="article.author"
+          :src="post.user.profile_image_url"
+          :alt="post.user.name"
           cover
         )
 
       .flex-grow-1
         .d-flex.justify-space-between
-          .text-h6.font-weight-medium {{ article.title }}
+          .text-h6.font-weight-medium {{ post.title }}
 
-        .text-body-2.text-medium-emphasis @{{ article.author }} • {{ article.publishedAt }}
+        .text-body-2.text-medium-emphasis @{{ post.user.name }} • {{ post.created_at }}
 
-        .text-body-2.text-medium-emphasis.mt-1.text-truncate-2 {{ article.description }}
+        //- 記事の本文のうち100文字を表示する
+        .text-body-2.text-medium-emphasis.mt-1.text-truncate-2 {{ post.body.slice(0, 100) }}
 
         .d-flex.justify-space-between.align-center.mt-2
-          div
+          div(v-if="post.tags")
             v-chip(
-              v-for="tag in article.tags"
-              :key="tag"
+              v-for="tag in post.tags"
+              :key="tag.name"
               size="x-small"
               class="mr-1"
               variant="flat"
-            ) {{ tag }}
+            ) {{ tag.name }}
           .d-flex.align-center
             v-icon(size="small" class="mr-1") mdi-thumb-up
-            span.text-caption {{ article.lgtmCount }}
+            span.text-caption {{ post.likes_count }}
             v-icon(size="small" class="ml-2 mr-1") mdi-comment
-            span.text-caption {{ article.commentCount }}
+            span.text-caption {{ post.comments_count }}
 </template>
 
 <script setup lang="ts">
-import type { Article } from '@/pages/app/program-filter.vue';
+import type { IQiitaPostApiResponse } from '@/types';
 
 defineProps<{
-  article: Article;
+  post: IQiitaPostApiResponse;
 }>();
 </script>
