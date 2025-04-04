@@ -1,5 +1,7 @@
+import { AppConfigModule } from '@/app-config/app-config.module';
 import { ApiV1Module } from '@/controllers/api-v1/api-v1.module';
 import { ProgramContentApiModule } from '@/controllers/program-content-api/program-content-api.module';
+import { QiitaPostsModule } from '@/controllers/qiita-posts/qiita-posts.module';
 import { ClerkWebhookModule } from '@/controllers/webhooks/clerk/clerk-webhook.module';
 import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -17,9 +19,11 @@ import { AppService } from './app.service';
       envFilePath: `.env`,
     }),
     CustomLoggerModule,
+    AppConfigModule,
     ProgramContentApiModule,
     ApiV1Module,
     ClerkWebhookModule,
+    QiitaPostsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
