@@ -226,233 +226,87 @@
         ]
       }
     },
-    "/api/v1/headline-topic-programs/count": {
+    "/qiita-posts/search": {
       "get": {
-        "deprecated": true,
-        "operationId": "legacyGetHeadlineTopicProgramsCount",
+        "description": "Qiitaから指定条件に合致する記事を検索して取得します",
+        "operationId": "searchQiitaPosts",
         "parameters": [
           {
-            "name": "authorization",
-            "in": "header",
-            "description": "Bearer Token",
-            "required": true,
+            "name": "authors",
+            "required": false,
+            "in": "query",
+            "description": "著者（カンマ区切りで複数指定可能）",
             "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "処理成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HeadlineTopicProgramsCountDto"
-                }
+              "type": "array",
+              "items": {
+                "type": "string"
               }
             }
           },
-          "400": {
-            "description": "Bad request"
-          }
-        },
-        "summary": "[非推奨] ヘッドライントピック番組の件数を取得する",
-        "tags": [
-          "CompatibilityApi"
-        ]
-      }
-    },
-    "/api/v1/headline-topic-programs": {
-      "get": {
-        "deprecated": true,
-        "operationId": "legacyGetHeadlineTopicPrograms",
-        "parameters": [
           {
-            "name": "limit",
-            "required": true,
+            "name": "tags",
+            "required": false,
             "in": "query",
-            "description": "ページあたりに取得する番組の数",
+            "description": "タグ（カンマ区切りで複数指定可能）",
             "schema": {
-              "default": 10,
-              "example": 10,
-              "type": "number"
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "minPublishedAt",
+            "required": false,
+            "in": "query",
+            "description": "公開日の最小値（YYYY-MM-DD形式）",
+            "schema": {
+              "format": "date-time",
+              "example": "2023-01-01",
+              "type": "string"
             }
           },
           {
             "name": "page",
             "required": false,
             "in": "query",
-            "description": "ページ番号",
+            "description": "ページ番号（1から始まる、デフォルト: 1）",
             "schema": {
+              "minimum": 1,
               "default": 1,
-              "example": 0,
+              "example": 1,
               "type": "number"
             }
           },
           {
-            "name": "authorization",
-            "in": "header",
-            "description": "Bearer Token",
-            "required": true,
+            "name": "perPage",
+            "required": false,
+            "in": "query",
+            "description": "1ページあたりの件数（デフォルト: 20、最大: 100）",
             "schema": {
-              "type": "string"
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "example": 20,
+              "type": "number"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "処理成功",
+            "description": "検索成功",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/HeadlineTopicProgramDto"
-                  }
+                  "$ref": "#/components/schemas/SearchQiitaPostsResponseDto"
                 }
               }
             }
-          },
-          "400": {
-            "description": "Bad request"
           }
         },
-        "summary": "[非推奨] ヘッドライントピック番組の一覧を取得する",
+        "summary": "Qiita記事の検索",
         "tags": [
-          "CompatibilityApi"
-        ]
-      }
-    },
-    "/api/v1/headline-topic-program-ids": {
-      "get": {
-        "deprecated": true,
-        "operationId": "legacyGetHeadlineTopicProgramIds",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "description": "Bearer Token",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "処理成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request"
-          }
-        },
-        "summary": "[非推奨] ヘッドライントピック番組の番組ID一覧を取得する",
-        "tags": [
-          "CompatibilityApi"
-        ]
-      }
-    },
-    "/api/v1/headline-topic-programs/{id}/similar-and-neighbors": {
-      "get": {
-        "deprecated": true,
-        "operationId": "legacyGetHeadlineTopicProgramWithSimilarAndNeighbors",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "description": "Bearer Token",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "処理成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HeadlineTopicProgramWithSimilarAndNeighborsDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request"
-          },
-          "404": {
-            "description": "Not found"
-          }
-        },
-        "summary": "[非推奨] 指定のヘッドライントピック番組と、その類似番組および、前後の日付の番組を取得する",
-        "tags": [
-          "CompatibilityApi"
-        ]
-      }
-    },
-    "/api/v1/headline-topic-programs/{id}": {
-      "get": {
-        "deprecated": true,
-        "operationId": "legacyGetHeadlineTopicProgram",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "description": "Bearer Token",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "処理成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HeadlineTopicProgramDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request"
-          },
-          "404": {
-            "description": "Not found"
-          }
-        },
-        "summary": "[非推奨] 指定のヘッドライントピック番組を取得する",
-        "tags": [
-          "CompatibilityApi"
+          "Qiita Posts"
         ]
       }
     }
@@ -721,6 +575,39 @@
           "previous",
           "target",
           "next"
+        ]
+      },
+      "SearchQiitaPostsResponseDto": {
+        "type": "object",
+        "properties": {
+          "posts": {
+            "description": "検索結果の記事一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QiitaPostDto"
+            }
+          },
+          "totalCount": {
+            "type": "number",
+            "description": "検索結果の総件数",
+            "example": 100
+          },
+          "page": {
+            "type": "number",
+            "description": "現在のページ番号",
+            "example": 1
+          },
+          "perPage": {
+            "type": "number",
+            "description": "1ページあたりの件数",
+            "example": 20
+          }
+        },
+        "required": [
+          "posts",
+          "totalCount",
+          "page",
+          "perPage"
         ]
       }
     }

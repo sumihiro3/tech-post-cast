@@ -469,6 +469,104 @@
           "CompatibilityApi"
         ]
       }
+    },
+    "/api/webhooks/clerk": {
+      "post": {
+        "operationId": "ClerkWebhookController_handleWebhook",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "ClerkWebhook"
+        ]
+      }
+    },
+    "/qiita-posts/search": {
+      "get": {
+        "description": "Qiitaから指定条件に合致する記事を検索して取得します",
+        "operationId": "searchQiitaPosts",
+        "parameters": [
+          {
+            "name": "authors",
+            "required": false,
+            "in": "query",
+            "description": "著者（カンマ区切りで複数指定可能）",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "tags",
+            "required": false,
+            "in": "query",
+            "description": "タグ（カンマ区切りで複数指定可能）",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "minPublishedAt",
+            "required": false,
+            "in": "query",
+            "description": "公開日の最小値（YYYY-MM-DD形式）",
+            "schema": {
+              "format": "date-time",
+              "example": "2023-01-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "ページ番号（1から始まる、デフォルト: 1）",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "perPage",
+            "required": false,
+            "in": "query",
+            "description": "1ページあたりの件数（デフォルト: 20、最大: 100）",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "検索成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchQiitaPostsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Qiita記事の検索",
+        "tags": [
+          "Qiita Posts"
+        ]
+      }
     }
   },
   "info": {
@@ -735,6 +833,39 @@
           "previous",
           "target",
           "next"
+        ]
+      },
+      "SearchQiitaPostsResponseDto": {
+        "type": "object",
+        "properties": {
+          "posts": {
+            "description": "検索結果の記事一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QiitaPostDto"
+            }
+          },
+          "totalCount": {
+            "type": "number",
+            "description": "検索結果の総件数",
+            "example": 100
+          },
+          "page": {
+            "type": "number",
+            "description": "現在のページ番号",
+            "example": 1
+          },
+          "perPage": {
+            "type": "number",
+            "description": "1ページあたりの件数",
+            "example": 20
+          }
+        },
+        "required": [
+          "posts",
+          "totalCount",
+          "page",
+          "perPage"
         ]
       }
     }
