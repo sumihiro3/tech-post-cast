@@ -39,6 +39,23 @@ export class HeadlineTopicProgramsRepository
       where: { id },
       include: {
         posts: {
+          select: {
+            id: true,
+            title: true,
+            url: true,
+            likesCount: true,
+            stocksCount: true,
+            createdAt: true,
+            updatedAt: true,
+            authorId: true,
+            authorName: true,
+            private: true,
+            refreshedAt: true,
+            summary: true,
+            headlineTopicProgramId: true,
+            tags: true,
+            // body フィールドのみ除外して egress を削減
+          },
           orderBy: { likesCount: 'desc' },
         },
       },
@@ -85,6 +102,23 @@ export class HeadlineTopicProgramsRepository
       skip: (page - 1) * limit,
       include: {
         posts: {
+          select: {
+            id: true,
+            title: true,
+            url: true,
+            likesCount: true,
+            stocksCount: true,
+            createdAt: true,
+            updatedAt: true,
+            authorId: true,
+            authorName: true,
+            private: true,
+            refreshedAt: true,
+            summary: true,
+            headlineTopicProgramId: true,
+            tags: true,
+            // body フィールドのみ除外して egress を削減
+          },
           orderBy: { likesCount: 'desc' },
         },
       },
@@ -135,6 +169,23 @@ export class HeadlineTopicProgramsRepository
         orderBy: [{ createdAt: 'desc' }, { updatedAt: 'desc' }],
         include: {
           posts: {
+            select: {
+              id: true,
+              title: true,
+              url: true,
+              likesCount: true,
+              stocksCount: true,
+              createdAt: true,
+              updatedAt: true,
+              authorId: true,
+              authorName: true,
+              private: true,
+              refreshedAt: true,
+              summary: true,
+              headlineTopicProgramId: true,
+              tags: true,
+              // body フィールドのみ除外して egress を削減
+            },
             orderBy: { likesCount: 'desc' },
           },
         },
@@ -147,6 +198,23 @@ export class HeadlineTopicProgramsRepository
         orderBy: [{ createdAt: 'asc' }, { updatedAt: 'desc' }],
         include: {
           posts: {
+            select: {
+              id: true,
+              title: true,
+              url: true,
+              likesCount: true,
+              stocksCount: true,
+              createdAt: true,
+              updatedAt: true,
+              authorId: true,
+              authorName: true,
+              private: true,
+              refreshedAt: true,
+              summary: true,
+              headlineTopicProgramId: true,
+              tags: true,
+              // body フィールドのみ除外して egress を削減
+            },
             orderBy: { likesCount: 'desc' },
           },
         },
@@ -348,6 +416,23 @@ export class HeadlineTopicProgramsRepository
       where: { id: { in: similarProgramIds } },
       include: {
         posts: {
+          select: {
+            id: true,
+            title: true,
+            url: true,
+            likesCount: true,
+            stocksCount: true,
+            createdAt: true,
+            updatedAt: true,
+            authorId: true,
+            authorName: true,
+            private: true,
+            refreshedAt: true,
+            summary: true,
+            headlineTopicProgramId: true,
+            tags: true,
+            // body フィールドのみ除外して egress を削減
+          },
           orderBy: { likesCount: 'desc' },
         },
       },
