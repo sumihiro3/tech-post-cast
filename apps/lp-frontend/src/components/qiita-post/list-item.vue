@@ -38,9 +38,9 @@ v-card(
 </template>
 
 <script setup lang="ts">
-import type { IQiitaPostApiResponse } from '@/types';
+import type { QiitaPostDto } from '@/api';
 
 defineProps<{
-  post: IQiitaPostApiResponse;
+  post: QiitaPostDto;
 }>();
 </script>

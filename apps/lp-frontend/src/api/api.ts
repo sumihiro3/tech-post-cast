@@ -216,19 +216,79 @@ export interface PostSummaryDto {
  */
 export interface QiitaPostDto {
     /**
-     * Qiita 記事ID
+     * 記事本文（Markdown形式）
+     * @type {string}
+     * @memberof QiitaPostDto
+     */
+    'body': string;
+    /**
+     * リアクション数
+     * @type {number}
+     * @memberof QiitaPostDto
+     */
+    'reactions_count': number;
+    /**
+     * 非公開記事かどうか
+     * @type {boolean}
+     * @memberof QiitaPostDto
+     */
+    'private': boolean;
+    /**
+     * 共同編集状態かどうか
+     * @type {boolean}
+     * @memberof QiitaPostDto
+     */
+    'coediting': boolean;
+    /**
+     * グループ情報
+     * @type {object}
+     * @memberof QiitaPostDto
+     */
+    'group': object;
+    /**
+     * ページビュー数
+     * @type {number}
+     * @memberof QiitaPostDto
+     */
+    'page_views_count'?: number;
+    /**
+     * チームメンバーシップ情報
+     * @type {object}
+     * @memberof QiitaPostDto
+     */
+    'team_membership': object;
+    /**
+     * 組織のURL名
+     * @type {string}
+     * @memberof QiitaPostDto
+     */
+    'organization_url_name'?: string;
+    /**
+     * スライド形式の記事かどうか
+     * @type {boolean}
+     * @memberof QiitaPostDto
+     */
+    'slide': boolean;
+    /**
+     * 記事の要約
+     * @type {string}
+     * @memberof QiitaPostDto
+     */
+    'summary'?: string;
+    /**
+     * 記事の一意なID
      * @type {string}
      * @memberof QiitaPostDto
      */
     'id': string;
     /**
-     * タイトル
+     * 記事のタイトル
      * @type {string}
      * @memberof QiitaPostDto
      */
     'title': string;
     /**
-     * URL
+     * 記事のURL
      * @type {string}
      * @memberof QiitaPostDto
      */
@@ -238,19 +298,165 @@ export interface QiitaPostDto {
      * @type {string}
      * @memberof QiitaPostDto
      */
-    'createdAt': string;
+    'created_at': string;
     /**
-     * 記事投稿者のユーザ名
+     * 記事の最終更新日時
      * @type {string}
      * @memberof QiitaPostDto
      */
-    'authorName': string;
+    'updated_at': string;
     /**
-     * 記事投稿者のユーザID
-     * @type {string}
+     * 記事投稿者
+     * @type {QiitaUserDto}
      * @memberof QiitaPostDto
      */
-    'authorId': string;
+    'user': QiitaUserDto;
+    /**
+     * この記事へのコメントの数
+     * @type {number}
+     * @memberof QiitaPostDto
+     */
+    'comments_count': number;
+    /**
+     * この記事へのいいねの数
+     * @type {number}
+     * @memberof QiitaPostDto
+     */
+    'likes_count': number;
+    /**
+     * この記事がストックされた数
+     * @type {number}
+     * @memberof QiitaPostDto
+     */
+    'stocks_count': number;
+    /**
+     * 記事に付いたタグ一覧
+     * @type {Array<QiitaTagDto>}
+     * @memberof QiitaPostDto
+     */
+    'tags': Array<QiitaTagDto>;
+}
+/**
+ * 
+ * @export
+ * @interface QiitaTagDto
+ */
+export interface QiitaTagDto {
+    /**
+     * タグ名
+     * @type {string}
+     * @memberof QiitaTagDto
+     */
+    'name': string;
+    /**
+     * バージョン情報
+     * @type {Array<string>}
+     * @memberof QiitaTagDto
+     */
+    'versions': Array<string>;
+}
+/**
+ * 
+ * @export
+ * @interface QiitaUserDto
+ */
+export interface QiitaUserDto {
+    /**
+     * ユーザーの一意なID
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'id': string;
+    /**
+     * 自己紹介文
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'description'?: string;
+    /**
+     * ユーザー名
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'name'?: string;
+    /**
+     * 設定しているプロフィール画像のURL
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'profile_image_url': string;
+    /**
+     * FacebookのID
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'facebook_id'?: string;
+    /**
+     * フォローしているユーザー数
+     * @type {number}
+     * @memberof QiitaUserDto
+     */
+    'followees_count': number;
+    /**
+     * フォロワー数
+     * @type {number}
+     * @memberof QiitaUserDto
+     */
+    'followers_count': number;
+    /**
+     * GitHubのログイン名
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'github_login_name'?: string;
+    /**
+     * 投稿した記事数
+     * @type {number}
+     * @memberof QiitaUserDto
+     */
+    'items_count': number;
+    /**
+     * LinkedInのID
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'linkedin_id'?: string;
+    /**
+     * 居住地
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'location'?: string;
+    /**
+     * 所属組織
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'organization'?: string;
+    /**
+     * 永続的なID
+     * @type {number}
+     * @memberof QiitaUserDto
+     */
+    'permanent_id': number;
+    /**
+     * チーム限定かどうか
+     * @type {boolean}
+     * @memberof QiitaUserDto
+     */
+    'team_only': boolean;
+    /**
+     * Twitterのスクリーン名
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'twitter_screen_name'?: string;
+    /**
+     * ウェブサイトURL
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'website_url'?: string;
 }
 /**
  * 

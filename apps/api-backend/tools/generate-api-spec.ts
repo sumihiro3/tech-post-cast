@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import { AppModule } from '../src/app.module';
 import { ProgramContentApiModule } from '../src/controllers/program-content-api/program-content-api.module';
 import { QiitaPostsModule } from '../src/controllers/qiita-posts/qiita-posts.module';
+import { QiitaPostDto } from '../src/controllers/qiita-posts/dto/search-qiita-posts.response.dto';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import * as req from '../src/custom';
 
@@ -15,10 +16,18 @@ async function bootstrap() {
     .setVersion('1.0')
     .build();
 
-  // APIモジュールごとに仕様書を生成
-  const programContentApiDocument = SwaggerModule.createDocument(app, builder, {
+  const options = {
     include: [ProgramContentApiModule, QiitaPostsModule],
-  });
+    extraModels: [QiitaPostDto],
+    deepScanRoutes: true,
+  };
+
+  // APIモジュールごとに仕様書を生成
+  const programContentApiDocument = SwaggerModule.createDocument(
+    app,
+    builder,
+    options,
+  );
 
   // api-specディレクトリがなければ作成
   if (!fs.existsSync('api-spec')) {
@@ -32,7 +41,10 @@ async function bootstrap() {
   );
 
   // すべてのAPIを含む仕様書も生成
-  const fullApiDocument = SwaggerModule.createDocument(app, builder);
+  const fullApiDocument = SwaggerModule.createDocument(app, builder, {
+    ...options,
+    include: undefined, // すべてのモジュールを含める
+  });
   fs.writeFileSync(
     'api-spec/full-api.api-spec.json',
     JSON.stringify(fullApiDocument, undefined, 2),

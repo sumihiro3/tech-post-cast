@@ -413,45 +413,128 @@
       "QiitaPostDto": {
         "type": "object",
         "properties": {
+          "body": {
+            "type": "string",
+            "description": "記事本文（Markdown形式）",
+            "example": "記事の本文です"
+          },
+          "reactions_count": {
+            "type": "number",
+            "description": "リアクション数",
+            "example": 15
+          },
+          "private": {
+            "type": "boolean",
+            "description": "非公開記事かどうか",
+            "example": false
+          },
+          "coediting": {
+            "type": "boolean",
+            "description": "共同編集状態かどうか",
+            "example": false
+          },
+          "group": {
+            "type": "object",
+            "description": "グループ情報"
+          },
+          "page_views_count": {
+            "type": "number",
+            "description": "ページビュー数",
+            "example": 1200
+          },
+          "team_membership": {
+            "type": "object",
+            "description": "チームメンバーシップ情報"
+          },
+          "organization_url_name": {
+            "type": "string",
+            "description": "組織のURL名",
+            "example": "tech-company"
+          },
+          "slide": {
+            "type": "boolean",
+            "description": "スライド形式の記事かどうか",
+            "example": false
+          },
+          "summary": {
+            "type": "string",
+            "description": "記事の要約",
+            "example": "この記事ではTypeScriptの基本的な使い方について解説します。"
+          },
           "id": {
             "type": "string",
-            "description": "Qiita 記事ID",
-            "example": "sample-post-id"
+            "description": "記事の一意なID",
+            "example": "1234567890abcdef1234"
           },
           "title": {
             "type": "string",
-            "description": "タイトル",
-            "example": "タイトル"
+            "description": "記事のタイトル",
+            "example": "TypeScriptで型安全なコードを書く方法"
           },
           "url": {
             "type": "string",
-            "description": "URL",
-            "example": "https://example.com"
+            "description": "記事のURL",
+            "example": "https://qiita.com/sumihiro3/items/1234567890abcdef1234"
           },
-          "createdAt": {
-            "format": "date-time",
+          "created_at": {
             "type": "string",
             "description": "記事が作成された日時",
-            "example": "2021-01-01T00:00:00Z"
+            "example": "2023-01-01T00:00:00+09:00"
           },
-          "authorName": {
+          "updated_at": {
             "type": "string",
-            "description": "記事投稿者のユーザ名",
-            "example": "user-name"
+            "description": "記事の最終更新日時",
+            "example": "2023-01-02T00:00:00+09:00"
           },
-          "authorId": {
-            "type": "string",
-            "description": "記事投稿者のユーザID",
-            "example": "user-id"
+          "user": {
+            "description": "記事投稿者",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QiitaUserDto"
+              }
+            ]
+          },
+          "comments_count": {
+            "type": "number",
+            "description": "この記事へのコメントの数",
+            "example": 5
+          },
+          "likes_count": {
+            "type": "number",
+            "description": "この記事へのいいねの数",
+            "example": 10
+          },
+          "stocks_count": {
+            "type": "number",
+            "description": "この記事がストックされた数",
+            "example": 20
+          },
+          "tags": {
+            "description": "記事に付いたタグ一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QiitaTagDto"
+            }
           }
         },
         "required": [
+          "body",
+          "reactions_count",
+          "private",
+          "coediting",
+          "group",
+          "team_membership",
+          "slide",
           "id",
           "title",
           "url",
-          "createdAt",
-          "authorName",
-          "authorId"
+          "created_at",
+          "updated_at",
+          "user",
+          "comments_count",
+          "likes_count",
+          "stocks_count",
+          "tags"
         ]
       },
       "HeadlineTopicProgramDto": {
@@ -608,6 +691,125 @@
           "totalCount",
           "page",
           "perPage"
+        ]
+      },
+      "QiitaUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ユーザーの一意なID",
+            "example": "sumihiro3"
+          },
+          "description": {
+            "type": "string",
+            "description": "自己紹介文",
+            "example": "フロントエンド開発者です"
+          },
+          "name": {
+            "type": "string",
+            "description": "ユーザー名",
+            "example": "住廣 陸"
+          },
+          "profile_image_url": {
+            "type": "string",
+            "description": "設定しているプロフィール画像のURL",
+            "example": "https://qiita-image-store.s3.amazonaws.com/0/12345/profile-xxxx.png"
+          },
+          "facebook_id": {
+            "type": "string",
+            "description": "FacebookのID",
+            "example": "facebook123"
+          },
+          "followees_count": {
+            "type": "number",
+            "description": "フォローしているユーザー数",
+            "example": 150
+          },
+          "followers_count": {
+            "type": "number",
+            "description": "フォロワー数",
+            "example": 200
+          },
+          "github_login_name": {
+            "type": "string",
+            "description": "GitHubのログイン名",
+            "example": "sumihiro3"
+          },
+          "items_count": {
+            "type": "number",
+            "description": "投稿した記事数",
+            "example": 42
+          },
+          "linkedin_id": {
+            "type": "string",
+            "description": "LinkedInのID",
+            "example": "linkedin123"
+          },
+          "location": {
+            "type": "string",
+            "description": "居住地",
+            "example": "東京"
+          },
+          "organization": {
+            "type": "string",
+            "description": "所属組織",
+            "example": "テック株式会社"
+          },
+          "permanent_id": {
+            "type": "number",
+            "description": "永続的なID",
+            "example": 123456
+          },
+          "team_only": {
+            "type": "boolean",
+            "description": "チーム限定かどうか",
+            "example": false
+          },
+          "twitter_screen_name": {
+            "type": "string",
+            "description": "Twitterのスクリーン名",
+            "example": "sumihiro3"
+          },
+          "website_url": {
+            "type": "string",
+            "description": "ウェブサイトURL",
+            "example": "https://example.com"
+          }
+        },
+        "required": [
+          "id",
+          "profile_image_url",
+          "followees_count",
+          "followers_count",
+          "items_count",
+          "permanent_id",
+          "team_only"
+        ]
+      },
+      "QiitaTagDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "タグ名",
+            "example": "JavaScript"
+          },
+          "versions": {
+            "description": "バージョン情報",
+            "example": [
+              "0.1",
+              "1.0"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "versions"
         ]
       }
     }
