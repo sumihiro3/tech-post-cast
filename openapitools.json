@@ -6,7 +6,7 @@
     "generators": {
       "lp": {
         "generatorName": "typescript-axios",
-        "inputSpec": "apps/backend/api-spec/frontend.api-spec.json",
+        "inputSpec": "apps/api-backend/api-spec/for-frontend-api.api-spec.json",
         "output": "apps/lp-frontend/src/api"
       },
       "liff": {

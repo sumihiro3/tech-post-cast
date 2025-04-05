@@ -14,7 +14,7 @@ export const useGetHeadlineTopicProgram = async (
   console.debug(`useGetHeadlineTopicProgram called`, { programId });
   const token = app.$config.public.apiAccessToken;
   const bearerToken = `Bearer ${token}`;
-  const getProgramResponse = await app.$apiV1.getHeadlineTopicProgram(
+  const getProgramResponse = await app.$programContentApi.getHeadlineTopicProgram(
     programId,
     bearerToken,
   );

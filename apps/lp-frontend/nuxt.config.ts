@@ -22,15 +22,12 @@ const getHeadlineTopicProgramListPageRoutes = async (): Promise<string[]> => {
     console.warn('API_BASE_URL または API_ACCESS_TOKEN が設定されていません');
     return [];
   }
-  const response = await fetch(
-    `${apiUrl}/api/v1/headline-topic-programs/count`,
-    {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token!}`,
-      },
+  const response = await fetch(`${apiUrl}/api/program-content/headline-topic-programs/count`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token!}`,
     },
-  );
+  });
   const dto = (await response.json()) as HeadlineTopicProgramsCountDto;
   console.log(`ヘッドライントピック番組数`, { programs: dto });
   const pageCount = Math.ceil(dto.count / programsPerPage);
@@ -63,8 +60,8 @@ export default defineNuxtConfig({
     '/': { prerender: true },
     '/headline-topic-programs/**': { prerender: true },
 
-    // ログインページ: SSR
-    '/login': { ssr: true },
+    // ログインページ: SPA (クライアントサイドのみ)
+    '/login': { ssr: false },
 
     // アプリページ: SPA (クライアントサイドのみ)
     '/app/**': { ssr: false },
@@ -98,11 +95,11 @@ export default defineNuxtConfig({
         console.log('Nitro hook [prerender:config] called');
         console.dir(nitroConfig, { depth: undefined });
         // ヘッドライントピック番組一覧の各ページのルートを追加
-        const headlineTopicProgramListRoutes
-          = await getHeadlineTopicProgramListPageRoutes();
+        const headlineTopicProgramListRoutes = await getHeadlineTopicProgramListPageRoutes();
         nitroConfig.prerender?.routes?.push(...headlineTopicProgramListRoutes);
       },
-      'compiled': async (nitro: Nitro) => {
+      // eslint-disable-next-line @stylistic/quote-props
+      compiled: async (nitro: Nitro) => {
         // Podcast サービス用の RSS フィードを生成する
         await generateSpotifyRssFeed(nitro);
         // 各番組ページ用の oEmbed JSON ファイルを生成する

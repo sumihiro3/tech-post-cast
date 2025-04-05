@@ -17,7 +17,7 @@ export const useGetHeadlineTopicPrograms = async (
   // const { $apiV1, $config } = useNuxtApp();
   const token = app.$config.public.apiAccessToken;
   const bearerToken = `Bearer ${token}`;
-  const getProgramsResponse = await app.$apiV1.getHeadlineTopicPrograms(
+  const getProgramsResponse = await app.$programContentApi.getHeadlineTopicPrograms(
     limit,
     bearerToken,
     page,

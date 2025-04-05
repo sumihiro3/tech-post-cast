@@ -1,8 +1,8 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * TechPostCast APIs
- * API document for TechPostCast APIs
+ * TechPostCast API
+ * TechPostCast API for frontend application
  *
  * The version of the OpenAPI document: 1.0
  * 
