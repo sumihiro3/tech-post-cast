@@ -42,6 +42,13 @@ export interface IQiitaPostsRepository {
    * @returns 登録した Qiita 記事一覧
    */
   upsertQiitaPosts(posts: QiitaPostApiResponse[]): Promise<QiitaPost[]>;
+
+  /**
+   * 指定 ID リストの Qiita 記事を本文も含めて取得する
+   * @param ids Qiita 記事 ID リスト
+   * @returns 本文を含むQiita記事リスト
+   */
+  findWithBodyByIds(ids: string[]): Promise<QiitaPost[]>;
 }
 
 export const SYMBOL = Symbol('IQiitaPostsRepository');

@@ -173,8 +173,17 @@ export class HeadlineTopicProgramBuilder {
         // リスナーからのお便りを取得する
         const letter =
           await this.listenerLettersRepository.findIntroduced(program);
+
+        // 記事IDリストを取得
+        const postIds = program.posts.map((post) => post.id);
+
+        // 記事本文を含む完全な記事データを取得
+        const postsWithBody =
+          await this.qiitaPostsRepository.findWithBodyByIds(postIds);
+
         // 対象の記事を要約する
-        const summarizedPosts = await this.summarizePosts(program.posts);
+        const summarizedPosts = await this.summarizePosts(postsWithBody);
+
         // ヘッドライントピック番組の台本を生成する
         script = await this.generateScript(
           programDate,

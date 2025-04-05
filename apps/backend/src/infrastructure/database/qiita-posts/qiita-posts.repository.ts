@@ -102,6 +102,29 @@ export class QiitaPostsRepository implements IQiitaPostsRepository {
   }
 
   /**
+   * 指定 ID リストの Qiita 記事を本文も含めて取得する
+   * @param ids Qiita 記事 ID リスト
+   * @returns 本文を含むQiita記事リスト
+   */
+  async findWithBodyByIds(ids: string[]): Promise<QiitaPost[]> {
+    this.logger.verbose(`QiitaPostsRepository.findWithBodyByIds called`, {
+      ids,
+    });
+    const result = await this.prisma.qiitaPost.findMany({
+      where: {
+        id: {
+          in: ids,
+        },
+      },
+    });
+    this.logger.debug(`指定IDの記事リスト（本文含む）を取得しました`, {
+      count: result.length,
+      ids: result.map((p) => p.id),
+    });
+    return result;
+  }
+
+  /**
    * Qiita 記事の新規登録または更新クエリを生成する
    * @param post Qiita 記事 API レスポンス
    * @returns Qiita 記事の新規登録または更新クエリ
