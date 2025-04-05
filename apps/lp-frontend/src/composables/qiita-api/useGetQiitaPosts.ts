@@ -1,27 +1,47 @@
-import type { IQiitaPostApiResponse } from '@/types';
+import type { NuxtApp } from '#app';
+import type { SearchQiitaPostsResponseDto } from '@/api';
 
 /**
  * Qiita API で記事を取得する
  * @param authors 著者名の配列
  * @param tags タグの配列
  * @param minPublishedAt 公開日の最小値
-*/
-export const useGetQiitaPosts = async (authors?: string[], tags?: string[], minPublishedAt?: string): Promise<IQiitaPostApiResponse[]> => {
+ */
+export const useGetQiitaPosts = async (
+  app: NuxtApp,
+  authors?: string[],
+  tags?: string[],
+  minPublishedAt?: string,
+): Promise<SearchQiitaPostsResponseDto> => {
   console.log(`useGetQiitaPosts called`, { authors, tags, minPublishedAt });
-  const queryUsers = authors && authors.length > 0 ? `user:${authors.join(',')}` : null;
-  const queryTags = tags && tags.length > 0 ? `tag:${tags.join(',')}` : null;
-  // const queryMinPublishedAt = minPublishedAt ?? null;
-  // クエリを作成する（設定された条件があれば、それらを組み合わせる）
-  const query = [queryUsers, queryTags].filter(Boolean).join('+');
-  // TODO 公開日の最小値を追加する
-  // TODO Backend API から Qiita API の結果を返すようにする（フロントから直接 Qiita API を実行しない）
-  const url = `https://qiita.com/api/v2/items?page=1&per_page=100&query=${query}`;
-  console.debug(`api request url: ${url}`);
-  const response = await $fetch<IQiitaPostApiResponse[]>(url, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-  return response ?? [];
+
+  // URLSearchParamsを使用してクエリパラメータを構築
+  // const params = new URLSearchParams();
+  // if (authors && authors.length > 0) {
+  //   authors.forEach((author) => params.append('authors', author));
+  // }
+  // if (tags && tags.length > 0) {
+  //   tags.forEach((tag) => params.append('tags', tag));
+  // }
+  // if (minPublishedAt) {
+  //   params.append('minPublishedAt', minPublishedAt);
+  // }
+  const authorsList = authors ? [authors.join(',')] : [];
+  const tagsList = tags ? [tags.join(',')] : [];
+
+  // バックエンドAPIを呼び出す
+  const response = await app.$qiitaPostApi.searchQiitaPosts(authorsList, tagsList, undefined);
+  const result = response.data;
+  console.log(`Qiita API response`, { result });
+  return result;
+
+  //   await $fetch<{ posts: IQiitaPostApiResponse[] }>(
+  //   `http://localhost:3001/qiita-posts/search?${params.toString()}`,
+  //   {
+  //     method: 'GET',
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //     },
+  //   },
+  // );
 };
