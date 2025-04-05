@@ -5,14 +5,12 @@ import type { NuxtApp } from '#app';
  * @param app Nuxtアプリケーション
  * @returns ヘッドライントピック番組の件数
  */
-export const useGetHeadlineTopicProgramCount = async (
-  app: NuxtApp,
-): Promise<number> => {
+export const useGetHeadlineTopicProgramCount = async (app: NuxtApp): Promise<number> => {
   console.debug(`useGetHeadlineTopicProgramCount called`);
   const token = app.$config.public.apiAccessToken;
   const bearerToken = `Bearer ${token}`;
   const getProgramResponse
-    = await app.$apiV1.getHeadlineTopicProgramsCount(bearerToken);
+    = await app.$programContentApi.getHeadlineTopicProgramsCount(bearerToken);
   const dto = getProgramResponse.data;
   console.log(`ヘッドライントピック番組の件数`, { count: dto.count });
   return dto.count;

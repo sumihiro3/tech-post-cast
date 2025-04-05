@@ -3,6 +3,10 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as fs from 'fs';
 import { AppModule } from '../src/app.module';
 import { ProgramContentApiModule } from '../src/controllers/program-content-api/program-content-api.module';
+import { QiitaPostsModule } from '../src/controllers/qiita-posts/qiita-posts.module';
+import { QiitaPostDto } from '../src/controllers/qiita-posts/dto/search-qiita-posts.response.dto';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import * as req from '../src/custom';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,10 +16,18 @@ async function bootstrap() {
     .setVersion('1.0')
     .build();
 
+  const options = {
+    include: [ProgramContentApiModule, QiitaPostsModule],
+    extraModels: [QiitaPostDto],
+    deepScanRoutes: true,
+  };
+
   // APIモジュールごとに仕様書を生成
-  const programContentApiDocument = SwaggerModule.createDocument(app, builder, {
-    include: [ProgramContentApiModule],
-  });
+  const programContentApiDocument = SwaggerModule.createDocument(
+    app,
+    builder,
+    options,
+  );
 
   // api-specディレクトリがなければ作成
   if (!fs.existsSync('api-spec')) {
@@ -24,12 +36,15 @@ async function bootstrap() {
 
   // APIモジュールごとの仕様書を保存
   fs.writeFileSync(
-    'api-spec/program-content-api.api-spec.json',
+    'api-spec/for-frontend-api.api-spec.json',
     JSON.stringify(programContentApiDocument, undefined, 2),
   );
 
   // すべてのAPIを含む仕様書も生成
-  const fullApiDocument = SwaggerModule.createDocument(app, builder);
+  const fullApiDocument = SwaggerModule.createDocument(app, builder, {
+    ...options,
+    include: undefined, // すべてのモジュールを含める
+  });
   fs.writeFileSync(
     'api-spec/full-api.api-spec.json',
     JSON.stringify(fullApiDocument, undefined, 2),

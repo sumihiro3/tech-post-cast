@@ -1,0 +1,25 @@
+# GitHub Copilot設定
+suggestions:
+  # コード提案の設定
+  code:
+    # 型情報を優先
+    typescript:
+      preferExplicitTypes: true
+      strictNullChecks: true
+      avoidAny: true
+
+    # コーディングスタイル
+    style:
+      maxLineLength: 100
+      indentSize: 2
+      indentStyle: spaces
+      quoteStyle: single
+      trailingComma: all
+
+    # 命名規則
+    naming:
+      classCase: PascalCase
+      functionCase: camelCase
+      variableCase: camelCase
+      constantCase: UPPER_CASE
+      fileCase: kebab-case

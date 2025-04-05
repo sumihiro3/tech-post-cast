@@ -1,0 +1,11 @@
+# コーディングスタイルの設定
+*.ts linguist-language=TypeScript
+*.js linguist-language=JavaScript
+
+# インデントスタイル
+*.ts text eol=lf whitespace=tab-in-indent,trailing-space,tabwidth=2
+*.js text eol=lf whitespace=tab-in-indent,trailing-space,tabwidth=2
+
+# 特定のファイルパターンに対するルール
+apps/api-backend/src/**/*.ts linguist-analyzable=true
+apps/backend/src/**/*.ts linguist-analyzable=true

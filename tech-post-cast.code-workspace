@@ -38,6 +38,7 @@
     }
   ],
   "settings": {
+    "chat.agent.enabled": true,
     "jest.runMode": "on-demand",
     "jest.jestCommandLine": "yarn test",
     "jest.disabledWorkspaceFolders": [

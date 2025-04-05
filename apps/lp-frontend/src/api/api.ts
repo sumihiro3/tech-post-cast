@@ -1,8 +1,8 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * TechPostCast APIs
- * API document for TechPostCast APIs
+ * TechPostCast API
+ * TechPostCast API for frontend application
  *
  * The version of the OpenAPI document: 1.0
  * 
@@ -216,19 +216,79 @@ export interface PostSummaryDto {
  */
 export interface QiitaPostDto {
     /**
-     * Qiita 記事ID
+     * 記事本文（Markdown形式）
+     * @type {string}
+     * @memberof QiitaPostDto
+     */
+    'body': string;
+    /**
+     * リアクション数
+     * @type {number}
+     * @memberof QiitaPostDto
+     */
+    'reactions_count': number;
+    /**
+     * 非公開記事かどうか
+     * @type {boolean}
+     * @memberof QiitaPostDto
+     */
+    'private': boolean;
+    /**
+     * 共同編集状態かどうか
+     * @type {boolean}
+     * @memberof QiitaPostDto
+     */
+    'coediting': boolean;
+    /**
+     * グループ情報
+     * @type {object}
+     * @memberof QiitaPostDto
+     */
+    'group': object;
+    /**
+     * ページビュー数
+     * @type {number}
+     * @memberof QiitaPostDto
+     */
+    'page_views_count'?: number;
+    /**
+     * チームメンバーシップ情報
+     * @type {object}
+     * @memberof QiitaPostDto
+     */
+    'team_membership': object;
+    /**
+     * 組織のURL名
+     * @type {string}
+     * @memberof QiitaPostDto
+     */
+    'organization_url_name'?: string;
+    /**
+     * スライド形式の記事かどうか
+     * @type {boolean}
+     * @memberof QiitaPostDto
+     */
+    'slide': boolean;
+    /**
+     * 記事の要約
+     * @type {string}
+     * @memberof QiitaPostDto
+     */
+    'summary'?: string;
+    /**
+     * 記事の一意なID
      * @type {string}
      * @memberof QiitaPostDto
      */
     'id': string;
     /**
-     * タイトル
+     * 記事のタイトル
      * @type {string}
      * @memberof QiitaPostDto
      */
     'title': string;
     /**
-     * URL
+     * 記事のURL
      * @type {string}
      * @memberof QiitaPostDto
      */
@@ -238,26 +298,203 @@ export interface QiitaPostDto {
      * @type {string}
      * @memberof QiitaPostDto
      */
-    'createdAt': string;
+    'created_at': string;
     /**
-     * 記事投稿者のユーザ名
+     * 記事の最終更新日時
      * @type {string}
      * @memberof QiitaPostDto
      */
-    'authorName': string;
+    'updated_at': string;
     /**
-     * 記事投稿者のユーザID
-     * @type {string}
+     * 記事投稿者
+     * @type {QiitaUserDto}
      * @memberof QiitaPostDto
      */
-    'authorId': string;
+    'user': QiitaUserDto;
+    /**
+     * この記事へのコメントの数
+     * @type {number}
+     * @memberof QiitaPostDto
+     */
+    'comments_count': number;
+    /**
+     * この記事へのいいねの数
+     * @type {number}
+     * @memberof QiitaPostDto
+     */
+    'likes_count': number;
+    /**
+     * この記事がストックされた数
+     * @type {number}
+     * @memberof QiitaPostDto
+     */
+    'stocks_count': number;
+    /**
+     * 記事に付いたタグ一覧
+     * @type {Array<QiitaTagDto>}
+     * @memberof QiitaPostDto
+     */
+    'tags': Array<QiitaTagDto>;
+}
+/**
+ * 
+ * @export
+ * @interface QiitaTagDto
+ */
+export interface QiitaTagDto {
+    /**
+     * タグ名
+     * @type {string}
+     * @memberof QiitaTagDto
+     */
+    'name': string;
+    /**
+     * バージョン情報
+     * @type {Array<string>}
+     * @memberof QiitaTagDto
+     */
+    'versions': Array<string>;
+}
+/**
+ * 
+ * @export
+ * @interface QiitaUserDto
+ */
+export interface QiitaUserDto {
+    /**
+     * ユーザーの一意なID
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'id': string;
+    /**
+     * 自己紹介文
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'description'?: string;
+    /**
+     * ユーザー名
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'name'?: string;
+    /**
+     * 設定しているプロフィール画像のURL
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'profile_image_url': string;
+    /**
+     * FacebookのID
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'facebook_id'?: string;
+    /**
+     * フォローしているユーザー数
+     * @type {number}
+     * @memberof QiitaUserDto
+     */
+    'followees_count': number;
+    /**
+     * フォロワー数
+     * @type {number}
+     * @memberof QiitaUserDto
+     */
+    'followers_count': number;
+    /**
+     * GitHubのログイン名
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'github_login_name'?: string;
+    /**
+     * 投稿した記事数
+     * @type {number}
+     * @memberof QiitaUserDto
+     */
+    'items_count': number;
+    /**
+     * LinkedInのID
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'linkedin_id'?: string;
+    /**
+     * 居住地
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'location'?: string;
+    /**
+     * 所属組織
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'organization'?: string;
+    /**
+     * 永続的なID
+     * @type {number}
+     * @memberof QiitaUserDto
+     */
+    'permanent_id': number;
+    /**
+     * チーム限定かどうか
+     * @type {boolean}
+     * @memberof QiitaUserDto
+     */
+    'team_only': boolean;
+    /**
+     * Twitterのスクリーン名
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'twitter_screen_name'?: string;
+    /**
+     * ウェブサイトURL
+     * @type {string}
+     * @memberof QiitaUserDto
+     */
+    'website_url'?: string;
+}
+/**
+ * 
+ * @export
+ * @interface SearchQiitaPostsResponseDto
+ */
+export interface SearchQiitaPostsResponseDto {
+    /**
+     * 検索結果の記事一覧
+     * @type {Array<QiitaPostDto>}
+     * @memberof SearchQiitaPostsResponseDto
+     */
+    'posts': Array<QiitaPostDto>;
+    /**
+     * 検索結果の総件数
+     * @type {number}
+     * @memberof SearchQiitaPostsResponseDto
+     */
+    'totalCount': number;
+    /**
+     * 現在のページ番号
+     * @type {number}
+     * @memberof SearchQiitaPostsResponseDto
+     */
+    'page': number;
+    /**
+     * 1ページあたりの件数
+     * @type {number}
+     * @memberof SearchQiitaPostsResponseDto
+     */
+    'perPage': number;
 }
 
 /**
- * ApiV1Api - axios parameter creator
+ * ProgramContentApiApi - axios parameter creator
  * @export
  */
-export const ApiV1ApiAxiosParamCreator = function (configuration?: Configuration) {
+export const ProgramContentApiApiAxiosParamCreator = function (configuration?: Configuration) {
     return {
         /**
          * 
@@ -272,7 +509,7 @@ export const ApiV1ApiAxiosParamCreator = function (configuration?: Configuration
             assertParamExists('getHeadlineTopicProgram', 'id', id)
             // verify required parameter 'authorization' is not null or undefined
             assertParamExists('getHeadlineTopicProgram', 'authorization', authorization)
-            const localVarPath = `/api/v1/headline-topic-programs/{id}`
+            const localVarPath = `/api/program-content/headline-topic-programs/{id}`
                 .replace(`{${"id"}}`, encodeURIComponent(String(id)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -310,7 +547,7 @@ export const ApiV1ApiAxiosParamCreator = function (configuration?: Configuration
         getHeadlineTopicProgramIds: async (authorization: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'authorization' is not null or undefined
             assertParamExists('getHeadlineTopicProgramIds', 'authorization', authorization)
-            const localVarPath = `/api/v1/headline-topic-program-ids`;
+            const localVarPath = `/api/program-content/headline-topic-program-ids`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -350,7 +587,7 @@ export const ApiV1ApiAxiosParamCreator = function (configuration?: Configuration
             assertParamExists('getHeadlineTopicProgramWithSimilarAndNeighbors', 'id', id)
             // verify required parameter 'authorization' is not null or undefined
             assertParamExists('getHeadlineTopicProgramWithSimilarAndNeighbors', 'authorization', authorization)
-            const localVarPath = `/api/v1/headline-topic-programs/{id}/similar-and-neighbors`
+            const localVarPath = `/api/program-content/headline-topic-programs/{id}/similar-and-neighbors`
                 .replace(`{${"id"}}`, encodeURIComponent(String(id)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -392,7 +629,7 @@ export const ApiV1ApiAxiosParamCreator = function (configuration?: Configuration
             assertParamExists('getHeadlineTopicPrograms', 'limit', limit)
             // verify required parameter 'authorization' is not null or undefined
             assertParamExists('getHeadlineTopicPrograms', 'authorization', authorization)
-            const localVarPath = `/api/v1/headline-topic-programs`;
+            const localVarPath = `/api/program-content/headline-topic-programs`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -437,7 +674,7 @@ export const ApiV1ApiAxiosParamCreator = function (configuration?: Configuration
         getHeadlineTopicProgramsCount: async (authorization: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'authorization' is not null or undefined
             assertParamExists('getHeadlineTopicProgramsCount', 'authorization', authorization)
-            const localVarPath = `/api/v1/headline-topic-programs/count`;
+            const localVarPath = `/api/program-content/headline-topic-programs/count`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -468,11 +705,11 @@ export const ApiV1ApiAxiosParamCreator = function (configuration?: Configuration
 };
 
 /**
- * ApiV1Api - functional programming interface
+ * ProgramContentApiApi - functional programming interface
  * @export
  */
-export const ApiV1ApiFp = function(configuration?: Configuration) {
-    const localVarAxiosParamCreator = ApiV1ApiAxiosParamCreator(configuration)
+export const ProgramContentApiApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = ProgramContentApiApiAxiosParamCreator(configuration)
     return {
         /**
          * 
@@ -485,7 +722,7 @@ export const ApiV1ApiFp = function(configuration?: Configuration) {
         async getHeadlineTopicProgram(id: string, authorization: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<HeadlineTopicProgramDto>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getHeadlineTopicProgram(id, authorization, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['ApiV1Api.getHeadlineTopicProgram']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['ProgramContentApiApi.getHeadlineTopicProgram']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -498,7 +735,7 @@ export const ApiV1ApiFp = function(configuration?: Configuration) {
         async getHeadlineTopicProgramIds(authorization: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<string>>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getHeadlineTopicProgramIds(authorization, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['ApiV1Api.getHeadlineTopicProgramIds']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['ProgramContentApiApi.getHeadlineTopicProgramIds']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -512,7 +749,7 @@ export const ApiV1ApiFp = function(configuration?: Configuration) {
         async getHeadlineTopicProgramWithSimilarAndNeighbors(id: string, authorization: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<HeadlineTopicProgramWithSimilarAndNeighborsDto>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getHeadlineTopicProgramWithSimilarAndNeighbors(id, authorization, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['ApiV1Api.getHeadlineTopicProgramWithSimilarAndNeighbors']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['ProgramContentApiApi.getHeadlineTopicProgramWithSimilarAndNeighbors']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -527,7 +764,7 @@ export const ApiV1ApiFp = function(configuration?: Configuration) {
         async getHeadlineTopicPrograms(limit: number, authorization: string, page?: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<HeadlineTopicProgramDto>>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getHeadlineTopicPrograms(limit, authorization, page, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['ApiV1Api.getHeadlineTopicPrograms']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['ProgramContentApiApi.getHeadlineTopicPrograms']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -540,18 +777,18 @@ export const ApiV1ApiFp = function(configuration?: Configuration) {
         async getHeadlineTopicProgramsCount(authorization: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<HeadlineTopicProgramsCountDto>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getHeadlineTopicProgramsCount(authorization, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['ApiV1Api.getHeadlineTopicProgramsCount']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['ProgramContentApiApi.getHeadlineTopicProgramsCount']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
     }
 };
 
 /**
- * ApiV1Api - factory interface
+ * ProgramContentApiApi - factory interface
  * @export
  */
-export const ApiV1ApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
-    const localVarFp = ApiV1ApiFp(configuration)
+export const ProgramContentApiApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = ProgramContentApiApiFp(configuration)
     return {
         /**
          * 
@@ -611,12 +848,12 @@ export const ApiV1ApiFactory = function (configuration?: Configuration, basePath
 };
 
 /**
- * ApiV1Api - object-oriented interface
+ * ProgramContentApiApi - object-oriented interface
  * @export
- * @class ApiV1Api
+ * @class ProgramContentApiApi
  * @extends {BaseAPI}
  */
-export class ApiV1Api extends BaseAPI {
+export class ProgramContentApiApi extends BaseAPI {
     /**
      * 
      * @summary 指定のヘッドライントピック番組を取得する
@@ -624,10 +861,10 @@ export class ApiV1Api extends BaseAPI {
      * @param {string} authorization Bearer Token
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
-     * @memberof ApiV1Api
+     * @memberof ProgramContentApiApi
      */
     public getHeadlineTopicProgram(id: string, authorization: string, options?: RawAxiosRequestConfig) {
-        return ApiV1ApiFp(this.configuration).getHeadlineTopicProgram(id, authorization, options).then((request) => request(this.axios, this.basePath));
+        return ProgramContentApiApiFp(this.configuration).getHeadlineTopicProgram(id, authorization, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -636,10 +873,10 @@ export class ApiV1Api extends BaseAPI {
      * @param {string} authorization Bearer Token
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
-     * @memberof ApiV1Api
+     * @memberof ProgramContentApiApi
      */
     public getHeadlineTopicProgramIds(authorization: string, options?: RawAxiosRequestConfig) {
-        return ApiV1ApiFp(this.configuration).getHeadlineTopicProgramIds(authorization, options).then((request) => request(this.axios, this.basePath));
+        return ProgramContentApiApiFp(this.configuration).getHeadlineTopicProgramIds(authorization, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -649,10 +886,10 @@ export class ApiV1Api extends BaseAPI {
      * @param {string} authorization Bearer Token
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
-     * @memberof ApiV1Api
+     * @memberof ProgramContentApiApi
      */
     public getHeadlineTopicProgramWithSimilarAndNeighbors(id: string, authorization: string, options?: RawAxiosRequestConfig) {
-        return ApiV1ApiFp(this.configuration).getHeadlineTopicProgramWithSimilarAndNeighbors(id, authorization, options).then((request) => request(this.axios, this.basePath));
+        return ProgramContentApiApiFp(this.configuration).getHeadlineTopicProgramWithSimilarAndNeighbors(id, authorization, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -663,10 +900,10 @@ export class ApiV1Api extends BaseAPI {
      * @param {number} [page] ページ番号
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
-     * @memberof ApiV1Api
+     * @memberof ProgramContentApiApi
      */
     public getHeadlineTopicPrograms(limit: number, authorization: string, page?: number, options?: RawAxiosRequestConfig) {
-        return ApiV1ApiFp(this.configuration).getHeadlineTopicPrograms(limit, authorization, page, options).then((request) => request(this.axios, this.basePath));
+        return ProgramContentApiApiFp(this.configuration).getHeadlineTopicPrograms(limit, authorization, page, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -675,10 +912,153 @@ export class ApiV1Api extends BaseAPI {
      * @param {string} authorization Bearer Token
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
-     * @memberof ApiV1Api
+     * @memberof ProgramContentApiApi
      */
     public getHeadlineTopicProgramsCount(authorization: string, options?: RawAxiosRequestConfig) {
-        return ApiV1ApiFp(this.configuration).getHeadlineTopicProgramsCount(authorization, options).then((request) => request(this.axios, this.basePath));
+        return ProgramContentApiApiFp(this.configuration).getHeadlineTopicProgramsCount(authorization, options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+
+/**
+ * QiitaPostsApi - axios parameter creator
+ * @export
+ */
+export const QiitaPostsApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * Qiitaから指定条件に合致する記事を検索して取得します
+         * @summary Qiita記事の検索
+         * @param {Array<string>} [authors] 著者（カンマ区切りで複数指定可能）
+         * @param {Array<string>} [tags] タグ（カンマ区切りで複数指定可能）
+         * @param {string} [minPublishedAt] 公開日の最小値（YYYY-MM-DD形式）
+         * @param {number} [page] ページ番号（1から始まる、デフォルト: 1）
+         * @param {number} [perPage] 1ページあたりの件数（デフォルト: 20、最大: 100）
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        searchQiitaPosts: async (authors?: Array<string>, tags?: Array<string>, minPublishedAt?: string, page?: number, perPage?: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/qiita-posts/search`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            if (authors) {
+                localVarQueryParameter['authors'] = authors;
+            }
+
+            if (tags) {
+                localVarQueryParameter['tags'] = tags;
+            }
+
+            if (minPublishedAt !== undefined) {
+                localVarQueryParameter['minPublishedAt'] = (minPublishedAt as any instanceof Date) ?
+                    (minPublishedAt as any).toISOString() :
+                    minPublishedAt;
+            }
+
+            if (page !== undefined) {
+                localVarQueryParameter['page'] = page;
+            }
+
+            if (perPage !== undefined) {
+                localVarQueryParameter['perPage'] = perPage;
+            }
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * QiitaPostsApi - functional programming interface
+ * @export
+ */
+export const QiitaPostsApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = QiitaPostsApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * Qiitaから指定条件に合致する記事を検索して取得します
+         * @summary Qiita記事の検索
+         * @param {Array<string>} [authors] 著者（カンマ区切りで複数指定可能）
+         * @param {Array<string>} [tags] タグ（カンマ区切りで複数指定可能）
+         * @param {string} [minPublishedAt] 公開日の最小値（YYYY-MM-DD形式）
+         * @param {number} [page] ページ番号（1から始まる、デフォルト: 1）
+         * @param {number} [perPage] 1ページあたりの件数（デフォルト: 20、最大: 100）
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async searchQiitaPosts(authors?: Array<string>, tags?: Array<string>, minPublishedAt?: string, page?: number, perPage?: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<SearchQiitaPostsResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.searchQiitaPosts(authors, tags, minPublishedAt, page, perPage, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['QiitaPostsApi.searchQiitaPosts']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+    }
+};
+
+/**
+ * QiitaPostsApi - factory interface
+ * @export
+ */
+export const QiitaPostsApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = QiitaPostsApiFp(configuration)
+    return {
+        /**
+         * Qiitaから指定条件に合致する記事を検索して取得します
+         * @summary Qiita記事の検索
+         * @param {Array<string>} [authors] 著者（カンマ区切りで複数指定可能）
+         * @param {Array<string>} [tags] タグ（カンマ区切りで複数指定可能）
+         * @param {string} [minPublishedAt] 公開日の最小値（YYYY-MM-DD形式）
+         * @param {number} [page] ページ番号（1から始まる、デフォルト: 1）
+         * @param {number} [perPage] 1ページあたりの件数（デフォルト: 20、最大: 100）
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        searchQiitaPosts(authors?: Array<string>, tags?: Array<string>, minPublishedAt?: string, page?: number, perPage?: number, options?: RawAxiosRequestConfig): AxiosPromise<SearchQiitaPostsResponseDto> {
+            return localVarFp.searchQiitaPosts(authors, tags, minPublishedAt, page, perPage, options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * QiitaPostsApi - object-oriented interface
+ * @export
+ * @class QiitaPostsApi
+ * @extends {BaseAPI}
+ */
+export class QiitaPostsApi extends BaseAPI {
+    /**
+     * Qiitaから指定条件に合致する記事を検索して取得します
+     * @summary Qiita記事の検索
+     * @param {Array<string>} [authors] 著者（カンマ区切りで複数指定可能）
+     * @param {Array<string>} [tags] タグ（カンマ区切りで複数指定可能）
+     * @param {string} [minPublishedAt] 公開日の最小値（YYYY-MM-DD形式）
+     * @param {number} [page] ページ番号（1から始まる、デフォルト: 1）
+     * @param {number} [perPage] 1ページあたりの件数（デフォルト: 20、最大: 100）
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof QiitaPostsApi
+     */
+    public searchQiitaPosts(authors?: Array<string>, tags?: Array<string>, minPublishedAt?: string, page?: number, perPage?: number, options?: RawAxiosRequestConfig) {
+        return QiitaPostsApiFp(this.configuration).searchQiitaPosts(authors, tags, minPublishedAt, page, perPage, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

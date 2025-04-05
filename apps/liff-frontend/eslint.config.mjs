@@ -23,15 +23,16 @@ export default withNuxt(
     rules: {
       'no-console': 'off',
       '@typescript-eslint/no-explicit-any': 'error',
-      // '@stylistic/brace-style': ['error', '1tbs', { allowSingleLine: true }],
-      '@stylistic/brace-style': 'error',
-      '@typescript-eslint/ban-ts-comment': 'off',
-      '@typescript-eslint/explicit-function-return-type': 'error',
+      '@stylistic/arrow-parens': 'off',
+      '@stylistic/operator-linebreak': 'off',
+      '@stylistic/indent': 'error',
+      '@stylistic/quotes': ['error', 'single'],
+      '@stylistic/semi': ['error', 'always'],
     },
   },
   stylistic.configs.customize({
-    indent: 2, // インデントはスペース2
-    quotes: 'single', // クオートはシングル
-    semi: true, // セミコロンは必要
+    indent: 2,
+    quotes: 'single',
+    semi: true,
   }),
 );
