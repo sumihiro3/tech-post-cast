@@ -10,3 +10,5 @@ docker_compose.backend.env
 envs_develop.env
 # GitHub Actions の secret に使う（本番環境用）
 envs_main.env
+
+postgres_data/
