@@ -27,39 +27,17 @@ v-container.max-width-container
         .d-flex.align-center.justify-space-between.mb-4
           .text-subtitle-1.font-weight-bold 記事のフィルタリング設定
 
-        //- 著者フィルター (コンボボックス)
-        .mb-3
-          .d-flex.align-center.mb-2
-            v-icon(size="small" class="mr-1") mdi-account
-            span.font-weight-medium 著者
-          v-select(
-            v-model="filters.authors"
-            :items="allAuthors"
-            multiple
-            chips
-            closable-chips
-            variant="outlined"
-            density="comfortable"
-            label="著者を選択..."
-            class="mb-4"
-          )
+        //- 著者フィルター (カスタムコンポーネント)
+        QiitaAuthorSelector(
+          v-model="filters.authors"
+          :max-authors="10"
+        )
 
-        //- タグフィルター (コンボボックス)
-        .mb-3
-          .d-flex.align-center.mb-2
-            v-icon(size="small" class="mr-1") mdi-tag
-            span.font-weight-medium タグ
-          v-select(
-            v-model="filters.tags"
-            :items="allTags"
-            multiple
-            chips
-            closable-chips
-            variant="outlined"
-            density="comfortable"
-            label="タグを選択..."
-            class="mb-4"
-          )
+        //- タグフィルター (カスタムコンポーネント)
+        QiitaTagSelector(
+          v-model="filters.tags"
+          :max-tags="10"
+        )
 
         //- 配信日フィルター
         .mb-3
@@ -190,14 +168,6 @@ const clearFilters = (): void => {
   filters.tags = [];
   filters.dateRange = 'すべて';
 };
-
-// 著者のリスト
-// TODO APIから取得する
-const allAuthors = ['sumihiro3', 'Domao', 'MS-0610'];
-
-// タグのリスト
-// TODO APIから取得する
-const allTags = ['nuxt3', 'typescript', 'vue3'];
 
 // 日付範囲のリスト
 const dateRanges = ['すべて', '今日', '今週', '今月', '今年'];
