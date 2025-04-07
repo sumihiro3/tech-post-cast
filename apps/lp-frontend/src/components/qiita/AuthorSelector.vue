@@ -54,80 +54,123 @@ import { computed, ref, watch } from 'vue';
 const app = useNuxtApp();
 
 const props = defineProps({
+  /**
+   * 選択された著者のリスト
+   */
   modelValue: {
     type: Array as () => string[],
     default: () => [],
   },
+  /**
+   * 最大著者数
+   */
   maxAuthors: {
     type: Number,
     default: 10,
   },
 });
 
+/**
+ * 著者の選択を更新するイベントを発火します。
+ * @param {string[]} authors - 選択された著者のリスト
+ */
 const emit = defineEmits(['update:modelValue']);
 
-// 選択された著者リスト
+/**
+ * 選択された著者リスト
+ * @type {string[]}
+ */
 const selectedAuthors = ref<string[]>([...props.modelValue]);
 
-// 表示用の著者リスト
+/**
+ * 表示用の著者リスト
+ * @type {string[]}
+ */
 const displayAuthors = ref<string[]>([...props.modelValue]);
 
-// 有効な著者（存在確認済みの著者）のリスト
+/**
+ * 有効な著者（存在確認済みの著者）のリスト
+ * @type {string[]}
+ */
 const validAuthors = ref<string[]>([]);
 
-// 検証中の著者リスト
+/**
+ * 検証中の著者リスト
+ * @type {string[]}
+ */
 const pendingAuthors = ref<string[]>([]);
 
-// バリデーション済みの著者を保持するSet
+/**
+ * バリデーション済みの著者を保持するSet
+ * @type {Set<string>}
+ */
 const validatedAuthors = ref(new Set<string>());
 
-// 無効な著者が存在するかどうか
+/**
+ * 無効な著者が存在するかどうか
+ * @return {boolean}
+ */
 const invalidAuthorsExist = computed(() => {
   return selectedAuthors.value.some(
     author => !validAuthors.value.includes(author) && !pendingAuthors.value.includes(author),
   );
 });
 
-// 検証中の著者が存在するかどうか
+/**
+ * 検証中の著者が存在するかどうか
+ * @return {boolean}
+ */
 const pendingAuthorsExist = computed(() => {
   return pendingAuthors.value.length > 0;
 });
 
-// 著者の色を取得する
+/**
+ * Qiita に登録されている著者であるかなどを識別するための表示色を取得する
+ * @param {string} author - 著者名
+ * @return {string} - 色のクラス名
+ */
 const getAuthorColor = (author: string): string => {
   if (pendingAuthors.value.includes(author)) return 'grey'; // 検証中
   if (validAuthors.value.includes(author)) return 'primary'; // 有効
   return 'error'; // 無効
 };
 
-// 著者のアイコンを取得する
+/**
+ * Qiita に登録されている著者であるかなどを識別するためのアイコンを取得する
+ * @param {string} author - 著者名
+ * @return {string} - アイコンのクラス名
+ */
 const getAuthorIcon = (author: string): string => {
   if (pendingAuthors.value.includes(author)) return 'mdi-clock-outline'; // 検証中
   if (validAuthors.value.includes(author)) return 'mdi-check-circle'; // 有効
   return 'mdi-alert-circle'; // 無効
 };
 
-// 表示用の著者が変更されたときの処理
+/**
+ * 表示用の著者が変更されたときの処理
+ * - 選択された著者を更新
+ * - 最大著者数を超えないようにする
+ * - 新しく追加された著者を検出し、バリデーションを行う
+ * - 既存著者との大文字小文字を無視した重複をチェック
+ * - 親コンポーネントに変更を通知
+ * @returns {void}
+ */
 const onDisplayAuthorsChange = (): void => {
   // イベントループ中にチェックするためにキャッシュ
   const prevSelectedAuthors = [...selectedAuthors.value];
-
   // 表示著者から選択著者へ同期
   selectedAuthors.value = [...displayAuthors.value];
-
   // 最大数を超えないようにする
   if (selectedAuthors.value.length > props.maxAuthors) {
     selectedAuthors.value = selectedAuthors.value.slice(0, props.maxAuthors);
     displayAuthors.value = [...selectedAuthors.value]; // 上限を超えた場合は表示も更新
   }
-
   // 新しく追加された著者を検出
   const newAuthors = selectedAuthors.value.filter(
     author => !prevSelectedAuthors.includes(author),
   );
   if (newAuthors.length > 0) {
     console.log('新しく追加された著者:', newAuthors);
-
     // 既存著者との大文字小文字を無視した重複をチェック
     for (const newAuthor of newAuthors) {
       // 大文字小文字を無視した重複チェック - 既存の著者で同じものがあるか
@@ -138,92 +181,104 @@ const onDisplayAuthorsChange = (): void => {
           && author !== newAuthor
           && selectedAuthors.value.indexOf(newAuthor) !== index,
       );
-
       if (duplicateIndex !== -1) {
+        // すでに入力済みの著者が見つかった場合
         console.warn(
           `重複著者を検出: "${newAuthor}" は "${selectedAuthors.value[duplicateIndex]}" と重複しています（大文字小文字の違いを無視）`,
         );
-
         // 重複著者を削除
         const newAuthorIndex = selectedAuthors.value.indexOf(newAuthor);
         if (newAuthorIndex !== -1) {
           selectedAuthors.value.splice(newAuthorIndex, 1);
         }
-
-        // 表示も更新
+        // 表示も更新する
         displayAuthors.value = [...selectedAuthors.value];
-
-        // モデル値を更新して親コンポーネントに通知
+        // モデル値を更新して親コンポーネントに通知する
         emit('update:modelValue', selectedAuthors.value);
-
-        // 既に重複が処理されたので、この著者のバリデーションはスキップ
+        // 既に重複が処理されたので、この著者のバリデーションはスキップする
         continue;
       }
-
-      // 重複していない新しい著者はバリデーション
+      // 重複していない新しい著者はバリデーションを行う
+      console.log(`新しい著者 "${newAuthor}" を検証中...`);
       validateAuthor(newAuthor);
     }
   }
-
   // 親コンポーネントに変更を通知
   emit('update:modelValue', selectedAuthors.value);
 };
 
-// スペースキーが押されたときに新しい著者を追加
+/**
+ * 著者入力を処理する共通関数
+ * - 入力値を著者リストに追加
+ * - 既存著者との大文字小文字を無視した重複をチェック
+ * - 最大著者数を超えないようにする
+ * - 新しい著者を検証する
+ * - モデル値を更新して親コンポーネントに通知する
+ * @param {string} value - 入力された著者名
+ * @param {HTMLInputElement} input - 入力要素
+ */
+const handleAuthorInput = (value: string, input: HTMLInputElement): void => {
+  if (
+    value
+    && !selectedAuthors.value.includes(value)
+    && selectedAuthors.value.length < props.maxAuthors
+  ) {
+    selectedAuthors.value.push(value);
+    displayAuthors.value.push(value);
+    validateAuthor(value);
+    input.value = '';
+    emit('update:modelValue', selectedAuthors.value);
+  }
+};
+
+/**
+ * スペースキーが押されたときに新しい著者を追加する
+ * @param {KeyboardEvent} e - キーボードイベント
+ */
 const onAuthorInput = (e: KeyboardEvent): void => {
   const input = e.target as HTMLInputElement;
   const value = input.value.trim();
-
-  if (
-    value
-    && !selectedAuthors.value.includes(value)
-    && selectedAuthors.value.length < props.maxAuthors
-  ) {
-    selectedAuthors.value.push(value);
-    displayAuthors.value.push(value);
-    validateAuthor(value);
-    input.value = '';
-    emit('update:modelValue', selectedAuthors.value);
-  }
+  handleAuthorInput(value, input);
 };
 
-// フォーカスが外れたときに入力中の著者を検証
+/**
+ * フォーカスが外れたときに入力中の著者を検証する
+ * @param {FocusEvent} e - フォーカスイベント
+ */
 const validateCurrentAuthor = (e: FocusEvent): void => {
   const input = e.target as HTMLInputElement;
   const value = input.value.trim();
-
-  if (
-    value
-    && !selectedAuthors.value.includes(value)
-    && selectedAuthors.value.length < props.maxAuthors
-  ) {
-    selectedAuthors.value.push(value);
-    displayAuthors.value.push(value);
-    validateAuthor(value);
-    input.value = '';
-    emit('update:modelValue', selectedAuthors.value);
-  }
+  handleAuthorInput(value, input);
 };
 
-// 著者の存在検証メイン関数
+/**
+ * 著者の存在検証を行う
+ * - 既に検証済みの著者は再検証しない
+ * - 大文字小文字を無視した重複チェック
+ * - Qiita APIを使った著者検証
+ * - 検証済みとしてマーク
+ * - モデル値を更新して親コンポーネントに通知する
+ * @param {string} author - 検証する著者名
+ */
 const validateAuthor = async (author: string): Promise<void> => {
   if (!author) return;
-
   // 1. 既に検証済みの著者は再検証しない（ループ防止）
   if (isAuthorAlreadyValidated(author)) return;
-
   // 2. 大文字小文字を無視した重複チェック
   const existingAuthorData = findExistingAuthor(author);
   if (existingAuthorData) {
     handleExistingAuthorDuplication(author, existingAuthorData.index);
     return;
   }
-
   // 3. Qiita APIを使った著者検証
   await validateAuthorWithQiitaApi(author);
 };
 
-// 1. 著者が既に検証済みかチェック
+/**
+ * 著者が既に検証済みかチェックする
+ * @param {string} author - 検証する著者名
+ * @return {boolean} - 検証済みの場合は true, そうでない場合は false
+ */
 const isAuthorAlreadyValidated = (author: string): boolean => {
   if (validatedAuthors.value.has(author)) {
     console.debug(`Author ${author} is already validated, skipping validation`);
@@ -232,14 +287,18 @@ const isAuthorAlreadyValidated = (author: string): boolean => {
   return false;
 };
 
-// 2. 大文字小文字を無視して既存著者を検索
+/**
+ * 大文字小文字を無視して既存著者を検索する
+ * @param {string} author - 検索する著者名
+ * @return {object|null} - 既存著者のインデックスと著者名を含むオブジェクト、または null
+ */
 const findExistingAuthor = (author: string): { index: number; author: string } | null => {
   const authorLowerCase = author.toLowerCase();
   const existingAuthorIndex = selectedAuthors.value.findIndex(
     a => a.toLowerCase() === authorLowerCase && a !== author,
   );
-
   if (existingAuthorIndex !== -1) {
+    // 既存著者が見つかった場合
     return {
       index: existingAuthorIndex,
       author: selectedAuthors.value[existingAuthorIndex],
@@ -249,7 +308,15 @@ const findExistingAuthor = (author: string): { index: number; author: string } |
   return null;
 };
 
-// 3. 既存著者との重複を処理
+/**
+ * 既存著者との重複を処理する
+ * - 大文字小文字を無視した重複チェック
+ * - 既存著者を選択リストに追加
+ * - 検証済みとしてマーク
+ * - モデル値を更新して親コンポーネントに通知する
+ * @param {string} inputAuthor - 入力された著者名
+ * @param {number} existingAuthorIndex - 既存著者のインデックス
+ */
 const handleExistingAuthorDuplication = (
   inputAuthor: string,
   existingAuthorIndex: number,
@@ -258,37 +325,37 @@ const handleExistingAuthorDuplication = (
   console.warn(
     `重複した著者の登録が試行されました。既存の著者「${existingAuthor}」と新しい著者「${inputAuthor}」は大文字小文字の違いを無視すると同一です。`,
   );
-
-  // 入力著者を既存著者で置き換え
+  // 入力著者を既存著者で置き換える
   const inputAuthorIndex = selectedAuthors.value.indexOf(inputAuthor);
   if (inputAuthorIndex !== -1) {
     selectedAuthors.value[inputAuthorIndex] = existingAuthor;
-
-    // 表示用リストも更新
+    // 表示用リストも更新する
     updateDisplayAuthors();
   }
-
   // 検証済みとしてマーク
   validatedAuthors.value.add(inputAuthor);
   validatedAuthors.value.add(existingAuthor);
-
   // モデル値を更新
   emit('update:modelValue', selectedAuthors.value);
 };
 
-// 4. Qiita APIを使った著者検証
+/**
+ * Qiita APIを使って入力された著者が存在するかを検証する
+ * - 検証中としてマーク
+ * - 検証が完了したら、検証中から削除
+ * - APIから取得した著者IDで重複チェック
+ * - モデル値を更新して親コンポーネントに通知する
+ * @param {string} author - 検証する著者名
+ */
 const validateAuthorWithQiitaApi = async (author: string): Promise<void> => {
   // 検証中としてマーク
   pendingAuthors.value.push(author);
   validatedAuthors.value.add(author);
-
   try {
     console.log(`著者を検証中: "${author}"`);
     const userData = await useGetQiitaAuthor(app, author);
-
     // 検証中から削除
     pendingAuthors.value = pendingAuthors.value.filter(a => a !== author);
-
     if (userData) {
       console.log(`著者の検証完了: "${author}" は有効です。ID="${userData.id}"`);
       // APIから取得した著者IDで重複チェック
@@ -308,14 +375,20 @@ const validateAuthorWithQiitaApi = async (author: string): Promise<void> => {
   }
 };
 
-// 5. APIレスポンスから取得した著者IDの処理
+/**
+ * APIレスポンスから取得した著者IDの処理
+ * - APIから取得した著者IDが既存著者と重複する場合の処理
+ * - 重複がない場合は正確な著者IDに置き換え
+ * - モデル値を更新して親コンポーネントに通知する
+ * @param {string} inputAuthor - 入力された著者名
+ * @param {QiitaUserApiResponse} userData - APIから取得した著者データ
+ */
 const handleAuthorFromApiResponse = (inputAuthor: string, userData: QiitaUserApiResponse): void => {
   // APIから取得した正確な著者IDで再度重複チェック
   const correctAuthorLowerCase = userData.id.toLowerCase();
   const correctAuthorExistingIndex = selectedAuthors.value.findIndex(
     a => a.toLowerCase() === correctAuthorLowerCase && a !== inputAuthor,
   );
-
   if (correctAuthorExistingIndex !== -1) {
     // APIから取得した正確な著者IDが既に存在する場合
     handleApiAuthorDuplication(inputAuthor, correctAuthorExistingIndex, userData);
@@ -326,7 +399,15 @@ const handleAuthorFromApiResponse = (inputAuthor: string, userData: QiitaUserApi
   }
 };
 
-// 6. APIから取得した著者IDが既存著者と重複する場合の処理
+/**
+ * APIから取得した著者IDが既存著者と重複する場合の処理
+ * - 入力著者を既存著者に置き換え
+ * - 検証済みとしてマーク
+ * - モデル値を更新して親コンポーネントに通知する
+ * @param {string} inputAuthor - 入力された著者名
+ * @param {number} existingAuthorIndex - 既存著者のインデックス
+ * @param {QiitaUserApiResponse} userData - APIから取得した著者データ
+ */
 const handleApiAuthorDuplication = (
   inputAuthor: string,
   existingAuthorIndex: number,
@@ -349,25 +430,28 @@ const handleApiAuthorDuplication = (
   }
 };
 
-// 7. 著者を正確なIDに更新
+/**
+ * 著者を正確なIDに更新
+ * - 大文字小文字の違いがある場合は置き換える
+ * - 新しいIDも検証済みとしてマーク
+ * - モデル値を更新して親コンポーネントに通知する
+ * @param {string} inputAuthor - 入力された著者名
+ * @param {QiitaUserApiResponse} userData - APIから取得した著者データ
+ */
 const updateAuthorWithCorrectId = (inputAuthor: string, userData: QiitaUserApiResponse): void => {
   const authorIndex = selectedAuthors.value.indexOf(inputAuthor);
   if (authorIndex !== -1) {
     // 元の入力値と大文字小文字の違いがある場合は置き換える
     // 大文字小文字の違いだけでなく、APIから取得した正確なIDを使用
     selectedAuthors.value[authorIndex] = userData.id;
-
     // 新しいIDも検証済みとしてマーク
     validatedAuthors.value.add(userData.id);
-
     // 表示用リストも更新
     updateDisplayAuthors();
-
     // 有効な著者として追加（まだ追加されていない場合）
     if (!validAuthors.value.includes(userData.id)) {
       validAuthors.value.push(userData.id);
     }
-
     console.log(`著者を正規化: "${inputAuthor}" → "${userData.id}"`);
   }
   else {
@@ -375,13 +459,20 @@ const updateAuthorWithCorrectId = (inputAuthor: string, userData: QiitaUserApiRe
   }
 };
 
-// 表示用著者リストを更新
+/**
+ * 表示用著者リストを更新する
+ * - 選択された著者の順序を保持しながら表示用著者を更新する
+ */
 const updateDisplayAuthors = (): void => {
   // 選択された著者の順序を保持しながら表示用著者も更新
   displayAuthors.value = [...selectedAuthors.value];
 };
 
-// props.modelValueが外部から変更されたら選択著者を更新
+/**
+ * props.modelValueが外部から変更されたら選択著者を更新
+ * - 親コンポーネントからの変更を受け取る
+ * - 新しい著者の検証を行う
+ */
 watch(
   () => props.modelValue,
   (newVal) => {
