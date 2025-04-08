@@ -8,7 +8,7 @@ const stylisticRules = {
   '@stylistic/arrow-parens': 'off',
   '@stylistic/operator-linebreak': ['off'],
   '@stylistic/indent': ['error', 2],
-  '@stylistic/quotes': ['error', 'single'],
+  '@stylistic/quotes': ['error', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
   '@stylistic/semi': ['error', 'always'],
 };
 
@@ -19,7 +19,7 @@ export default withNuxt([
   stylistic.configs.customize({
     flat: true,
     indent: 2,
-    quotes: 'single',
+    quotes: ['single', { avoidEscape: true, allowTemplateLiterals: true }],
     semi: true,
     arrowParens: false,
     operatorLinebreak: 'none',
