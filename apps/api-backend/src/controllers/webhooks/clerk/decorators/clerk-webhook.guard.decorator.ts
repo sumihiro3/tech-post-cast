@@ -4,7 +4,7 @@ import { Request } from 'express';
 
 /**
  * ClerkのWebhookイベントを取得するデコレーター
- * @see https://clerk.com/docs/references/api/webhooks#webhook-events
+ * @see https://clerk.com/docs/webhooks/overview
  */
 export const ClerkWebhookEventGuardDecorator = createParamDecorator(
   (_property: string, ctx: ExecutionContext) => {
