@@ -1,0 +1,52 @@
+##################################################
+# プログラムコンテンツ API の実行
+##################################################
+
+# ローカル環境
+@baseUrl = {{$dotenv FRONTEND_API_BASE_URL_LOCAL}}
+@apiToken = {{$dotenv FRONTEND_API_TOKEN_LOCAL}}
+
+# 開発環境
+# @baseUrl = {{$dotenv FRONTEND_API_BASE_URL_DEV}}
+# @apiToken = {{$dotenv FRONTEND_API_TOKEN_DEV}}
+
+# 本番環境
+# @baseUrl = {{$dotenv FRONTEND_API_BASE_URL_PROD}}
+# @apiToken = {{$dotenv FRONTEND_API_TOKEN_PROD}}
+
+
+### ヘッドライントピック番組の件数を取得する
+GET {{baseUrl}}/api/program-content/headline-topic-programs/count
+Content-Type: application/json
+Authorization: Bearer {{apiToken}}
+
+### ヘッドライントピック番組の一覧を取得する
+@limit=10
+@page=1
+GET {{baseUrl}}/api/program-content/headline-topic-programs?limit={{limit}}&page={{page}}
+Content-Type: application/json
+Authorization: Bearer {{apiToken}}
+
+### ヘッドライントピック番組の番組ID一覧を取得する
+GET {{baseUrl}}/api/program-content/headline-topic-program-ids
+Content-Type: application/json
+Authorization: Bearer {{apiToken}}
+
+### 指定のヘッドライントピック番組を取得する
+@postId = cm6d7ey420000jx0ypb6sivhu
+GET {{baseUrl}}/api/program-content/headline-topic-programs/{{postId}}
+Content-Type: application/json
+Authorization: Bearer {{apiToken}}
+
+### 指定のヘッドライントピック番組と、その類似番組および、前後の日付の番組を取得する
+@postId = cm68y9le50001i511o4v1d1yp
+GET {{baseUrl}}/api/program-content/headline-topic-programs/{{postId}}/similar-and-neighbors
+Content-Type: application/json
+Authorization: Bearer {{apiToken}}
+
+
+# APIの名称変更に伴い、環境変数も変更されました。
+# 旧: V1_API_ACCESS_TOKEN, V1_API_TOKEN_LOCAL, V1_API_TOKEN_DEV, V1_API_TOKEN_PROD
+# 新: PROGRAM_CONTENT_API_ACCESS_TOKEN, PROGRAM_CONTENT_API_TOKEN_LOCAL, PROGRAM_CONTENT_API_TOKEN_DEV, PROGRAM_CONTENT_API_TOKEN_PROD
+
+注意: .env ファイルなどで環境変数を更新してください。

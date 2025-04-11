@@ -38,9 +38,10 @@ Sumihiro Kagawa
 - DEMO
 - システム構成
 - こだわりポイント
-- AI ラジオ番組生成フロー
+    - AI ラジオ番組生成フロー
+    - 運用コスト
 - 開発スケジュール
-- 運用コスト
+- 今後の機能追加予定
 
 ---
 
@@ -126,9 +127,9 @@ h2 { font-size: 32px; margin-bottom: 10px; }
 
 # 開発した経緯や背景
 
-- 日々進化する技術トレンドを簡単にキャッチアップしたい
-- 散歩や家事などの「ながら時間」活用したい
-- 習慣化できるように毎日決まった時間に生成・配信してほしい
+- 日々進化する技術トレンドを手軽にキャッチアップしたい
+- 散歩や家事などの「ながら時間」を活用したい
+- 習慣化できるよう毎日決まった時間に配信してほしい
 
 ---
 <style scoped>
@@ -241,6 +242,15 @@ ul { font-size: 28px; margin-bottom: 30px; }
 
 ---
 <style scoped>
+img { max-width: 100%; height: auto; display: block; margin: 0 auto; background-color: #fff; border: solid; }
+</style>
+
+# AI ラジオ番組生成・配信フロー
+
+![ラジオ番組生成フロー](../images/ラジオ番組生成フロー.drawio.png)
+
+---
+<style scoped>
 h2 { font-size: 38px; margin-bottom: 10px; }
 ul { font-size: 28px; margin-bottom: 30px; }
 </style>
@@ -249,39 +259,21 @@ ul { font-size: 28px; margin-bottom: 30px; }
 
 ## 低コストでの運用を目指す
 
-- **人手**
+- **作業工数**
     - 毎日配信でも人手はかけず完全自動化
-    - サーバーレス構成で運用の手間も最小限に
+    - サーバーレス構成で運用の手間を最小限に
+    - インフラを AWS CDK で構築することで環境構築の手間、差異を最小限に
     - 番組の再生成や用語登録は管理用APIで簡単実行
 - **費用**
     - 生成AIを使うが費用もできるだけ抑える（月額200円以下）
 
 ---
-
-# AI ラジオ番組生成フロー
-
-<style scoped>
-img { max-width: 100%; height: auto; display: block; margin: 0 auto; background-color: #fff; border: solid; }
-</style>
-
-![ラジオ番組生成フロー](../images/ラジオ番組生成フロー.drawio.png)
-
----
-
-# 開発スケジュール
-
-![開発スケジュール](../images/開発スケジュール.drawio.png)
-
----
-
 <style scoped>
 table { table-layout: auto; display:table; font-size: 24px; margin: 30px }
 td { padding: 10px }
 </style>
 
-# 運用コスト（2025.2）
-
-※開発での試用を含める
+# 運用費用（2025.2）
 
 | 利用サービス | 料金（ドル/月） | 備考 |
 | :---- | ----: | :---- |
@@ -291,6 +283,40 @@ td { padding: 10px }
 | OpenAI API <br /> (gpt-4o, gpt-4o-mini, text-embedding-3-small) | 0.47 | 287 requests <br/> 1.4M tokens |
 | Neon (PostgreSQL) | 0.00 | |
 | 合計 | 1.17 | ≒ 181円 |
+
+※開発環境や開発時の試用を含める
+
+---
+<!-- _class: lead -->
+
+# 開発スケジュール
+
+---
+
+# 開発スケジュール
+
+![開発スケジュール](../images/開発スケジュール.drawio.png)
+
+---
+<!-- _class: lead -->
+
+# 今後の機能追加予定
+
+---
+<style scoped>
+ul { font-size: 26px; margin-bottom: 30px; }
+</style>
+
+# 今後の機能追加予定
+
+- **パーソナライズした番組の配信**
+    - ユーザーが指定した条件（タグや著者など）で興味がある番組を個別配信
+    - 好みの MC 、BGM の選択
+- **配信オプションのカスタマイズ**
+    - 配信頻度の選択（日次、週次、記事数ベース）
+    - 配信タイミングの指定（朝の通勤時間向け、夜の就寝前など）
+
+これらの有料（一部無料）機能を追加してマネタイズを目指す
 
 ---
 <style scoped>

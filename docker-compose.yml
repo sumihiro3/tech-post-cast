@@ -1,8 +1,23 @@
 services:
+  api-backend:
+    container_name: api-backend-container
+    image: tech-post-cast-api-backend
+    build:
+      context: .
+      dockerfile: Dockerfile.api-backend
+    ports:
+      - '3001:3001'
+    env_file:
+      - apps/api-backend/.env
+    environment:
+      - PORT=3001
+      - NODE_ENV=development
+      - SHOW_QUERY_LOGS=true
+      - DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:5432/techpostcast
   backend:
     container_name: backend-container
     image: tech-post-cast-backend
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile.backend
     ports:
@@ -30,3 +45,17 @@ services:
       - HEADLINE_TOPIC_PROGRAM_PICTURE_FILE_PATH=assets/audio/headline-topic-programs/preview.jpg
       - HEADLINE_TOPIC_PROGRAM_SE_SHORT_FILE_PATH=assets/audio/headline-topic-programs/se_short.mp3
       - HEADLINE_TOPIC_PROGRAM_SE_LONG_FILE_PATH=assets/audio/headline-topic-programs/se_long.mp3
+      - DATABASE_URL=postgresql://postgres:postgres@host.docker.internal:5432/techpostcast
+  db:
+    image: ankane/pgvector:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: techpostcast
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

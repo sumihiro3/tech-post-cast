@@ -1,4 +1,5 @@
 export * from './headline-topic-programs';
+export * from './qiita-api';
 
 /**
  * ポッドキャスト配信サービスを表す型

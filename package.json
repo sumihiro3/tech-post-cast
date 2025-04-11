@@ -9,6 +9,7 @@
     "packages/*"
   ],
   "scripts": {
+    "start:api-backend": "yarn workspace @tech-post-cast/api-backend run start:dev",
     "start:backend": "yarn workspace @tech-post-cast/backend run start:dev",
     "start:line-bot": "yarn workspace @tech-post-cast/line-bot run dev",
     "serve:lp-frontend": "yarn workspace @tech-post-cast/lp-frontend run serve",
@@ -17,10 +18,12 @@
     "generate:lp-frontend": "yarn workspace @tech-post-cast/lp-frontend run generate",
     "build-all": "yarn build-commons && yarn build-database && yarn build-backend",
     "build-for-backend": "yarn build-commons && yarn build-database && yarn build-backend",
+    "build:for-api-backend": "yarn build-commons && yarn build-database && yarn build:api-backend",
     "build:line-bot": "yarn build-commons && yarn build-database",
     "build-commons": "yarn workspace @tech-post-cast/commons run build",
     "build-database": "yarn workspace @tech-post-cast/database run build",
     "build-backend": "yarn workspace @tech-post-cast/backend run build",
+    "build:api-backend": "yarn workspace @tech-post-cast/api-backend run build",
     "build:lp-frontend": "yarn workspace @tech-post-cast/lp-frontend run build",
     "build-infra": "yarn workspace @tech-post-cast/infra run build",
     "diff-infra": "yarn workspace @tech-post-cast/infra run diff:dev",
@@ -50,6 +53,7 @@
     "deploy-migration-prisma": "yarn workspace @tech-post-cast/database run prisma:deploy-migration",
     "generate:api-spec": "yarn generate:api-spec:backend && yarn generate:api-spec:line-bot",
     "generate:api-spec:backend": "yarn workspace @tech-post-cast/backend generate:api-spec",
+    "generate:api-spec:for-frontend": "yarn workspace @tech-post-cast/api-backend generate:api-spec",
     "generate:api-spec:line-bot": "yarn workspace @tech-post-cast/line-bot generate:api-spec",
     "generate:api-client": "openapi-generator-cli generate",
     "test": "yarn test-backend",

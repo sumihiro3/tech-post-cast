@@ -1,18 +1,22 @@
 ##################################################
-# フロント向け API (v1) の実行
+# 旧 API (Api V1) の呼び出し
+##################################################
+# 注意: これらのエンドポイントは非推奨です。
+# 新しいエンドポイント /api/program-content/ を使用してください。
+# 後方互換性のために /api/v1/ エンドポイントは一時的に維持されています。
 ##################################################
 
 # ローカル環境
-@baseUrl = {{$dotenv BACKEND_BASE_URL_LOCAL}}
-@apiToken = {{$dotenv V1_API_TOKEN_LOCAL}}
+@baseUrl = {{$dotenv FRONTEND_API_BASE_URL_LOCAL}}
+@apiToken = {{$dotenv FRONTEND_API_TOKEN_LOCAL}}
 
 # 開発環境
-# @baseUrl = {{$dotenv BACKEND_BASE_URL_DEV}}
-# @apiToken = {{$dotenv V1_API_TOKEN_DEV}}
+# @baseUrl = {{$dotenv FRONTEND_API_BASE_URL_DEV}}
+# @apiToken = {{$dotenv FRONTEND_API_TOKEN_DEV}}
 
 # 本番環境
-# @baseUrl = {{$dotenv BACKEND_BASE_URL_PROD}}
-# @apiToken = {{$dotenv V1_API_TOKEN_PROD}}
+# @baseUrl = {{$dotenv FRONTEND_API_BASE_URL_PROD}}
+# @apiToken = {{$dotenv FRONTEND_API_TOKEN_PROD}}
 
 
 ### ヘッドライントピック番組の件数を取得する
@@ -43,3 +47,9 @@ Authorization: Bearer {{apiToken}}
 GET {{baseUrl}}/api/v1/headline-topic-programs/{{postId}}/similar-and-neighbors
 Content-Type: application/json
 Authorization: Bearer {{apiToken}}
+
+# APIの名称変更に伴い、環境変数も変更されました。
+# 旧: V1_API_ACCESS_TOKEN, V1_API_TOKEN_LOCAL, V1_API_TOKEN_DEV, V1_API_TOKEN_PROD
+# 新: PROGRAM_CONTENT_API_ACCESS_TOKEN, PROGRAM_CONTENT_API_TOKEN_LOCAL, PROGRAM_CONTENT_API_TOKEN_DEV, PROGRAM_CONTENT_API_TOKEN_PROD
+
+注意: .env ファイルなどで環境変数を更新してください。

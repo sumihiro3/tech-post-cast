@@ -5,6 +5,10 @@
       "path": "."
     },
     {
+      "name": "api-backend",
+      "path": "apps/api-backend"
+    },
+    {
       "name": "backend",
       "path": "apps/backend"
     },
@@ -34,6 +38,7 @@
     }
   ],
   "settings": {
+    "chat.agent.enabled": true,
     "jest.runMode": "on-demand",
     "jest.jestCommandLine": "yarn test",
     "jest.disabledWorkspaceFolders": [

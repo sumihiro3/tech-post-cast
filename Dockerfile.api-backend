@@ -1,0 +1,34 @@
+FROM node:20.18.1-bullseye-slim as builder
+
+WORKDIR /build
+
+# yarn workspace 内のソースコードなどをコンテナー内にコピー
+COPY . .
+# 依存ライブラリをインストール
+RUN yarn install --pure-lockfile --non-interactive
+# prisma のスキーマを生成
+RUN yarn generate-prisma
+# ソースコードをビルド
+RUN yarn build:for-api-backend
+
+# -----------------------------
+FROM node:20.18.1-bullseye-slim
+
+# timezone setting
+RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
+
+WORKDIR /app
+
+# 依存ライブラリをコピー
+COPY --from=builder /build/node_modules node_modules
+COPY --from=builder /build/apps/api-backend/node_modules/ node_modules/
+# apps/api-backend のビルド結果をコンテナー内にコピー
+COPY --from=builder /build/apps/api-backend/dist dist
+# apps/api-backend の package.json をコンテナー内にコピー
+COPY --from=builder /build/apps/api-backend/package.json .
+# yarn workspace 内の共通ライブラリ群（commons database）のビルド結果をコンテナー内にコピー
+COPY --from=builder /build/packages/commons node_modules/@tech-post-cast/commons
+COPY --from=builder /build/packages/database node_modules/@tech-post-cast/database
+
+EXPOSE 3000
+CMD [ "yarn", "start:prod" ]
