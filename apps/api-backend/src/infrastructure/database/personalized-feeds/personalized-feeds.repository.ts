@@ -112,4 +112,49 @@ export class PersonalizedFeedsRepository
       throw new Error(errorMessage);
     }
   }
+
+  /**
+   * パーソナライズフィードを新規作成する
+   * @param feed 作成するパーソナライズフィードの情報
+   * @returns 作成されたパーソナライズフィード
+   */
+  async create(
+    feed: Omit<PersonalizedFeed, 'id' | 'createdAt' | 'updatedAt'>,
+  ): Promise<PersonalizedFeed> {
+    this.logger.debug('PersonalizedFeedsRepository.create called', { feed });
+
+    try {
+      const client = this.prisma.getClient();
+
+      // フィードの作成日時と更新日時を現在時刻に設定
+      const now = new Date();
+
+      // パーソナライズフィードを作成
+      const createdFeed = await client.personalizedFeed.create({
+        data: {
+          ...feed,
+          createdAt: now,
+          updatedAt: now,
+          // ID は自動生成 (prisma-client-manager で接頭辞付きID生成処理を実装済み)
+        },
+      });
+
+      this.logger.debug(
+        `パーソナライズフィード [${createdFeed.id}] を作成しました`,
+        {
+          feedId: createdFeed.id,
+          userId: createdFeed.userId,
+        },
+      );
+
+      return new PersonalizedFeed(createdFeed);
+    } catch (error) {
+      const errorMessage = `パーソナライズフィードの作成に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        feed,
+      });
+      throw new Error(errorMessage);
+    }
+  }
 }

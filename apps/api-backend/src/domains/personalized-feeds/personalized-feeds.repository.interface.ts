@@ -26,4 +26,13 @@ export interface IPersonalizedFeedsRepository {
    * @returns パーソナライズフィード、存在しない場合はnull
    */
   findById(id: string): Promise<PersonalizedFeed | null>;
+
+  /**
+   * パーソナライズフィードを新規作成する
+   * @param feed 作成するパーソナライズフィードの情報
+   * @returns 作成されたパーソナライズフィード
+   */
+  create(
+    feed: Omit<PersonalizedFeed, 'id' | 'createdAt' | 'updatedAt'>,
+  ): Promise<PersonalizedFeed>;
 }
