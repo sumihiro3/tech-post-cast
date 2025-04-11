@@ -14,8 +14,28 @@ export class ClerkAuthGuard implements CanActivate {
 
   private readonly clerkClient: ClerkClient;
   private readonly jwtKey: string;
+  private readonly isTestMode: boolean;
+  private readonly testUserId: string;
+  private readonly testSessionId: string;
 
   constructor(private readonly configService: ConfigService) {
+    // テストモードかどうかを環境変数から取得
+    this.isTestMode =
+      this.configService.get<string>('NODE_ENV') === 'test' ||
+      this.configService.get<boolean>('TEST_MODE') === true;
+
+    // テストユーザー情報を環境変数から取得
+    this.testUserId =
+      this.configService.get<string>('TEST_USER_ID') || 'test-user-id';
+    this.testSessionId =
+      this.configService.get<string>('TEST_SESSION_ID') || 'test-session-id';
+
+    if (this.isTestMode) {
+      this.logger.log('テストモードで実行中: 認証をバイパスします');
+      // テストモードではClerkClientは初期化しない
+      return;
+    }
+
     const secretKey = this.configService.get<string>('CLERK_SECRET_KEY');
     const publishableKey = this.configService.get<string>(
       'CLERK_PUBLISHABLE_KEY',
@@ -38,9 +58,18 @@ export class ClerkAuthGuard implements CanActivate {
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    try {
-      const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest<Request>();
 
+    // テストモードの場合は認証をスキップ
+    if (this.isTestMode) {
+      request['user'] = {
+        id: this.testUserId,
+        sessionId: this.testSessionId,
+      };
+      return true;
+    }
+
+    try {
       // Clerkの authenticateRequest() を使用してリクエストを検証
       const requestState = await this.clerkClient.authenticateRequest(request, {
         jwtKey: this.jwtKey,
