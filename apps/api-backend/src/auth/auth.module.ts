@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ClerkAuthGuard } from './guards/clerk-auth.guard';
+import { ClerkJwtGuard } from './guards/clerk-jwt.guard';
 
 @Module({
   imports: [ConfigModule],
-  providers: [ClerkAuthGuard],
-  exports: [ClerkAuthGuard],
+  providers: [ClerkJwtGuard],
+  exports: [ClerkJwtGuard],
 })
 export class AuthModule {}
