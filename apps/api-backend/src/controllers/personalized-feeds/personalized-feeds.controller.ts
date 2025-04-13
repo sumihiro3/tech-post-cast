@@ -6,6 +6,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpException,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
   Param,
@@ -252,10 +254,13 @@ export class PersonalizedFeedsController {
         });
         throw new NotFoundException(error.message);
       }
-
       // その他のエラーはログ出力して再スロー
       this.logger.error(`パーソナライズフィードの作成に失敗しました`, error);
-      throw error;
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException(
+        'パーソナライズフィードの作成に失敗しました',
+        error.message,
+      );
     }
   }
 }
