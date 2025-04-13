@@ -1,12 +1,92 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
+  ValidateNested,
 } from 'class-validator';
+
+/**
+ * タグフィルターのDTO
+ */
+export class TagFilterDto {
+  @ApiProperty({
+    description: 'タグ名',
+    required: true,
+    example: 'JavaScript',
+    type: String,
+  })
+  @IsString({ message: 'タグ名は文字列である必要があります' })
+  @IsNotEmpty({ message: 'タグ名は必須です' })
+  tagName: string;
+}
+
+/**
+ * 著者フィルターのDTO
+ */
+export class AuthorFilterDto {
+  @ApiProperty({
+    description: '著者ID',
+    required: true,
+    example: 'author123',
+    type: String,
+  })
+  @IsString({ message: '著者IDは文字列である必要があります' })
+  @IsNotEmpty({ message: '著者IDは必須です' })
+  authorId: string;
+}
+
+/**
+ * フィルターグループのDTO
+ */
+export class FilterGroupDto {
+  @ApiProperty({
+    description: 'フィルターグループの名前',
+    required: true,
+    example: 'フロントエンド関連',
+    type: String,
+  })
+  @IsString({ message: 'フィルターグループ名は文字列である必要があります' })
+  @IsNotEmpty({ message: 'フィルターグループ名は必須です' })
+  name: string;
+
+  @ApiProperty({
+    description: 'ロジック種別 (AND/OR)',
+    required: true,
+    default: 'OR',
+    example: 'OR',
+    type: String,
+  })
+  @IsString({ message: 'ロジック種別は文字列である必要があります' })
+  @IsOptional()
+  logicType?: string = 'OR';
+
+  @ApiProperty({
+    description: 'タグフィルター一覧',
+    required: false,
+    type: [TagFilterDto],
+  })
+  @IsArray({ message: 'タグフィルターは配列である必要があります' })
+  @ValidateNested({ each: true })
+  @Type(() => TagFilterDto)
+  @IsOptional()
+  tagFilters?: TagFilterDto[] = [];
+
+  @ApiProperty({
+    description: '著者フィルター一覧',
+    required: false,
+    type: [AuthorFilterDto],
+  })
+  @IsArray({ message: '著者フィルターは配列である必要があります' })
+  @ValidateNested({ each: true })
+  @Type(() => AuthorFilterDto)
+  @IsOptional()
+  authorFilters?: AuthorFilterDto[] = [];
+}
 
 /**
  * パーソナライズフィード作成リクエストDTO
@@ -57,6 +137,17 @@ export class CreatePersonalizedFeedRequestDto {
     return typeof value === 'string' ? JSON.parse(value) : value;
   })
   deliveryConfig: Record<string, any>;
+
+  @ApiProperty({
+    description: 'フィルターグループ一覧',
+    required: false,
+    type: [FilterGroupDto],
+  })
+  @IsArray({ message: 'フィルターグループは配列である必要があります' })
+  @ValidateNested({ each: true })
+  @Type(() => FilterGroupDto)
+  @IsOptional()
+  filterGroups?: FilterGroupDto[] = [];
 
   @ApiProperty({
     description: '有効かどうか',

@@ -1,7 +1,68 @@
 import {
   PersonalizedFeed,
+  PersonalizedFeedWithFilters,
   PersonalizedFeedsResult,
+  PersonalizedFeedsWithFiltersResult,
 } from './personalized-feeds.entity';
+
+// フィルターグループに関する型定義
+export interface CreateFilterGroupParams {
+  filterId: string;
+  name: string;
+  logicType: string;
+}
+
+export interface FilterGroup {
+  id: string;
+  filterId: string;
+  name: string;
+  logicType: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// タグフィルターに関する型定義
+export interface CreateTagFilterParams {
+  groupId: string;
+  tagName: string;
+}
+
+export interface TagFilter {
+  id: string;
+  groupId: string;
+  tagName: string;
+  createdAt: Date;
+}
+
+// 著者フィルターに関する型定義
+export interface CreateAuthorFilterParams {
+  groupId: string;
+  authorId: string;
+}
+
+export interface AuthorFilter {
+  id: string;
+  groupId: string;
+  authorId: string;
+}
+
+// フィードとフィルターグループの作成に関する型定義
+export interface CreateFeedWithFilterGroupParams {
+  feed: Omit<PersonalizedFeed, 'id' | 'createdAt' | 'updatedAt'>;
+  filterGroup?: {
+    name: string;
+    logicType: string;
+    tagFilters?: Array<{ tagName: string }>;
+    authorFilters?: Array<{ authorId: string }>;
+  };
+}
+
+export interface FeedWithFilterGroupResult {
+  feed: PersonalizedFeed;
+  filterGroup?: FilterGroup;
+  tagFilters?: TagFilter[];
+  authorFilters?: AuthorFilter[];
+}
 
 /**
  * パーソナライズフィードリポジトリのインターフェース
@@ -21,11 +82,31 @@ export interface IPersonalizedFeedsRepository {
   ): Promise<PersonalizedFeedsResult>;
 
   /**
+   * 指定されたユーザーIDに紐づくパーソナライズフィードの一覧をフィルター情報付きで取得する
+   * @param userId ユーザーID
+   * @param page ページ番号（1から始まる）
+   * @param perPage 1ページあたりの件数
+   * @returns フィルター情報を含むパーソナライズフィード一覧と総件数
+   */
+  findByUserIdWithFilters(
+    userId: string,
+    page?: number,
+    perPage?: number,
+  ): Promise<PersonalizedFeedsWithFiltersResult>;
+
+  /**
    * 指定されたIDのパーソナライズフィードを取得する
    * @param id パーソナライズフィードID
    * @returns パーソナライズフィード、存在しない場合はnull
    */
   findById(id: string): Promise<PersonalizedFeed | null>;
+
+  /**
+   * 指定されたIDのパーソナライズフィードをフィルター情報付きで取得する
+   * @param id パーソナライズフィードID
+   * @returns フィルター情報を含むパーソナライズフィード、存在しない場合はnull
+   */
+  findByIdWithFilters(id: string): Promise<PersonalizedFeedWithFilters | null>;
 
   /**
    * パーソナライズフィードを新規作成する
@@ -35,4 +116,34 @@ export interface IPersonalizedFeedsRepository {
   create(
     feed: Omit<PersonalizedFeed, 'id' | 'createdAt' | 'updatedAt'>,
   ): Promise<PersonalizedFeed>;
+
+  /**
+   * フィルターグループを新規作成する
+   * @param params フィルターグループ作成パラメータ
+   * @returns 作成されたフィルターグループ
+   */
+  createFilterGroup(params: CreateFilterGroupParams): Promise<FilterGroup>;
+
+  /**
+   * タグフィルターを新規作成する
+   * @param params タグフィルター作成パラメータ
+   * @returns 作成されたタグフィルター
+   */
+  createTagFilter(params: CreateTagFilterParams): Promise<TagFilter>;
+
+  /**
+   * 著者フィルターを新規作成する
+   * @param params 著者フィルター作成パラメータ
+   * @returns 作成された著者フィルター
+   */
+  createAuthorFilter(params: CreateAuthorFilterParams): Promise<AuthorFilter>;
+
+  /**
+   * パーソナライズフィードとフィルターグループを同一トランザクションで作成する
+   * @param params フィードとフィルターグループの作成パラメータ
+   * @returns 作成されたフィードとフィルターグループ
+   */
+  createWithFilterGroup(
+    params: CreateFeedWithFilterGroupParams,
+  ): Promise<FeedWithFilterGroupResult>;
 }

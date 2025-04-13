@@ -1,10 +1,13 @@
+import { FilterGroupDto } from '@/controllers/personalized-feeds/dto/create-personalized-feed.request.dto';
 import { IAppUserRepository } from '@/domains/app-user/app-user.repository.interface';
 import { UserNotFoundError } from '@/types/errors';
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AppUser } from '@prisma/client';
 import {
   PersonalizedFeed,
+  PersonalizedFeedWithFilters,
   PersonalizedFeedsResult,
+  PersonalizedFeedsWithFiltersResult,
 } from './personalized-feeds.entity';
 import { IPersonalizedFeedsRepository } from './personalized-feeds.repository.interface';
 
@@ -49,6 +52,35 @@ export class PersonalizedFeedsService {
   }
 
   /**
+   * 指定されたユーザーIDに紐づくパーソナライズフィードの一覧をフィルター情報付きで取得する
+   * @param userId ユーザーID
+   * @param page ページ番号（1から始まる）
+   * @param perPage 1ページあたりの件数
+   * @returns フィルター情報を含むパーソナライズフィード一覧と総件数
+   * @throws UserNotFoundError ユーザーが存在しない場合
+   */
+  async findByUserIdWithFilters(
+    userId: string,
+    page: number = 1,
+    perPage: number = 20,
+  ): Promise<PersonalizedFeedsWithFiltersResult> {
+    this.logger.debug('PersonalizedFeedsService.findByUserIdWithFilters', {
+      userId,
+      page,
+      perPage,
+    });
+
+    // ユーザーの存在確認
+    const user = await this.validateUserExists(userId);
+    // フィルター情報を含むパーソナライズフィード一覧を取得
+    return this.personalizedFeedsRepository.findByUserIdWithFilters(
+      user.id,
+      page,
+      perPage,
+    );
+  }
+
+  /**
    * 指定されたIDのパーソナライズフィードを取得する
    * ただし、指定されたユーザーIDに紐づくフィードのみ取得可能
    * @param id パーソナライズフィードID
@@ -80,12 +112,50 @@ export class PersonalizedFeedsService {
   }
 
   /**
+   * 指定されたIDのパーソナライズフィードをフィルター情報付きで取得する
+   * ただし、指定されたユーザーIDに紐づくフィードのみ取得可能
+   * @param id パーソナライズフィードID
+   * @param userId ユーザーID
+   * @returns フィルター情報を含むパーソナライズフィード
+   * @throws NotFoundException フィードが存在しない場合
+   * @throws UserNotFoundError ユーザーが存在しない場合
+   */
+  async findByIdWithFilters(
+    id: string,
+    userId: string,
+  ): Promise<PersonalizedFeedWithFilters> {
+    this.logger.debug('PersonalizedFeedsService.findByIdWithFilters', {
+      id,
+      userId,
+    });
+
+    // ユーザーの存在確認
+    const user = await this.validateUserExists(userId);
+    const feed = await this.personalizedFeedsRepository.findByIdWithFilters(id);
+
+    // フィードが存在しない場合はエラー
+    if (!feed) {
+      throw new NotFoundException(
+        `パーソナライズフィード [${id}] は存在しません`,
+      );
+    }
+    // 認証済みユーザーのフィードのみアクセス可能
+    if (feed.userId !== user.id) {
+      throw new NotFoundException(
+        `パーソナライズフィード [${id}] は存在しません`,
+      );
+    }
+    return feed;
+  }
+
+  /**
    * ユーザーのパーソナライズフィードを新規作成する
    * @param userId ユーザーID
    * @param name フィード名
    * @param dataSource データソース
    * @param filterConfig フィルター設定
    * @param deliveryConfig 配信設定
+   * @param filterGroups フィルターグループ一覧（1つのみ有効）
    * @param isActive 有効状態
    * @returns 作成されたパーソナライズフィード
    * @throws UserNotFoundError ユーザーが存在しない場合
@@ -97,7 +167,12 @@ export class PersonalizedFeedsService {
     filterConfig: Record<string, any>,
     deliveryConfig: Record<string, any>,
     isActive: boolean = true,
+    filterGroups: FilterGroupDto[] = [],
   ): Promise<PersonalizedFeed> {
+    // UIでは1つのフィルターグループのみをサポート
+    const filterGroup =
+      filterGroups && filterGroups.length > 0 ? filterGroups[0] : undefined;
+
     this.logger.debug('PersonalizedFeedsService.create', {
       userId,
       name,
@@ -105,31 +180,119 @@ export class PersonalizedFeedsService {
       filterConfig,
       deliveryConfig,
       isActive,
+      hasFilterGroup: !!filterGroup,
     });
 
     // ユーザーの存在確認
     const user = await this.validateUserExists(userId);
 
-    // パーソナライズフィードを作成
-    const feed = await this.personalizedFeedsRepository.create({
-      name,
-      userId: user.id,
-      dataSource,
-      filterConfig,
-      deliveryConfig,
-      isActive,
-    });
+    try {
+      // パーソナライズフィードとフィルターグループをトランザクションで作成
+      const result =
+        await this.personalizedFeedsRepository.createWithFilterGroup({
+          feed: {
+            name,
+            userId: user.id,
+            dataSource,
+            filterConfig,
+            deliveryConfig,
+            isActive,
+          },
+          filterGroup: filterGroup
+            ? {
+                name: filterGroup.name,
+                logicType: filterGroup.logicType || 'OR',
+                tagFilters: filterGroup.tagFilters,
+                authorFilters: filterGroup.authorFilters,
+              }
+            : undefined,
+        });
 
-    this.logger.log(
-      `ユーザー [${userId}] のパーソナライズフィード [${feed.id}] を新規作成しました`,
-      {
-        feedId: feed.id,
+      this.logger.log(
+        `ユーザー [${userId}] のパーソナライズフィード [${result.feed.id}] を新規作成しました`,
+        {
+          feedId: result.feed.id,
+          userId,
+          name,
+          hasFilterGroup: !!result.filterGroup,
+          filterGroupId: result.filterGroup?.id,
+          tagFiltersCount: result.tagFilters?.length || 0,
+          authorFiltersCount: result.authorFilters?.length || 0,
+        },
+      );
+
+      return result.feed;
+    } catch (error) {
+      this.logger.error(`パーソナライズフィードの作成に失敗しました`, {
+        error,
         userId,
         name,
-      },
-    );
+      });
+      throw error;
+    }
+  }
 
-    return feed;
+  /**
+   * フィルターグループを作成する
+   * @param feedId パーソナライズフィードID
+   * @param group フィルターグループ情報
+   */
+  private async createFilterGroup(
+    feedId: string,
+    group: FilterGroupDto,
+  ): Promise<void> {
+    this.logger.debug('PersonalizedFeedsService.createFilterGroup', {
+      feedId,
+      group,
+    });
+
+    try {
+      // フィルターグループを作成
+      const createdGroup =
+        await this.personalizedFeedsRepository.createFilterGroup({
+          filterId: feedId,
+          name: group.name,
+          logicType: group.logicType || 'OR',
+        });
+
+      // タグフィルターを作成
+      if (group.tagFilters && group.tagFilters.length > 0) {
+        for (const tagFilter of group.tagFilters) {
+          await this.personalizedFeedsRepository.createTagFilter({
+            groupId: createdGroup.id,
+            tagName: tagFilter.tagName,
+          });
+        }
+      }
+
+      // 著者フィルターを作成
+      if (group.authorFilters && group.authorFilters.length > 0) {
+        for (const authorFilter of group.authorFilters) {
+          await this.personalizedFeedsRepository.createAuthorFilter({
+            groupId: createdGroup.id,
+            authorId: authorFilter.authorId,
+          });
+        }
+      }
+
+      this.logger.debug(
+        `フィルターグループ [${createdGroup.id}] を作成しました`,
+        {
+          groupId: createdGroup.id,
+          feedId,
+          name: group.name,
+          tagFiltersCount: group.tagFilters?.length || 0,
+          authorFiltersCount: group.authorFilters?.length || 0,
+        },
+      );
+    } catch (error) {
+      this.logger.error(`フィルターグループの作成に失敗しました`, {
+        error,
+        feedId,
+        groupName: group.name,
+      });
+      throw error;
+    }
   }
 
   /**
