@@ -126,7 +126,7 @@ export class GetPersonalizedFeedsResponseDto {
   @ApiProperty({
     description: 'パーソナライズフィード一覧',
     required: true,
-    type: [PersonalizedFeedDto],
+    type: PersonalizedFeedDto,
     isArray: true,
   })
   feeds: PersonalizedFeedDto[];
