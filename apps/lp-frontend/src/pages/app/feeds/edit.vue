@@ -122,18 +122,34 @@ const filteredQiitaPosts = ref<QiitaPostDto[]>([]);
 // フィルターを適用した記事の総数
 const filteredQiitaPostsTotalCount = ref<number>(0);
 
+// 著者またはタグが選択されているかどうか
+const isAuthorOrTagSelected = (): boolean => {
+  return filters.authors.length > 0 || filters.tags.length > 0;
+};
+
 /**
  * フィルター条件が変更されたことを検知して、Qiita API で記事を取得する
  */
 watch(
   filters,
   () => {
-    if (isFiltersChanged()) {
+    if (isFiltersChanged() && isAuthorOrTagSelected()) {
+      // フィルター条件が変更された場合、Qiita API で記事を取得する
+      // ただし、著者またはタグが選択されている場合のみ
       fetchQiitaPosts();
       previousFilters.value = {
         authors: filters.authors,
         tags: filters.tags,
         dateRange: filters.dateRange,
+      };
+    } else if (!isAuthorOrTagSelected()) {
+      // 著者またはタグが選択されていない場合、フィルターをクリアする
+      filteredQiitaPosts.value = [];
+      filteredQiitaPostsTotalCount.value = 0;
+      previousFilters.value = {
+        authors: [],
+        tags: [],
+        dateRange: 'すべて',
       };
     }
   },
@@ -146,9 +162,10 @@ watch(
  */
 const isFiltersChanged = (): boolean => {
   return (
-    previousFilters.value.authors !== filters.authors
-    || previousFilters.value.tags !== filters.tags
-    || previousFilters.value.dateRange !== filters.dateRange
+    // test
+    previousFilters.value.authors !== filters.authors ||
+    previousFilters.value.tags !== filters.tags ||
+    previousFilters.value.dateRange !== filters.dateRange
   );
 };
 
@@ -181,6 +198,7 @@ const dateRanges = ['すべて', '今日', '今週', '今月', '今年'];
 .text-truncate-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
