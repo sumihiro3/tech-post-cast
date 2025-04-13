@@ -3,8 +3,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as fs from 'fs';
 import { AppModule } from '../src/app.module';
 import { ProgramContentApiModule } from '../src/controllers/program-content-api/program-content-api.module';
-import { QiitaPostsModule } from '../src/controllers/qiita-posts/qiita-posts.module';
 import { QiitaPostDto } from '../src/controllers/qiita-posts/dto/search-qiita-posts.response.dto';
+import { QiitaPostsModule } from '../src/controllers/qiita-posts/qiita-posts.module';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import * as req from '../src/custom';
 
@@ -46,7 +46,7 @@ async function bootstrap() {
     include: undefined, // すべてのモジュールを含める
   });
   fs.writeFileSync(
-    'api-spec/full-api.api-spec.json',
+    'api-spec/api-backend-spec.json',
     JSON.stringify(fullApiDocument, undefined, 2),
   );
 }

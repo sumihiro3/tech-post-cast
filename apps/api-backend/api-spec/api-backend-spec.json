@@ -554,6 +554,131 @@
         ]
       }
     },
+    "/personalized-feeds": {
+      "get": {
+        "description": "ユーザーが登録したパーソナライズフィードの一覧を取得します",
+        "operationId": "getPersonalizedFeeds",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "ページ番号（1から始まる）",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "perPage",
+            "required": false,
+            "in": "query",
+            "description": "1ページあたりの件数",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "取得成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPersonalizedFeedsResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ユーザーが存在しない"
+          }
+        },
+        "summary": "パーソナライズフィード一覧取得",
+        "tags": [
+          "Personalized Feeds"
+        ]
+      },
+      "post": {
+        "description": "パーソナライズフィードを新規作成します",
+        "operationId": "createPersonalizedFeed",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePersonalizedFeedRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "作成成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePersonalizedFeedResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "リクエストパラメータが不正"
+          },
+          "404": {
+            "description": "ユーザーが存在しない"
+          }
+        },
+        "summary": "パーソナライズフィード新規作成",
+        "tags": [
+          "Personalized Feeds"
+        ]
+      }
+    },
+    "/personalized-feeds/{id}": {
+      "get": {
+        "description": "指定されたIDのパーソナライズフィードを取得します",
+        "operationId": "getPersonalizedFeed",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "パーソナライズフィードID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "取得成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPersonalizedFeedResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "パーソナライズフィードが存在しない、またはユーザーが存在しない"
+          }
+        },
+        "summary": "個別パーソナライズフィード取得",
+        "tags": [
+          "Personalized Feeds"
+        ]
+      }
+    },
     "/": {
       "get": {
         "operationId": "AppController_getHello",
@@ -949,6 +1074,172 @@
           "totalCount",
           "page",
           "perPage"
+        ]
+      },
+      "PersonalizedFeedDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "パーソナライズフィードのID",
+            "example": "feed_1234567890"
+          },
+          "name": {
+            "type": "string",
+            "description": "パーソナライズフィードの名前",
+            "example": "技術ブログフィード"
+          },
+          "dataSource": {
+            "type": "string",
+            "description": "データソース",
+            "example": "qiita"
+          },
+          "filterConfig": {
+            "type": "object",
+            "description": "フィルター設定",
+            "example": {
+              "tags": [
+                "JavaScript",
+                "TypeScript"
+              ],
+              "minLikes": 10
+            }
+          },
+          "deliveryConfig": {
+            "type": "object",
+            "description": "配信設定",
+            "example": {
+              "frequency": "daily",
+              "time": "08:00"
+            }
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "有効かどうか",
+            "example": true
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "作成日時",
+            "example": "2025-04-08T09:00:00.000Z",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "更新日時",
+            "example": "2025-04-08T10:30:00.000Z",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "dataSource",
+          "filterConfig",
+          "deliveryConfig",
+          "isActive",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "GetPersonalizedFeedsResponseDto": {
+        "type": "object",
+        "properties": {
+          "feeds": {
+            "description": "パーソナライズフィード一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalizedFeedDto"
+            }
+          },
+          "total": {
+            "type": "number",
+            "description": "総件数",
+            "example": 42,
+            "minimum": 0
+          }
+        },
+        "required": [
+          "feeds",
+          "total"
+        ]
+      },
+      "GetPersonalizedFeedResponseDto": {
+        "type": "object",
+        "properties": {
+          "feed": {
+            "description": "パーソナライズフィード情報",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PersonalizedFeedDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "feed"
+        ]
+      },
+      "CreatePersonalizedFeedRequestDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "パーソナライズフィードの名前",
+            "example": "技術トレンド最新情報"
+          },
+          "dataSource": {
+            "type": "string",
+            "description": "データソース",
+            "example": "qiita"
+          },
+          "filterConfig": {
+            "type": "object",
+            "description": "フィルター設定",
+            "example": {
+              "tags": [
+                "JavaScript",
+                "TypeScript"
+              ],
+              "minLikes": 10
+            }
+          },
+          "deliveryConfig": {
+            "type": "object",
+            "description": "配信設定",
+            "example": {
+              "frequency": "daily",
+              "time": "08:00"
+            }
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "有効かどうか",
+            "default": true,
+            "example": true
+          }
+        },
+        "required": [
+          "name",
+          "dataSource",
+          "filterConfig",
+          "deliveryConfig"
+        ]
+      },
+      "CreatePersonalizedFeedResponseDto": {
+        "type": "object",
+        "properties": {
+          "feed": {
+            "description": "作成されたパーソナライズフィード",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PersonalizedFeedDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "feed"
         ]
       },
       "QiitaUserDto": {
