@@ -14,6 +14,8 @@ import {
   FilterGroup,
   IPersonalizedFeedsRepository,
   TagFilter,
+  UpdateFeedWithFilterGroupParams,
+  UpdateFilterGroupParams,
 } from '@/domains/personalized-feeds/personalized-feeds.repository.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import {
@@ -583,6 +585,414 @@ export class PersonalizedFeedsRepository
     } catch (error) {
       const errorMessage = `パーソナライズフィードとフィルターグループの作成に失敗しました`;
       this.logger.error(errorMessage, { error, params });
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * パーソナライズフィードを更新する
+   * @param feed 更新するパーソナライズフィードの情報
+   * @returns 更新されたパーソナライズフィード
+   */
+  async update(feed: {
+    id: string;
+    name?: string;
+    dataSource?: string;
+    filterConfig?: Record<string, any>;
+    deliveryConfig?: Record<string, any>;
+    isActive?: boolean;
+  }): Promise<PersonalizedFeed> {
+    this.logger.debug('PersonalizedFeedsRepository.update called', { feed });
+
+    try {
+      const client = this.prisma.getClient();
+
+      // 更新するフィールドを準備
+      const updateData: any = {
+        updatedAt: new Date(), // 更新日時は必ず現在時刻に設定
+      };
+
+      // 指定されたフィールドのみ更新対象に含める
+      if (feed.name !== undefined) updateData.name = feed.name;
+      if (feed.dataSource !== undefined)
+        updateData.dataSource = feed.dataSource;
+      if (feed.filterConfig !== undefined)
+        updateData.filterConfig = feed.filterConfig;
+      if (feed.deliveryConfig !== undefined)
+        updateData.deliveryConfig = feed.deliveryConfig;
+      if (feed.isActive !== undefined) updateData.isActive = feed.isActive;
+
+      // パーソナライズフィードを更新
+      const updatedFeed = await client.personalizedFeed.update({
+        where: { id: feed.id },
+        data: updateData,
+      });
+
+      this.logger.debug(
+        `パーソナライズフィード [${updatedFeed.id}] を更新しました`,
+        {
+          feedId: updatedFeed.id,
+          userId: updatedFeed.userId,
+          updatedFields: Object.keys(updateData).filter(
+            (k) => k !== 'updatedAt',
+          ),
+        },
+      );
+
+      return new PersonalizedFeed(updatedFeed);
+    } catch (error) {
+      const errorMessage = `パーソナライズフィードの更新に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        feedId: feed.id,
+      });
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * フィルターグループを更新する
+   * @param params 更新するフィルターグループの情報
+   * @returns 更新されたフィルターグループ
+   */
+  async updateFilterGroup(
+    params: UpdateFilterGroupParams,
+  ): Promise<FilterGroup> {
+    this.logger.debug('PersonalizedFeedsRepository.updateFilterGroup called', {
+      params,
+    });
+
+    try {
+      const client = this.prisma.getClient();
+
+      // 更新するフィールドを準備
+      const updateData: any = {
+        updatedAt: new Date(), // 更新日時は必ず現在時刻に設定
+      };
+
+      // 指定されたフィールドのみ更新対象に含める
+      if (params.name !== undefined) updateData.name = params.name;
+      if (params.logicType !== undefined)
+        updateData.logicType = params.logicType;
+
+      // フィルターグループを更新
+      const updatedGroup = await client.feedFilterGroup.update({
+        where: { id: params.id },
+        data: updateData,
+      });
+
+      this.logger.debug(
+        `フィルターグループ [${updatedGroup.id}] を更新しました`,
+        {
+          groupId: updatedGroup.id,
+          filterId: updatedGroup.filterId,
+          updatedFields: Object.keys(updateData).filter(
+            (k) => k !== 'updatedAt',
+          ),
+        },
+      );
+
+      return {
+        id: updatedGroup.id,
+        filterId: updatedGroup.filterId,
+        name: updatedGroup.name,
+        logicType: updatedGroup.logicType,
+        createdAt: updatedGroup.createdAt,
+        updatedAt: updatedGroup.updatedAt,
+      };
+    } catch (error) {
+      const errorMessage = `フィルターグループの更新に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        groupId: params.id,
+      });
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * 特定のフィルターグループに紐づくタグフィルターをすべて削除する
+   * @param groupId フィルターグループID
+   * @returns 削除されたタグフィルターの数
+   */
+  async deleteTagFiltersByGroupId(groupId: string): Promise<number> {
+    this.logger.debug(
+      'PersonalizedFeedsRepository.deleteTagFiltersByGroupId called',
+      {
+        groupId,
+      },
+    );
+
+    try {
+      const client = this.prisma.getClient();
+
+      // 特定グループのタグフィルターをすべて削除
+      const result = await client.tagFilter.deleteMany({
+        where: { groupId },
+      });
+
+      this.logger.debug(
+        `フィルターグループ [${groupId}] のタグフィルターを ${result.count} 件削除しました`,
+        {
+          groupId,
+          count: result.count,
+        },
+      );
+
+      return result.count;
+    } catch (error) {
+      const errorMessage = `タグフィルターの削除に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        groupId,
+      });
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * 特定のフィルターグループに紐づく著者フィルターをすべて削除する
+   * @param groupId フィルターグループID
+   * @returns 削除された著者フィルターの数
+   */
+  async deleteAuthorFiltersByGroupId(groupId: string): Promise<number> {
+    this.logger.debug(
+      'PersonalizedFeedsRepository.deleteAuthorFiltersByGroupId called',
+      {
+        groupId,
+      },
+    );
+
+    try {
+      const client = this.prisma.getClient();
+
+      // 特定グループの著者フィルターをすべて削除
+      const result = await client.authorFilter.deleteMany({
+        where: { groupId },
+      });
+
+      this.logger.debug(
+        `フィルターグループ [${groupId}] の著者フィルターを ${result.count} 件削除しました`,
+        {
+          groupId,
+          count: result.count,
+        },
+      );
+
+      return result.count;
+    } catch (error) {
+      const errorMessage = `著者フィルターの削除に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        groupId,
+      });
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * パーソナライズフィードとフィルターグループを同一トランザクションで更新する
+   * @param params フィードとフィルターグループの更新パラメータ
+   * @returns 更新されたフィードとフィルターグループ
+   */
+  async updateWithFilterGroup(
+    params: UpdateFeedWithFilterGroupParams,
+  ): Promise<FeedWithFilterGroupResult> {
+    this.logger.debug(
+      'PersonalizedFeedsRepository.updateWithFilterGroup called',
+      {
+        feedId: params.feed.id,
+        hasFilterGroup: !!params.filterGroup,
+      },
+    );
+
+    try {
+      // PrismaClientManagerのトランザクション機能を使用
+      return await this.prisma.transaction(async () => {
+        const client = this.prisma.getClient();
+        const now = new Date();
+
+        // 更新するフィールドを準備
+        const updateData: any = {
+          updatedAt: now,
+        };
+
+        // 指定されたフィールドのみ更新対象に含める
+        if (params.feed.name !== undefined) updateData.name = params.feed.name;
+        if (params.feed.dataSource !== undefined)
+          updateData.dataSource = params.feed.dataSource;
+        if (params.feed.filterConfig !== undefined)
+          updateData.filterConfig = params.feed.filterConfig;
+        if (params.feed.deliveryConfig !== undefined)
+          updateData.deliveryConfig = params.feed.deliveryConfig;
+        if (params.feed.isActive !== undefined)
+          updateData.isActive = params.feed.isActive;
+
+        // パーソナライズフィードを更新
+        const updatedFeed = await client.personalizedFeed.update({
+          where: { id: params.feed.id },
+          data: updateData,
+        });
+
+        // フィルターグループの処理
+        let updatedGroup = null;
+        const tagFilters = [];
+        const authorFilters = [];
+
+        if (params.filterGroup) {
+          // 既存のフィルターグループを取得
+          const existingGroups = await client.feedFilterGroup.findMany({
+            where: { filterId: params.feed.id },
+          });
+
+          // 既存のフィルターグループがある場合は更新、なければ新規作成
+          if (existingGroups.length > 0) {
+            const groupId = existingGroups[0].id; // 最初のグループを使用
+
+            // 既存のタグフィルターと著者フィルターを削除
+            await this.deleteTagFiltersByGroupId(groupId);
+            await this.deleteAuthorFiltersByGroupId(groupId);
+
+            // フィルターグループを更新
+            updatedGroup = await client.feedFilterGroup.update({
+              where: { id: groupId },
+              data: {
+                name: params.filterGroup.name,
+                logicType: params.filterGroup.logicType || 'OR',
+                updatedAt: now,
+              },
+            });
+          } else {
+            // フィルターグループを新規作成
+            updatedGroup = await client.feedFilterGroup.create({
+              data: {
+                filterId: params.feed.id,
+                name: params.filterGroup.name,
+                logicType: params.filterGroup.logicType || 'OR',
+                createdAt: now,
+                updatedAt: now,
+              },
+            });
+          }
+
+          // 新しいタグフィルターを作成
+          if (
+            params.filterGroup.tagFilters &&
+            params.filterGroup.tagFilters.length > 0
+          ) {
+            for (const tagFilter of params.filterGroup.tagFilters) {
+              const createdTagFilter = await client.tagFilter.create({
+                data: {
+                  groupId: updatedGroup.id,
+                  tagName: tagFilter.tagName,
+                  createdAt: now,
+                },
+              });
+              tagFilters.push({
+                id: createdTagFilter.id,
+                groupId: createdTagFilter.groupId,
+                tagName: createdTagFilter.tagName,
+                createdAt: createdTagFilter.createdAt,
+              });
+            }
+          }
+
+          // 新しい著者フィルターを作成
+          if (
+            params.filterGroup.authorFilters &&
+            params.filterGroup.authorFilters.length > 0
+          ) {
+            for (const authorFilter of params.filterGroup.authorFilters) {
+              const createdAuthorFilter = await client.authorFilter.create({
+                data: {
+                  groupId: updatedGroup.id,
+                  authorId: authorFilter.authorId,
+                  createdAt: now,
+                },
+              });
+              authorFilters.push({
+                id: createdAuthorFilter.id,
+                groupId: createdAuthorFilter.groupId,
+                authorId: createdAuthorFilter.authorId,
+              });
+            }
+          }
+        }
+
+        const result = {
+          feed: new PersonalizedFeed(updatedFeed),
+          filterGroup: updatedGroup
+            ? {
+                id: updatedGroup.id,
+                filterId: updatedGroup.filterId,
+                name: updatedGroup.name,
+                logicType: updatedGroup.logicType,
+                createdAt: updatedGroup.createdAt,
+                updatedAt: updatedGroup.updatedAt,
+              }
+            : undefined,
+          tagFilters: tagFilters.length > 0 ? tagFilters : undefined,
+          authorFilters: authorFilters.length > 0 ? authorFilters : undefined,
+        };
+
+        this.logger.debug(
+          'パーソナライズフィードとフィルターグループを更新しました',
+          {
+            feedId: result.feed.id,
+            userId: result.feed.userId,
+            filterGroupId: result.filterGroup?.id,
+            tagFiltersCount: result.tagFilters?.length || 0,
+            authorFiltersCount: result.authorFilters?.length || 0,
+            updatedFields: Object.keys(updateData).filter(
+              (k) => k !== 'updatedAt',
+            ),
+          },
+        );
+
+        return result;
+      });
+    } catch (error) {
+      const errorMessage = `パーソナライズフィードとフィルターグループの更新に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        feedId: params.feed.id,
+      });
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * パーソナライズフィードを論理削除する
+   * @param id パーソナライズフィードID
+   * @returns 削除されたパーソナライズフィード
+   */
+  async softDelete(id: string): Promise<PersonalizedFeed> {
+    this.logger.debug('PersonalizedFeedsRepository.softDelete called', { id });
+
+    try {
+      const client = this.prisma.getClient();
+
+      // isActive=falseに設定して論理削除を行う
+      const deletedFeed = await client.personalizedFeed.update({
+        where: { id },
+        data: {
+          isActive: false,
+          updatedAt: new Date(),
+        },
+      });
+
+      this.logger.debug(`パーソナライズフィード [${id}] を論理削除しました`, {
+        feedId: id,
+        userId: deletedFeed.userId,
+      });
+
+      return new PersonalizedFeed(deletedFeed);
+    } catch (error) {
+      const errorMessage = `パーソナライズフィードの論理削除に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        id,
+      });
       throw new Error(errorMessage);
     }
   }

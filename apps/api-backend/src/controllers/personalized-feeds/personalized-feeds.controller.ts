@@ -5,12 +5,14 @@ import { UserNotFoundError } from '@/types/errors';
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpException,
   InternalServerErrorException,
   Logger,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -19,12 +21,15 @@ import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   CreatePersonalizedFeedRequestDto,
   CreatePersonalizedFeedResponseDto,
+  DeletePersonalizedFeedResponseDto,
   GetPersonalizedFeedRequestDto,
   GetPersonalizedFeedResponseDto,
   GetPersonalizedFeedWithFiltersResponseDto,
   GetPersonalizedFeedsRequestDto,
   GetPersonalizedFeedsResponseDto,
   GetPersonalizedFeedsWithFiltersResponseDto,
+  UpdatePersonalizedFeedRequestDto,
+  UpdatePersonalizedFeedWithFiltersResponseDto,
 } from './dto';
 
 @Controller('personalized-feeds')
@@ -259,6 +264,158 @@ export class PersonalizedFeedsController {
       if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException(
         'パーソナライズフィードの作成に失敗しました',
+        error.message,
+      );
+    }
+  }
+
+  /**
+   * パーソナライズフィードを更新するAPI
+   */
+  @Patch(':id')
+  @ApiOperation({
+    summary: 'パーソナライズフィード更新',
+    description: '指定されたIDのパーソナライズフィードを更新します',
+    operationId: 'updatePersonalizedFeed',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'パーソナライズフィードID',
+    required: true,
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: '更新成功',
+    type: UpdatePersonalizedFeedWithFiltersResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description:
+      'パーソナライズフィードが存在しない、またはユーザーが存在しない',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'リクエストパラメータが不正',
+  })
+  async updatePersonalizedFeed(
+    @Param('id') id: string,
+    @Body() dto: UpdatePersonalizedFeedRequestDto,
+    @CurrentUserId() userId: string, // JWTトークンからユーザーIDを取得
+  ): Promise<UpdatePersonalizedFeedWithFiltersResponseDto> {
+    this.logger.verbose(`PersonalizedFeedsController.updatePersonalizedFeed`, {
+      id,
+      userId,
+      updates: {
+        name: dto.name,
+        dataSource: dto.dataSource,
+        hasFilterGroups: dto.filterGroups && dto.filterGroups.length > 0,
+        filterGroupsCount: dto.filterGroups?.length || 0,
+      },
+    });
+
+    try {
+      // パーソナライズフィードを更新
+      const feed = await this.personalizedFeedsService.update(
+        id,
+        userId,
+        {
+          name: dto.name,
+          dataSource: dto.dataSource,
+          filterConfig: dto.filterConfig,
+          deliveryConfig: dto.deliveryConfig,
+          isActive: dto.isActive,
+        },
+        dto.filterGroups,
+      );
+
+      // フィルター情報を含むDTOに変換して返却
+      return UpdatePersonalizedFeedWithFiltersResponseDto.fromEntity(feed);
+    } catch (error) {
+      // NotFoundExceptionはそのまま再スロー
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      // UserNotFoundErrorをNotFoundExceptionに変換
+      if (error instanceof UserNotFoundError) {
+        this.logger.warn(`ユーザーが見つかりません`, {
+          userId,
+          error: error.message,
+        });
+        throw new NotFoundException(error.message);
+      }
+
+      // その他のエラーはログ出力して再スロー
+      this.logger.error(`パーソナライズフィードの更新に失敗しました`, error);
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException(
+        'パーソナライズフィードの更新に失敗しました',
+        error.message,
+      );
+    }
+  }
+
+  /**
+   * パーソナライズフィードを論理削除するAPI
+   */
+  @Delete(':id')
+  @ApiOperation({
+    summary: 'パーソナライズフィード削除',
+    description: '指定されたIDのパーソナライズフィードを論理削除します',
+    operationId: 'deletePersonalizedFeed',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'パーソナライズフィードID',
+    required: true,
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: '削除成功',
+    type: DeletePersonalizedFeedResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description:
+      'パーソナライズフィードが存在しない、またはユーザーが存在しない',
+  })
+  async deletePersonalizedFeed(
+    @Param('id') id: string,
+    @CurrentUserId() userId: string, // JWTトークンからユーザーIDを取得
+  ): Promise<DeletePersonalizedFeedResponseDto> {
+    this.logger.verbose(`PersonalizedFeedsController.deletePersonalizedFeed`, {
+      id,
+      userId,
+    });
+
+    try {
+      // パーソナライズフィードを論理削除
+      const feed = await this.personalizedFeedsService.delete(id, userId);
+
+      // DTOに変換して返却
+      return DeletePersonalizedFeedResponseDto.fromEntity(feed);
+    } catch (error) {
+      // NotFoundExceptionはそのまま再スロー
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      // UserNotFoundErrorをNotFoundExceptionに変換
+      if (error instanceof UserNotFoundError) {
+        this.logger.warn(`ユーザーが見つかりません`, {
+          userId,
+          error: error.message,
+        });
+        throw new NotFoundException(error.message);
+      }
+
+      // その他のエラーはログ出力して再スロー
+      this.logger.error(`パーソナライズフィードの削除に失敗しました`, error);
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException(
+        'パーソナライズフィードの削除に失敗しました',
         error.message,
       );
     }

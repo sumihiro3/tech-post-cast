@@ -12,6 +12,13 @@ export interface CreateFilterGroupParams {
   logicType: string;
 }
 
+// フィルターグループの更新に関する型定義
+export interface UpdateFilterGroupParams {
+  id: string;
+  name?: string;
+  logicType?: string;
+}
+
 export interface FilterGroup {
   id: string;
   filterId: string;
@@ -49,6 +56,24 @@ export interface AuthorFilter {
 // フィードとフィルターグループの作成に関する型定義
 export interface CreateFeedWithFilterGroupParams {
   feed: Omit<PersonalizedFeed, 'id' | 'createdAt' | 'updatedAt'>;
+  filterGroup?: {
+    name: string;
+    logicType: string;
+    tagFilters?: Array<{ tagName: string }>;
+    authorFilters?: Array<{ authorId: string }>;
+  };
+}
+
+// フィードとフィルターグループの更新に関する型定義
+export interface UpdateFeedWithFilterGroupParams {
+  feed: {
+    id: string;
+    name?: string;
+    dataSource?: string;
+    filterConfig?: Record<string, any>;
+    deliveryConfig?: Record<string, any>;
+    isActive?: boolean;
+  };
   filterGroup?: {
     name: string;
     logicType: string;
@@ -146,4 +171,55 @@ export interface IPersonalizedFeedsRepository {
   createWithFilterGroup(
     params: CreateFeedWithFilterGroupParams,
   ): Promise<FeedWithFilterGroupResult>;
+
+  /**
+   * パーソナライズフィードを更新する
+   * @param feed 更新するパーソナライズフィードの情報
+   * @returns 更新されたパーソナライズフィード
+   */
+  update(feed: {
+    id: string;
+    name?: string;
+    dataSource?: string;
+    filterConfig?: Record<string, any>;
+    deliveryConfig?: Record<string, any>;
+    isActive?: boolean;
+  }): Promise<PersonalizedFeed>;
+
+  /**
+   * フィルターグループを更新する
+   * @param params 更新するフィルターグループの情報
+   * @returns 更新されたフィルターグループ
+   */
+  updateFilterGroup(params: UpdateFilterGroupParams): Promise<FilterGroup>;
+
+  /**
+   * 特定のフィルターグループに紐づくタグフィルターをすべて削除する
+   * @param groupId フィルターグループID
+   * @returns 削除されたタグフィルターの数
+   */
+  deleteTagFiltersByGroupId(groupId: string): Promise<number>;
+
+  /**
+   * 特定のフィルターグループに紐づく著者フィルターをすべて削除する
+   * @param groupId フィルターグループID
+   * @returns 削除された著者フィルターの数
+   */
+  deleteAuthorFiltersByGroupId(groupId: string): Promise<number>;
+
+  /**
+   * パーソナライズフィードとフィルターグループを同一トランザクションで更新する
+   * @param params フィードとフィルターグループの更新パラメータ
+   * @returns 更新されたフィードとフィルターグループ
+   */
+  updateWithFilterGroup(
+    params: UpdateFeedWithFilterGroupParams,
+  ): Promise<FeedWithFilterGroupResult>;
+
+  /**
+   * パーソナライズフィードを論理削除する
+   * @param id パーソナライズフィードID
+   * @returns 削除されたパーソナライズフィード
+   */
+  softDelete(id: string): Promise<PersonalizedFeed>;
 }

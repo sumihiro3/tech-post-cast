@@ -90,6 +90,8 @@ describe('PersonalizedFeedsController', () => {
     findById: jest.fn(),
     findByIdWithFilters: jest.fn(),
     create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -117,6 +119,10 @@ describe('PersonalizedFeedsController', () => {
 
     // モックのリセット
     jest.clearAllMocks();
+
+    // 更新・削除用のモックを追加
+    mockPersonalizedFeedsService.update = jest.fn();
+    mockPersonalizedFeedsService.delete = jest.fn();
   });
 
   afterEach(() => {
@@ -492,6 +498,291 @@ describe('PersonalizedFeedsController', () => {
       // Act & Assert
       await expect(
         controller.createPersonalizedFeed(createDto, userId),
+      ).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('updatePersonalizedFeed', () => {
+    it('フィルターグループなしでパーソナライズフィードを更新できること', async () => {
+      // Arrange
+      const updateDto = {
+        name: '更新されたフィード',
+        dataSource: 'qiita',
+        filterConfig: { tags: ['JavaScript', 'TypeScript'] },
+        deliveryConfig: { frequency: 'weekly' },
+      };
+
+      const updatedFeedWithFilters = {
+        ...mockFeedWithFilters,
+        name: updateDto.name,
+        dataSource: updateDto.dataSource,
+        filterConfig: updateDto.filterConfig,
+        deliveryConfig: updateDto.deliveryConfig,
+        updatedAt: new Date(),
+      };
+
+      mockPersonalizedFeedsService.update.mockResolvedValue(
+        updatedFeedWithFilters,
+      );
+
+      // Act
+      const result = await controller.updatePersonalizedFeed(
+        feedId,
+        updateDto,
+        userId,
+      );
+
+      // Assert
+      expect(personalizedFeedsService.update).toHaveBeenCalledWith(
+        feedId,
+        userId,
+        {
+          name: updateDto.name,
+          dataSource: updateDto.dataSource,
+          filterConfig: updateDto.filterConfig,
+          deliveryConfig: updateDto.deliveryConfig,
+        },
+        undefined,
+      );
+      expect(result.id).toEqual(updatedFeedWithFilters.id);
+      expect(result.name).toEqual(updateDto.name);
+      expect(result.dataSource).toEqual(updateDto.dataSource);
+      expect(result.filterConfig).toEqual(updateDto.filterConfig);
+      expect(result.deliveryConfig).toEqual(updateDto.deliveryConfig);
+      expect(result.filterGroups).toBeDefined();
+      expect(result.filterGroups.length).toEqual(
+        updatedFeedWithFilters.filterGroups.length,
+      );
+    });
+
+    it('フィルターグループありでパーソナライズフィードを更新できること', async () => {
+      // Arrange
+      const updateDto = {
+        name: '更新されたフィード',
+        dataSource: 'qiita',
+        filterConfig: { tags: ['JavaScript', 'TypeScript'] },
+        deliveryConfig: { frequency: 'weekly' },
+        filterGroups: [
+          {
+            name: '更新されたグループ',
+            logicType: 'OR',
+            tagFilters: [{ tagName: 'JavaScript' }, { tagName: 'TypeScript' }],
+            authorFilters: [{ authorId: 'sumihiro3' }],
+          },
+        ],
+      };
+
+      const updatedFeedWithFilters = {
+        ...mockFeedWithFilters,
+        name: updateDto.name,
+        dataSource: updateDto.dataSource,
+        filterConfig: updateDto.filterConfig,
+        deliveryConfig: updateDto.deliveryConfig,
+        updatedAt: new Date(),
+        filterGroups: [
+          {
+            id: 'group_test123',
+            filterId: feedId,
+            name: '更新されたグループ',
+            logicType: 'OR',
+            createdAt: currentDate,
+            updatedAt: new Date(),
+            tagFilters: [
+              {
+                id: 'tag_test123',
+                groupId: 'group_test123',
+                tagName: 'JavaScript',
+                createdAt: currentDate,
+              },
+              {
+                id: 'tag_test456',
+                groupId: 'group_test123',
+                tagName: 'TypeScript',
+                createdAt: currentDate,
+              },
+            ],
+            authorFilters: [
+              {
+                id: 'author_test123',
+                groupId: 'group_test123',
+                authorId: 'sumihiro3',
+                createdAt: currentDate,
+              },
+            ],
+          },
+        ],
+      };
+
+      mockPersonalizedFeedsService.update.mockResolvedValue(
+        updatedFeedWithFilters,
+      );
+
+      // Act
+      const result = await controller.updatePersonalizedFeed(
+        feedId,
+        updateDto,
+        userId,
+      );
+
+      // Assert
+      expect(personalizedFeedsService.update).toHaveBeenCalledWith(
+        feedId,
+        userId,
+        {
+          name: updateDto.name,
+          dataSource: updateDto.dataSource,
+          filterConfig: updateDto.filterConfig,
+          deliveryConfig: updateDto.deliveryConfig,
+        },
+        updateDto.filterGroups,
+      );
+      expect(result.id).toEqual(updatedFeedWithFilters.id);
+      expect(result.name).toEqual(updateDto.name);
+      expect(result.dataSource).toEqual(updateDto.dataSource);
+      expect(result.filterConfig).toEqual(updateDto.filterConfig);
+      expect(result.deliveryConfig).toEqual(updateDto.deliveryConfig);
+      expect(result.filterGroups).toBeDefined();
+      expect(result.filterGroups.length).toEqual(1);
+      expect(result.filterGroups[0].name).toEqual('更新されたグループ');
+      expect(result.filterGroups[0].tagFilters.length).toEqual(2);
+      expect(result.filterGroups[0].authorFilters.length).toEqual(1);
+    });
+
+    it('isActiveを指定して無効化できること', async () => {
+      // Arrange
+      const updateDto = {
+        isActive: false,
+      };
+
+      const updatedFeedWithFilters = {
+        ...mockFeedWithFilters,
+        isActive: false,
+        updatedAt: new Date(),
+      };
+
+      mockPersonalizedFeedsService.update.mockResolvedValue(
+        updatedFeedWithFilters,
+      );
+
+      // Act
+      const result = await controller.updatePersonalizedFeed(
+        feedId,
+        updateDto,
+        userId,
+      );
+
+      // Assert
+      expect(personalizedFeedsService.update).toHaveBeenCalledWith(
+        feedId,
+        userId,
+        {
+          isActive: false,
+        },
+        undefined,
+      );
+      expect(result.id).toEqual(updatedFeedWithFilters.id);
+      expect(result.isActive).toBe(false);
+    });
+
+    it('NotFoundExceptionが発生した場合、適切なエラーレスポンスを返すこと', async () => {
+      // Arrange
+      const updateDto = {
+        name: '更新されたフィード',
+      };
+      const error = new NotFoundException('フィードが見つかりません');
+      mockPersonalizedFeedsService.update.mockRejectedValue(error);
+
+      // Act & Assert
+      await expect(
+        controller.updatePersonalizedFeed(feedId, updateDto, userId),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('UserNotFoundErrorが発生した場合、適切なエラーレスポンスを返すこと', async () => {
+      // Arrange
+      const updateDto = {
+        name: '更新されたフィード',
+      };
+      const error = new UserNotFoundError('ユーザーが見つかりません');
+      mockPersonalizedFeedsService.update.mockRejectedValue(error);
+
+      // Act & Assert
+      await expect(
+        controller.updatePersonalizedFeed(feedId, updateDto, userId),
+      ).rejects.toThrow(HttpException);
+    });
+
+    it('一般的なエラーが発生した場合、適切なエラーレスポンスを返すこと', async () => {
+      // Arrange
+      const updateDto = {
+        name: '更新されたフィード',
+      };
+      const error = new Error('予期せぬエラーが発生しました');
+      mockPersonalizedFeedsService.update.mockRejectedValue(error);
+
+      // Act & Assert
+      await expect(
+        controller.updatePersonalizedFeed(feedId, updateDto, userId),
+      ).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('deletePersonalizedFeed', () => {
+    it('パーソナライズフィードを論理削除できること', async () => {
+      // Arrange
+      const updatedAt = new Date();
+      const deletedFeed = {
+        ...mockFeed,
+        isActive: false,
+        updatedAt,
+      };
+
+      mockPersonalizedFeedsService.delete.mockResolvedValue(deletedFeed);
+
+      // Act
+      const result = await controller.deletePersonalizedFeed(feedId, userId);
+
+      // Assert
+      expect(personalizedFeedsService.delete).toHaveBeenCalledWith(
+        feedId,
+        userId,
+      );
+      expect(result.id).toEqual(deletedFeed.id);
+      expect(result.userId).toEqual(deletedFeed.userId);
+      expect(result.name).toEqual(deletedFeed.name);
+      expect(result.isActive).toBe(false);
+    });
+
+    it('NotFoundExceptionが発生した場合、適切なエラーレスポンスを返すこと', async () => {
+      // Arrange
+      const error = new NotFoundException('フィードが見つかりません');
+      mockPersonalizedFeedsService.delete.mockRejectedValue(error);
+
+      // Act & Assert
+      await expect(
+        controller.deletePersonalizedFeed(feedId, userId),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('UserNotFoundErrorが発生した場合、適切なエラーレスポンスを返すこと', async () => {
+      // Arrange
+      const error = new UserNotFoundError('ユーザーが見つかりません');
+      mockPersonalizedFeedsService.delete.mockRejectedValue(error);
+
+      // Act & Assert
+      await expect(
+        controller.deletePersonalizedFeed(feedId, userId),
+      ).rejects.toThrow(HttpException);
+    });
+
+    it('一般的なエラーが発生した場合、適切なエラーレスポンスを返すこと', async () => {
+      // Arrange
+      const error = new Error('予期せぬエラーが発生しました');
+      mockPersonalizedFeedsService.delete.mockRejectedValue(error);
+
+      // Act & Assert
+      await expect(
+        controller.deletePersonalizedFeed(feedId, userId),
       ).rejects.toThrow(HttpException);
     });
   });

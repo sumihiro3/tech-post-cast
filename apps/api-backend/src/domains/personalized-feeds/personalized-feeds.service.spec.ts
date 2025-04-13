@@ -92,6 +92,8 @@ describe('PersonalizedFeedsService', () => {
     createFilterGroup: jest.fn(),
     createTagFilter: jest.fn(),
     createAuthorFilter: jest.fn(),
+    updateWithFilterGroup: jest.fn(),
+    softDelete: jest.fn(),
   };
 
   const mockAppUserRepository = {
@@ -581,6 +583,366 @@ describe('PersonalizedFeedsService', () => {
           isActive,
         ),
       ).rejects.toThrow(originalError);
+    });
+  });
+
+  describe('update', () => {
+    it('パーソナライズフィードを更新できること', async () => {
+      // Arrange
+      const updates = {
+        name: '更新テストフィード',
+        dataSource: 'qiita',
+        filterConfig: { tags: ['JavaScript', 'TypeScript'] },
+        deliveryConfig: { frequency: 'weekly' },
+      };
+
+      const updatedFeed = {
+        ...mockFeed,
+        ...updates,
+        updatedAt: new Date(),
+      };
+
+      const updatedFeedWithFilters = {
+        ...updatedFeed,
+        filterGroups: [],
+      };
+
+      mockAppUserRepository.findOne.mockResolvedValue(mockUser);
+      mockPersonalizedFeedsRepository.findById.mockResolvedValue(mockFeed);
+      mockPersonalizedFeedsRepository.updateWithFilterGroup.mockResolvedValue({
+        feed: updatedFeed,
+      });
+      mockPersonalizedFeedsRepository.findByIdWithFilters.mockResolvedValue(
+        updatedFeedWithFilters,
+      );
+
+      // Act
+      const result = await service.update(feedId, userId, updates);
+
+      // Assert
+      expect(appUserRepository.findOne).toHaveBeenCalledWith(userId);
+      expect(personalizedFeedsRepository.findById).toHaveBeenCalledWith(feedId);
+      expect(
+        personalizedFeedsRepository.updateWithFilterGroup,
+      ).toHaveBeenCalledWith({
+        feed: {
+          id: feedId,
+          ...updates,
+        },
+        filterGroup: undefined,
+      });
+      expect(
+        personalizedFeedsRepository.findByIdWithFilters,
+      ).toHaveBeenCalledWith(feedId);
+      expect(result).toEqual(updatedFeedWithFilters);
+    });
+
+    it('フィルターグループありでパーソナライズフィードを更新できること', async () => {
+      // Arrange
+      const updates = {
+        name: '更新テストフィード',
+        dataSource: 'qiita',
+        filterConfig: { minLikes: 15 },
+        deliveryConfig: { frequency: 'weekly' },
+      };
+
+      const filterGroups: FilterGroupDto[] = [
+        {
+          name: '更新テストグループ',
+          logicType: 'OR',
+          tagFilters: [{ tagName: 'JavaScript' }, { tagName: 'TypeScript' }],
+          authorFilters: [{ authorId: 'sumihiro3' }],
+        },
+      ];
+
+      const updatedFeed = {
+        ...mockFeed,
+        ...updates,
+        updatedAt: new Date(),
+      };
+
+      const updatedFeedWithFilters = {
+        ...updatedFeed,
+        filterGroups: [
+          {
+            id: 'group_test123',
+            filterId: feedId,
+            name: '更新テストグループ',
+            logicType: 'OR',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            tagFilters: [
+              {
+                id: 'tag_test123',
+                groupId: 'group_test123',
+                tagName: 'JavaScript',
+                createdAt: new Date(),
+              },
+              {
+                id: 'tag_test456',
+                groupId: 'group_test123',
+                tagName: 'TypeScript',
+                createdAt: new Date(),
+              },
+            ],
+            authorFilters: [
+              {
+                id: 'author_test123',
+                groupId: 'group_test123',
+                authorId: 'sumihiro3',
+                createdAt: new Date(),
+              },
+            ],
+          },
+        ],
+      };
+
+      mockAppUserRepository.findOne.mockResolvedValue(mockUser);
+      mockPersonalizedFeedsRepository.findById.mockResolvedValue(mockFeed);
+      mockPersonalizedFeedsRepository.updateWithFilterGroup.mockResolvedValue({
+        feed: updatedFeed,
+        filterGroup: {
+          id: 'group_test123',
+          filterId: feedId,
+          name: '更新テストグループ',
+          logicType: 'OR',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        tagFilters: [
+          {
+            id: 'tag_test123',
+            groupId: 'group_test123',
+            tagName: 'JavaScript',
+            createdAt: new Date(),
+          },
+          {
+            id: 'tag_test456',
+            groupId: 'group_test123',
+            tagName: 'TypeScript',
+            createdAt: new Date(),
+          },
+        ],
+        authorFilters: [
+          {
+            id: 'author_test123',
+            groupId: 'group_test123',
+            authorId: 'sumihiro3',
+            createdAt: new Date(),
+          },
+        ],
+      });
+      mockPersonalizedFeedsRepository.findByIdWithFilters.mockResolvedValue(
+        updatedFeedWithFilters,
+      );
+
+      // Act
+      const result = await service.update(
+        feedId,
+        userId,
+        updates,
+        filterGroups,
+      );
+
+      // Assert
+      expect(appUserRepository.findOne).toHaveBeenCalledWith(userId);
+      expect(personalizedFeedsRepository.findById).toHaveBeenCalledWith(feedId);
+      expect(
+        personalizedFeedsRepository.updateWithFilterGroup,
+      ).toHaveBeenCalledWith({
+        feed: {
+          id: feedId,
+          ...updates,
+        },
+        filterGroup: {
+          name: filterGroups[0].name,
+          logicType: filterGroups[0].logicType,
+          tagFilters: filterGroups[0].tagFilters,
+          authorFilters: filterGroups[0].authorFilters,
+        },
+      });
+      expect(
+        personalizedFeedsRepository.findByIdWithFilters,
+      ).toHaveBeenCalledWith(feedId);
+      expect(result).toEqual(updatedFeedWithFilters);
+    });
+
+    it('isActiveを指定して無効化できること', async () => {
+      // Arrange
+      const updates = {
+        isActive: false,
+      };
+
+      const updatedFeed = {
+        ...mockFeed,
+        isActive: false,
+        updatedAt: new Date(),
+      };
+
+      const updatedFeedWithFilters = {
+        ...updatedFeed,
+        filterGroups: [],
+      };
+
+      mockAppUserRepository.findOne.mockResolvedValue(mockUser);
+      mockPersonalizedFeedsRepository.findById.mockResolvedValue(mockFeed);
+      mockPersonalizedFeedsRepository.updateWithFilterGroup.mockResolvedValue({
+        feed: updatedFeed,
+      });
+      mockPersonalizedFeedsRepository.findByIdWithFilters.mockResolvedValue(
+        updatedFeedWithFilters,
+      );
+
+      // Act
+      const result = await service.update(feedId, userId, updates);
+
+      // Assert
+      expect(
+        personalizedFeedsRepository.updateWithFilterGroup,
+      ).toHaveBeenCalledWith({
+        feed: {
+          id: feedId,
+          isActive: false,
+        },
+        filterGroup: undefined,
+      });
+      expect(result.isActive).toBe(false);
+    });
+
+    it('フィードが存在しない場合はNotFoundExceptionをスローすること', async () => {
+      // Arrange
+      const updates = {
+        name: '更新テストフィード',
+      };
+
+      mockAppUserRepository.findOne.mockResolvedValue(mockUser);
+      mockPersonalizedFeedsRepository.findById.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.update(feedId, userId, updates)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(
+        personalizedFeedsRepository.updateWithFilterGroup,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('ユーザーが存在しない場合はUserNotFoundErrorをスローすること', async () => {
+      // Arrange
+      const updates = {
+        name: '更新テストフィード',
+      };
+
+      mockAppUserRepository.findOne.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.update(feedId, userId, updates)).rejects.toThrow(
+        UserNotFoundError,
+      );
+      expect(personalizedFeedsRepository.findById).not.toHaveBeenCalled();
+      expect(
+        personalizedFeedsRepository.updateWithFilterGroup,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('リポジトリでエラーが発生した場合は例外をそのままスローすること', async () => {
+      // Arrange
+      const updates = {
+        name: '更新テストフィード',
+      };
+      const originalError = new Error('更新エラー');
+
+      mockAppUserRepository.findOne.mockResolvedValue(mockUser);
+      mockPersonalizedFeedsRepository.findById.mockResolvedValue(mockFeed);
+      mockPersonalizedFeedsRepository.updateWithFilterGroup.mockRejectedValue(
+        originalError,
+      );
+
+      // Act & Assert
+      await expect(service.update(feedId, userId, updates)).rejects.toThrow(
+        originalError,
+      );
+    });
+  });
+
+  describe('delete', () => {
+    it('パーソナライズフィードを論理削除できること', async () => {
+      // Arrange
+      const deletedFeed = {
+        ...mockFeed,
+        isActive: false,
+        updatedAt: new Date(),
+      };
+
+      mockAppUserRepository.findOne.mockResolvedValue(mockUser);
+      mockPersonalizedFeedsRepository.findById.mockResolvedValue(mockFeed);
+      mockPersonalizedFeedsRepository.softDelete.mockResolvedValue(deletedFeed);
+
+      // Act
+      const result = await service.delete(feedId, userId);
+
+      // Assert
+      expect(appUserRepository.findOne).toHaveBeenCalledWith(userId);
+      expect(personalizedFeedsRepository.findById).toHaveBeenCalledWith(feedId);
+      expect(personalizedFeedsRepository.softDelete).toHaveBeenCalledWith(
+        feedId,
+      );
+      expect(result).toEqual(deletedFeed);
+      expect(result.isActive).toBe(false);
+    });
+
+    it('フィードが存在しない場合はNotFoundExceptionをスローすること', async () => {
+      // Arrange
+      mockAppUserRepository.findOne.mockResolvedValue(mockUser);
+      mockPersonalizedFeedsRepository.findById.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.delete(feedId, userId)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(personalizedFeedsRepository.softDelete).not.toHaveBeenCalled();
+    });
+
+    it('ユーザーに紐づかないフィードの場合はNotFoundExceptionをスローすること', async () => {
+      // Arrange
+      mockAppUserRepository.findOne.mockResolvedValue(mockUser);
+      mockPersonalizedFeedsRepository.findById.mockResolvedValue({
+        ...mockFeed,
+        userId: 'different_user_id',
+      });
+
+      // Act & Assert
+      await expect(service.delete(feedId, userId)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(personalizedFeedsRepository.softDelete).not.toHaveBeenCalled();
+    });
+
+    it('ユーザーが存在しない場合はUserNotFoundErrorをスローすること', async () => {
+      // Arrange
+      mockAppUserRepository.findOne.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.delete(feedId, userId)).rejects.toThrow(
+        UserNotFoundError,
+      );
+      expect(personalizedFeedsRepository.findById).not.toHaveBeenCalled();
+      expect(personalizedFeedsRepository.softDelete).not.toHaveBeenCalled();
+    });
+
+    it('リポジトリでエラーが発生した場合は例外をそのままスローすること', async () => {
+      // Arrange
+      const originalError = new Error('削除エラー');
+      mockAppUserRepository.findOne.mockResolvedValue(mockUser);
+      mockPersonalizedFeedsRepository.findById.mockResolvedValue(mockFeed);
+      mockPersonalizedFeedsRepository.softDelete.mockRejectedValue(
+        originalError,
+      );
+
+      // Act & Assert
+      await expect(service.delete(feedId, userId)).rejects.toThrow(
+        originalError,
+      );
     });
   });
 });

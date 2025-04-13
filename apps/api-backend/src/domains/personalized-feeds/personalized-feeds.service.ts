@@ -24,6 +24,7 @@ export class PersonalizedFeedsService {
 
   /**
    * 指定されたユーザーIDに紐づくパーソナライズフィードの一覧を取得する
+   * 論理削除されたレコード（isActive=false）は除外する
    * @param userId ユーザーID
    * @param page ページ番号（1から始まる）
    * @param perPage 1ページあたりの件数
@@ -43,7 +44,7 @@ export class PersonalizedFeedsService {
 
     // ユーザーの存在確認
     const user = await this.validateUserExists(userId);
-    // ユーザーのパーソナライズフィード一覧を取得する
+    // ユーザーのパーソナライズフィード一覧を取得する（有効なもののみ）
     return this.personalizedFeedsRepository.findByUserId(
       user.id,
       page,
@@ -53,6 +54,7 @@ export class PersonalizedFeedsService {
 
   /**
    * 指定されたユーザーIDに紐づくパーソナライズフィードの一覧をフィルター情報付きで取得する
+   * 論理削除されたレコード（isActive=false）は除外する
    * @param userId ユーザーID
    * @param page ページ番号（1から始まる）
    * @param perPage 1ページあたりの件数
@@ -72,7 +74,7 @@ export class PersonalizedFeedsService {
 
     // ユーザーの存在確認
     const user = await this.validateUserExists(userId);
-    // フィルター情報を含むパーソナライズフィード一覧を取得
+    // フィルター情報を含むパーソナライズフィード一覧を取得（有効なもののみ）
     return this.personalizedFeedsRepository.findByUserIdWithFilters(
       user.id,
       page,
@@ -83,10 +85,11 @@ export class PersonalizedFeedsService {
   /**
    * 指定されたIDのパーソナライズフィードを取得する
    * ただし、指定されたユーザーIDに紐づくフィードのみ取得可能
+   * 論理削除されたレコード（isActive=false）は取得できない
    * @param id パーソナライズフィードID
    * @param userId ユーザーID
    * @returns パーソナライズフィード
-   * @throws NotFoundException フィードが存在しない場合
+   * @throws NotFoundException フィードが存在しない場合や論理削除されている場合
    * @throws UserNotFoundError ユーザーが存在しない場合
    */
   async findById(id: string, userId: string): Promise<PersonalizedFeed> {
@@ -102,6 +105,14 @@ export class PersonalizedFeedsService {
         `パーソナライズフィード [${id}] は存在しません`,
       );
     }
+
+    // 無効なフィード（論理削除済み）の場合はエラー
+    if (!feed.isActive) {
+      throw new NotFoundException(
+        `パーソナラライズフィード [${id}] は存在しません`,
+      );
+    }
+
     // 認証済みユーザーのフィードのみアクセス可能
     if (feed.userId !== user.id) {
       throw new NotFoundException(
@@ -114,10 +125,11 @@ export class PersonalizedFeedsService {
   /**
    * 指定されたIDのパーソナライズフィードをフィルター情報付きで取得する
    * ただし、指定されたユーザーIDに紐づくフィードのみ取得可能
+   * 論理削除されたレコード（isActive=false）は取得できない
    * @param id パーソナライズフィードID
    * @param userId ユーザーID
    * @returns フィルター情報を含むパーソナライズフィード
-   * @throws NotFoundException フィードが存在しない場合
+   * @throws NotFoundException フィードが存在しない場合や論理削除されている場合
    * @throws UserNotFoundError ユーザーが存在しない場合
    */
   async findByIdWithFilters(
@@ -139,6 +151,14 @@ export class PersonalizedFeedsService {
         `パーソナライズフィード [${id}] は存在しません`,
       );
     }
+
+    // 無効なフィード（論理削除済み）の場合はエラー
+    if (!feed.isActive) {
+      throw new NotFoundException(
+        `パーソナライズフィード [${id}] は存在しません`,
+      );
+    }
+
     // 認証済みユーザーのフィードのみアクセス可能
     if (feed.userId !== user.id) {
       throw new NotFoundException(
@@ -227,6 +247,153 @@ export class PersonalizedFeedsService {
         error,
         userId,
         name,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * パーソナライズフィードを更新する
+   * @param id パーソナライズフィードID
+   * @param userId ユーザーID
+   * @param updates 更新内容
+   * @param filterGroups 更新するフィルターグループ情報
+   * @returns フィルター情報を含む更新されたパーソナライズフィード
+   * @throws NotFoundException フィードが存在しない場合
+   * @throws UserNotFoundError ユーザーが存在しない場合
+   */
+  async update(
+    id: string,
+    userId: string,
+    updates: {
+      name?: string;
+      dataSource?: string;
+      filterConfig?: Record<string, any>;
+      deliveryConfig?: Record<string, any>;
+      isActive?: boolean;
+    },
+    filterGroups?: FilterGroupDto[],
+  ): Promise<PersonalizedFeedWithFilters> {
+    this.logger.debug('PersonalizedFeedsService.update', {
+      id,
+      userId,
+      updates,
+      hasFilterGroups: filterGroups && filterGroups.length > 0,
+    });
+
+    // UIでは1つのフィルターグループのみをサポート
+    const filterGroup =
+      filterGroups && filterGroups.length > 0 ? filterGroups[0] : undefined;
+
+    // ユーザーの存在確認
+    const user = await this.validateUserExists(userId);
+
+    // 現在のフィードを取得して存在確認
+    const existingFeed = await this.findById(id, userId);
+
+    try {
+      // パーソナライズフィードとフィルターグループをトランザクションで更新
+      const result =
+        await this.personalizedFeedsRepository.updateWithFilterGroup({
+          feed: {
+            id,
+            ...updates,
+          },
+          filterGroup: filterGroup
+            ? {
+                name: filterGroup.name,
+                logicType: filterGroup.logicType || 'OR',
+                tagFilters: filterGroup.tagFilters,
+                authorFilters: filterGroup.authorFilters,
+              }
+            : undefined,
+        });
+
+      this.logger.log(
+        `ユーザー [${userId}] のパーソナライズフィード [${id}] を更新しました`,
+        {
+          feedId: id,
+          userId,
+          hasFilterGroup: !!result.filterGroup,
+          filterGroupId: result.filterGroup?.id,
+          tagFiltersCount: result.tagFilters?.length || 0,
+          authorFiltersCount: result.authorFilters?.length || 0,
+        },
+      );
+
+      // isActiveをfalseに設定した場合（論理削除の場合）は、
+      // findByIdWithFiltersでは取得できないため、リポジトリから返された結果を整形して返す
+      if (updates.isActive === false) {
+        const feedWithFilters: PersonalizedFeedWithFilters = {
+          ...result.feed,
+          filterGroups: result.filterGroup
+            ? [
+                {
+                  ...result.filterGroup,
+                  tagFilters: (result.tagFilters || []).map((tagFilter) => ({
+                    ...tagFilter,
+                    createdAt: tagFilter.createdAt || new Date(),
+                  })),
+                  authorFilters: (result.authorFilters || []).map(
+                    (authorFilter) => ({
+                      ...authorFilter,
+                      createdAt: new Date(),
+                    }),
+                  ),
+                },
+              ]
+            : [],
+        };
+        return feedWithFilters;
+      }
+
+      // それ以外の場合は、更新後のフィードをフィルター情報付きで取得して返す
+      return await this.findByIdWithFilters(id, userId);
+    } catch (error) {
+      this.logger.error(`パーソナライズフィードの更新に失敗しました`, {
+        error,
+        id,
+        userId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * パーソナライズフィードを論理削除する
+   * @param id パーソナライズフィードID
+   * @param userId ユーザーID
+   * @returns 削除されたパーソナライズフィード
+   * @throws NotFoundException フィードが存在しない場合
+   * @throws UserNotFoundError ユーザーが存在しない場合
+   */
+  async delete(id: string, userId: string): Promise<PersonalizedFeed> {
+    this.logger.debug('PersonalizedFeedsService.delete', { id, userId });
+
+    // ユーザーの存在確認
+    const user = await this.validateUserExists(userId);
+
+    // 現在のフィードを取得して存在確認とアクセス権確認
+    const existingFeed = await this.findById(id, userId);
+
+    try {
+      // パーソナライズフィードを論理削除する
+      const result = await this.personalizedFeedsRepository.softDelete(id);
+
+      this.logger.log(
+        `ユーザー [${userId}] のパーソナライズフィード [${id}] を論理削除しました`,
+        {
+          feedId: id,
+          userId,
+        },
+      );
+
+      return result;
+    } catch (error) {
+      this.logger.error(`パーソナライズフィードの削除に失敗しました`, {
+        error,
+        id,
+        userId,
       });
       throw error;
     }
