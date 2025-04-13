@@ -101,3 +101,56 @@ Content-Type: application/json
   ],
   "isActive": true
 }
+
+### パーソナライズフィード更新
+PATCH {{apiBaseUrl}}/personalized-feeds/{{feedId}}
+Content-Type: application/json
+
+{
+  "name": "更新された技術トレンド情報",
+  "filterConfig": {
+    "tags": ["JavaScript", "TypeScript", "Node.js"],
+    "minLikes": 15
+  },
+  "deliveryConfig": {
+    "frequency": "weekly",
+    "time": "09:00",
+    "weekday": "monday"
+  }
+}
+
+### パーソナライズフィード更新（フィルターグループあり）
+PATCH {{apiBaseUrl}}/personalized-feeds/{{feedId}}
+Content-Type: application/json
+
+{
+  "name": "更新されたフロントエンド技術情報1",
+  "filterGroups": [
+    {
+      "name": "モダンフロントエンド",
+      "logicType": "OR",
+      "tagFilters": [
+        { "tagName": "React" },
+        { "tagName": "Vue.js" },
+        { "tagName": "Svelte" },
+        { "tagName": "Next.js" }
+      ],
+      "authorFilters": [
+        { "authorId": "sumihiro3" },
+        { "authorId": "takurinton" }
+      ]
+    }
+  ]
+}
+
+### パーソナライズフィード無効化（論理削除と同等）
+PATCH {{apiBaseUrl}}/personalized-feeds/{{feedId}}
+Content-Type: application/json
+
+{
+  "isActive": false
+}
+
+### パーソナライズフィード論理削除
+DELETE {{apiBaseUrl}}/personalized-feeds/{{feedId}}
+Content-Type: application/json
