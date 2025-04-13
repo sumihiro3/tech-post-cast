@@ -1,5 +1,5 @@
-import { Auth } from '@/auth/decorators/auth.decorator';
 import { CurrentUserId } from '@/auth/decorators/current-user-id.decorator';
+import { ClerkJwtGuard } from '@/auth/guards/clerk-jwt.guard';
 import { PersonalizedFeedsService } from '@/domains/personalized-feeds/personalized-feeds.service';
 import { UserNotFoundError } from '@/types/errors';
 import {
@@ -11,6 +11,7 @@ import {
   Param,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
@@ -23,7 +24,7 @@ import {
 
 @Controller('personalized-feeds')
 @ApiTags('Personalized Feeds')
-@Auth() // クラスレベルで認証を適用
+@UseGuards(ClerkJwtGuard) // クラスレベルで認証を適用
 export class PersonalizedFeedsController {
   private readonly logger = new Logger(PersonalizedFeedsController.name);
 
