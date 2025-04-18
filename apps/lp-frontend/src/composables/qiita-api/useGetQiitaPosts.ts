@@ -14,34 +14,22 @@ export const useGetQiitaPosts = async (
   minPublishedAt?: string,
 ): Promise<SearchQiitaPostsResponseDto> => {
   console.log(`useGetQiitaPosts called`, { authors, tags, minPublishedAt });
+  try {
+    // 引数が未指定の場合は空の配列を渡す
+    // authorsとtagsは配列なので、join(',')で文字列に変換して渡す
+    const authorsList = authors ? [authors.join(',')] : [];
+    const tagsList = tags ? [tags.join(',')] : [];
 
-  // URLSearchParamsを使用してクエリパラメータを構築
-  // const params = new URLSearchParams();
-  // if (authors && authors.length > 0) {
-  //   authors.forEach((author) => params.append('authors', author));
-  // }
-  // if (tags && tags.length > 0) {
-  //   tags.forEach((tag) => params.append('tags', tag));
-  // }
-  // if (minPublishedAt) {
-  //   params.append('minPublishedAt', minPublishedAt);
-  // }
-  const authorsList = authors ? [authors.join(',')] : [];
-  const tagsList = tags ? [tags.join(',')] : [];
-
-  // バックエンドAPIを呼び出す
-  const response = await app.$qiitaPostApi.searchQiitaPosts(authorsList, tagsList, undefined);
-  const result = response.data;
-  console.log(`Qiita API response`, { result });
-  return result;
-
-  //   await $fetch<{ posts: IQiitaPostApiResponse[] }>(
-  //   `http://localhost:3001/qiita-posts/search?${params.toString()}`,
-  //   {
-  //     method: 'GET',
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //     },
-  //   },
-  // );
+    // バックエンドAPIを呼び出す
+    const response = await app.$qiitaPostApi.searchQiitaPosts(authorsList, tagsList, undefined);
+    const result = response.data;
+    console.log(`Qiita API response`, { result });
+    return result;
+  } catch (error) {
+    console.error(`useGetQiitaPosts error`, error);
+    if (error instanceof Error) {
+      console.error(error.message, error.stack);
+    }
+    throw error;
+  }
 };
