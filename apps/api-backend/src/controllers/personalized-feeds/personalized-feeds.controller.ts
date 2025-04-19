@@ -22,8 +22,6 @@ import {
   CreatePersonalizedFeedRequestDto,
   CreatePersonalizedFeedResponseDto,
   DeletePersonalizedFeedResponseDto,
-  GetPersonalizedFeedRequestDto,
-  GetPersonalizedFeedResponseDto,
   GetPersonalizedFeedWithFiltersResponseDto,
   GetPersonalizedFeedsRequestDto,
   GetPersonalizedFeedsResponseDto,
@@ -139,11 +137,6 @@ export class PersonalizedFeedsController {
   })
   @ApiResponse({
     status: 200,
-    description: '取得成功（フィルター情報なし）',
-    type: GetPersonalizedFeedResponseDto,
-  })
-  @ApiResponse({
-    status: 200,
     description: '取得成功（フィルター情報あり）',
     type: GetPersonalizedFeedWithFiltersResponseDto,
   })
@@ -154,33 +147,21 @@ export class PersonalizedFeedsController {
   })
   async getPersonalizedFeed(
     @Param('id') id: string,
-    @Query() dto: GetPersonalizedFeedRequestDto,
     @CurrentUserId() userId: string, // JWTトークンからユーザーIDを取得
-  ): Promise<
-    GetPersonalizedFeedResponseDto | GetPersonalizedFeedWithFiltersResponseDto
-  > {
+  ): Promise<GetPersonalizedFeedWithFiltersResponseDto> {
     this.logger.verbose(`PersonalizedFeedsController.getPersonalizedFeed`, {
       id,
       userId,
-      includeFilters: dto.includeFilters,
     });
 
     try {
-      // フィルター情報を含める場合
-      if (dto.includeFilters) {
-        // 指定されたIDのパーソナライズフィードをフィルター情報付きで取得
-        const feed = await this.personalizedFeedsService.findByIdWithFilters(
-          id,
-          userId,
-        );
-        // DTOに変換して返却
-        return GetPersonalizedFeedWithFiltersResponseDto.fromEntity(feed);
-      }
-
-      // フィルター情報を含めない場合（デフォルト）
-      const feed = await this.personalizedFeedsService.findById(id, userId);
+      // 指定されたIDのパーソナライズフィードをフィルター情報付きで取得
+      const feed = await this.personalizedFeedsService.findByIdWithFilters(
+        id,
+        userId,
+      );
       // DTOに変換して返却
-      return GetPersonalizedFeedResponseDto.fromEntity(feed);
+      return GetPersonalizedFeedWithFiltersResponseDto.fromEntity(feed);
     } catch (error) {
       // NotFoundExceptionはそのまま再スロー
       if (error instanceof NotFoundException) {
@@ -232,8 +213,13 @@ export class PersonalizedFeedsController {
       userId,
       name: dto.name,
       dataSource: dto.dataSource,
+      filterConfig: dto.filterConfig ? 'provided' : 'not provided',
+      deliveryConfig: dto.deliveryConfig ? 'provided' : 'not provided',
+      isActive: dto.isActive,
       hasFilterGroups: dto.filterGroups && dto.filterGroups.length > 0,
       filterGroupsCount: dto.filterGroups?.length || 0,
+      tagFiltersCount: dto.filterGroups?.[0]?.tagFilters?.length || 0,
+      authorFiltersCount: dto.filterGroups?.[0]?.authorFilters?.length || 0,
     });
 
     try {

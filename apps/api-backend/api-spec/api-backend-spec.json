@@ -667,26 +667,15 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "includeFilters",
-            "required": false,
-            "in": "query",
-            "description": "フィルター情報を含めるかどうか",
-            "schema": {
-              "default": false,
-              "example": false,
-              "type": "boolean"
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "取得成功（フィルター情報なし）",
+            "description": "取得成功（フィルター情報あり）",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GetPersonalizedFeedResponseDto"
+                  "$ref": "#/components/schemas/GetPersonalizedFeedWithFiltersResponseDto"
                 }
               }
             }
@@ -1267,14 +1256,210 @@
           "total"
         ]
       },
-      "GetPersonalizedFeedResponseDto": {
+      "ResponseTagFilterDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "タグフィルターID",
+            "example": "tag-flt_1234567890"
+          },
+          "groupId": {
+            "type": "string",
+            "description": "フィルターグループID",
+            "example": "feed-flt-gr_1234567890"
+          },
+          "tagName": {
+            "type": "string",
+            "description": "タグ名",
+            "example": "JavaScript"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "作成日時",
+            "example": "2025-04-13T09:00:00.000Z",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "groupId",
+          "tagName",
+          "createdAt"
+        ]
+      },
+      "ResponseAuthorFilterDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "著者フィルターID",
+            "example": "author-flt_1234567890"
+          },
+          "groupId": {
+            "type": "string",
+            "description": "フィルターグループID",
+            "example": "feed-flt-gr_1234567890"
+          },
+          "authorId": {
+            "type": "string",
+            "description": "著者ID",
+            "example": "sumihiro3"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "作成日時",
+            "example": "2025-04-13T09:00:00.000Z",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "groupId",
+          "authorId",
+          "createdAt"
+        ]
+      },
+      "ResponseFilterGroupDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "フィルターグループID",
+            "example": "feed-flt-gr_1234567890"
+          },
+          "filterId": {
+            "type": "string",
+            "description": "パーソナライズフィードID",
+            "example": "feed_1234567890"
+          },
+          "name": {
+            "type": "string",
+            "description": "フィルターグループ名",
+            "example": "フロントエンド技術"
+          },
+          "logicType": {
+            "type": "string",
+            "description": "論理演算子タイプ (AND/OR)",
+            "example": "OR"
+          },
+          "tagFilters": {
+            "description": "タグフィルター一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResponseTagFilterDto"
+            }
+          },
+          "authorFilters": {
+            "description": "著者フィルター一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResponseAuthorFilterDto"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "作成日時",
+            "example": "2025-04-13T09:00:00.000Z",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "更新日時",
+            "example": "2025-04-13T09:00:00.000Z",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "filterId",
+          "name",
+          "logicType",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "PersonalizedFeedWithFiltersDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "パーソナライズフィードのID",
+            "example": "feed_1234567890"
+          },
+          "name": {
+            "type": "string",
+            "description": "パーソナライズフィードの名前",
+            "example": "技術ブログフィード"
+          },
+          "dataSource": {
+            "type": "string",
+            "description": "データソース",
+            "example": "qiita"
+          },
+          "filterConfig": {
+            "type": "object",
+            "description": "フィルター設定",
+            "example": {
+              "tags": [
+                "JavaScript",
+                "TypeScript"
+              ],
+              "minLikes": 10
+            }
+          },
+          "deliveryConfig": {
+            "type": "object",
+            "description": "配信設定",
+            "example": {
+              "frequency": "daily",
+              "time": "08:00"
+            }
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "有効かどうか",
+            "example": true
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "作成日時",
+            "example": "2025-04-08T09:00:00.000Z",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "更新日時",
+            "example": "2025-04-08T10:30:00.000Z",
+            "format": "date-time"
+          },
+          "filterGroups": {
+            "description": "フィルターグループ一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResponseFilterGroupDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "dataSource",
+          "filterConfig",
+          "deliveryConfig",
+          "isActive",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "GetPersonalizedFeedWithFiltersResponseDto": {
         "type": "object",
         "properties": {
           "feed": {
-            "description": "パーソナライズフィード情報",
+            "description": "フィルター情報を含むパーソナライズフィード情報",
             "allOf": [
               {
-                "$ref": "#/components/schemas/PersonalizedFeedDto"
+                "$ref": "#/components/schemas/PersonalizedFeedWithFiltersDto"
               }
             ]
           }

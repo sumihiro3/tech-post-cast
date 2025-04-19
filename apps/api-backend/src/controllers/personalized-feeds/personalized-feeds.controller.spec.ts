@@ -283,13 +283,7 @@ describe('PersonalizedFeedsController', () => {
       );
 
       // Act
-      const result = await controller.getPersonalizedFeed(
-        feedId,
-        {
-          includeFilters: true,
-        },
-        userId,
-      );
+      const result = await controller.getPersonalizedFeed(feedId, userId);
 
       // Assert
       expect(personalizedFeedsService.findByIdWithFilters).toHaveBeenCalledWith(
@@ -314,72 +308,25 @@ describe('PersonalizedFeedsController', () => {
       );
     });
 
-    it('includeFilters=falseの場合、フィルタ情報を含まないフィード詳細を取得すること', async () => {
-      // Arrange
-      mockPersonalizedFeedsService.findById.mockResolvedValue(mockFeed);
-
-      // Act
-      const result = await controller.getPersonalizedFeed(
-        feedId,
-        {
-          includeFilters: false,
-        },
-        userId,
-      );
-
-      // Assert
-      expect(personalizedFeedsService.findById).toHaveBeenCalledWith(
-        feedId,
-        userId,
-      );
-      expect(result.feed.id).toEqual(mockFeed.id);
-      expect(result.feed.name).toEqual(mockFeed.name);
-      expect(result.feed.dataSource).toEqual(mockFeed.dataSource);
-      expect(result.feed.filterConfig).toEqual(mockFeed.filterConfig);
-      expect(result.feed.deliveryConfig).toEqual(mockFeed.deliveryConfig);
-      expect(result.feed.isActive).toEqual(mockFeed.isActive);
-      expect(result.feed.createdAt).toEqual(mockFeed.createdAt.toISOString());
-      expect(result.feed.updatedAt).toEqual(mockFeed.updatedAt.toISOString());
-    });
-
-    it('includeFiltersが指定されていない場合、デフォルトでフィルタなしの詳細を取得すること', async () => {
-      // Arrange
-      mockPersonalizedFeedsService.findById.mockResolvedValue(mockFeed);
-
-      // Act
-      const result = await controller.getPersonalizedFeed(feedId, {}, userId);
-
-      // Assert
-      expect(personalizedFeedsService.findById).toHaveBeenCalledWith(
-        feedId,
-        userId,
-      );
-      expect(result.feed.id).toEqual(mockFeed.id);
-      expect(result.feed.name).toEqual(mockFeed.name);
-      expect(result.feed.dataSource).toEqual(mockFeed.dataSource);
-      expect(result.feed.createdAt).toEqual(mockFeed.createdAt.toISOString());
-      expect(result.feed.updatedAt).toEqual(mockFeed.updatedAt.toISOString());
-    });
-
     it('NotFoundExceptionが発生した場合、適切なエラーレスポンスを返すこと', async () => {
       // Arrange
       const error = new NotFoundException('フィードが見つかりません');
-      mockPersonalizedFeedsService.findById.mockRejectedValue(error);
+      mockPersonalizedFeedsService.findByIdWithFilters.mockRejectedValue(error);
 
       // Act & Assert
       await expect(
-        controller.getPersonalizedFeed(feedId, {}, userId),
+        controller.getPersonalizedFeed(feedId, userId),
       ).rejects.toThrow(HttpException);
     });
 
     it('UserNotFoundErrorが発生した場合、適切なエラーレスポンスを返すこと', async () => {
       // Arrange
       const error = new UserNotFoundError('ユーザーが見つかりません');
-      mockPersonalizedFeedsService.findById.mockRejectedValue(error);
+      mockPersonalizedFeedsService.findByIdWithFilters.mockRejectedValue(error);
 
       // Act & Assert
       await expect(
-        controller.getPersonalizedFeed(feedId, {}, userId),
+        controller.getPersonalizedFeed(feedId, userId),
       ).rejects.toThrow(HttpException);
     });
   });
