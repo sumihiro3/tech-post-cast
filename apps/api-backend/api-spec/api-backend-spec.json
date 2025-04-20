@@ -1320,6 +1320,38 @@
           "createdAt"
         ]
       },
+      "ResponseDateRangeFilterDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "日付範囲フィルターID",
+            "example": "date-range-flt_1234567890"
+          },
+          "groupId": {
+            "type": "string",
+            "description": "フィルターグループID",
+            "example": "feed-flt-gr_1234567890"
+          },
+          "daysAgo": {
+            "type": "number",
+            "description": "何日以内の記事を対象とするか（10, 30, 60, 90, 180, 365など）",
+            "example": 30
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "作成日時",
+            "example": "2025-04-13T09:00:00.000Z",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "groupId",
+          "daysAgo",
+          "createdAt"
+        ]
+      },
       "ResponseFilterGroupDto": {
         "type": "object",
         "properties": {
@@ -1355,6 +1387,13 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ResponseAuthorFilterDto"
+            }
+          },
+          "dateRangeFilters": {
+            "description": "日付範囲フィルター一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResponseDateRangeFilterDto"
             }
           },
           "createdAt": {

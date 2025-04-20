@@ -1,5 +1,6 @@
 import {
   AuthorFilter,
+  DateRangeFilter,
   FilterGroup,
   PersonalizedFeed,
   PersonalizedFeedWithFilters,
@@ -134,6 +135,62 @@ export class ResponseAuthorFilterDto {
 }
 
 /**
+ * 日付範囲フィルターレスポンスDTO
+ */
+export class ResponseDateRangeFilterDto {
+  @ApiProperty({
+    description: '日付範囲フィルターID',
+    required: true,
+    example: 'date-range-flt_1234567890',
+    type: String,
+  })
+  @IsString()
+  @IsNotEmpty()
+  id: string;
+
+  @ApiProperty({
+    description: 'フィルターグループID',
+    required: true,
+    example: 'feed-flt-gr_1234567890',
+    type: String,
+  })
+  @IsString()
+  @IsNotEmpty()
+  groupId: string;
+
+  @ApiProperty({
+    description: '何日以内の記事を対象とするか（10, 30, 60, 90, 180, 365など）',
+    required: true,
+    example: 30,
+    type: Number,
+  })
+  @IsPositive()
+  daysAgo: number;
+
+  @ApiProperty({
+    description: '作成日時',
+    required: true,
+    example: '2025-04-13T09:00:00.000Z',
+    type: String,
+    format: 'date-time',
+  })
+  @IsDateString()
+  createdAt: string;
+
+  /**
+   * エンティティからDTOを作成する
+   */
+  static fromEntity(entity: DateRangeFilter): ResponseDateRangeFilterDto {
+    const dto = new ResponseDateRangeFilterDto();
+    dto.id = entity.id;
+    dto.groupId = entity.groupId;
+    dto.daysAgo = entity.daysAgo;
+    dto.createdAt = entity.createdAt.toISOString();
+    return dto;
+  }
+}
+
+/**
  * フィルターグループレスポンスDTO
  */
 export class ResponseFilterGroupDto {
@@ -196,6 +253,15 @@ export class ResponseFilterGroupDto {
   authorFilters?: ResponseAuthorFilterDto[];
 
   @ApiProperty({
+    description: '日付範囲フィルター一覧',
+    required: false,
+    type: [ResponseDateRangeFilterDto],
+  })
+  @IsArray()
+  @IsOptional()
+  dateRangeFilters?: ResponseDateRangeFilterDto[];
+
+  @ApiProperty({
     description: '作成日時',
     required: true,
     example: '2025-04-13T09:00:00.000Z',
@@ -234,6 +300,12 @@ export class ResponseFilterGroupDto {
     if (entity.authorFilters && entity.authorFilters.length > 0) {
       dto.authorFilters = entity.authorFilters.map((author) =>
         ResponseAuthorFilterDto.fromEntity(author),
+      );
+    }
+
+    if (entity.dateRangeFilters && entity.dateRangeFilters.length > 0) {
+      dto.dateRangeFilters = entity.dateRangeFilters.map((dateRange) =>
+        ResponseDateRangeFilterDto.fromEntity(dateRange),
       );
     }
 
