@@ -1,0 +1,212 @@
+import type {
+  AuthorFilterDto,
+  CreatePersonalizedFeedRequestDto,
+  FilterGroupDto,
+  GetPersonalizedFeedWithFiltersResponseDto,
+  QiitaPostDto,
+  TagFilterDto,
+  UpdatePersonalizedFeedRequestDto,
+} from '@/api';
+
+/**
+ * 入力されたパーソナライズフィードのデータ
+ */
+export interface InputPersonalizedFeedData {
+  programTitle: string;
+  filters: {
+    authors: string[];
+    tags: string[];
+    dateRange: number; // 文字列から数値に変更（日数指定）
+  };
+  posts: QiitaPostDto[];
+  totalCount: number;
+}
+
+/**
+ * APIのレスポンス(`GetPersonalizedFeedWithFiltersResponseDto`)から
+ * 入力フォーム用のデータ(`InputPersonalizedFeedData`)に変換する
+ *
+ * @param response API からのレスポンスデータ
+ * @returns 入力フォーム用のデータ
+ */
+export function convertApiResponseToInputData(
+  response: GetPersonalizedFeedWithFiltersResponseDto,
+): InputPersonalizedFeedData {
+  // レスポンスからフィードデータを取得
+  const feedData = response.feed;
+
+  // フィルターグループから著者とタグを抽出
+  const authors: string[] = [];
+  const tags: string[] = [];
+  let dateRange: number = -1; // デフォルト値として -1 (すべて) を設定
+
+  // フィルターグループがある場合は処理する
+  if (feedData.filterGroups && feedData.filterGroups.length > 0) {
+    const filterGroup = feedData.filterGroups[0]; // 通常は最初のグループを使用
+
+    // 著者フィルターを抽出
+    if (filterGroup.authorFilters) {
+      filterGroup.authorFilters.forEach((filter) => {
+        if (filter.authorId) {
+          authors.push(filter.authorId);
+        }
+      });
+    }
+
+    // タグフィルターを抽出
+    if (filterGroup.tagFilters) {
+      filterGroup.tagFilters.forEach((filter) => {
+        if (filter.tagName) {
+          tags.push(filter.tagName);
+        }
+      });
+    }
+
+    // 日付範囲フィルターを抽出
+    if (filterGroup.dateRangeFilters && filterGroup.dateRangeFilters.length > 0) {
+      const filter = filterGroup.dateRangeFilters[0];
+      if (filter && filter.daysAgo) {
+        dateRange = filter.daysAgo;
+      }
+    }
+  }
+
+  // 入力フォーム用のデータ構造に変換して返す
+  return {
+    programTitle: feedData.name,
+    filters: {
+      authors,
+      tags,
+      dateRange,
+    },
+    posts: [], // APIレスポンスには記事データは含まれていないので空配列
+    totalCount: 0, // APIレスポンスには記事の総数は含まれていないのでゼロ
+  };
+}
+
+/**
+ * 入力フォーム用のデータ(`InputPersonalizedFeedData`)から
+ * APIリクエスト用のデータ(`CreatePersonalizedFeedRequestDto`)に変換する
+ *
+ * @param inputData 入力フォーム用のデータ
+ * @returns パーソナライズフィード作成リクエスト用のデータ
+ */
+export function convertInputDataToCreateDto(
+  inputData: InputPersonalizedFeedData,
+): CreatePersonalizedFeedRequestDto {
+  // フィルターグループを作成
+  const filterGroup: FilterGroupDto = {
+    name: `${inputData.programTitle} のフィルターグループ1`,
+    logicType: 'OR',
+    tagFilters: [],
+    authorFilters: [],
+    dateRangeFilters: [],
+  };
+
+  // タグフィルターを追加
+  if (inputData.filters.tags.length > 0) {
+    filterGroup.tagFilters = inputData.filters.tags.map(
+      (tag): TagFilterDto => ({
+        tagName: tag,
+      }),
+    );
+  }
+
+  // 著者フィルターを追加
+  if (inputData.filters.authors.length > 0) {
+    filterGroup.authorFilters = inputData.filters.authors.map(
+      (author): AuthorFilterDto => ({
+        authorId: author,
+      }),
+    );
+  }
+
+  // 日付範囲フィルターを追加（-1=すべて以外の場合のみ）
+  if (inputData.filters.dateRange > 0) {
+    filterGroup.dateRangeFilters = [
+      {
+        daysAgo: inputData.filters.dateRange,
+      },
+    ];
+  }
+
+  // フィルター設定を作成
+  const filterConfig = {
+    dateRange: inputData.filters.dateRange,
+  };
+
+  // 配信設定のデフォルト値
+  const deliveryConfig = {
+    frequency: 'daily',
+    time: '10:00',
+  };
+
+  // APIリクエスト用のデータを作成
+  return {
+    name: inputData.programTitle,
+    dataSource: 'qiita',
+    filterConfig,
+    deliveryConfig,
+    filterGroups: [filterGroup],
+    isActive: true,
+  };
+}
+
+/**
+ * 入力フォーム用のデータ(`InputPersonalizedFeedData`)から
+ * APIリクエスト用のデータ(`UpdatePersonalizedFeedRequestDto`)に変換する
+ *
+ * @param inputData 入力フォーム用のデータ
+ * @returns パーソナライズフィード更新リクエスト用のデータ
+ */
+export function convertInputDataToUpdateDto(
+  inputData: InputPersonalizedFeedData,
+): UpdatePersonalizedFeedRequestDto {
+  // フィルターグループを作成
+  const filterGroup: FilterGroupDto = {
+    name: `${inputData.programTitle} のフィルターグループ1`,
+    logicType: 'OR',
+    tagFilters: [],
+    authorFilters: [],
+    dateRangeFilters: [],
+  };
+
+  // タグフィルターを追加
+  if (inputData.filters.tags.length > 0) {
+    filterGroup.tagFilters = inputData.filters.tags.map(
+      (tag): TagFilterDto => ({
+        tagName: tag,
+      }),
+    );
+  }
+
+  // 著者フィルターを追加
+  if (inputData.filters.authors.length > 0) {
+    filterGroup.authorFilters = inputData.filters.authors.map(
+      (author): AuthorFilterDto => ({
+        authorId: author,
+      }),
+    );
+  }
+
+  // 日付範囲フィルターを追加（-1=すべて以外の場合のみ）
+  if (inputData.filters.dateRange > 0) {
+    filterGroup.dateRangeFilters = [
+      {
+        daysAgo: inputData.filters.dateRange,
+      },
+    ];
+  }
+
+  // フィルター設定を作成
+  const filterConfig = {
+    dateRange: inputData.filters.dateRange,
+  };
+
+  // 更新用のデータを作成
+  return {
+    name: inputData.programTitle,
+    filterConfig,
+    filterGroups: [filterGroup],
+  };
+}

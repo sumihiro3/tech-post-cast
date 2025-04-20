@@ -2,25 +2,12 @@
   v-container(class="max-width-container")
     v-row
       v-col(cols="12")
-        h1.text-h4.mb-6
-          | パーソナライズフィード設定（{{ feedsCount }}）
-        v-row(v-if="feeds && feeds.length > 0" justify="center")
-          v-col(v-for="feed in feeds" :key="feed.id" cols="12" md="6" lg="4")
-            v-card(elevation="2" class="mb-4")
-              v-card-title
-                v-icon(left color="primary" class="mr-2") mdi-television-play
-                | {{ feed.name }}
-              //- v-card-text.text-h4.text-center 12
-              v-card-actions
-                v-spacer
-                v-btn(
-                  color="primary"
-                  to="/app/feeds/edit"
-                ) 編集
+        FeedList(:feeds="feeds" :feeds-count="feedsCount")
 </template>
 
 <script setup lang="ts">
 import type { PersonalizedFeedDto } from '@/api';
+import FeedList from '@/components/feeds/FeedList.vue';
 import { useGetPersonalizedFeeds } from '@/composables/feeds/useGetPersonalizedFeeds';
 import { useUser } from '@clerk/vue';
 
@@ -49,6 +36,17 @@ const fetchUserFeeds = async (): Promise<void> => {
 };
 
 useAsyncData(async () => {
-  fetchUserFeeds();
+  try {
+    // プログレスサークルを表示
+    progress.show({ text: 'パーソナライズフィードを取得中...' });
+    // ユーザーのフィード設定一覧を取得
+    await fetchUserFeeds();
+  } catch (error) {
+    // エラーハンドリング
+    console.error('Error fetching user feeds:', error);
+  } finally {
+    // プログレスサークルを非表示
+    progress.hide();
+  }
 });
 </script>
