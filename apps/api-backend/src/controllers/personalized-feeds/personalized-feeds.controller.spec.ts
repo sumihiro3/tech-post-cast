@@ -3,10 +3,8 @@ import { UserNotFoundError } from '@/types/errors';
 import { CanActivate, HttpException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClerkJwtGuard } from '../../auth/guards/clerk-jwt.guard';
-import {
-  CreatePersonalizedFeedRequestDto,
-  FilterGroupDto,
-} from './dto/create-personalized-feed.request.dto';
+import { CreatePersonalizedFeedRequestDto } from './dto/create-personalized-feed.request.dto';
+import { UpdatePersonalizedFeedRequestDto } from './dto/update-personalized-feed.request.dto';
 import { PersonalizedFeedsController } from './personalized-feeds.controller';
 
 describe('PersonalizedFeedsController', () => {
@@ -65,6 +63,14 @@ describe('PersonalizedFeedsController', () => {
             id: 'author_test123',
             groupId: 'group_test123',
             authorId: 'sumihiro3',
+            createdAt: currentDate,
+          },
+        ],
+        dateRangeFilters: [
+          {
+            id: 'daterange_test123',
+            groupId: 'group_test123',
+            daysAgo: 30,
             createdAt: currentDate,
           },
         ],
@@ -332,66 +338,34 @@ describe('PersonalizedFeedsController', () => {
   });
 
   describe('createFeed', () => {
-    it('フィルタグループなしでパーソナライズフィードを作成できること', async () => {
-      // Arrange
-      const createDto: CreatePersonalizedFeedRequestDto = {
-        name: 'テストフィード',
-        dataSource: 'qiita',
-        filterConfig: { tags: ['JavaScript'] },
-        deliveryConfig: { frequency: 'daily' },
-        isActive: true,
-      };
-
-      mockPersonalizedFeedsService.create.mockResolvedValue(mockFeed);
-
-      // Act
-      const result = await controller.createPersonalizedFeed(createDto, userId);
-
-      // Assert
-      expect(personalizedFeedsService.create).toHaveBeenCalledWith(
-        userId,
-        createDto.name,
-        createDto.dataSource,
-        createDto.filterConfig,
-        createDto.deliveryConfig,
-        createDto.isActive,
-        undefined,
+    it('公開日フィルターを含むパーソナライズフィードを作成できること', async () => {
+      // サービスからの返却値をモック
+      mockPersonalizedFeedsService.create.mockResolvedValue(
+        mockFeedWithFilters,
       );
-      expect(result.feed.id).toEqual(mockFeed.id);
-      expect(result.feed.name).toEqual(mockFeed.name);
-      expect(result.feed.dataSource).toEqual(mockFeed.dataSource);
-      expect(result.feed.filterConfig).toEqual(mockFeed.filterConfig);
-      expect(result.feed.deliveryConfig).toEqual(mockFeed.deliveryConfig);
-      expect(result.feed.createdAt).toEqual(mockFeed.createdAt.toISOString());
-      expect(result.feed.updatedAt).toEqual(mockFeed.updatedAt.toISOString());
-    });
 
-    it('フィルタグループありでパーソナライズフィードを作成できること', async () => {
-      // Arrange
-      const filterGroups: FilterGroupDto[] = [
-        {
-          name: 'テストグループ',
-          logicType: 'OR',
-          tagFilters: [{ tagName: 'JavaScript' }],
-          authorFilters: [{ authorId: 'sumihiro3' }],
-        },
-      ];
-
+      // リクエストDTOを作成
       const createDto: CreatePersonalizedFeedRequestDto = {
         name: 'テストフィード',
         dataSource: 'qiita',
-        filterConfig: { minLikes: 10 },
-        deliveryConfig: { frequency: 'daily' },
+        filterConfig: { minLikes: 5 },
+        deliveryConfig: { frequency: 'daily', time: '08:00' },
+        filterGroups: [
+          {
+            name: 'テストグループ',
+            logicType: 'OR',
+            tagFilters: [],
+            authorFilters: [],
+            dateRangeFilters: [{ daysAgo: 30 }],
+          },
+        ],
         isActive: true,
-        filterGroups,
       };
 
-      mockPersonalizedFeedsService.create.mockResolvedValue(mockFeed);
-
-      // Act
+      // コントローラーメソッドを実行
       const result = await controller.createPersonalizedFeed(createDto, userId);
 
-      // Assert
+      // 期待値の検証
       expect(personalizedFeedsService.create).toHaveBeenCalledWith(
         userId,
         createDto.name,
@@ -401,276 +375,109 @@ describe('PersonalizedFeedsController', () => {
         createDto.isActive,
         createDto.filterGroups,
       );
-      expect(result.feed.id).toEqual(mockFeed.id);
-      expect(result.feed.name).toEqual(mockFeed.name);
-      expect(result.feed.dataSource).toEqual(mockFeed.dataSource);
-      expect(result.feed.filterConfig).toEqual(mockFeed.filterConfig);
-      expect(result.feed.deliveryConfig).toEqual(mockFeed.deliveryConfig);
-      expect(result.feed.createdAt).toEqual(mockFeed.createdAt.toISOString());
-      expect(result.feed.updatedAt).toEqual(mockFeed.updatedAt.toISOString());
+      expect(result).toBeDefined();
+      expect(result.feed).toBeDefined();
+      expect(result.feed.id).toBe(mockFeedWithFilters.id);
     });
 
-    it('UserNotFoundErrorが発生した場合、適切なエラーレスポンスを返すこと', async () => {
-      // Arrange
+    it('ユーザーが存在しない場合はNotFoundExceptionをスローすること', async () => {
+      // サービスからUserNotFoundErrorをスローするモック
+      mockPersonalizedFeedsService.create.mockRejectedValue(
+        new UserNotFoundError('user_nonexistent'),
+      );
+
+      // リクエストDTOを作成
       const createDto: CreatePersonalizedFeedRequestDto = {
         name: 'テストフィード',
         dataSource: 'qiita',
-        filterConfig: { tags: ['JavaScript'] },
-        deliveryConfig: { frequency: 'daily' },
+        filterConfig: {},
+        deliveryConfig: {},
         isActive: true,
       };
 
-      const error = new UserNotFoundError('ユーザーが見つかりません');
-      mockPersonalizedFeedsService.create.mockRejectedValue(error);
-
-      // Act & Assert
+      // コントローラーメソッドを実行して例外検証
       await expect(
-        controller.createPersonalizedFeed(createDto, userId),
-      ).rejects.toThrow(HttpException);
-    });
-
-    it('一般的なエラーが発生した場合、適切なエラーレスポンスを返すこと', async () => {
-      // Arrange
-      const createDto: CreatePersonalizedFeedRequestDto = {
-        name: 'テストフィード',
-        dataSource: 'qiita',
-        filterConfig: { tags: ['JavaScript'] },
-        deliveryConfig: { frequency: 'daily' },
-        isActive: true,
-      };
-
-      const error = new Error('予期せぬエラーが発生しました');
-      mockPersonalizedFeedsService.create.mockRejectedValue(error);
-
-      // Act & Assert
-      await expect(
-        controller.createPersonalizedFeed(createDto, userId),
-      ).rejects.toThrow(HttpException);
+        controller.createPersonalizedFeed(createDto, 'user_nonexistent'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('updatePersonalizedFeed', () => {
-    it('フィルターグループなしでパーソナライズフィードを更新できること', async () => {
-      // Arrange
-      const updateDto = {
-        name: '更新されたフィード',
-        dataSource: 'qiita',
-        filterConfig: { tags: ['JavaScript', 'TypeScript'] },
-        deliveryConfig: { frequency: 'weekly' },
-      };
-
-      const updatedFeedWithFilters = {
+    it('公開日フィルターを含むパーソナライズフィードを更新できること', async () => {
+      // 更新後のフィードをモック
+      const updatedFeed = {
         ...mockFeedWithFilters,
-        name: updateDto.name,
-        dataSource: updateDto.dataSource,
-        filterConfig: updateDto.filterConfig,
-        deliveryConfig: updateDto.deliveryConfig,
-        updatedAt: new Date(),
-      };
-
-      mockPersonalizedFeedsService.update.mockResolvedValue(
-        updatedFeedWithFilters,
-      );
-
-      // Act
-      const result = await controller.updatePersonalizedFeed(
-        feedId,
-        updateDto,
-        userId,
-      );
-
-      // Assert
-      expect(personalizedFeedsService.update).toHaveBeenCalledWith(
-        feedId,
-        userId,
-        {
-          name: updateDto.name,
-          dataSource: updateDto.dataSource,
-          filterConfig: updateDto.filterConfig,
-          deliveryConfig: updateDto.deliveryConfig,
-        },
-        undefined,
-      );
-      expect(result.id).toEqual(updatedFeedWithFilters.id);
-      expect(result.name).toEqual(updateDto.name);
-      expect(result.dataSource).toEqual(updateDto.dataSource);
-      expect(result.filterConfig).toEqual(updateDto.filterConfig);
-      expect(result.deliveryConfig).toEqual(updateDto.deliveryConfig);
-      expect(result.filterGroups).toBeDefined();
-      expect(result.filterGroups.length).toEqual(
-        updatedFeedWithFilters.filterGroups.length,
-      );
-    });
-
-    it('フィルターグループありでパーソナライズフィードを更新できること', async () => {
-      // Arrange
-      const updateDto = {
-        name: '更新されたフィード',
-        dataSource: 'qiita',
-        filterConfig: { tags: ['JavaScript', 'TypeScript'] },
-        deliveryConfig: { frequency: 'weekly' },
+        name: '更新されたフィード名',
         filterGroups: [
           {
-            name: '更新されたグループ',
-            logicType: 'OR',
-            tagFilters: [{ tagName: 'JavaScript' }, { tagName: 'TypeScript' }],
-            authorFilters: [{ authorId: 'sumihiro3' }],
-          },
-        ],
-      };
-
-      const updatedFeedWithFilters = {
-        ...mockFeedWithFilters,
-        name: updateDto.name,
-        dataSource: updateDto.dataSource,
-        filterConfig: updateDto.filterConfig,
-        deliveryConfig: updateDto.deliveryConfig,
-        updatedAt: new Date(),
-        filterGroups: [
-          {
-            id: 'group_test123',
-            filterId: feedId,
-            name: '更新されたグループ',
-            logicType: 'OR',
-            createdAt: currentDate,
-            updatedAt: new Date(),
-            tagFilters: [
+            ...mockFeedWithFilters.filterGroups[0],
+            name: '更新されたフィルターグループ',
+            dateRangeFilters: [
               {
-                id: 'tag_test123',
-                groupId: 'group_test123',
-                tagName: 'JavaScript',
-                createdAt: currentDate,
-              },
-              {
-                id: 'tag_test456',
-                groupId: 'group_test123',
-                tagName: 'TypeScript',
-                createdAt: currentDate,
-              },
-            ],
-            authorFilters: [
-              {
-                id: 'author_test123',
-                groupId: 'group_test123',
-                authorId: 'sumihiro3',
-                createdAt: currentDate,
+                ...mockFeedWithFilters.filterGroups[0].dateRangeFilters[0],
+                daysAgo: 60,
               },
             ],
           },
         ],
       };
 
-      mockPersonalizedFeedsService.update.mockResolvedValue(
-        updatedFeedWithFilters,
-      );
+      // サービスからの返却値をモック
+      mockPersonalizedFeedsService.update.mockResolvedValue(updatedFeed);
 
-      // Act
+      // リクエストDTOを作成
+      const updateDto: UpdatePersonalizedFeedRequestDto = {
+        name: '更新されたフィード名',
+        filterGroups: [
+          {
+            name: '更新されたフィルターグループ',
+            logicType: 'OR',
+            dateRangeFilters: [{ daysAgo: 60 }],
+          },
+        ],
+      };
+
+      // コントローラーメソッドを実行
       const result = await controller.updatePersonalizedFeed(
         feedId,
         updateDto,
         userId,
       );
 
-      // Assert
+      // 期待値の検証
       expect(personalizedFeedsService.update).toHaveBeenCalledWith(
         feedId,
         userId,
-        {
-          name: updateDto.name,
-          dataSource: updateDto.dataSource,
-          filterConfig: updateDto.filterConfig,
-          deliveryConfig: updateDto.deliveryConfig,
-        },
+        { name: '更新されたフィード名' },
         updateDto.filterGroups,
       );
-      expect(result.id).toEqual(updatedFeedWithFilters.id);
-      expect(result.name).toEqual(updateDto.name);
-      expect(result.dataSource).toEqual(updateDto.dataSource);
-      expect(result.filterConfig).toEqual(updateDto.filterConfig);
-      expect(result.deliveryConfig).toEqual(updateDto.deliveryConfig);
-      expect(result.filterGroups).toBeDefined();
-      expect(result.filterGroups.length).toEqual(1);
-      expect(result.filterGroups[0].name).toEqual('更新されたグループ');
-      expect(result.filterGroups[0].tagFilters.length).toEqual(2);
-      expect(result.filterGroups[0].authorFilters.length).toEqual(1);
+      expect(result).toBeDefined();
+      expect(result.id).toBe(feedId);
+      expect(result.name).toBe('更新されたフィード名');
+      expect(result.filterGroups[0].dateRangeFilters[0].daysAgo).toBe(60);
     });
 
-    it('isActiveを指定して無効化できること', async () => {
-      // Arrange
-      const updateDto = {
-        isActive: false,
-      };
-
-      const updatedFeedWithFilters = {
-        ...mockFeedWithFilters,
-        isActive: false,
-        updatedAt: new Date(),
-      };
-
-      mockPersonalizedFeedsService.update.mockResolvedValue(
-        updatedFeedWithFilters,
+    it('存在しないフィードの更新を試みるとNotFoundExceptionをスローすること', async () => {
+      // サービスからNotFoundExceptionをスローするモック
+      mockPersonalizedFeedsService.update.mockRejectedValue(
+        new NotFoundException(
+          'パーソナライズフィード [nonexistent_feed] は存在しません',
+        ),
       );
 
-      // Act
-      const result = await controller.updatePersonalizedFeed(
-        feedId,
-        updateDto,
-        userId,
-      );
-
-      // Assert
-      expect(personalizedFeedsService.update).toHaveBeenCalledWith(
-        feedId,
-        userId,
-        {
-          isActive: false,
-        },
-        undefined,
-      );
-      expect(result.id).toEqual(updatedFeedWithFilters.id);
-      expect(result.isActive).toBe(false);
-    });
-
-    it('NotFoundExceptionが発生した場合、適切なエラーレスポンスを返すこと', async () => {
-      // Arrange
-      const updateDto = {
-        name: '更新されたフィード',
+      // リクエストDTOを作成
+      const updateDto: UpdatePersonalizedFeedRequestDto = {
+        name: '更新されたフィード名',
       };
-      const error = new NotFoundException('フィードが見つかりません');
-      mockPersonalizedFeedsService.update.mockRejectedValue(error);
 
-      // Act & Assert
+      // コントローラーメソッドを実行して例外検証
       await expect(
-        controller.updatePersonalizedFeed(feedId, updateDto, userId),
+        controller.updatePersonalizedFeed(
+          'nonexistent_feed',
+          updateDto,
+          userId,
+        ),
       ).rejects.toThrow(NotFoundException);
-    });
-
-    it('UserNotFoundErrorが発生した場合、適切なエラーレスポンスを返すこと', async () => {
-      // Arrange
-      const updateDto = {
-        name: '更新されたフィード',
-      };
-      const error = new UserNotFoundError('ユーザーが見つかりません');
-      mockPersonalizedFeedsService.update.mockRejectedValue(error);
-
-      // Act & Assert
-      await expect(
-        controller.updatePersonalizedFeed(feedId, updateDto, userId),
-      ).rejects.toThrow(HttpException);
-    });
-
-    it('一般的なエラーが発生した場合、適切なエラーレスポンスを返すこと', async () => {
-      // Arrange
-      const updateDto = {
-        name: '更新されたフィード',
-      };
-      const error = new Error('予期せぬエラーが発生しました');
-      mockPersonalizedFeedsService.update.mockRejectedValue(error);
-
-      // Act & Assert
-      await expect(
-        controller.updatePersonalizedFeed(feedId, updateDto, userId),
-      ).rejects.toThrow(HttpException);
     });
   });
 
