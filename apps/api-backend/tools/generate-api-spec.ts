@@ -22,23 +22,10 @@ async function bootstrap() {
     deepScanRoutes: true,
   };
 
-  // APIモジュールごとに仕様書を生成
-  const programContentApiDocument = SwaggerModule.createDocument(
-    app,
-    builder,
-    options,
-  );
-
   // api-specディレクトリがなければ作成
   if (!fs.existsSync('api-spec')) {
     fs.mkdirSync('api-spec', { recursive: true });
   }
-
-  // APIモジュールごとの仕様書を保存
-  fs.writeFileSync(
-    'api-spec/for-frontend-api.api-spec.json',
-    JSON.stringify(programContentApiDocument, undefined, 2),
-  );
 
   // すべてのAPIを含む仕様書も生成
   const fullApiDocument = SwaggerModule.createDocument(app, builder, {
