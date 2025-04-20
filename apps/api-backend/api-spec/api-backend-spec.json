@@ -636,7 +636,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CreatePersonalizedFeedResponseDto"
+                  "$ref": "#/components/schemas/CreatePersonalizedFeedWithFiltersResponseDto"
                 }
               }
             }
@@ -1494,6 +1494,19 @@
           "authorId"
         ]
       },
+      "DateRangeFilterDto": {
+        "type": "object",
+        "properties": {
+          "daysAgo": {
+            "type": "number",
+            "description": "何日以内の記事を対象とするか（10, 30, 60, 90, 180, 365など）",
+            "example": 30
+          }
+        },
+        "required": [
+          "daysAgo"
+        ]
+      },
       "FilterGroupDto": {
         "type": "object",
         "properties": {
@@ -1520,6 +1533,13 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AuthorFilterDto"
+            }
+          },
+          "dateRangeFilters": {
+            "description": "公開日フィルター一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DateRangeFilterDto"
             }
           }
         },
@@ -1580,68 +1600,6 @@
           "filterConfig",
           "deliveryConfig"
         ]
-      },
-      "CreatePersonalizedFeedResponseDto": {
-        "type": "object",
-        "properties": {
-          "feed": {
-            "description": "作成されたパーソナライズフィード",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/PersonalizedFeedDto"
-              }
-            ]
-          }
-        },
-        "required": [
-          "feed"
-        ]
-      },
-      "UpdatePersonalizedFeedRequestDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "パーソナライズフィードの名前",
-            "example": "技術トレンド最新情報"
-          },
-          "dataSource": {
-            "type": "string",
-            "description": "データソース",
-            "example": "qiita"
-          },
-          "filterConfig": {
-            "type": "object",
-            "description": "フィルター設定",
-            "example": {
-              "tags": [
-                "JavaScript",
-                "TypeScript"
-              ],
-              "minLikes": 10
-            }
-          },
-          "deliveryConfig": {
-            "type": "object",
-            "description": "配信設定",
-            "example": {
-              "frequency": "daily",
-              "time": "08:00"
-            }
-          },
-          "filterGroups": {
-            "description": "フィルターグループ一覧",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FilterGroupDto"
-            }
-          },
-          "isActive": {
-            "type": "boolean",
-            "description": "有効かどうか",
-            "example": true
-          }
-        }
       },
       "UpdatePersonalizedFeedWithFiltersResponseDto": {
         "type": "object",
@@ -1722,6 +1680,68 @@
           "updatedAt",
           "filterGroups"
         ]
+      },
+      "CreatePersonalizedFeedWithFiltersResponseDto": {
+        "type": "object",
+        "properties": {
+          "feed": {
+            "description": "作成されたパーソナライズフィード（フィルター情報含む）",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UpdatePersonalizedFeedWithFiltersResponseDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "feed"
+        ]
+      },
+      "UpdatePersonalizedFeedRequestDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "パーソナライズフィードの名前",
+            "example": "技術トレンド最新情報"
+          },
+          "dataSource": {
+            "type": "string",
+            "description": "データソース",
+            "example": "qiita"
+          },
+          "filterConfig": {
+            "type": "object",
+            "description": "フィルター設定",
+            "example": {
+              "tags": [
+                "JavaScript",
+                "TypeScript"
+              ],
+              "minLikes": 10
+            }
+          },
+          "deliveryConfig": {
+            "type": "object",
+            "description": "配信設定",
+            "example": {
+              "frequency": "daily",
+              "time": "08:00"
+            }
+          },
+          "filterGroups": {
+            "description": "フィルターグループ一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FilterGroupDto"
+            }
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "有効かどうか",
+            "example": true
+          }
+        }
       },
       "DeletePersonalizedFeedResponseDto": {
         "type": "object",
