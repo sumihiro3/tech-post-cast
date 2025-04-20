@@ -65,7 +65,7 @@
           "body": {
             "type": "string",
             "minLength": 5,
-            "maxLength": 200,
+            "maxLength": 500,
             "example": "こんにちは"
           },
           "penName": {
