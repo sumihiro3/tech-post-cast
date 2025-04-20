@@ -26,6 +26,19 @@ import { BASE_PATH, COLLECTION_FORMATS, BaseAPI, RequiredError, operationServerM
 /**
  * 
  * @export
+ * @interface AuthorFilterDto
+ */
+export interface AuthorFilterDto {
+    /**
+     * 著者ID
+     * @type {string}
+     * @memberof AuthorFilterDto
+     */
+    'authorId': string;
+}
+/**
+ * 
+ * @export
  * @interface CreatePersonalizedFeedRequestDto
  */
 export interface CreatePersonalizedFeedRequestDto {
@@ -54,6 +67,12 @@ export interface CreatePersonalizedFeedRequestDto {
      */
     'deliveryConfig': object;
     /**
+     * フィルターグループ一覧
+     * @type {Array<FilterGroupDto>}
+     * @memberof CreatePersonalizedFeedRequestDto
+     */
+    'filterGroups'?: Array<FilterGroupDto>;
+    /**
      * 有効かどうか
      * @type {boolean}
      * @memberof CreatePersonalizedFeedRequestDto
@@ -63,28 +82,115 @@ export interface CreatePersonalizedFeedRequestDto {
 /**
  * 
  * @export
- * @interface CreatePersonalizedFeedResponseDto
+ * @interface CreatePersonalizedFeedWithFiltersResponseDto
  */
-export interface CreatePersonalizedFeedResponseDto {
+export interface CreatePersonalizedFeedWithFiltersResponseDto {
     /**
-     * 作成されたパーソナライズフィード
-     * @type {PersonalizedFeedDto}
-     * @memberof CreatePersonalizedFeedResponseDto
+     * 作成されたパーソナライズフィード（フィルター情報含む）
+     * @type {UpdatePersonalizedFeedWithFiltersResponseDto}
+     * @memberof CreatePersonalizedFeedWithFiltersResponseDto
      */
-    'feed': PersonalizedFeedDto;
+    'feed': UpdatePersonalizedFeedWithFiltersResponseDto;
 }
 /**
  * 
  * @export
- * @interface GetPersonalizedFeedResponseDto
+ * @interface DateRangeFilterDto
  */
-export interface GetPersonalizedFeedResponseDto {
+export interface DateRangeFilterDto {
     /**
-     * パーソナライズフィード情報
-     * @type {PersonalizedFeedDto}
-     * @memberof GetPersonalizedFeedResponseDto
+     * 何日以内の記事を対象とするか（10, 30, 60, 90, 180, 365など）
+     * @type {number}
+     * @memberof DateRangeFilterDto
      */
-    'feed': PersonalizedFeedDto;
+    'daysAgo': number;
+}
+/**
+ * 
+ * @export
+ * @interface DeletePersonalizedFeedResponseDto
+ */
+export interface DeletePersonalizedFeedResponseDto {
+    /**
+     * パーソナライズフィードID
+     * @type {string}
+     * @memberof DeletePersonalizedFeedResponseDto
+     */
+    'id': string;
+    /**
+     * ユーザーID
+     * @type {string}
+     * @memberof DeletePersonalizedFeedResponseDto
+     */
+    'userId': string;
+    /**
+     * パーソナライズフィード名
+     * @type {string}
+     * @memberof DeletePersonalizedFeedResponseDto
+     */
+    'name': string;
+    /**
+     * 有効かどうか（削除後はfalse）
+     * @type {boolean}
+     * @memberof DeletePersonalizedFeedResponseDto
+     */
+    'isActive': boolean;
+    /**
+     * 削除日時
+     * @type {string}
+     * @memberof DeletePersonalizedFeedResponseDto
+     */
+    'updatedAt': string;
+}
+/**
+ * 
+ * @export
+ * @interface FilterGroupDto
+ */
+export interface FilterGroupDto {
+    /**
+     * フィルターグループの名前
+     * @type {string}
+     * @memberof FilterGroupDto
+     */
+    'name': string;
+    /**
+     * ロジック種別 (AND/OR)
+     * @type {string}
+     * @memberof FilterGroupDto
+     */
+    'logicType': string;
+    /**
+     * タグフィルター一覧
+     * @type {Array<TagFilterDto>}
+     * @memberof FilterGroupDto
+     */
+    'tagFilters'?: Array<TagFilterDto>;
+    /**
+     * 著者フィルター一覧
+     * @type {Array<AuthorFilterDto>}
+     * @memberof FilterGroupDto
+     */
+    'authorFilters'?: Array<AuthorFilterDto>;
+    /**
+     * 公開日フィルター一覧
+     * @type {Array<DateRangeFilterDto>}
+     * @memberof FilterGroupDto
+     */
+    'dateRangeFilters'?: Array<DateRangeFilterDto>;
+}
+/**
+ * 
+ * @export
+ * @interface GetPersonalizedFeedWithFiltersResponseDto
+ */
+export interface GetPersonalizedFeedWithFiltersResponseDto {
+    /**
+     * フィルター情報を含むパーソナライズフィード情報
+     * @type {PersonalizedFeedWithFiltersDto}
+     * @memberof GetPersonalizedFeedWithFiltersResponseDto
+     */
+    'feed': PersonalizedFeedWithFiltersDto;
 }
 /**
  * 
@@ -332,6 +438,67 @@ export interface PersonalizedFeedDto {
      * @memberof PersonalizedFeedDto
      */
     'updatedAt': string;
+}
+/**
+ * 
+ * @export
+ * @interface PersonalizedFeedWithFiltersDto
+ */
+export interface PersonalizedFeedWithFiltersDto {
+    /**
+     * パーソナライズフィードのID
+     * @type {string}
+     * @memberof PersonalizedFeedWithFiltersDto
+     */
+    'id': string;
+    /**
+     * パーソナライズフィードの名前
+     * @type {string}
+     * @memberof PersonalizedFeedWithFiltersDto
+     */
+    'name': string;
+    /**
+     * データソース
+     * @type {string}
+     * @memberof PersonalizedFeedWithFiltersDto
+     */
+    'dataSource': string;
+    /**
+     * フィルター設定
+     * @type {object}
+     * @memberof PersonalizedFeedWithFiltersDto
+     */
+    'filterConfig': object;
+    /**
+     * 配信設定
+     * @type {object}
+     * @memberof PersonalizedFeedWithFiltersDto
+     */
+    'deliveryConfig': object;
+    /**
+     * 有効かどうか
+     * @type {boolean}
+     * @memberof PersonalizedFeedWithFiltersDto
+     */
+    'isActive': boolean;
+    /**
+     * 作成日時
+     * @type {string}
+     * @memberof PersonalizedFeedWithFiltersDto
+     */
+    'createdAt': string;
+    /**
+     * 更新日時
+     * @type {string}
+     * @memberof PersonalizedFeedWithFiltersDto
+     */
+    'updatedAt': string;
+    /**
+     * フィルターグループ一覧
+     * @type {Array<ResponseFilterGroupDto>}
+     * @memberof PersonalizedFeedWithFiltersDto
+     */
+    'filterGroups'?: Array<ResponseFilterGroupDto>;
 }
 /**
  * 
@@ -598,6 +765,160 @@ export interface QiitaUserDto {
 /**
  * 
  * @export
+ * @interface ResponseAuthorFilterDto
+ */
+export interface ResponseAuthorFilterDto {
+    /**
+     * 著者フィルターID
+     * @type {string}
+     * @memberof ResponseAuthorFilterDto
+     */
+    'id': string;
+    /**
+     * フィルターグループID
+     * @type {string}
+     * @memberof ResponseAuthorFilterDto
+     */
+    'groupId': string;
+    /**
+     * 著者ID
+     * @type {string}
+     * @memberof ResponseAuthorFilterDto
+     */
+    'authorId': string;
+    /**
+     * 作成日時
+     * @type {string}
+     * @memberof ResponseAuthorFilterDto
+     */
+    'createdAt': string;
+}
+/**
+ * 
+ * @export
+ * @interface ResponseDateRangeFilterDto
+ */
+export interface ResponseDateRangeFilterDto {
+    /**
+     * 日付範囲フィルターID
+     * @type {string}
+     * @memberof ResponseDateRangeFilterDto
+     */
+    'id': string;
+    /**
+     * フィルターグループID
+     * @type {string}
+     * @memberof ResponseDateRangeFilterDto
+     */
+    'groupId': string;
+    /**
+     * 何日以内の記事を対象とするか（10, 30, 60, 90, 180, 365など）
+     * @type {number}
+     * @memberof ResponseDateRangeFilterDto
+     */
+    'daysAgo': number;
+    /**
+     * 作成日時
+     * @type {string}
+     * @memberof ResponseDateRangeFilterDto
+     */
+    'createdAt': string;
+}
+/**
+ * 
+ * @export
+ * @interface ResponseFilterGroupDto
+ */
+export interface ResponseFilterGroupDto {
+    /**
+     * フィルターグループID
+     * @type {string}
+     * @memberof ResponseFilterGroupDto
+     */
+    'id': string;
+    /**
+     * パーソナライズフィードID
+     * @type {string}
+     * @memberof ResponseFilterGroupDto
+     */
+    'filterId': string;
+    /**
+     * フィルターグループ名
+     * @type {string}
+     * @memberof ResponseFilterGroupDto
+     */
+    'name': string;
+    /**
+     * 論理演算子タイプ (AND/OR)
+     * @type {string}
+     * @memberof ResponseFilterGroupDto
+     */
+    'logicType': string;
+    /**
+     * タグフィルター一覧
+     * @type {Array<ResponseTagFilterDto>}
+     * @memberof ResponseFilterGroupDto
+     */
+    'tagFilters'?: Array<ResponseTagFilterDto>;
+    /**
+     * 著者フィルター一覧
+     * @type {Array<ResponseAuthorFilterDto>}
+     * @memberof ResponseFilterGroupDto
+     */
+    'authorFilters'?: Array<ResponseAuthorFilterDto>;
+    /**
+     * 日付範囲フィルター一覧
+     * @type {Array<ResponseDateRangeFilterDto>}
+     * @memberof ResponseFilterGroupDto
+     */
+    'dateRangeFilters'?: Array<ResponseDateRangeFilterDto>;
+    /**
+     * 作成日時
+     * @type {string}
+     * @memberof ResponseFilterGroupDto
+     */
+    'createdAt': string;
+    /**
+     * 更新日時
+     * @type {string}
+     * @memberof ResponseFilterGroupDto
+     */
+    'updatedAt': string;
+}
+/**
+ * 
+ * @export
+ * @interface ResponseTagFilterDto
+ */
+export interface ResponseTagFilterDto {
+    /**
+     * タグフィルターID
+     * @type {string}
+     * @memberof ResponseTagFilterDto
+     */
+    'id': string;
+    /**
+     * フィルターグループID
+     * @type {string}
+     * @memberof ResponseTagFilterDto
+     */
+    'groupId': string;
+    /**
+     * タグ名
+     * @type {string}
+     * @memberof ResponseTagFilterDto
+     */
+    'tagName': string;
+    /**
+     * 作成日時
+     * @type {string}
+     * @memberof ResponseTagFilterDto
+     */
+    'createdAt': string;
+}
+/**
+ * 
+ * @export
  * @interface SearchQiitaPostsResponseDto
  */
 export interface SearchQiitaPostsResponseDto {
@@ -625,6 +946,129 @@ export interface SearchQiitaPostsResponseDto {
      * @memberof SearchQiitaPostsResponseDto
      */
     'perPage': number;
+}
+/**
+ * 
+ * @export
+ * @interface TagFilterDto
+ */
+export interface TagFilterDto {
+    /**
+     * タグ名
+     * @type {string}
+     * @memberof TagFilterDto
+     */
+    'tagName': string;
+}
+/**
+ * 
+ * @export
+ * @interface UpdatePersonalizedFeedRequestDto
+ */
+export interface UpdatePersonalizedFeedRequestDto {
+    /**
+     * パーソナライズフィードの名前
+     * @type {string}
+     * @memberof UpdatePersonalizedFeedRequestDto
+     */
+    'name'?: string;
+    /**
+     * データソース
+     * @type {string}
+     * @memberof UpdatePersonalizedFeedRequestDto
+     */
+    'dataSource'?: string;
+    /**
+     * フィルター設定
+     * @type {object}
+     * @memberof UpdatePersonalizedFeedRequestDto
+     */
+    'filterConfig'?: object;
+    /**
+     * 配信設定
+     * @type {object}
+     * @memberof UpdatePersonalizedFeedRequestDto
+     */
+    'deliveryConfig'?: object;
+    /**
+     * フィルターグループ一覧
+     * @type {Array<FilterGroupDto>}
+     * @memberof UpdatePersonalizedFeedRequestDto
+     */
+    'filterGroups'?: Array<FilterGroupDto>;
+    /**
+     * 有効かどうか
+     * @type {boolean}
+     * @memberof UpdatePersonalizedFeedRequestDto
+     */
+    'isActive'?: boolean;
+}
+/**
+ * 
+ * @export
+ * @interface UpdatePersonalizedFeedWithFiltersResponseDto
+ */
+export interface UpdatePersonalizedFeedWithFiltersResponseDto {
+    /**
+     * パーソナライズフィードID
+     * @type {string}
+     * @memberof UpdatePersonalizedFeedWithFiltersResponseDto
+     */
+    'id': string;
+    /**
+     * ユーザーID
+     * @type {string}
+     * @memberof UpdatePersonalizedFeedWithFiltersResponseDto
+     */
+    'userId': string;
+    /**
+     * パーソナライズフィード名
+     * @type {string}
+     * @memberof UpdatePersonalizedFeedWithFiltersResponseDto
+     */
+    'name': string;
+    /**
+     * データソース
+     * @type {string}
+     * @memberof UpdatePersonalizedFeedWithFiltersResponseDto
+     */
+    'dataSource': string;
+    /**
+     * フィルター設定
+     * @type {object}
+     * @memberof UpdatePersonalizedFeedWithFiltersResponseDto
+     */
+    'filterConfig': object;
+    /**
+     * 配信設定
+     * @type {object}
+     * @memberof UpdatePersonalizedFeedWithFiltersResponseDto
+     */
+    'deliveryConfig': object;
+    /**
+     * 有効かどうか
+     * @type {boolean}
+     * @memberof UpdatePersonalizedFeedWithFiltersResponseDto
+     */
+    'isActive': boolean;
+    /**
+     * 作成日時
+     * @type {string}
+     * @memberof UpdatePersonalizedFeedWithFiltersResponseDto
+     */
+    'createdAt': string;
+    /**
+     * 更新日時
+     * @type {string}
+     * @memberof UpdatePersonalizedFeedWithFiltersResponseDto
+     */
+    'updatedAt': string;
+    /**
+     * フィルターグループ一覧
+     * @type {Array<FilterGroupDto>}
+     * @memberof UpdatePersonalizedFeedWithFiltersResponseDto
+     */
+    'filterGroups': Array<FilterGroupDto>;
 }
 
 /**
@@ -1315,7 +1759,41 @@ export const PersonalizedFeedsApiAxiosParamCreator = function (configuration?: C
             };
         },
         /**
-         * 指定されたIDのパーソナライズフィードを取得します
+         * 指定されたIDのパーソナライズフィードを論理削除します
+         * @summary パーソナライズフィード削除
+         * @param {string} id パーソナライズフィードID
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        deletePersonalizedFeed: async (id: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('deletePersonalizedFeed', 'id', id)
+            const localVarPath = `/personalized-feeds/{id}`
+                .replace(`{${"id"}}`, encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'DELETE', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 指定されたIDのパーソナライズフィードを取得します。クエリパラメータincludeFilters=trueを指定するとフィルターグループ情報も一緒に取得できます。
          * @summary 個別パーソナライズフィード取得
          * @param {string} id パーソナライズフィードID
          * @param {*} [options] Override http request option.
@@ -1349,14 +1827,15 @@ export const PersonalizedFeedsApiAxiosParamCreator = function (configuration?: C
             };
         },
         /**
-         * ユーザーが登録したパーソナライズフィードの一覧を取得します
+         * ユーザーが登録したパーソナライズフィードの一覧を取得します。クエリパラメータincludeFilters=trueを指定するとフィルターグループ情報も一緒に取得できます。
          * @summary パーソナライズフィード一覧取得
          * @param {number} [page] ページ番号（1から始まる）
          * @param {number} [perPage] 1ページあたりの件数
+         * @param {boolean} [includeFilters] フィルター情報を含めるかどうか
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getPersonalizedFeeds: async (page?: number, perPage?: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        getPersonalizedFeeds: async (page?: number, perPage?: number, includeFilters?: boolean, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             const localVarPath = `/personalized-feeds`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -1377,11 +1856,55 @@ export const PersonalizedFeedsApiAxiosParamCreator = function (configuration?: C
                 localVarQueryParameter['perPage'] = perPage;
             }
 
+            if (includeFilters !== undefined) {
+                localVarQueryParameter['includeFilters'] = includeFilters;
+            }
+
 
     
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 指定されたIDのパーソナライズフィードを更新します
+         * @summary パーソナライズフィード更新
+         * @param {string} id パーソナライズフィードID
+         * @param {UpdatePersonalizedFeedRequestDto} updatePersonalizedFeedRequestDto 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        updatePersonalizedFeed: async (id: string, updatePersonalizedFeedRequestDto: UpdatePersonalizedFeedRequestDto, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('updatePersonalizedFeed', 'id', id)
+            // verify required parameter 'updatePersonalizedFeedRequestDto' is not null or undefined
+            assertParamExists('updatePersonalizedFeed', 'updatePersonalizedFeedRequestDto', updatePersonalizedFeedRequestDto)
+            const localVarPath = `/personalized-feeds/{id}`
+                .replace(`{${"id"}}`, encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'PATCH', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(updatePersonalizedFeedRequestDto, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -1405,37 +1928,65 @@ export const PersonalizedFeedsApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async createPersonalizedFeed(createPersonalizedFeedRequestDto: CreatePersonalizedFeedRequestDto, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CreatePersonalizedFeedResponseDto>> {
+        async createPersonalizedFeed(createPersonalizedFeedRequestDto: CreatePersonalizedFeedRequestDto, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CreatePersonalizedFeedWithFiltersResponseDto>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.createPersonalizedFeed(createPersonalizedFeedRequestDto, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['PersonalizedFeedsApi.createPersonalizedFeed']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * 指定されたIDのパーソナライズフィードを取得します
+         * 指定されたIDのパーソナライズフィードを論理削除します
+         * @summary パーソナライズフィード削除
+         * @param {string} id パーソナライズフィードID
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async deletePersonalizedFeed(id: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<DeletePersonalizedFeedResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.deletePersonalizedFeed(id, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['PersonalizedFeedsApi.deletePersonalizedFeed']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * 指定されたIDのパーソナライズフィードを取得します。クエリパラメータincludeFilters=trueを指定するとフィルターグループ情報も一緒に取得できます。
          * @summary 個別パーソナライズフィード取得
          * @param {string} id パーソナライズフィードID
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getPersonalizedFeed(id: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetPersonalizedFeedResponseDto>> {
+        async getPersonalizedFeed(id: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetPersonalizedFeedWithFiltersResponseDto>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getPersonalizedFeed(id, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['PersonalizedFeedsApi.getPersonalizedFeed']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * ユーザーが登録したパーソナライズフィードの一覧を取得します
+         * ユーザーが登録したパーソナライズフィードの一覧を取得します。クエリパラメータincludeFilters=trueを指定するとフィルターグループ情報も一緒に取得できます。
          * @summary パーソナライズフィード一覧取得
          * @param {number} [page] ページ番号（1から始まる）
          * @param {number} [perPage] 1ページあたりの件数
+         * @param {boolean} [includeFilters] フィルター情報を含めるかどうか
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getPersonalizedFeeds(page?: number, perPage?: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetPersonalizedFeedsResponseDto>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getPersonalizedFeeds(page, perPage, options);
+        async getPersonalizedFeeds(page?: number, perPage?: number, includeFilters?: boolean, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetPersonalizedFeedsResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getPersonalizedFeeds(page, perPage, includeFilters, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['PersonalizedFeedsApi.getPersonalizedFeeds']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * 指定されたIDのパーソナライズフィードを更新します
+         * @summary パーソナライズフィード更新
+         * @param {string} id パーソナライズフィードID
+         * @param {UpdatePersonalizedFeedRequestDto} updatePersonalizedFeedRequestDto 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async updatePersonalizedFeed(id: string, updatePersonalizedFeedRequestDto: UpdatePersonalizedFeedRequestDto, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UpdatePersonalizedFeedWithFiltersResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.updatePersonalizedFeed(id, updatePersonalizedFeedRequestDto, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['PersonalizedFeedsApi.updatePersonalizedFeed']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
     }
@@ -1455,29 +2006,51 @@ export const PersonalizedFeedsApiFactory = function (configuration?: Configurati
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        createPersonalizedFeed(createPersonalizedFeedRequestDto: CreatePersonalizedFeedRequestDto, options?: RawAxiosRequestConfig): AxiosPromise<CreatePersonalizedFeedResponseDto> {
+        createPersonalizedFeed(createPersonalizedFeedRequestDto: CreatePersonalizedFeedRequestDto, options?: RawAxiosRequestConfig): AxiosPromise<CreatePersonalizedFeedWithFiltersResponseDto> {
             return localVarFp.createPersonalizedFeed(createPersonalizedFeedRequestDto, options).then((request) => request(axios, basePath));
         },
         /**
-         * 指定されたIDのパーソナライズフィードを取得します
+         * 指定されたIDのパーソナライズフィードを論理削除します
+         * @summary パーソナライズフィード削除
+         * @param {string} id パーソナライズフィードID
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        deletePersonalizedFeed(id: string, options?: RawAxiosRequestConfig): AxiosPromise<DeletePersonalizedFeedResponseDto> {
+            return localVarFp.deletePersonalizedFeed(id, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 指定されたIDのパーソナライズフィードを取得します。クエリパラメータincludeFilters=trueを指定するとフィルターグループ情報も一緒に取得できます。
          * @summary 個別パーソナライズフィード取得
          * @param {string} id パーソナライズフィードID
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getPersonalizedFeed(id: string, options?: RawAxiosRequestConfig): AxiosPromise<GetPersonalizedFeedResponseDto> {
+        getPersonalizedFeed(id: string, options?: RawAxiosRequestConfig): AxiosPromise<GetPersonalizedFeedWithFiltersResponseDto> {
             return localVarFp.getPersonalizedFeed(id, options).then((request) => request(axios, basePath));
         },
         /**
-         * ユーザーが登録したパーソナライズフィードの一覧を取得します
+         * ユーザーが登録したパーソナライズフィードの一覧を取得します。クエリパラメータincludeFilters=trueを指定するとフィルターグループ情報も一緒に取得できます。
          * @summary パーソナライズフィード一覧取得
          * @param {number} [page] ページ番号（1から始まる）
          * @param {number} [perPage] 1ページあたりの件数
+         * @param {boolean} [includeFilters] フィルター情報を含めるかどうか
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getPersonalizedFeeds(page?: number, perPage?: number, options?: RawAxiosRequestConfig): AxiosPromise<GetPersonalizedFeedsResponseDto> {
-            return localVarFp.getPersonalizedFeeds(page, perPage, options).then((request) => request(axios, basePath));
+        getPersonalizedFeeds(page?: number, perPage?: number, includeFilters?: boolean, options?: RawAxiosRequestConfig): AxiosPromise<GetPersonalizedFeedsResponseDto> {
+            return localVarFp.getPersonalizedFeeds(page, perPage, includeFilters, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 指定されたIDのパーソナライズフィードを更新します
+         * @summary パーソナライズフィード更新
+         * @param {string} id パーソナライズフィードID
+         * @param {UpdatePersonalizedFeedRequestDto} updatePersonalizedFeedRequestDto 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        updatePersonalizedFeed(id: string, updatePersonalizedFeedRequestDto: UpdatePersonalizedFeedRequestDto, options?: RawAxiosRequestConfig): AxiosPromise<UpdatePersonalizedFeedWithFiltersResponseDto> {
+            return localVarFp.updatePersonalizedFeed(id, updatePersonalizedFeedRequestDto, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -1502,7 +2075,19 @@ export class PersonalizedFeedsApi extends BaseAPI {
     }
 
     /**
-     * 指定されたIDのパーソナライズフィードを取得します
+     * 指定されたIDのパーソナライズフィードを論理削除します
+     * @summary パーソナライズフィード削除
+     * @param {string} id パーソナライズフィードID
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof PersonalizedFeedsApi
+     */
+    public deletePersonalizedFeed(id: string, options?: RawAxiosRequestConfig) {
+        return PersonalizedFeedsApiFp(this.configuration).deletePersonalizedFeed(id, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 指定されたIDのパーソナライズフィードを取得します。クエリパラメータincludeFilters=trueを指定するとフィルターグループ情報も一緒に取得できます。
      * @summary 個別パーソナライズフィード取得
      * @param {string} id パーソナライズフィードID
      * @param {*} [options] Override http request option.
@@ -1514,16 +2099,30 @@ export class PersonalizedFeedsApi extends BaseAPI {
     }
 
     /**
-     * ユーザーが登録したパーソナライズフィードの一覧を取得します
+     * ユーザーが登録したパーソナライズフィードの一覧を取得します。クエリパラメータincludeFilters=trueを指定するとフィルターグループ情報も一緒に取得できます。
      * @summary パーソナライズフィード一覧取得
      * @param {number} [page] ページ番号（1から始まる）
      * @param {number} [perPage] 1ページあたりの件数
+     * @param {boolean} [includeFilters] フィルター情報を含めるかどうか
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof PersonalizedFeedsApi
      */
-    public getPersonalizedFeeds(page?: number, perPage?: number, options?: RawAxiosRequestConfig) {
-        return PersonalizedFeedsApiFp(this.configuration).getPersonalizedFeeds(page, perPage, options).then((request) => request(this.axios, this.basePath));
+    public getPersonalizedFeeds(page?: number, perPage?: number, includeFilters?: boolean, options?: RawAxiosRequestConfig) {
+        return PersonalizedFeedsApiFp(this.configuration).getPersonalizedFeeds(page, perPage, includeFilters, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 指定されたIDのパーソナライズフィードを更新します
+     * @summary パーソナライズフィード更新
+     * @param {string} id パーソナライズフィードID
+     * @param {UpdatePersonalizedFeedRequestDto} updatePersonalizedFeedRequestDto 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof PersonalizedFeedsApi
+     */
+    public updatePersonalizedFeed(id: string, updatePersonalizedFeedRequestDto: UpdatePersonalizedFeedRequestDto, options?: RawAxiosRequestConfig) {
+        return PersonalizedFeedsApiFp(this.configuration).updatePersonalizedFeed(id, updatePersonalizedFeedRequestDto, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
