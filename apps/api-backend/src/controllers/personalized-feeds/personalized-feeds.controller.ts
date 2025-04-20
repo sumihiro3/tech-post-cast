@@ -20,7 +20,7 @@ import {
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   CreatePersonalizedFeedRequestDto,
-  CreatePersonalizedFeedResponseDto,
+  CreatePersonalizedFeedWithFiltersResponseDto,
   DeletePersonalizedFeedResponseDto,
   GetPersonalizedFeedWithFiltersResponseDto,
   GetPersonalizedFeedsRequestDto,
@@ -195,7 +195,7 @@ export class PersonalizedFeedsController {
   @ApiResponse({
     status: 201,
     description: '作成成功',
-    type: CreatePersonalizedFeedResponseDto,
+    type: CreatePersonalizedFeedWithFiltersResponseDto,
   })
   @ApiResponse({
     status: 404,
@@ -208,7 +208,7 @@ export class PersonalizedFeedsController {
   async createPersonalizedFeed(
     @Body() dto: CreatePersonalizedFeedRequestDto,
     @CurrentUserId() userId: string, // JWTトークンからユーザーIDを取得
-  ): Promise<CreatePersonalizedFeedResponseDto> {
+  ): Promise<CreatePersonalizedFeedWithFiltersResponseDto> {
     this.logger.verbose(`PersonalizedFeedsController.createPersonalizedFeed`, {
       userId,
       name: dto.name,
@@ -220,6 +220,10 @@ export class PersonalizedFeedsController {
       filterGroupsCount: dto.filterGroups?.length || 0,
       tagFiltersCount: dto.filterGroups?.[0]?.tagFilters?.length || 0,
       authorFiltersCount: dto.filterGroups?.[0]?.authorFilters?.length || 0,
+      dateRangeFiltersCount:
+        dto.filterGroups?.[0]?.dateRangeFilters?.length || 0,
+      dateRangeFilter:
+        dto.filterGroups?.[0]?.dateRangeFilters?.[0]?.daysAgo || null,
     });
 
     try {
@@ -234,8 +238,8 @@ export class PersonalizedFeedsController {
         dto.filterGroups,
       );
 
-      // DTOに変換して返却
-      return CreatePersonalizedFeedResponseDto.fromEntity(feed);
+      // フィルター情報を含むDTOに変換して返却
+      return CreatePersonalizedFeedWithFiltersResponseDto.fromEntity(feed);
     } catch (error) {
       // UserNotFoundErrorをNotFoundExceptionに変換
       if (error instanceof UserNotFoundError) {
@@ -297,6 +301,12 @@ export class PersonalizedFeedsController {
         dataSource: dto.dataSource,
         hasFilterGroups: dto.filterGroups && dto.filterGroups.length > 0,
         filterGroupsCount: dto.filterGroups?.length || 0,
+        tagFiltersCount: dto.filterGroups?.[0]?.tagFilters?.length || 0,
+        authorFiltersCount: dto.filterGroups?.[0]?.authorFilters?.length || 0,
+        dateRangeFiltersCount:
+          dto.filterGroups?.[0]?.dateRangeFilters?.length || 0,
+        dateRangeFilter:
+          dto.filterGroups?.[0]?.dateRangeFilters?.[0]?.daysAgo || null,
       },
     });
 

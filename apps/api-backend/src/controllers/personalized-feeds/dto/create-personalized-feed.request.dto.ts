@@ -7,8 +7,32 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  Validate,
   ValidateNested,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
 } from 'class-validator';
+
+/**
+ * 公開日フィルターが1つだけであることを検証するカスタムバリデーター
+ */
+@ValidatorConstraint({ name: 'singleDateRangeFilter', async: false })
+export class SingleDateRangeFilterConstraint
+  implements ValidatorConstraintInterface
+{
+  validate(dateRangeFilters: DateRangeFilterDto[] | undefined) {
+    // 定義されていない場合はOK
+    if (!dateRangeFilters) return true;
+    // 空配列の場合もOK
+    if (dateRangeFilters.length === 0) return true;
+    // 1つだけの場合はOK
+    return dateRangeFilters.length === 1;
+  }
+
+  defaultMessage() {
+    return '公開日フィルターは1つだけ設定できます';
+  }
+}
 
 /**
  * タグフィルターのDTO
@@ -38,6 +62,21 @@ export class AuthorFilterDto {
   @IsString({ message: '著者IDは文字列である必要があります' })
   @IsNotEmpty({ message: '著者IDは必須です' })
   authorId: string;
+}
+
+/**
+ * 公開日フィルターのDTO
+ */
+export class DateRangeFilterDto {
+  @ApiProperty({
+    description: '何日以内の記事を対象とするか（10, 30, 60, 90, 180, 365など）',
+    required: true,
+    example: 30,
+    type: Number,
+  })
+  @IsNotEmpty({ message: '日数は必須です' })
+  @Type(() => Number)
+  daysAgo: number;
 }
 
 /**
@@ -86,6 +125,20 @@ export class FilterGroupDto {
   @Type(() => AuthorFilterDto)
   @IsOptional()
   authorFilters?: AuthorFilterDto[] = [];
+
+  @ApiProperty({
+    description: '公開日フィルター一覧',
+    required: false,
+    type: [DateRangeFilterDto],
+  })
+  @IsArray({ message: '公開日フィルターは配列である必要があります' })
+  @ValidateNested({ each: true })
+  @Type(() => DateRangeFilterDto)
+  @IsOptional()
+  @Validate(SingleDateRangeFilterConstraint, {
+    message: '公開日フィルターは1つだけ設定できます',
+  })
+  dateRangeFilters?: DateRangeFilterDto[] = [];
 }
 
 /**

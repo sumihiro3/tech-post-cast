@@ -177,7 +177,7 @@ export class PersonalizedFeedsService {
    * @param deliveryConfig 配信設定
    * @param filterGroups フィルターグループ一覧（1つのみ有効）
    * @param isActive 有効状態
-   * @returns 作成されたパーソナライズフィード
+   * @returns フィルター情報を含む作成されたパーソナライズフィード
    * @throws UserNotFoundError ユーザーが存在しない場合
    */
   async create(
@@ -188,7 +188,7 @@ export class PersonalizedFeedsService {
     deliveryConfig: Record<string, any>,
     isActive: boolean = true,
     filterGroups: FilterGroupDto[] = [],
-  ): Promise<PersonalizedFeed> {
+  ): Promise<PersonalizedFeedWithFilters> {
     // UIでは1つのフィルターグループのみをサポート
     const filterGroup =
       filterGroups && filterGroups.length > 0 ? filterGroups[0] : undefined;
@@ -224,6 +224,7 @@ export class PersonalizedFeedsService {
                 logicType: filterGroup.logicType || 'OR',
                 tagFilters: filterGroup.tagFilters,
                 authorFilters: filterGroup.authorFilters,
+                dateRangeFilters: filterGroup.dateRangeFilters,
               }
             : undefined,
         });
@@ -238,10 +239,39 @@ export class PersonalizedFeedsService {
           filterGroupId: result.filterGroup?.id,
           tagFiltersCount: result.tagFilters?.length || 0,
           authorFiltersCount: result.authorFilters?.length || 0,
+          dateRangeFiltersCount: result.dateRangeFilters?.length || 0,
         },
       );
 
-      return result.feed;
+      // 作成したフィードにフィルター情報を含めて返す
+      const feedWithFilters: PersonalizedFeedWithFilters = {
+        ...result.feed,
+        filterGroups: result.filterGroup
+          ? [
+              {
+                ...result.filterGroup,
+                tagFilters: (result.tagFilters || []).map((tagFilter) => ({
+                  ...tagFilter,
+                  createdAt: tagFilter.createdAt || new Date(),
+                })),
+                authorFilters: (result.authorFilters || []).map(
+                  (authorFilter) => ({
+                    ...authorFilter,
+                    createdAt: new Date(),
+                  }),
+                ),
+                dateRangeFilters: (result.dateRangeFilters || []).map(
+                  (dateRangeFilter) => ({
+                    ...dateRangeFilter,
+                    createdAt: dateRangeFilter.createdAt || new Date(),
+                  }),
+                ),
+              },
+            ]
+          : [],
+      };
+
+      return feedWithFilters;
     } catch (error) {
       this.logger.error(`パーソナライズフィードの作成に失敗しました`, {
         error,
@@ -305,6 +335,7 @@ export class PersonalizedFeedsService {
                 logicType: filterGroup.logicType || 'OR',
                 tagFilters: filterGroup.tagFilters,
                 authorFilters: filterGroup.authorFilters,
+                dateRangeFilters: filterGroup.dateRangeFilters,
               }
             : undefined,
         });
@@ -318,6 +349,7 @@ export class PersonalizedFeedsService {
           filterGroupId: result.filterGroup?.id,
           tagFiltersCount: result.tagFilters?.length || 0,
           authorFiltersCount: result.authorFilters?.length || 0,
+          dateRangeFiltersCount: result.dateRangeFilters?.length || 0,
         },
       );
 
@@ -338,6 +370,12 @@ export class PersonalizedFeedsService {
                     (authorFilter) => ({
                       ...authorFilter,
                       createdAt: new Date(),
+                    }),
+                  ),
+                  dateRangeFilters: (result.dateRangeFilters || []).map(
+                    (dateRangeFilter) => ({
+                      ...dateRangeFilter,
+                      createdAt: dateRangeFilter.createdAt || new Date(),
                     }),
                   ),
                 },
@@ -442,6 +480,16 @@ export class PersonalizedFeedsService {
         }
       }
 
+      // 公開日フィルターを作成
+      if (group.dateRangeFilters && group.dateRangeFilters.length > 0) {
+        for (const dateRangeFilter of group.dateRangeFilters) {
+          await this.personalizedFeedsRepository.createDateRangeFilter({
+            groupId: createdGroup.id,
+            daysAgo: dateRangeFilter.daysAgo,
+          });
+        }
+      }
+
       this.logger.debug(
         `フィルターグループ [${createdGroup.id}] を作成しました`,
         {
@@ -450,6 +498,7 @@ export class PersonalizedFeedsService {
           name: group.name,
           tagFiltersCount: group.tagFilters?.length || 0,
           authorFiltersCount: group.authorFilters?.length || 0,
+          dateRangeFiltersCount: group.dateRangeFilters?.length || 0,
         },
       );
     } catch (error) {

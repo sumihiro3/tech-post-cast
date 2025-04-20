@@ -37,6 +37,23 @@ class AuthorFilterDto {
 }
 
 /**
+ * 公開日フィルターDTO
+ */
+class DateRangeFilterDto {
+  @ApiProperty({
+    description: '公開日フィルターID',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: '何日以内の記事を対象とするか',
+    example: 30,
+  })
+  daysAgo: number;
+}
+
+/**
  * フィルターグループDTO
  */
 class FilterGroupDto {
@@ -69,6 +86,12 @@ class FilterGroupDto {
     type: [AuthorFilterDto],
   })
   authorFilters: AuthorFilterDto[];
+
+  @ApiProperty({
+    description: '公開日フィルター一覧',
+    type: [DateRangeFilterDto],
+  })
+  dateRangeFilters: DateRangeFilterDto[];
 }
 
 /**
@@ -162,16 +185,24 @@ export class UpdatePersonalizedFeedWithFiltersResponseDto {
       groupDto.logicType = group.logicType;
 
       // タグフィルター情報を設定
-      groupDto.tagFilters = group.tagFilters.map((tag) => ({
+      groupDto.tagFilters = (group.tagFilters || []).map((tag) => ({
         id: tag.id,
         tagName: tag.tagName,
       }));
 
       // 著者フィルター情報を設定
-      groupDto.authorFilters = group.authorFilters.map((author) => ({
+      groupDto.authorFilters = (group.authorFilters || []).map((author) => ({
         id: author.id,
         authorId: author.authorId,
       }));
+
+      // 公開日フィルター情報を設定
+      groupDto.dateRangeFilters = (group.dateRangeFilters || []).map(
+        (dateRange) => ({
+          id: dateRange.id,
+          daysAgo: dateRange.daysAgo,
+        }),
+      );
 
       return groupDto;
     });

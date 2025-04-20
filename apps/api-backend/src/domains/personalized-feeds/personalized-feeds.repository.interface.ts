@@ -53,6 +53,19 @@ export interface AuthorFilter {
   authorId: string;
 }
 
+// 公開日フィルターに関する型定義
+export interface CreateDateRangeFilterParams {
+  groupId: string;
+  daysAgo: number;
+}
+
+export interface DateRangeFilter {
+  id: string;
+  groupId: string;
+  daysAgo: number;
+  createdAt: Date;
+}
+
 // フィードとフィルターグループの作成に関する型定義
 export interface CreateFeedWithFilterGroupParams {
   feed: Omit<PersonalizedFeed, 'id' | 'createdAt' | 'updatedAt'>;
@@ -61,6 +74,7 @@ export interface CreateFeedWithFilterGroupParams {
     logicType: string;
     tagFilters?: Array<{ tagName: string }>;
     authorFilters?: Array<{ authorId: string }>;
+    dateRangeFilters?: Array<{ daysAgo: number }>;
   };
 }
 
@@ -79,6 +93,7 @@ export interface UpdateFeedWithFilterGroupParams {
     logicType: string;
     tagFilters?: Array<{ tagName: string }>;
     authorFilters?: Array<{ authorId: string }>;
+    dateRangeFilters?: Array<{ daysAgo: number }>;
   };
 }
 
@@ -87,6 +102,7 @@ export interface FeedWithFilterGroupResult {
   filterGroup?: FilterGroup;
   tagFilters?: TagFilter[];
   authorFilters?: AuthorFilter[];
+  dateRangeFilters?: DateRangeFilter[];
 }
 
 /**
@@ -164,6 +180,15 @@ export interface IPersonalizedFeedsRepository {
   createAuthorFilter(params: CreateAuthorFilterParams): Promise<AuthorFilter>;
 
   /**
+   * 公開日フィルターを新規作成する
+   * @param params 公開日フィルター作成パラメータ
+   * @returns 作成された公開日フィルター
+   */
+  createDateRangeFilter(
+    params: CreateDateRangeFilterParams,
+  ): Promise<DateRangeFilter>;
+
+  /**
    * パーソナライズフィードとフィルターグループを同一トランザクションで作成する
    * @param params フィードとフィルターグループの作成パラメータ
    * @returns 作成されたフィードとフィルターグループ
@@ -206,6 +231,13 @@ export interface IPersonalizedFeedsRepository {
    * @returns 削除された著者フィルターの数
    */
   deleteAuthorFiltersByGroupId(groupId: string): Promise<number>;
+
+  /**
+   * 特定のフィルターグループに紐づく公開日フィルターをすべて削除する
+   * @param groupId フィルターグループID
+   * @returns 削除された公開日フィルターの数
+   */
+  deleteDateRangeFiltersByGroupId(groupId: string): Promise<number>;
 
   /**
    * パーソナライズフィードとフィルターグループを同一トランザクションで更新する

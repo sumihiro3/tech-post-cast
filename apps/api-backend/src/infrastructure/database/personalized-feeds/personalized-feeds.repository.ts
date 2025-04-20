@@ -7,9 +7,11 @@ import {
 import {
   AuthorFilter,
   CreateAuthorFilterParams,
+  CreateDateRangeFilterParams,
   CreateFeedWithFilterGroupParams,
   CreateFilterGroupParams,
   CreateTagFilterParams,
+  DateRangeFilter,
   FeedWithFilterGroupResult,
   FilterGroup,
   IPersonalizedFeedsRepository,
@@ -144,6 +146,7 @@ export class PersonalizedFeedsRepository
             include: {
               tagFilters: true,
               authorFilters: true,
+              dateRangeFilters: true,
             },
           },
         },
@@ -236,6 +239,7 @@ export class PersonalizedFeedsRepository
             include: {
               tagFilters: true,
               authorFilters: true,
+              dateRangeFilters: true,
             },
           },
         },
@@ -462,6 +466,101 @@ export class PersonalizedFeedsRepository
   }
 
   /**
+   * 公開日フィルターを新規作成する
+   * @param params 公開日フィルター作成パラメータ
+   * @returns 作成された公開日フィルター
+   */
+  async createDateRangeFilter(
+    params: CreateDateRangeFilterParams,
+  ): Promise<DateRangeFilter> {
+    this.logger.debug(
+      'PersonalizedFeedsRepository.createDateRangeFilter called',
+      {
+        params,
+      },
+    );
+
+    try {
+      const client = this.prisma.getClient();
+
+      // 現在時刻を設定
+      const now = new Date();
+
+      // 公開日フィルターを作成
+      const createdDateRangeFilter = await client.dateRangeFilter.create({
+        data: {
+          groupId: params.groupId,
+          daysAgo: params.daysAgo,
+          createdAt: now,
+        },
+      });
+
+      this.logger.debug(
+        `公開日フィルター [${createdDateRangeFilter.id}] を作成しました`,
+        {
+          id: createdDateRangeFilter.id,
+          groupId: createdDateRangeFilter.groupId,
+          daysAgo: createdDateRangeFilter.daysAgo,
+        },
+      );
+
+      return {
+        id: createdDateRangeFilter.id,
+        groupId: createdDateRangeFilter.groupId,
+        daysAgo: createdDateRangeFilter.daysAgo,
+        createdAt: createdDateRangeFilter.createdAt,
+      };
+    } catch (error) {
+      const errorMessage = `公開日フィルターの作成に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        params,
+      });
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * 特定のフィルターグループに紐づく公開日フィルターをすべて削除する
+   * @param groupId フィルターグループID
+   * @returns 削除された公開日フィルターの数
+   */
+  async deleteDateRangeFiltersByGroupId(groupId: string): Promise<number> {
+    this.logger.debug(
+      'PersonalizedFeedsRepository.deleteDateRangeFiltersByGroupId called',
+      {
+        groupId,
+      },
+    );
+
+    try {
+      const client = this.prisma.getClient();
+
+      // 特定グループの公開日フィルターをすべて削除
+      const result = await client.dateRangeFilter.deleteMany({
+        where: { groupId },
+      });
+
+      this.logger.debug(
+        `フィルターグループ [${groupId}] の公開日フィルターを ${result.count} 件削除しました`,
+        {
+          groupId,
+          count: result.count,
+        },
+      );
+
+      return result.count;
+    } catch (error) {
+      const errorMessage = `公開日フィルターの削除に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        groupId,
+      });
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
    * パーソナライズフィードとフィルターグループを同一トランザクションで作成する
    * @param params フィードとフィルターグループの作成パラメータ
    * @returns 作成されたフィードとフィルターグループ
@@ -496,6 +595,7 @@ export class PersonalizedFeedsRepository
         let createdGroup = null;
         const tagFilters = [];
         const authorFilters = [];
+        const dateRangeFilters = [];
 
         if (params.filterGroup) {
           // フィルターグループを作成
@@ -551,6 +651,29 @@ export class PersonalizedFeedsRepository
               });
             }
           }
+
+          // 公開日フィルターを作成
+          if (
+            params.filterGroup.dateRangeFilters &&
+            params.filterGroup.dateRangeFilters.length > 0
+          ) {
+            for (const dateRangeFilter of params.filterGroup.dateRangeFilters) {
+              const createdDateRangeFilter =
+                await client.dateRangeFilter.create({
+                  data: {
+                    groupId: createdGroup.id,
+                    daysAgo: dateRangeFilter.daysAgo,
+                    createdAt: now,
+                  },
+                });
+              dateRangeFilters.push({
+                id: createdDateRangeFilter.id,
+                groupId: createdDateRangeFilter.groupId,
+                daysAgo: createdDateRangeFilter.daysAgo,
+                createdAt: createdDateRangeFilter.createdAt,
+              });
+            }
+          }
         }
 
         const result = {
@@ -567,6 +690,8 @@ export class PersonalizedFeedsRepository
             : undefined,
           tagFilters: tagFilters.length > 0 ? tagFilters : undefined,
           authorFilters: authorFilters.length > 0 ? authorFilters : undefined,
+          dateRangeFilters:
+            dateRangeFilters.length > 0 ? dateRangeFilters : undefined,
         };
 
         this.logger.debug(
@@ -577,6 +702,7 @@ export class PersonalizedFeedsRepository
             filterGroupId: result.filterGroup?.id,
             tagFiltersCount: result.tagFilters?.length || 0,
             authorFiltersCount: result.authorFilters?.length || 0,
+            dateRangeFiltersCount: result.dateRangeFilters?.length || 0,
           },
         );
 
@@ -838,6 +964,7 @@ export class PersonalizedFeedsRepository
         let updatedGroup = null;
         const tagFilters = [];
         const authorFilters = [];
+        const dateRangeFilters = [];
 
         if (params.filterGroup) {
           // 既存のフィルターグループを取得
@@ -849,9 +976,10 @@ export class PersonalizedFeedsRepository
           if (existingGroups.length > 0) {
             const groupId = existingGroups[0].id; // 最初のグループを使用
 
-            // 既存のタグフィルターと著者フィルターを削除
+            // 既存のタグフィルター、著者フィルター、公開日フィルターを削除
             await this.deleteTagFiltersByGroupId(groupId);
             await this.deleteAuthorFiltersByGroupId(groupId);
+            await this.deleteDateRangeFiltersByGroupId(groupId);
 
             // フィルターグループを更新
             updatedGroup = await client.feedFilterGroup.update({
@@ -917,6 +1045,29 @@ export class PersonalizedFeedsRepository
               });
             }
           }
+
+          // 新しい公開日フィルターを作成
+          if (
+            params.filterGroup.dateRangeFilters &&
+            params.filterGroup.dateRangeFilters.length > 0
+          ) {
+            for (const dateRangeFilter of params.filterGroup.dateRangeFilters) {
+              const createdDateRangeFilter =
+                await client.dateRangeFilter.create({
+                  data: {
+                    groupId: updatedGroup.id,
+                    daysAgo: dateRangeFilter.daysAgo,
+                    createdAt: now,
+                  },
+                });
+              dateRangeFilters.push({
+                id: createdDateRangeFilter.id,
+                groupId: createdDateRangeFilter.groupId,
+                daysAgo: createdDateRangeFilter.daysAgo,
+                createdAt: createdDateRangeFilter.createdAt,
+              });
+            }
+          }
         }
 
         const result = {
@@ -933,6 +1084,8 @@ export class PersonalizedFeedsRepository
             : undefined,
           tagFilters: tagFilters.length > 0 ? tagFilters : undefined,
           authorFilters: authorFilters.length > 0 ? authorFilters : undefined,
+          dateRangeFilters:
+            dateRangeFilters.length > 0 ? dateRangeFilters : undefined,
         };
 
         this.logger.debug(
@@ -943,6 +1096,7 @@ export class PersonalizedFeedsRepository
             filterGroupId: result.filterGroup?.id,
             tagFiltersCount: result.tagFilters?.length || 0,
             authorFiltersCount: result.authorFilters?.length || 0,
+            dateRangeFiltersCount: result.dateRangeFilters?.length || 0,
             updatedFields: Object.keys(updateData).filter(
               (k) => k !== 'updatedAt',
             ),

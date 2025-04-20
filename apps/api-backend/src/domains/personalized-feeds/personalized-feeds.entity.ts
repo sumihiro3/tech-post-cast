@@ -40,6 +40,7 @@ export class FilterGroup {
   readonly updatedAt: Date;
   readonly tagFilters?: TagFilter[];
   readonly authorFilters?: AuthorFilter[];
+  readonly dateRangeFilters?: DateRangeFilter[];
 
   constructor(data: any) {
     this.id = data.id;
@@ -51,6 +52,9 @@ export class FilterGroup {
     this.tagFilters = data.tagFilters?.map((tag: any) => new TagFilter(tag));
     this.authorFilters = data.authorFilters?.map(
       (author: any) => new AuthorFilter(author),
+    );
+    this.dateRangeFilters = data.dateRangeFilters?.map(
+      (dateRange: any) => new DateRangeFilter(dateRange),
     );
   }
 }
@@ -85,6 +89,23 @@ export class AuthorFilter {
     this.id = data.id;
     this.groupId = data.groupId;
     this.authorId = data.authorId;
+    this.createdAt = data.createdAt;
+  }
+}
+
+/**
+ * 公開日フィルターエンティティ
+ */
+export class DateRangeFilter {
+  readonly id: string;
+  readonly groupId: string;
+  readonly daysAgo: number;
+  readonly createdAt: Date;
+
+  constructor(data: any) {
+    this.id = data.id;
+    this.groupId = data.groupId;
+    this.daysAgo = data.daysAgo;
     this.createdAt = data.createdAt;
   }
 }
