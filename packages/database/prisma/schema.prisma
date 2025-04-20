@@ -290,9 +290,10 @@ model FeedFilterGroup {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  personalizedFeed PersonalizedFeed @relation(fields: [filterId], references: [id])
+  personalizedFeed PersonalizedFeed  @relation(fields: [filterId], references: [id])
   tagFilters       TagFilter[]
   authorFilters    AuthorFilter[]
+  dateRangeFilters DateRangeFilter[]
 
   @@map("feed_filter_groups")
 }
@@ -319,6 +320,19 @@ model AuthorFilter {
   feedFilterGroup FeedFilterGroup @relation(fields: [groupId], references: [id])
 
   @@map("author_filters")
+}
+
+// 記事公開日フィルター
+model DateRangeFilter {
+  id        String   @id @default(cuid()) @db.VarChar(50)
+  groupId   String   @map("group_id") @db.VarChar(50)
+  // 何日以内の記事を対象とするか（10, 30, 60, 90, 180, 365 など）
+  daysAgo   Int      @map("days_ago")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  feedFilterGroup FeedFilterGroup @relation(fields: [groupId], references: [id])
+
+  @@map("date_range_filters")
 }
 
 // パーソナライズフィードを元に生成された番組
