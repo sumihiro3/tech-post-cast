@@ -17,7 +17,7 @@ GET {{apiBaseUrl}}/personalized-feeds?includeFilters=true&page=1&perPage=5
 Content-Type: application/json
 
 ### 個別パーソナライズフィード取得（フィルター情報なし）
-@feedId = feed_cm9f3zefc0000if3jhvmb30c3
+@feedId = feed_cm9p1jte00002f63jesdh9utz
 GET {{apiBaseUrl}}/personalized-feeds/{{feedId}}
 Content-Type: application/json
 
@@ -102,6 +102,89 @@ Content-Type: application/json
   "isActive": true
 }
 
+### パーソナライズフィード作成（公開日フィルターあり）
+POST {{apiBaseUrl}}/personalized-feeds
+Content-Type: application/json
+
+{
+  "name": "最近の人気記事",
+  "dataSource": "qiita",
+  "filterConfig": {
+    "minLikes": 20
+  },
+  "deliveryConfig": {
+    "frequency": "daily",
+    "time": "08:00"
+  },
+  "filterGroups": [
+    {
+      "name": "最近のトレンド記事",
+      "logicType": "AND",
+      "tagFilters": [
+        { "tagName": "JavaScript" },
+        { "tagName": "TypeScript" }
+      ],
+      "dateRangeFilters": [
+        { "daysAgo": 30 }
+      ]
+    }
+  ],
+  "isActive": true
+}
+
+### パーソナライズフィード作成（公開日フィルターのみ）
+POST {{apiBaseUrl}}/personalized-feeds
+Content-Type: application/json
+
+{
+  "name": "直近のトレンド記事",
+  "dataSource": "qiita",
+  "filterConfig": {},
+  "deliveryConfig": {
+    "frequency": "daily",
+    "time": "08:00"
+  },
+  "filterGroups": [
+    {
+      "name": "10日以内の記事",
+      "logicType": "OR",
+      "dateRangeFilters": [
+        { "daysAgo": 10 }
+      ]
+    }
+  ],
+  "isActive": true
+}
+
+### パーソナライズフィード作成
+POST {{apiBaseUrl}}/personalized-feeds
+Content-Type: application/json
+
+{
+  "name": "期間別技術トレンド",
+  "dataSource": "qiita",
+  "filterConfig": {},
+  "deliveryConfig": {
+    "frequency": "weekly",
+    "time": "10:00",
+    "weekday": "monday"
+  },
+  "filterGroups": [
+    {
+      "name": "期間別技術トレンドのフィルター",
+      "logicType": "OR",
+      "tagFilters": [
+        { "tagName": "AI" },
+        { "tagName": "機械学習" }
+      ],
+      "dateRangeFilters": [
+        { "daysAgo": 30 }
+      ]
+    }
+  ],
+  "isActive": true
+}
+
 ### パーソナライズフィード更新
 PATCH {{apiBaseUrl}}/personalized-feeds/{{feedId}}
 Content-Type: application/json
@@ -138,6 +221,27 @@ Content-Type: application/json
       "authorFilters": [
         { "authorId": "sumihiro3" },
         { "authorId": "takurinton" }
+      ]
+    }
+  ]
+}
+
+### パーソナライズフィード更新（公開日フィルターあり）
+PATCH {{apiBaseUrl}}/personalized-feeds/{{feedId}}
+Content-Type: application/json
+
+{
+  "name": "更新された最近の技術記事",
+  "filterGroups": [
+    {
+      "name": "最近の技術記事（90日以内）",
+      "logicType": "AND",
+      "tagFilters": [
+        { "tagName": "React" },
+        { "tagName": "Next.js" }
+      ],
+      "dateRangeFilters": [
+        { "daysAgo": 90 }
       ]
     }
   ]
