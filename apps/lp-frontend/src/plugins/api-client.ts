@@ -1,7 +1,6 @@
-import { Configuration, ProgramContentApiApi, QiitaPostsApi } from '@/api';
+import { Configuration, PersonalizedFeedsApi, ProgramContentApiApi, QiitaPostsApi } from '@/api';
 
-// eslint-disable-next-line @stylistic/arrow-parens
-export default defineNuxtPlugin(nuxt => {
+export default defineNuxtPlugin((nuxt) => {
   const options = new Configuration({
     basePath: nuxt.$config.public.apiUrl,
   });
@@ -10,6 +9,7 @@ export default defineNuxtPlugin(nuxt => {
     provide: {
       programContentApi: new ProgramContentApiApi(options),
       qiitaPostApi: new QiitaPostsApi(options),
+      personalizedFeedApi: new PersonalizedFeedsApi(options),
     },
   };
 });

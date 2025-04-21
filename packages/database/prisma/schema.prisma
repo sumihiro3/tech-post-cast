@@ -105,7 +105,7 @@ model QiitaPost {
 
   // 記事が紹介されているパーソナライズされた番組
   // 複数の記事が、別のパーソナライズされた番組に紐づいている
-  personalizedPrograms PersonalizedProgram[]
+  personalizedPrograms PersonalizedFeedProgram[]
 
   // 記事に紐づいているタグ
   tags QiitaPostTag[]
@@ -116,10 +116,12 @@ model QiitaPost {
 
 // Qiita記事のタグ
 model QiitaPostTag {
-  id        String   @id @default(cuid()) @db.VarChar(50)
-  postId    String   @map("post_id") @db.VarChar(50)
-  name      String   @db.VarChar(100)
-  createdAt DateTime @default(now()) @map("created_at")
+  id         String   @id @default(cuid()) @db.VarChar(100)
+  name       String   @db.VarChar(100)
+  itemsCount Int      @default(0) @map("items_count")
+  iconUrl    String?  @map("icon_url") @db.VarChar(255)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   // 一つのタグには複数の記事が紐づいている
   posts QiitaPost[]
@@ -142,7 +144,7 @@ model LineUser {
   // LINE ユーザーの言語
   language    String?  @db.VarChar(10)
   // LINE ユーザーの作成日時
-  createdAt   DateTime @map("created_at")
+  createdAt   DateTime @default(now()) @map("created_at")
   // LINE ユーザーの最終更新日時
   updatedAt   DateTime @map("updated_at")
 
@@ -182,9 +184,9 @@ model ListenerLetter {
   // お便りを紹介したヘッドライントピック番組のID
   programId String?  @map("program_id") @db.VarChar(100)
   // お便りの作成日時
-  createdAt DateTime @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
   // お便りの最終更新日時
-  updatedAt DateTime @map("updated_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // お便りを紹介したヘッドライントピック番組
   program HeadlineTopicProgram? @relation(fields: [programId], references: [id])
@@ -208,14 +210,14 @@ model AppUser {
   // ユーザーが有効かどうかを表すフラグ
   isActive     Boolean   @default(true) @map("is_active")
   // ユーザーの作成日時
-  createdAt    DateTime  @map("created_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
   // ユーザーの最終更新日時
-  updatedAt    DateTime  @map("updated_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
   // 最後にサインインした日時
   lastSignInAt DateTime? @map("last_sign_in_at")
 
-  personalizedProgramFilters PersonalizedProgramFilter[]
-  personalizedPrograms       PersonalizedProgram[]
+  personalizedProgramFilters PersonalizedFeed[]
+  personalizedPrograms       PersonalizedFeedProgram[]
   subscriptions              Subscription[]
 
   // テーブル名
@@ -254,25 +256,32 @@ model Subscription {
   @@map("subscriptions")
 }
 
-// 各ユーザーのパーソナライズされた番組のフィルター設定
-model PersonalizedProgramFilter {
+// 各ユーザーのパーソナライズフィード設定
+// このフィード設定を元に、
+// ユーザーの好みに合わせた番組を生成する
+model PersonalizedFeed {
   id             String   @id @default(cuid()) @db.VarChar(50)
   userId         String   @map("user_id") @db.VarChar(50)
   name           String   @db.VarChar(100)
+  dataSource     String   @map("data_source") @db.VarChar(50) // 番組の情報源（Qiita、note など）
   filterConfig   Json     @map("filter_config")
   deliveryConfig Json     @map("delivery_config")
   isActive       Boolean  @default(true) @map("is_active")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  user         AppUser       @relation(fields: [userId], references: [id])
-  filterGroups FilterGroup[]
+  user         AppUser                   @relation(fields: [userId], references: [id])
+  // フィルター設定
+  // フィルターグループは、AND/OR の論理演算子で組み合わせることができる
+  filterGroups FeedFilterGroup[]
+  // フィード設定を元に生成された番組
+  programs     PersonalizedFeedProgram[]
 
-  @@map("user_feed_filters")
+  @@map("personalized_feeds")
 }
 
-// フィルターグループ
-model FilterGroup {
+// パーソナライズフィードを構成するフィルターグループ
+model FeedFilterGroup {
   id        String   @id @default(cuid()) @db.VarChar(50)
   // パーソナライズされた番組のフィルター設定のID
   filterId  String   @map("filter_id") @db.VarChar(50)
@@ -281,11 +290,12 @@ model FilterGroup {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  personalizedProgramFilter PersonalizedProgramFilter @relation(fields: [filterId], references: [id])
-  tagFilters                TagFilter[]
-  authorFilters             AuthorFilter[]
+  personalizedFeed PersonalizedFeed  @relation(fields: [filterId], references: [id])
+  tagFilters       TagFilter[]
+  authorFilters    AuthorFilter[]
+  dateRangeFilters DateRangeFilter[]
 
-  @@map("filter_groups")
+  @@map("feed_filter_groups")
 }
 
 // タグフィルター
@@ -295,7 +305,7 @@ model TagFilter {
   tagName   String   @map("tag_name") @db.VarChar(100)
   createdAt DateTime @default(now()) @map("created_at")
 
-  filterGroup FilterGroup @relation(fields: [groupId], references: [id])
+  feedFilterGroup FeedFilterGroup @relation(fields: [groupId], references: [id])
 
   @@map("tag_filters")
 }
@@ -307,16 +317,29 @@ model AuthorFilter {
   authorId  String   @map("author_id") @db.VarChar(50)
   createdAt DateTime @default(now()) @map("created_at")
 
-  filterGroup FilterGroup @relation(fields: [groupId], references: [id])
+  feedFilterGroup FeedFilterGroup @relation(fields: [groupId], references: [id])
 
   @@map("author_filters")
 }
 
-// パーソナライズされた番組
-model PersonalizedProgram {
+// 記事公開日フィルター
+model DateRangeFilter {
+  id        String   @id @default(cuid()) @db.VarChar(50)
+  groupId   String   @map("group_id") @db.VarChar(50)
+  // 何日以内の記事を対象とするか（10, 30, 60, 90, 180, 365 など）
+  daysAgo   Int      @map("days_ago")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  feedFilterGroup FeedFilterGroup @relation(fields: [groupId], references: [id])
+
+  @@map("date_range_filters")
+}
+
+// パーソナライズフィードを元に生成された番組
+model PersonalizedFeedProgram {
   id            String   @id @default(cuid()) @db.VarChar(100)
   userId        String   @map("user_id") @db.VarChar(50)
-  filterId      String?  @map("filter_id") @db.VarChar(50)
+  feedId        String   @map("feed_id") @db.VarChar(50)
   title         String   @db.VarChar(255)
   // 台本
   script        Json     @db.Json
@@ -331,8 +354,11 @@ model PersonalizedProgram {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  user  AppUser     @relation(fields: [userId], references: [id])
+  user  AppUser          @relation(fields: [userId], references: [id])
+  // フィード設定
+  feed  PersonalizedFeed @relation(fields: [feedId], references: [id])
+  // 番組で紹介している投稿の一覧
   posts QiitaPost[]
 
-  @@map("personalized_programs")
+  @@map("personalized_feed_programs")
 }

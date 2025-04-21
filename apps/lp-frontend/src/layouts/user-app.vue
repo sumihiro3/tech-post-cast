@@ -1,27 +1,26 @@
 <template lang="pug">
-v-app
-  v-main
-    v-container.ma-0.pa-0(fluid)
-      Header
-      v-navigation-drawer(
+  v-app
+    Header(:show-drawer-toggle="true" @toggle-drawer="toggleDrawer")
+    v-navigation-drawer(
       v-model="drawer"
-      app
-      permanent
       color="white"
-      dark
-      )
-        v-list(nav dense)
-          v-list-item(
-            v-for="(item, i) in menuItems"
-            :key="i"
-            :to="item.to"
-            :prepend-icon="item.icon"
-            :title="item.title"
-            color="primary"
-          )
-      v-container(fluid)
+      :width="240"
+      :mini-variant="!drawer"
+      mini-variant-width="56"
+    )
+      v-list(nav dense)
+        v-list-item(
+          v-for="(item, i) in menuItems"
+          :key="i"
+          :to="item.to"
+          :prepend-icon="item.icon"
+          :title="item.title"
+          color="primary"
+        )
+    v-main
+      v-container(fluid :class="{'pl-0 pr-0': $vuetify.display.mdAndUp && drawer}")
         slot.ma-0.pa-0
-      Footer
+    Footer
 </template>
 
 <script setup lang="ts">
@@ -44,10 +43,14 @@ const drawer = ref(true);
 const menuItems = [
   { title: 'ダッシュボード', icon: 'mdi-view-dashboard', to: '/app/dashboard' },
   // { title: 'パーソナライズ番組の配信一覧', icon: 'mdi-television-play', to: '/app/broadcasts' },
-  { title: 'パーソナライズ番組設定', icon: 'mdi-cog', to: '/app/program-filter' },
+  { title: 'パーソナライズ番組設定', icon: 'mdi-cog', to: '/app/feeds' },
   // { title: 'サブスクリプション一覧', icon: 'mdi-credit-card-outline', to: '/app/subscriptions' },
   // { title: 'ユーザー情報', icon: 'mdi-account', to: '/app/profile' },
 ];
+
+const toggleDrawer = (): void => {
+  drawer.value = !drawer.value;
+};
 </script>
 
 <style lang="css">

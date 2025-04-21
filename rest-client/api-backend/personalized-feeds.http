@@ -1,0 +1,260 @@
+@apiBaseUrl = http://localhost:3001
+
+### パーソナライズフィード一覧取得（フィルター情報なし）
+GET {{apiBaseUrl}}/personalized-feeds
+Content-Type: application/json
+
+### パーソナライズフィード一覧取得（フィルター情報あり）
+GET {{apiBaseUrl}}/personalized-feeds?includeFilters=true
+Content-Type: application/json
+
+### パーソナライズフィード一覧取得（ページネーション）
+GET {{apiBaseUrl}}/personalized-feeds?page=1&perPage=10
+Content-Type: application/json
+
+### パーソナライズフィード一覧取得（フィルター情報あり＋ページネーション）
+GET {{apiBaseUrl}}/personalized-feeds?includeFilters=true&page=1&perPage=5
+Content-Type: application/json
+
+### 個別パーソナライズフィード取得（フィルター情報なし）
+@feedId = feed_cm9p1jte00002f63jesdh9utz
+GET {{apiBaseUrl}}/personalized-feeds/{{feedId}}
+Content-Type: application/json
+
+### 個別パーソナライズフィード取得（フィルター情報あり）
+GET {{apiBaseUrl}}/personalized-feeds/{{feedId}}?includeFilters=true
+Content-Type: application/json
+
+### パーソナライズフィード作成（シンプル）
+POST {{apiBaseUrl}}/personalized-feeds
+Content-Type: application/json
+
+{
+  "name": "技術トレンド最新情報",
+  "dataSource": "qiita",
+  "filterConfig": {
+    "tags": ["JavaScript", "TypeScript"],
+    "minLikes": 10
+  },
+  "deliveryConfig": {
+    "frequency": "daily",
+    "time": "08:00"
+  },
+  "isActive": true
+}
+
+### パーソナライズフィード作成（フィルターグループあり）
+POST {{apiBaseUrl}}/personalized-feeds
+Content-Type: application/json
+
+{
+  "name": "フロントエンド技術トレンド",
+  "dataSource": "qiita",
+  "filterConfig": {
+    "minLikes": 5
+  },
+  "deliveryConfig": {
+    "frequency": "weekly",
+    "time": "10:00",
+    "weekday": "monday"
+  },
+  "filterGroups": [
+    {
+      "name": "フロントエンド技術",
+      "logicType": "OR",
+      "tagFilters": [
+        { "tagName": "JavaScript" },
+        { "tagName": "TypeScript" },
+        { "tagName": "React" },
+        { "tagName": "Vue.js" }
+      ],
+      "authorFilters": [
+        { "authorId": "sumihiro3" }
+      ]
+    }
+  ],
+  "isActive": true
+}
+
+### パーソナライズフィード作成（著者フィルターのみ）
+POST {{apiBaseUrl}}/personalized-feeds
+Content-Type: application/json
+
+{
+  "name": "お気に入り著者の投稿",
+  "dataSource": "qiita",
+  "filterConfig": {},
+  "deliveryConfig": {
+    "frequency": "daily",
+    "time": "18:00"
+  },
+  "filterGroups": [
+    {
+      "name": "好きな著者",
+      "logicType": "OR",
+      "authorFilters": [
+        { "authorId": "sumihiro3" },
+        { "authorId": "takurinton" },
+        { "authorId": "uhyo" }
+      ]
+    }
+  ],
+  "isActive": true
+}
+
+### パーソナライズフィード作成（公開日フィルターあり）
+POST {{apiBaseUrl}}/personalized-feeds
+Content-Type: application/json
+
+{
+  "name": "最近の人気記事",
+  "dataSource": "qiita",
+  "filterConfig": {
+    "minLikes": 20
+  },
+  "deliveryConfig": {
+    "frequency": "daily",
+    "time": "08:00"
+  },
+  "filterGroups": [
+    {
+      "name": "最近のトレンド記事",
+      "logicType": "AND",
+      "tagFilters": [
+        { "tagName": "JavaScript" },
+        { "tagName": "TypeScript" }
+      ],
+      "dateRangeFilters": [
+        { "daysAgo": 30 }
+      ]
+    }
+  ],
+  "isActive": true
+}
+
+### パーソナライズフィード作成（公開日フィルターのみ）
+POST {{apiBaseUrl}}/personalized-feeds
+Content-Type: application/json
+
+{
+  "name": "直近のトレンド記事",
+  "dataSource": "qiita",
+  "filterConfig": {},
+  "deliveryConfig": {
+    "frequency": "daily",
+    "time": "08:00"
+  },
+  "filterGroups": [
+    {
+      "name": "10日以内の記事",
+      "logicType": "OR",
+      "dateRangeFilters": [
+        { "daysAgo": 10 }
+      ]
+    }
+  ],
+  "isActive": true
+}
+
+### パーソナライズフィード作成
+POST {{apiBaseUrl}}/personalized-feeds
+Content-Type: application/json
+
+{
+  "name": "期間別技術トレンド",
+  "dataSource": "qiita",
+  "filterConfig": {},
+  "deliveryConfig": {
+    "frequency": "weekly",
+    "time": "10:00",
+    "weekday": "monday"
+  },
+  "filterGroups": [
+    {
+      "name": "期間別技術トレンドのフィルター",
+      "logicType": "OR",
+      "tagFilters": [
+        { "tagName": "AI" },
+        { "tagName": "機械学習" }
+      ],
+      "dateRangeFilters": [
+        { "daysAgo": 30 }
+      ]
+    }
+  ],
+  "isActive": true
+}
+
+### パーソナライズフィード更新
+PATCH {{apiBaseUrl}}/personalized-feeds/{{feedId}}
+Content-Type: application/json
+
+{
+  "name": "更新された技術トレンド情報",
+  "filterConfig": {
+    "tags": ["JavaScript", "TypeScript", "Node.js"],
+    "minLikes": 15
+  },
+  "deliveryConfig": {
+    "frequency": "weekly",
+    "time": "09:00",
+    "weekday": "monday"
+  }
+}
+
+### パーソナライズフィード更新（フィルターグループあり）
+PATCH {{apiBaseUrl}}/personalized-feeds/{{feedId}}
+Content-Type: application/json
+
+{
+  "name": "更新されたフロントエンド技術情報1",
+  "filterGroups": [
+    {
+      "name": "モダンフロントエンド",
+      "logicType": "OR",
+      "tagFilters": [
+        { "tagName": "React" },
+        { "tagName": "Vue.js" },
+        { "tagName": "Svelte" },
+        { "tagName": "Next.js" }
+      ],
+      "authorFilters": [
+        { "authorId": "sumihiro3" },
+        { "authorId": "takurinton" }
+      ]
+    }
+  ]
+}
+
+### パーソナライズフィード更新（公開日フィルターあり）
+PATCH {{apiBaseUrl}}/personalized-feeds/{{feedId}}
+Content-Type: application/json
+
+{
+  "name": "更新された最近の技術記事",
+  "filterGroups": [
+    {
+      "name": "最近の技術記事（90日以内）",
+      "logicType": "AND",
+      "tagFilters": [
+        { "tagName": "React" },
+        { "tagName": "Next.js" }
+      ],
+      "dateRangeFilters": [
+        { "daysAgo": 90 }
+      ]
+    }
+  ]
+}
+
+### パーソナライズフィード無効化（論理削除と同等）
+PATCH {{apiBaseUrl}}/personalized-feeds/{{feedId}}
+Content-Type: application/json
+
+{
+  "isActive": false
+}
+
+### パーソナライズフィード論理削除
+DELETE {{apiBaseUrl}}/personalized-feeds/{{feedId}}
+Content-Type: application/json

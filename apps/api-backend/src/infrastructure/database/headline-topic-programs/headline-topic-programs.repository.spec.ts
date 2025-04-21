@@ -67,6 +67,22 @@ describe('HeadlineTopicProgramsRepository', () => {
         include: {
           posts: {
             orderBy: { likesCount: 'desc' },
+            select: {
+              id: true,
+              title: true,
+              url: true,
+              authorId: true,
+              authorName: true,
+              likesCount: true,
+              stocksCount: true,
+              tags: true,
+              createdAt: true,
+              updatedAt: true,
+              refreshedAt: true,
+              private: true,
+              summary: true,
+              headlineTopicProgramId: true,
+            },
           },
         },
       });
@@ -116,6 +132,22 @@ describe('HeadlineTopicProgramsRepository', () => {
         include: {
           posts: {
             orderBy: { likesCount: 'desc' },
+            select: {
+              id: true,
+              title: true,
+              url: true,
+              authorId: true,
+              authorName: true,
+              likesCount: true,
+              stocksCount: true,
+              tags: true,
+              createdAt: true,
+              updatedAt: true,
+              refreshedAt: true,
+              private: true,
+              summary: true,
+              headlineTopicProgramId: true,
+            },
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -150,6 +182,22 @@ describe('HeadlineTopicProgramsRepository', () => {
         include: {
           posts: {
             orderBy: { likesCount: 'desc' },
+            select: {
+              id: true,
+              title: true,
+              url: true,
+              authorId: true,
+              authorName: true,
+              likesCount: true,
+              stocksCount: true,
+              tags: true,
+              createdAt: true,
+              updatedAt: true,
+              refreshedAt: true,
+              private: true,
+              summary: true,
+              headlineTopicProgramId: true,
+            },
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -230,6 +278,22 @@ describe('HeadlineTopicProgramsRepository', () => {
         include: {
           posts: {
             orderBy: { likesCount: 'desc' },
+            select: {
+              id: true,
+              title: true,
+              url: true,
+              authorId: true,
+              authorName: true,
+              likesCount: true,
+              stocksCount: true,
+              tags: true,
+              createdAt: true,
+              updatedAt: true,
+              refreshedAt: true,
+              private: true,
+              summary: true,
+              headlineTopicProgramId: true,
+            },
           },
         },
       });
@@ -279,6 +343,22 @@ describe('HeadlineTopicProgramsRepository', () => {
         include: {
           posts: {
             orderBy: { likesCount: 'desc' },
+            select: {
+              id: true,
+              title: true,
+              url: true,
+              authorId: true,
+              authorName: true,
+              likesCount: true,
+              stocksCount: true,
+              tags: true,
+              createdAt: true,
+              updatedAt: true,
+              refreshedAt: true,
+              private: true,
+              summary: true,
+              headlineTopicProgramId: true,
+            },
           },
         },
       });

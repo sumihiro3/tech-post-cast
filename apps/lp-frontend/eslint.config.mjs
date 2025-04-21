@@ -8,7 +8,7 @@ const stylisticRules = {
   '@stylistic/arrow-parens': 'off',
   '@stylistic/operator-linebreak': ['off'],
   '@stylistic/indent': ['error', 2],
-  '@stylistic/quotes': ['error', 'single'],
+  '@stylistic/quotes': ['error', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
   '@stylistic/semi': ['error', 'always'],
 };
 
@@ -16,6 +16,15 @@ export default withNuxt([
   {
     ignores: ['api/**/*.ts', 'api/**/*.js', 'api/**/*.vue'],
   },
+  stylistic.configs.customize({
+    flat: true,
+    indent: 2,
+    quotes: ['single', { avoidEscape: true, allowTemplateLiterals: true }],
+    semi: true,
+    arrowParens: false,
+    operatorLinebreak: 'none',
+    braceStyle: false,
+  }),
   ...eslintrc.extends('plugin:vue-pug/vue3-recommended'),
   {
     files: ['**/*.vue'],
@@ -36,15 +45,8 @@ export default withNuxt([
       '@typescript-eslint/explicit-function-return-type': 'error',
       '@stylistic/arrow-parens': 'off',
       '@stylistic/operator-linebreak': 'off',
+      '@stylistic/brace-style': 'off',
       ...stylisticRules,
     },
   },
-  stylistic.configs.customize({
-    flat: true,
-    indent: 2,
-    quotes: 'single',
-    semi: true,
-    arrowParens: false,
-    operatorLinebreak: 'none',
-  }),
 ]);
