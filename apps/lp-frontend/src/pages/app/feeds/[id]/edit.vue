@@ -72,7 +72,10 @@ definePageMeta({
 
 const { user } = useUser();
 
-// 初期データ（編集の場合はAPIから取得する）
+/**
+ * フィードの初期データ
+ * APIから取得した値で初期化される
+ */
 const initialFeedData = reactive<InputPersonalizedFeedData>({
   programTitle: '',
   filters: {
@@ -84,7 +87,10 @@ const initialFeedData = reactive<InputPersonalizedFeedData>({
   totalCount: 0,
 });
 
-// 現在のフィードデータ（FeedEditorから更新される）
+/**
+ * 現在のフィードデータ（編集中の状態）
+ * FeedEditorコンポーネントから更新される
+ */
 const currentFeedData = ref<InputPersonalizedFeedData>({
   programTitle: '',
   filters: {
@@ -96,10 +102,16 @@ const currentFeedData = ref<InputPersonalizedFeedData>({
   totalCount: 0,
 });
 
-// キャンセル確認ダイアログの表示状態
+/**
+ * キャンセル確認ダイアログの表示状態
+ */
 const showCancelDialog = ref(false);
 
-// フォームに変更があったかを判断する関数
+/**
+ * フォームに変更があったかを判断するcomputed
+ * 初期データと現在のデータを比較して変更があるかどうかを返す
+ * @returns {boolean} 変更がある場合はtrue、ない場合はfalse
+ */
 const hasFormChanges = computed(() => {
   // タイトルに変更があるか
   const hasTitleChanged = currentFeedData.value.programTitle !== initialFeedData.programTitle;
@@ -125,7 +137,10 @@ const hasFormChanges = computed(() => {
   return hasTitleChanged || hasTagsChanged || hasAuthorsChanged || hasDateRangeChanged;
 });
 
-// キャンセルボタンが押されたときのハンドラ
+/**
+ * キャンセルボタンが押されたときのハンドラ
+ * 変更がある場合は確認ダイアログを表示し、ない場合は直接一覧ページに戻る
+ */
 const handleCancel = (): void => {
   if (hasFormChanges.value) {
     // 変更があれば確認ダイアログを表示
@@ -136,24 +151,50 @@ const handleCancel = (): void => {
   }
 };
 
-// フィードデータの更新ハンドラ
+/**
+ * フィードデータの更新ハンドラ
+ * FeedEditorコンポーネントからのデータ更新を処理する
+ * @param {InputPersonalizedFeedData} data 更新されたフィードデータ
+ */
 const handleInputPersonalizedFeedDataUpdate = (data: typeof currentFeedData.value): void => {
   currentFeedData.value = data;
 };
 
-// 保存中フラグ
+/**
+ * 保存中フラグ
+ * フィード保存処理中はtrueとなる
+ */
 const isSaving = ref(false);
-// 読み込み中フラグ
+
+/**
+ * 読み込み中フラグ
+ * フィードデータ読み込み中はtrueとなる
+ */
 const isLoading = ref(false);
-// 編集対象のフィードID
+
+/**
+ * 編集対象のフィードID
+ * URLパラメータから取得される
+ */
 const feedId = ref<string>('');
-// エラーメッセージ
+
+/**
+ * エラーメッセージ
+ * APIエラーや入力エラー発生時に設定される
+ */
 const error = ref<string | null>(null);
 
-// フィールドごとのエラーメッセージを管理するためのオブジェクト
+/**
+ * フィールドごとのエラーメッセージを管理するオブジェクト
+ * バリデーションエラー発生時に各フィールドのエラーメッセージが格納される
+ */
 const fieldErrors = reactive<Record<string, string[]>>({});
 
-// バリデーションエラーを処理する関数
+/**
+ * バリデーションエラーを処理する関数
+ * エラーオブジェクトからフィールドごとのエラーメッセージを抽出して設定する
+ * @param {ValidationError} ve バリデーションエラーオブジェクト
+ */
 const handleValidationError = (ve: ValidationError): void => {
   // フィールド別のエラーメッセージをセット
   Object.keys(fieldErrors).forEach((key) => {
@@ -170,7 +211,10 @@ const handleValidationError = (ve: ValidationError): void => {
   error.value = ve.message;
 };
 
-// エラーメッセージをリセットする関数
+/**
+ * エラーメッセージをリセットする関数
+ * 全体のエラーメッセージとフィールドごとのエラーメッセージをクリアする
+ */
 const resetErrors = (): void => {
   error.value = null;
   Object.keys(fieldErrors).forEach((key) => {
@@ -179,20 +223,10 @@ const resetErrors = (): void => {
   });
 };
 
-// 特定のフィールドにエラーがあるかチェックする関数
-// const hasFieldError = (field: string): boolean => {
-//   return !!fieldErrors[field] && fieldErrors[field].length > 0;
-// };
-
-// // 特定のフィールドのエラーメッセージを取得する関数
-// const getFieldErrorMessage = (field: string): string => {
-//   if (!hasFieldError(field)) {
-//     return '';
-//   }
-//   return fieldErrors[field].join(', ');
-// };
-
-// フィードが有効かどうか
+/**
+ * フィードが有効かどうかを判定するcomputed
+ * @returns {boolean} フィードが有効な場合はtrue、そうでない場合はfalse
+ */
 const isValidFeed = computed(() => {
   return (
     currentFeedData.value.programTitle.trim() !== '' &&
@@ -201,7 +235,11 @@ const isValidFeed = computed(() => {
   );
 });
 
-// フィードを保存する
+/**
+ * フィードを保存する関数
+ * フォームデータをバリデーションし、APIを呼び出してフィードを更新する
+ * @returns {Promise<void>}
+ */
 const saveFeed = async (): Promise<void> => {
   try {
     // 保存中フラグをON
@@ -266,7 +304,12 @@ const saveFeed = async (): Promise<void> => {
   }
 };
 
-// パーソナライズフィードを取得する
+/**
+ * パーソナライズフィードを取得する関数
+ * 指定されたIDのフィードデータをAPIから取得し、フォームデータに変換する
+ * @param {string} id 取得するフィードのID
+ * @returns {Promise<void>}
+ */
 const fetchPersonalizedFeed = async (id: string): Promise<void> => {
   try {
     isLoading.value = true;

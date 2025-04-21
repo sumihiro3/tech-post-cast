@@ -20,14 +20,22 @@ definePageMeta({
 
 const app = useNuxtApp();
 
-// パーソナライズフィード一覧
+/**
+ * パーソナライズフィード一覧
+ * APIから取得したフィード情報を格納する
+ */
 const feeds = ref<PersonalizedFeedDto[]>([]);
 
-// パーソナライズフィードの件数
+/**
+ * パーソナライズフィードの総件数
+ * ページネーションや表示に使用する
+ */
 const feedsCount = ref<number>(0);
 
 /**
  * ログインユーザーのフィード設定一覧を取得する
+ * ユーザーIDを指定して関連するフィードをAPIから取得する
+ * @returns {Promise<void>}
  */
 const fetchUserFeeds = async (): Promise<void> => {
   const result = await useGetPersonalizedFeeds(app, user.value!.id!);
@@ -35,6 +43,9 @@ const fetchUserFeeds = async (): Promise<void> => {
   feedsCount.value = result.total;
 };
 
+/**
+ * 初期表示時にAPIからフィード設定一覧を取得する
+ */
 useAsyncData(async () => {
   try {
     // プログレスサークルを表示

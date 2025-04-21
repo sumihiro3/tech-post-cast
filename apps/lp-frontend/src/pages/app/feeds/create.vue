@@ -66,7 +66,10 @@ definePageMeta({
   layout: 'user-app',
 });
 
-// 初期データ（新規作成ではデフォルト値を設定）
+/**
+ * フィードの初期データ
+ * 新規作成ではデフォルト値を設定
+ */
 const initialFeedData = reactive<InputPersonalizedFeedData>({
   programTitle: '',
   filters: {
@@ -78,7 +81,10 @@ const initialFeedData = reactive<InputPersonalizedFeedData>({
   totalCount: 0,
 });
 
-// 現在のフィードデータ（FeedEditorから更新される）
+/**
+ * 現在のフィードデータ
+ * FeedEditorコンポーネントから更新される
+ */
 const currentFeedData = ref<InputPersonalizedFeedData>({
   programTitle: '',
   filters: {
@@ -90,10 +96,16 @@ const currentFeedData = ref<InputPersonalizedFeedData>({
   totalCount: 0,
 });
 
-// キャンセル確認ダイアログの表示状態
+/**
+ * キャンセル確認ダイアログの表示状態
+ */
 const showCancelDialog = ref(false);
 
-// フォームに変更があったかを判断する関数
+/**
+ * フォームに変更があったかを判断するcomputed
+ * 初期値と比較して変更があるかどうかを返す
+ * @returns {boolean} 変更がある場合はtrue、ない場合はfalse
+ */
 const hasFormChanges = computed(() => {
   // タイトルが入力されているか
   const hasTitleChanged = currentFeedData.value.programTitle.trim() !== '';
@@ -107,7 +119,10 @@ const hasFormChanges = computed(() => {
   return hasTitleChanged || hasTagsSelected || hasAuthorsSelected || hasDateRangeChanged;
 });
 
-// キャンセルボタンが押されたときのハンドラ
+/**
+ * キャンセルボタンが押されたときのハンドラ
+ * 変更がある場合は確認ダイアログを表示し、ない場合は直接一覧ページに戻る
+ */
 const handleCancel = (): void => {
   if (hasFormChanges.value) {
     // 変更があれば確認ダイアログを表示
@@ -118,20 +133,38 @@ const handleCancel = (): void => {
   }
 };
 
-// フィードデータの更新ハンドラ
+/**
+ * フィードデータの更新ハンドラ
+ * FeedEditorコンポーネントからのデータ更新を処理する
+ * @param {InputPersonalizedFeedData} data 更新されたフィードデータ
+ */
 const handleInputPersonalizedFeedDataUpdate = (data: typeof currentFeedData.value): void => {
   currentFeedData.value = data;
 };
 
-/** 保存中フラグ */
+/**
+ * 保存中フラグ
+ * フィード保存処理中はtrueとなる
+ */
 const isSaving = ref(false);
-/** エラーメッセージ */
+
+/**
+ * エラーメッセージ
+ * APIエラーや入力エラー発生時に設定される
+ */
 const error = ref<string | null>(null);
 
-// フィールドごとのエラーメッセージを管理するためのオブジェクト
+/**
+ * フィールドごとのエラーメッセージを管理するオブジェクト
+ * バリデーションエラー発生時に各フィールドのエラーメッセージが格納される
+ */
 const fieldErrors = reactive<Record<string, string[]>>({});
 
-// バリデーションエラーを処理する関数
+/**
+ * バリデーションエラーを処理する関数
+ * エラーオブジェクトからフィールドごとのエラーメッセージを抽出して設定する
+ * @param {ValidationError} ve バリデーションエラーオブジェクト
+ */
 const handleValidationError = (ve: ValidationError): void => {
   // フィールド別のエラーメッセージをセット
   Object.keys(fieldErrors).forEach((key) => {
@@ -148,7 +181,10 @@ const handleValidationError = (ve: ValidationError): void => {
   error.value = ve.message;
 };
 
-// エラーメッセージをリセットする関数
+/**
+ * エラーメッセージをリセットする関数
+ * 全体のエラーメッセージとフィールドごとのエラーメッセージをクリアする
+ */
 const resetErrors = (): void => {
   error.value = null;
   Object.keys(fieldErrors).forEach((key) => {
@@ -157,7 +193,10 @@ const resetErrors = (): void => {
   });
 };
 
-/** フィードが有効かどうかを判定する  */
+/**
+ * フィードが有効かどうかを判定するcomputed
+ * @returns {boolean} フィードが有効な場合はtrue、そうでない場合はfalse
+ */
 const isValidFeed = computed(() => {
   const hasTitle = currentFeedData.value.programTitle.trim() !== '';
   const hasTags = (currentFeedData.value.filters.tags?.length || 0) > 0;
@@ -170,7 +209,11 @@ const isValidFeed = computed(() => {
   return hasTags || hasAuthors;
 });
 
-/** フィードを保存する */
+/**
+ * フィードを保存する関数
+ * フォームデータをバリデーションし、APIを呼び出してフィードを作成する
+ * @returns {Promise<void>}
+ */
 const saveFeed = async (): Promise<void> => {
   try {
     // 保存中フラグをON
