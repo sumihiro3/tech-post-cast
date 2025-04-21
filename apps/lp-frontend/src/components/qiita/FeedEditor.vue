@@ -39,7 +39,7 @@ div
         .mb-3
           .d-flex.align-center.mb-2
             v-icon(size="small" class="mr-1") mdi-calendar
-            span.font-weight-medium 配信日
+            span.font-weight-medium 記事公開日の範囲
           v-chip-group(
             v-model="filters.dateRange"
             mandatory
@@ -57,15 +57,24 @@ div
     //- カードの下部にボタンを配置
     v-card-actions(v-if="showActionButton")
       v-row(justify="center")
-        v-col(cols="12" sm="6" md="4" class="text-center")
+        v-col(cols="12" sm="6" md="10" class="text-center")
           v-btn(
             color="primary"
             size="large"
+            variant="elevated"
             block
             :loading="loading"
             :disabled="!isValid"
             @click="handleActionButtonClick"
           ) {{ actionButtonLabel }}
+        //- フィルター条件をクリアするボタン
+        v-col(cols="12" sm="6" md="10" class="text-center")
+          v-btn(
+            variant="text"
+            color="primary"
+            class="mt-2"
+            @click="clearFilters"
+          ) フィルター条件をクリア
 
   //- フィルターされた記事のプレビューリスト
   div
@@ -73,14 +82,9 @@ div
       .text-h6.font-weight-medium 対象記事のプレビュ（{{ filteredQiitaPostsTotalCount }}件）
 
     div(v-if="filteredQiitaPosts && filteredQiitaPosts.length === 0")
-      v-card.text-center.pa-4
-        .text-body-1.text-medium-emphasis 条件に一致する記事が見つかりませんでした。
-        v-btn(
-          variant="text"
-          color="primary"
-          class="mt-2"
-          @click="clearFilters"
-        ) フィルターをクリア
+      v-card
+        v-card-text.text-center.pa-4
+          .text-body-1.text-medium-emphasis 条件に一致する記事が見つかりませんでした。
 
     qiita-post-list-item(
       v-for="post in filteredQiitaPosts"

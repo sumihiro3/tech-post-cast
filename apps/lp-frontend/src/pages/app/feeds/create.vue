@@ -1,18 +1,18 @@
 <template lang="pug">
 v-container.max-width-container
-  v-row(justify="center")
-    v-col(cols="12")
-      .text-center.text-h4.font-weight-bold.mb-6 パーソナライズ番組を新規作成
-
   //- 一覧に戻るボタン
-  v-row(justify="center")
+  v-row(justify="start")
     v-col(cols="12" sm="6" md="4")
       v-btn(
-        block
+        variant="text"
         color="secondary"
         size="large"
         @click="$router.push('/app/feeds')"
-      ) 一覧に戻る
+      ) < キャンセル
+  //- タイトル
+  v-row(justify="center")
+    v-col(cols="12")
+      .text-center.text-h4.font-weight-bold.mb-6 番組設定の新規作成
 
   //- FeedEditorコンポーネントを使用
   FeedEditor(
