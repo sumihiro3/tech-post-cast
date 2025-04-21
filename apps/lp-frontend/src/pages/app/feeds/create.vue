@@ -1,13 +1,13 @@
 <template lang="pug">
 v-container.max-width-container
-  //- 一覧に戻るボタン
+  //-キャンセルボタン
   v-row(justify="start")
     v-col(cols="12" sm="6" md="4")
       v-btn(
         variant="text"
         color="secondary"
         size="large"
-        @click="$router.push('/app/feeds')"
+        @click="handleCancel"
       ) < キャンセル
   //- タイトル
   v-row(justify="center")
@@ -35,10 +35,23 @@ v-container.max-width-container
         closable
         border
       ) {{ error }}
+
+  //- キャンセル確認ダイアログ（共通コンポーネントを使用）
+  ConfirmDialog(
+    v-model="showCancelDialog"
+    title="変更内容が保存されていません"
+    message="変更内容が保存されていません。キャンセルすると入力した内容は失われます。キャンセルしますか？"
+    confirm-button-text="キャンセルする"
+    cancel-button-text="編集を続ける"
+    confirm-button-color="error"
+    cancel-button-color="primary"
+    @confirm="navigateTo('/app/feeds')"
+  )
 </template>
 
 <script setup lang="ts">
 import { useNuxtApp } from '#app';
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 import FeedEditor from '@/components/qiita/FeedEditor.vue';
 import { useCreatePersonalizedFeed } from '@/composables/feeds/useCreatePersonalizedFeed';
 import { progress } from '@/composables/useProgress';
@@ -76,6 +89,34 @@ const currentFeedData = ref<InputPersonalizedFeedData>({
   posts: [],
   totalCount: 0,
 });
+
+// キャンセル確認ダイアログの表示状態
+const showCancelDialog = ref(false);
+
+// フォームに変更があったかを判断する関数
+const hasFormChanges = computed(() => {
+  // タイトルが入力されているか
+  const hasTitleChanged = currentFeedData.value.programTitle.trim() !== '';
+  // タグが選択されているか
+  const hasTagsSelected = (currentFeedData.value.filters.tags?.length || 0) > 0;
+  // 著者が選択されているか
+  const hasAuthorsSelected = (currentFeedData.value.filters.authors?.length || 0) > 0;
+  // 日付範囲が初期値と異なるか
+  const hasDateRangeChanged = currentFeedData.value.filters.dateRange !== -1;
+
+  return hasTitleChanged || hasTagsSelected || hasAuthorsSelected || hasDateRangeChanged;
+});
+
+// キャンセルボタンが押されたときのハンドラ
+const handleCancel = (): void => {
+  if (hasFormChanges.value) {
+    // 変更があれば確認ダイアログを表示
+    showCancelDialog.value = true;
+  } else {
+    // 変更がなければそのまま一覧に戻る
+    navigateTo('/app/feeds');
+  }
+};
 
 // フィードデータの更新ハンドラ
 const handleInputPersonalizedFeedDataUpdate = (data: typeof currentFeedData.value): void => {
@@ -115,19 +156,6 @@ const resetErrors = (): void => {
     delete fieldErrors[key];
   });
 };
-
-// 特定のフィールドにエラーがあるかチェックする関数
-// const hasFieldError = (field: string): boolean => {
-//   return !!fieldErrors[field] && fieldErrors[field].length > 0;
-// };
-
-// // 特定のフィールドのエラーメッセージを取得する関数
-// const getFieldErrorMessage = (field: string): string => {
-//   if (!hasFieldError(field)) {
-//     return '';
-//   }
-//   return fieldErrors[field].join(', ');
-// };
 
 /** フィードが有効かどうかを判定する  */
 const isValidFeed = computed(() => {
