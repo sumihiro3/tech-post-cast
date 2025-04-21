@@ -26,6 +26,20 @@ v-container.max-width-container
     @action-button-click="saveFeed"
   )
 
+  //- 削除ボタン
+  v-row(justify="center" class="mt-10")
+    v-col(cols="12" sm="8" md="6")
+      v-btn(
+        block
+        color="error"
+        variant="outlined"
+        size="large"
+        :disabled="isDeleting"
+        @click="showDeleteDialog = true"
+      )
+        v-icon(start) mdi-delete
+        | この番組設定を削除する
+
   //- エラーメッセージを表示
   v-row(v-if="error" justify="center" class="mt-4")
     v-col(cols="12" sm="8" md="6")
@@ -36,7 +50,7 @@ v-container.max-width-container
         border
       ) {{ error }}
 
-  //- キャンセル確認ダイアログ（共通コンポーネントを使用）
+  //- キャンセル確認ダイアログ
   ConfirmDialog(
     v-model="showCancelDialog"
     title="変更内容が保存されていません"
@@ -47,12 +61,25 @@ v-container.max-width-container
     cancel-button-color="primary"
     @confirm="navigateTo('/app/feeds')"
   )
+
+  //- 削除確認ダイアログ
+  ConfirmDialog(
+    v-model="showDeleteDialog"
+    title="番組設定を削除しますか？"
+    message="この番組設定を削除します。この操作は取り消せません。本当に削除しますか？"
+    confirm-button-text="削除する"
+    cancel-button-text="キャンセル"
+    confirm-button-color="error"
+    cancel-button-color="primary"
+    @confirm="deleteFeed"
+  )
 </template>
 
 <script setup lang="ts">
 import { useNuxtApp } from '#app';
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 import FeedEditor from '@/components/qiita/FeedEditor.vue';
+import { useDeletePersonalizedFeed } from '@/composables/feeds/useDeletePersonalizedFeed';
 import { useGetPersonalizedFeedById } from '@/composables/feeds/useGetPersonalizedFeedById';
 import { useUpdatePersonalizedFeed } from '@/composables/feeds/useUpdatePersonalizedFeed';
 import { progress } from '@/composables/useProgress';
@@ -106,6 +133,11 @@ const currentFeedData = ref<InputPersonalizedFeedData>({
  * キャンセル確認ダイアログの表示状態
  */
 const showCancelDialog = ref(false);
+
+/**
+ * 削除確認ダイアログの表示状態
+ */
+const showDeleteDialog = ref(false);
 
 /**
  * フォームに変更があったかを判断するcomputed
@@ -165,6 +197,12 @@ const handleInputPersonalizedFeedDataUpdate = (data: typeof currentFeedData.valu
  * フィード保存処理中はtrueとなる
  */
 const isSaving = ref(false);
+
+/**
+ * 削除中フラグ
+ * フィード削除処理中はtrueとなる
+ */
+const isDeleting = ref(false);
 
 /**
  * 読み込み中フラグ
@@ -301,6 +339,54 @@ const saveFeed = async (): Promise<void> => {
     progress.hide();
     // 保存中フラグをOFF
     isSaving.value = false;
+  }
+};
+
+/**
+ * フィードを削除する関数
+ * 指定されたIDのフィードをAPIを呼び出して削除する
+ * @returns {Promise<void>}
+ */
+const deleteFeed = async (): Promise<void> => {
+  try {
+    // 削除中フラグをON
+    isDeleting.value = true;
+    // エラーメッセージをリセット
+    resetErrors();
+    // プログレスサークルを表示
+    progress.show({ text: 'パーソナライズフィードを削除中...' });
+
+    // 作成したcomposableを使用してAPIを呼び出す
+    const app = useNuxtApp();
+    await useDeletePersonalizedFeed(app, feedId.value);
+
+    // 成功時にSnackbarで通知
+    snackbar.showSuccess('パーソナライズフィードを削除しました');
+
+    // 削除成功の場合、フィード一覧画面に遷移
+    navigateTo('/app/feeds');
+  } catch (err: unknown) {
+    console.error('Failed to delete feed:', err);
+
+    // エラーの型に応じた処理
+    if (err instanceof HttpError) {
+      // HTTPエラーの場合
+      error.value = err.message;
+    } else if (err instanceof Error) {
+      // 通常のエラーの場合
+      error.value = err.message;
+    } else {
+      // それ以外の場合
+      error.value = 'パーソナライズフィードの削除に失敗しました';
+    }
+
+    // エラー時にSnackbarで通知
+    snackbar.showError(error.value || 'パーソナライズフィードの削除に失敗しました');
+  } finally {
+    // プログレスサークルを非表示
+    progress.hide();
+    // 削除中フラグをOFF
+    isDeleting.value = false;
   }
 };
 
