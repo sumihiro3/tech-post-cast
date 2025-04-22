@@ -260,15 +260,17 @@ model Subscription {
 // このフィード設定を元に、
 // ユーザーの好みに合わせた番組を生成する
 model PersonalizedFeed {
-  id             String   @id @default(cuid()) @db.VarChar(50)
-  userId         String   @map("user_id") @db.VarChar(50)
-  name           String   @db.VarChar(100)
-  dataSource     String   @map("data_source") @db.VarChar(50) // 番組の情報源（Qiita、note など）
-  filterConfig   Json     @map("filter_config")
-  deliveryConfig Json     @map("delivery_config")
-  isActive       Boolean  @default(true) @map("is_active")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id                String   @id @default(cuid()) @db.VarChar(50)
+  userId            String   @map("user_id") @db.VarChar(50)
+  name              String   @db.VarChar(100)
+  dataSource        String   @map("data_source") @db.VarChar(50) // 番組の情報源（Qiita、note など）
+  filterConfig      Json     @map("filter_config")
+  deliveryConfig    Json     @map("delivery_config")
+  // 配信間隔（DAILY: 日次, TWICE_WEEKLY: 週2回, WEEKLY: 週次）
+  deliveryFrequency String   @default("WEEKLY") @map("delivery_frequency") @db.VarChar(20)
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   user         AppUser                   @relation(fields: [userId], references: [id])
   // フィルター設定
