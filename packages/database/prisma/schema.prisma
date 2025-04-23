@@ -15,7 +15,9 @@ datasource db {
   extensions = [vector()]
 }
 
-/** 配信間隔 */
+/**
+ * 配信間隔
+ */
 enum DeliveryFrequency {
   /**
    * 毎日
@@ -32,6 +34,22 @@ enum DeliveryFrequency {
    * 毎週月曜日に配信
    */
   WEEKLY
+}
+
+/**
+ * 記事の優先順位
+ */
+enum SortPriority {
+  /**
+   * 新着順
+   * 投稿日時が新しい順に並べる
+   */
+  PUBLISHED_AT_DESC
+  /**
+   * いいね数順
+   * いいね数が多い順に並べる
+   */
+  LIKES_DESC
 }
 
 // ヘッドライントピック番組
@@ -286,8 +304,8 @@ model PersonalizedFeed {
   filterConfig      Json              @map("filter_config")
   deliveryConfig    Json              @map("delivery_config")
   deliveryFrequency DeliveryFrequency @default(WEEKLY) @map("delivery_frequency")
-  deliveryFrequency String   @default("WEEKLY") @map("delivery_frequency") @db.VarChar(20)
-  isActive          Boolean  @default(true) @map("is_active")
+  sortPriority      SortPriority      @default(PUBLISHED_AT_DESC) @map("sort_priority")
+  isActive          Boolean           @default(true) @map("is_active")
   createdAt         DateTime          @default(now()) @map("created_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")
 
