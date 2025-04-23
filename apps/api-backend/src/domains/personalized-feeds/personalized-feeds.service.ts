@@ -10,6 +10,10 @@ import {
   PersonalizedFeedsWithFiltersResult,
 } from './personalized-feeds.entity';
 import { IPersonalizedFeedsRepository } from './personalized-feeds.repository.interface';
+import {
+  CreatePersonalizedFeedParams,
+  UpdatePersonalizedFeedParams,
+} from './personalized-feeds.types';
 
 @Injectable()
 export class PersonalizedFeedsService {
@@ -171,35 +175,23 @@ export class PersonalizedFeedsService {
   /**
    * ユーザーのパーソナライズフィードを新規作成する
    * @param userId ユーザーID
-   * @param name フィード名
-   * @param dataSource データソース
-   * @param filterConfig フィルター設定
-   * @param deliveryConfig 配信設定
-   * @param filterGroups フィルターグループ一覧（1つのみ有効）
-   * @param isActive 有効状態
+   * @param params パーソナライズフィードの作成パラメータ
    * @returns フィルター情報を含む作成されたパーソナライズフィード
    * @throws UserNotFoundError ユーザーが存在しない場合
    */
   async create(
     userId: string,
-    name: string,
-    dataSource: string,
-    filterConfig: Record<string, any>,
-    deliveryConfig: Record<string, any>,
-    isActive: boolean = true,
-    filterGroups: FilterGroupDto[] = [],
+    params: CreatePersonalizedFeedParams,
   ): Promise<PersonalizedFeedWithFilters> {
     // UIでは1つのフィルターグループのみをサポート
     const filterGroup =
-      filterGroups && filterGroups.length > 0 ? filterGroups[0] : undefined;
+      params.filterGroups && params.filterGroups.length > 0
+        ? params.filterGroups[0]
+        : undefined;
 
     this.logger.debug('PersonalizedFeedsService.create', {
       userId,
-      name,
-      dataSource,
-      filterConfig,
-      deliveryConfig,
-      isActive,
+      params,
       hasFilterGroup: !!filterGroup,
     });
 
@@ -211,12 +203,14 @@ export class PersonalizedFeedsService {
       const result =
         await this.personalizedFeedsRepository.createWithFilterGroup({
           feed: {
-            name,
+            name: params.name,
             userId: user.id,
-            dataSource,
-            filterConfig,
-            deliveryConfig,
-            isActive,
+            dataSource: params.dataSource,
+            filterConfig: params.filterConfig,
+            deliveryConfig: params.deliveryConfig,
+            deliveryFrequency: params.deliveryFrequency,
+            sortPriority: params.sortPriority,
+            isActive: params.isActive ?? true,
           },
           filterGroup: filterGroup
             ? {
@@ -234,7 +228,9 @@ export class PersonalizedFeedsService {
         {
           feedId: result.feed.id,
           userId,
-          name,
+          name: params.name,
+          deliveryFrequency: params.deliveryFrequency,
+          sortPriority: params.sortPriority,
           hasFilterGroup: !!result.filterGroup,
           filterGroupId: result.filterGroup?.id,
           tagFiltersCount: result.tagFilters?.length || 0,
@@ -276,7 +272,7 @@ export class PersonalizedFeedsService {
       this.logger.error(`パーソナライズフィードの作成に失敗しました`, {
         error,
         userId,
-        name,
+        name: params.name,
       });
       throw error;
     }
@@ -284,50 +280,47 @@ export class PersonalizedFeedsService {
 
   /**
    * パーソナライズフィードを更新する
-   * @param id パーソナライズフィードID
    * @param userId ユーザーID
-   * @param updates 更新内容
-   * @param filterGroups 更新するフィルターグループ情報
+   * @param params 更新するパーソナライズフィードのパラメータ
    * @returns フィルター情報を含む更新されたパーソナライズフィード
    * @throws NotFoundException フィードが存在しない場合
    * @throws UserNotFoundError ユーザーが存在しない場合
    */
   async update(
-    id: string,
     userId: string,
-    updates: {
-      name?: string;
-      dataSource?: string;
-      filterConfig?: Record<string, any>;
-      deliveryConfig?: Record<string, any>;
-      isActive?: boolean;
-    },
-    filterGroups?: FilterGroupDto[],
+    params: UpdatePersonalizedFeedParams,
   ): Promise<PersonalizedFeedWithFilters> {
     this.logger.debug('PersonalizedFeedsService.update', {
-      id,
       userId,
-      updates,
-      hasFilterGroups: filterGroups && filterGroups.length > 0,
+      params,
+      hasFilterGroups: params.filterGroups && params.filterGroups.length > 0,
     });
 
     // UIでは1つのフィルターグループのみをサポート
     const filterGroup =
-      filterGroups && filterGroups.length > 0 ? filterGroups[0] : undefined;
+      params.filterGroups && params.filterGroups.length > 0
+        ? params.filterGroups[0]
+        : undefined;
 
     // ユーザーの存在確認
     const user = await this.validateUserExists(userId);
 
     // 現在のフィードを取得して存在確認
-    const existingFeed = await this.findById(id, userId);
+    const existingFeed = await this.findById(params.id, userId);
 
     try {
       // パーソナライズフィードとフィルターグループをトランザクションで更新
       const result =
         await this.personalizedFeedsRepository.updateWithFilterGroup({
           feed: {
-            id,
-            ...updates,
+            id: params.id,
+            name: params.name,
+            dataSource: params.dataSource,
+            filterConfig: params.filterConfig,
+            deliveryConfig: params.deliveryConfig,
+            deliveryFrequency: params.deliveryFrequency,
+            sortPriority: params.sortPriority,
+            isActive: params.isActive,
           },
           filterGroup: filterGroup
             ? {
@@ -341,10 +334,16 @@ export class PersonalizedFeedsService {
         });
 
       this.logger.log(
-        `ユーザー [${userId}] のパーソナライズフィード [${id}] を更新しました`,
+        `ユーザー [${userId}] のパーソナライズフィード [${params.id}] を更新しました`,
         {
-          feedId: id,
+          feedId: params.id,
           userId,
+          updates: {
+            name: params.name,
+            dataSource: params.dataSource,
+            deliveryFrequency: params.deliveryFrequency,
+            sortPriority: params.sortPriority,
+          },
           hasFilterGroup: !!result.filterGroup,
           filterGroupId: result.filterGroup?.id,
           tagFiltersCount: result.tagFilters?.length || 0,
@@ -355,7 +354,7 @@ export class PersonalizedFeedsService {
 
       // isActiveをfalseに設定した場合（論理削除の場合）は、
       // findByIdWithFiltersでは取得できないため、リポジトリから返された結果を整形して返す
-      if (updates.isActive === false) {
+      if (params.isActive === false) {
         const feedWithFilters: PersonalizedFeedWithFilters = {
           ...result.feed,
           filterGroups: result.filterGroup
@@ -386,11 +385,11 @@ export class PersonalizedFeedsService {
       }
 
       // それ以外の場合は、更新後のフィードをフィルター情報付きで取得して返す
-      return await this.findByIdWithFilters(id, userId);
+      return await this.findByIdWithFilters(params.id, userId);
     } catch (error) {
       this.logger.error(`パーソナライズフィードの更新に失敗しました`, {
         error,
-        id,
+        id: params.id,
         userId,
       });
       throw error;

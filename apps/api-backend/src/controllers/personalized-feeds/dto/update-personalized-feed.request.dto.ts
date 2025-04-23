@@ -1,9 +1,11 @@
 // filepath: /Users/sumihiro/projects/TechPostCast/tech-post-cast/apps/api-backend/src/controllers/personalized-feeds/dto/update-personalized-feed.request.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
+import { DeliveryFrequency, SortPriority } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
+  IsEnum,
   IsObject,
   IsOptional,
   IsString,
@@ -62,6 +64,30 @@ export class UpdatePersonalizedFeedRequestDto {
     return typeof value === 'string' ? JSON.parse(value) : value;
   })
   deliveryConfig?: Record<string, any>;
+
+  @ApiProperty({
+    description: '配信間隔',
+    required: false,
+    enum: DeliveryFrequency,
+    example: DeliveryFrequency.WEEKLY,
+  })
+  @IsOptional()
+  @IsEnum(DeliveryFrequency, {
+    message: '配信間隔は有効な値である必要があります',
+  })
+  deliveryFrequency?: DeliveryFrequency;
+
+  @ApiProperty({
+    description: '記事の優先順位',
+    required: false,
+    enum: SortPriority,
+    example: SortPriority.PUBLISHED_AT_DESC,
+  })
+  @IsOptional()
+  @IsEnum(SortPriority, {
+    message: '記事の優先順位は有効な値である必要があります',
+  })
+  sortPriority?: SortPriority;
 
   @ApiProperty({
     description: 'フィルターグループ一覧',

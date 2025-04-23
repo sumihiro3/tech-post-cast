@@ -2,12 +2,17 @@ import { IAppUserRepository } from '@/domains/app-user/app-user.repository.inter
 import { UserNotFoundError } from '@/types/errors';
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { DeliveryFrequency, SortPriority } from '@prisma/client';
 import {
   PersonalizedFeed,
   PersonalizedFeedWithFilters,
 } from './personalized-feeds.entity';
 import { IPersonalizedFeedsRepository } from './personalized-feeds.repository.interface';
 import { PersonalizedFeedsService } from './personalized-feeds.service';
+import {
+  CreatePersonalizedFeedParams,
+  UpdatePersonalizedFeedParams,
+} from './personalized-feeds.types';
 
 describe('PersonalizedFeedsService', () => {
   let service: PersonalizedFeedsService;
@@ -33,6 +38,8 @@ describe('PersonalizedFeedsService', () => {
     dataSource: 'qiita',
     filterConfig: { minLikes: 5 },
     deliveryConfig: { frequency: 'daily', time: '08:00' },
+    deliveryFrequency: DeliveryFrequency.WEEKLY,
+    sortPriority: SortPriority.PUBLISHED_AT_DESC,
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -124,15 +131,19 @@ describe('PersonalizedFeedsService', () => {
         dateRangeFilters: [{ daysAgo: 30 }],
       };
 
-      const result = await service.create(
-        'user_123456',
-        'テスト用フィード',
-        'qiita',
-        { minLikes: 5 },
-        { frequency: 'daily', time: '08:00' },
-        true,
-        [filterGroupDto],
-      );
+      // パラメータオブジェクトを作成
+      const createParams: CreatePersonalizedFeedParams = {
+        name: 'テスト用フィード',
+        dataSource: 'qiita',
+        filterConfig: { minLikes: 5 },
+        deliveryConfig: { frequency: 'daily', time: '08:00' },
+        deliveryFrequency: DeliveryFrequency.WEEKLY,
+        sortPriority: SortPriority.PUBLISHED_AT_DESC,
+        isActive: true,
+        filterGroups: [filterGroupDto],
+      };
+
+      const result = await service.create('user_123456', createParams);
 
       expect(appUserRepository.findOne).toHaveBeenCalledWith('user_123456');
       expect(
@@ -148,16 +159,20 @@ describe('PersonalizedFeedsService', () => {
     it('ユーザーが存在しない場合はエラーになること', async () => {
       appUserRepository.findOne.mockResolvedValue(null);
 
+      // パラメータオブジェクトを作成
+      const createParams: CreatePersonalizedFeedParams = {
+        name: 'テスト用フィード',
+        dataSource: 'qiita',
+        filterConfig: {},
+        deliveryConfig: {},
+        deliveryFrequency: DeliveryFrequency.WEEKLY,
+        sortPriority: SortPriority.PUBLISHED_AT_DESC,
+        isActive: true,
+        filterGroups: [],
+      };
+
       await expect(
-        service.create(
-          'nonexistent_user',
-          'テスト用フィード',
-          'qiita',
-          {},
-          {},
-          true,
-          [],
-        ),
+        service.create('nonexistent_user', createParams),
       ).rejects.toThrow(UserNotFoundError);
     });
   });
@@ -204,12 +219,14 @@ describe('PersonalizedFeedsService', () => {
         dateRangeFilters: [{ daysAgo: 60 }],
       };
 
-      const result = await service.update(
-        'feed_123456',
-        'user_123456',
-        { name: '更新されたフィード名' },
-        [filterGroupDto],
-      );
+      // UpdatePersonalizedFeedParamsオブジェクトを作成
+      const updateParams: UpdatePersonalizedFeedParams = {
+        id: 'feed_123456',
+        name: '更新されたフィード名',
+        filterGroups: [filterGroupDto],
+      };
+
+      const result = await service.update('user_123456', updateParams);
 
       expect(personalizedFeedsRepository.findById).toHaveBeenCalledWith(
         'feed_123456',
@@ -236,14 +253,15 @@ describe('PersonalizedFeedsService', () => {
 
       personalizedFeedsRepository.findById.mockResolvedValue(null);
 
-      await expect(
-        service.update(
-          'nonexistent_feed',
-          'user_123456',
-          { name: '更新されたフィード名' },
-          [],
-        ),
-      ).rejects.toThrow(NotFoundException);
+      // UpdatePersonalizedFeedParamsオブジェクトを作成
+      const updateParams: UpdatePersonalizedFeedParams = {
+        id: 'nonexistent_feed',
+        name: '更新されたフィード名',
+      };
+
+      await expect(service.update('user_123456', updateParams)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

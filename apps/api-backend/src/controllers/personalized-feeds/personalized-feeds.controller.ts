@@ -1,6 +1,10 @@
 import { CurrentUserId } from '@/auth/decorators/current-user-id.decorator';
 import { ClerkJwtGuard } from '@/auth/guards/clerk-jwt.guard';
 import { PersonalizedFeedsService } from '@/domains/personalized-feeds/personalized-feeds.service';
+import {
+  CreatePersonalizedFeedParams,
+  UpdatePersonalizedFeedParams,
+} from '@/domains/personalized-feeds/personalized-feeds.types';
 import { UserNotFoundError } from '@/types/errors';
 import {
   Body,
@@ -215,6 +219,8 @@ export class PersonalizedFeedsController {
       dataSource: dto.dataSource,
       filterConfig: dto.filterConfig ? 'provided' : 'not provided',
       deliveryConfig: dto.deliveryConfig ? 'provided' : 'not provided',
+      deliveryFrequency: dto.deliveryFrequency,
+      sortPriority: dto.sortPriority,
       isActive: dto.isActive,
       hasFilterGroups: dto.filterGroups && dto.filterGroups.length > 0,
       filterGroupsCount: dto.filterGroups?.length || 0,
@@ -227,15 +233,28 @@ export class PersonalizedFeedsController {
     });
 
     try {
+      // DTOからドメインパラメータに変換
+      const createParams: CreatePersonalizedFeedParams = {
+        name: dto.name,
+        dataSource: dto.dataSource,
+        filterConfig: dto.filterConfig || {},
+        deliveryConfig: dto.deliveryConfig || {},
+        deliveryFrequency: dto.deliveryFrequency,
+        sortPriority: dto.sortPriority,
+        isActive: dto.isActive ?? true,
+        filterGroups: dto.filterGroups?.map((group) => ({
+          name: group.name,
+          logicType: group.logicType || 'OR',
+          tagFilters: group.tagFilters,
+          authorFilters: group.authorFilters,
+          dateRangeFilters: group.dateRangeFilters,
+        })),
+      };
+
       // パーソナライズフィードを作成
       const feed = await this.personalizedFeedsService.create(
         userId,
-        dto.name,
-        dto.dataSource,
-        dto.filterConfig,
-        dto.deliveryConfig,
-        dto.isActive,
-        dto.filterGroups,
+        createParams,
       );
 
       // フィルター情報を含むDTOに変換して返却
@@ -299,6 +318,8 @@ export class PersonalizedFeedsController {
       updates: {
         name: dto.name,
         dataSource: dto.dataSource,
+        deliveryFrequency: dto.deliveryFrequency,
+        sortPriority: dto.sortPriority,
         hasFilterGroups: dto.filterGroups && dto.filterGroups.length > 0,
         filterGroupsCount: dto.filterGroups?.length || 0,
         tagFiltersCount: dto.filterGroups?.[0]?.tagFilters?.length || 0,
@@ -311,18 +332,29 @@ export class PersonalizedFeedsController {
     });
 
     try {
+      // DTOからドメインパラメータに変換
+      const updateParams: UpdatePersonalizedFeedParams = {
+        id: id,
+        name: dto.name,
+        dataSource: dto.dataSource,
+        filterConfig: dto.filterConfig,
+        deliveryConfig: dto.deliveryConfig,
+        deliveryFrequency: dto.deliveryFrequency,
+        sortPriority: dto.sortPriority,
+        isActive: dto.isActive,
+        filterGroups: dto.filterGroups?.map((group) => ({
+          name: group.name,
+          logicType: group.logicType || 'OR',
+          tagFilters: group.tagFilters,
+          authorFilters: group.authorFilters,
+          dateRangeFilters: group.dateRangeFilters,
+        })),
+      };
+
       // パーソナライズフィードを更新
       const feed = await this.personalizedFeedsService.update(
-        id,
         userId,
-        {
-          name: dto.name,
-          dataSource: dto.dataSource,
-          filterConfig: dto.filterConfig,
-          deliveryConfig: dto.deliveryConfig,
-          isActive: dto.isActive,
-        },
-        dto.filterGroups,
+        updateParams,
       );
 
       // フィルター情報を含むDTOに変換して返却

@@ -1,3 +1,4 @@
+import { DeliveryFrequency, SortPriority } from '@prisma/client';
 import {
   PersonalizedFeed,
   PersonalizedFeedWithFilters,
@@ -78,16 +79,21 @@ export interface CreateFeedWithFilterGroupParams {
   };
 }
 
+// パーソナライズフィードの更新に関する型定義
+export interface UpdateFeedParams {
+  id: string;
+  name?: string;
+  dataSource?: string;
+  filterConfig?: Record<string, any>;
+  deliveryConfig?: Record<string, any>;
+  deliveryFrequency?: DeliveryFrequency;
+  sortPriority?: SortPriority;
+  isActive?: boolean;
+}
+
 // フィードとフィルターグループの更新に関する型定義
 export interface UpdateFeedWithFilterGroupParams {
-  feed: {
-    id: string;
-    name?: string;
-    dataSource?: string;
-    filterConfig?: Record<string, any>;
-    deliveryConfig?: Record<string, any>;
-    isActive?: boolean;
-  };
+  feed: UpdateFeedParams;
   filterGroup?: {
     name: string;
     logicType: string;
@@ -202,14 +208,7 @@ export interface IPersonalizedFeedsRepository {
    * @param feed 更新するパーソナライズフィードの情報
    * @returns 更新されたパーソナライズフィード
    */
-  update(feed: {
-    id: string;
-    name?: string;
-    dataSource?: string;
-    filterConfig?: Record<string, any>;
-    deliveryConfig?: Record<string, any>;
-    isActive?: boolean;
-  }): Promise<PersonalizedFeed>;
+  update(feed: UpdateFeedParams): Promise<PersonalizedFeed>;
 
   /**
    * フィルターグループを更新する

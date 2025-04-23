@@ -16,6 +16,7 @@ import {
   FilterGroup,
   IPersonalizedFeedsRepository,
   TagFilter,
+  UpdateFeedParams,
   UpdateFeedWithFilterGroupParams,
   UpdateFilterGroupParams,
 } from '@/domains/personalized-feeds/personalized-feeds.repository.interface';
@@ -282,7 +283,14 @@ export class PersonalizedFeedsRepository
       // パーソナライズフィードを作成
       const createdFeed = await client.personalizedFeed.create({
         data: {
-          ...feed,
+          name: feed.name,
+          userId: feed.userId,
+          dataSource: feed.dataSource,
+          filterConfig: feed.filterConfig,
+          deliveryConfig: feed.deliveryConfig,
+          deliveryFrequency: feed.deliveryFrequency,
+          sortPriority: feed.sortPriority,
+          isActive: feed.isActive,
           createdAt: now,
           updatedAt: now,
           // ID は自動生成 (prisma-client-manager で接頭辞付きID生成処理を実装済み)
@@ -717,18 +725,11 @@ export class PersonalizedFeedsRepository
 
   /**
    * パーソナライズフィードを更新する
-   * @param feed 更新するパーソナライズフィードの情報
+   * @param params 更新するパーソナライズフィードの情報
    * @returns 更新されたパーソナライズフィード
    */
-  async update(feed: {
-    id: string;
-    name?: string;
-    dataSource?: string;
-    filterConfig?: Record<string, any>;
-    deliveryConfig?: Record<string, any>;
-    isActive?: boolean;
-  }): Promise<PersonalizedFeed> {
-    this.logger.debug('PersonalizedFeedsRepository.update called', { feed });
+  async update(params: UpdateFeedParams): Promise<PersonalizedFeed> {
+    this.logger.debug('PersonalizedFeedsRepository.update called', { params });
 
     try {
       const client = this.prisma.getClient();
@@ -739,18 +740,22 @@ export class PersonalizedFeedsRepository
       };
 
       // 指定されたフィールドのみ更新対象に含める
-      if (feed.name !== undefined) updateData.name = feed.name;
-      if (feed.dataSource !== undefined)
-        updateData.dataSource = feed.dataSource;
-      if (feed.filterConfig !== undefined)
-        updateData.filterConfig = feed.filterConfig;
-      if (feed.deliveryConfig !== undefined)
-        updateData.deliveryConfig = feed.deliveryConfig;
-      if (feed.isActive !== undefined) updateData.isActive = feed.isActive;
+      if (params.name !== undefined) updateData.name = params.name;
+      if (params.dataSource !== undefined)
+        updateData.dataSource = params.dataSource;
+      if (params.filterConfig !== undefined)
+        updateData.filterConfig = params.filterConfig;
+      if (params.deliveryConfig !== undefined)
+        updateData.deliveryConfig = params.deliveryConfig;
+      if (params.deliveryFrequency !== undefined)
+        updateData.deliveryFrequency = params.deliveryFrequency;
+      if (params.sortPriority !== undefined)
+        updateData.sortPriority = params.sortPriority;
+      if (params.isActive !== undefined) updateData.isActive = params.isActive;
 
       // パーソナライズフィードを更新
       const updatedFeed = await client.personalizedFeed.update({
-        where: { id: feed.id },
+        where: { id: params.id },
         data: updateData,
       });
 
@@ -770,7 +775,7 @@ export class PersonalizedFeedsRepository
       const errorMessage = `パーソナライズフィードの更新に失敗しました`;
       this.logger.error(errorMessage, {
         error,
-        feedId: feed.id,
+        feedId: params.id,
       });
       throw new Error(errorMessage);
     }
@@ -951,6 +956,10 @@ export class PersonalizedFeedsRepository
           updateData.filterConfig = params.feed.filterConfig;
         if (params.feed.deliveryConfig !== undefined)
           updateData.deliveryConfig = params.feed.deliveryConfig;
+        if (params.feed.deliveryFrequency !== undefined)
+          updateData.deliveryFrequency = params.feed.deliveryFrequency;
+        if (params.feed.sortPriority !== undefined)
+          updateData.sortPriority = params.feed.sortPriority;
         if (params.feed.isActive !== undefined)
           updateData.isActive = params.feed.isActive;
 

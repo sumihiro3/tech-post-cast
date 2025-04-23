@@ -368,12 +368,20 @@ describe('PersonalizedFeedsController', () => {
       // 期待値の検証
       expect(personalizedFeedsService.create).toHaveBeenCalledWith(
         userId,
-        createDto.name,
-        createDto.dataSource,
-        createDto.filterConfig,
-        createDto.deliveryConfig,
-        createDto.isActive,
-        createDto.filterGroups,
+        expect.objectContaining({
+          name: createDto.name,
+          dataSource: createDto.dataSource,
+          filterConfig: createDto.filterConfig,
+          deliveryConfig: createDto.deliveryConfig,
+          isActive: createDto.isActive,
+          filterGroups: expect.arrayContaining([
+            expect.objectContaining({
+              name: 'テストグループ',
+              logicType: 'OR',
+              dateRangeFilters: expect.arrayContaining([{ daysAgo: 30 }]),
+            }),
+          ]),
+        }),
       );
       expect(result).toBeDefined();
       expect(result.feed).toBeDefined();
@@ -446,10 +454,18 @@ describe('PersonalizedFeedsController', () => {
 
       // 期待値の検証
       expect(personalizedFeedsService.update).toHaveBeenCalledWith(
-        feedId,
         userId,
-        { name: '更新されたフィード名' },
-        updateDto.filterGroups,
+        expect.objectContaining({
+          id: feedId,
+          name: updateDto.name,
+          filterGroups: expect.arrayContaining([
+            expect.objectContaining({
+              name: '更新されたフィルターグループ',
+              logicType: 'OR',
+              dateRangeFilters: expect.arrayContaining([{ daysAgo: 60 }]),
+            }),
+          ]),
+        }),
       );
       expect(result).toBeDefined();
       expect(result.id).toBe(feedId);
