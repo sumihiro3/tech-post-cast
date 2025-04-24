@@ -1,4 +1,4 @@
-FROM node:20.18.1-bullseye-slim as builder
+FROM node:20.19.1-bullseye-slim AS builder
 
 WORKDIR /build
 
@@ -12,18 +12,18 @@ RUN yarn generate-prisma
 RUN yarn build-for-backend
 
 # -----------------------------
-FROM node:20.18.1-bullseye-slim
+FROM node:20.19.1-bullseye-slim
 
 # timezone setting
 RUN ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
 
 # AWS Lambda Adapter のインストール
 COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.8.4 /lambda-adapter /opt/extensions/lambda-adapter
-ENV PORT 3000
-ENV READINESS_CHECK_PATH /health-check
+ENV PORT=3000
+ENV READINESS_CHECK_PATH=/health-check
 # Non-HTTP Event Triggers
 # @see https://github.com/awslabs/aws-lambda-web-adapter?tab=readme-ov-file#non-http-event-triggers
-ENV AWS_LWA_PASS_THROUGH_PATH /events
+ENV AWS_LWA_PASS_THROUGH_PATH=/events
 
 # ffmpeg のインストール
 RUN apt-get -y update && apt-get -y upgrade && apt-get install -y ffmpeg
@@ -47,5 +47,5 @@ COPY --from=builder /build/apps/backend/credentials credentials
 COPY --from=builder /build/packages/commons node_modules/@tech-post-cast/commons
 COPY --from=builder /build/packages/database node_modules/@tech-post-cast/database
 
-EXPOSE 3000 
+EXPOSE 3000
 CMD [ "yarn", "start:prod" ]
