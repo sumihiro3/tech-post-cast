@@ -19,6 +19,8 @@
 - [共通ルール](/docs/coding-rules/common.md) - すべてのアプリケーションに適用される基本ルール
 - [NestJSバックエンドルール](/docs/coding-rules/api-backend.md) - API BackendとBackendアプリケーション用のルール
 - [Nuxt 3フロントエンドルール](/docs/coding-rules/lp-frontend.md) - LPフロントエンドとLIFF用のルール
+- [LINE Botルール](/docs/coding-rules/line-bot.md) - LINE Bot用のルール
+- [インフラルール](/docs/coding-rules/infra.md) - インフラストラクチャコード用のルール
 
 各アプリケーションディレクトリにはそれぞれのREADME.mdファイルがあり、そのアプリケーション固有の情報やガイドラインを提供しています。
 

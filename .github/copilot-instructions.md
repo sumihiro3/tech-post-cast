@@ -13,6 +13,7 @@
 - エラーハンドリングは適切に行い、エラーメッセージは具体的に記述してください。
 - マジックナンバーや文字列リテラルを避け、定数として定義してください。
 - 循環的依存関係を避けてください。
+- 各アプリケーション種別ごとのコーディングガイドラインは `/docs/coding-rules/` ディレクトリを参照してください。
 
 ## ディレクトリ構造
 
@@ -20,15 +21,14 @@
 tech-post-cast/
 ├── apps/                # アプリケーション
 │   ├── api-backend/     # バックエンドAPI (NestJS)
-│   ├── backend/          # 番組生成用バックエンドAPI (NestJS)
+│   ├── backend/         # 番組生成用バックエンドAPI (NestJS)
 │   ├── lp-frontend/     # ランディングページフロントエンド (Nuxt3)
 │   ├── liff-frontend/   # LIFFフロントエンド
-│   └── line-bot/        # LINEボット
+│   ├── line-bot/        # LINEボット
+│   └── infra/           # インフラストラクチャコード (AWS CDK)
 ├── packages/            # 共有パッケージ
 │   ├── database/        # データベース関連コード・スキーマ
-│   ├── eslint-config/   # ESLint設定
-│   ├── tsconfig/        # TypeScript設定
-│   └── ui-components/   # 共有UIコンポーネント
+│   └── commons/         # 共通ユーティリティと機能
 └── docs/                # プロジェクトドキュメント
 ```
 
