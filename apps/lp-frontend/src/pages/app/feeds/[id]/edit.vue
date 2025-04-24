@@ -77,6 +77,10 @@ v-container.max-width-container
 
 <script setup lang="ts">
 import { useNuxtApp } from '#app';
+import {
+  PersonalizedFeedDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum,
+  PersonalizedFeedDtoSortPriorityEnum as SortPriorityEnum,
+} from '@/api';
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 import FeedEditor from '@/components/qiita/FeedEditor.vue';
 import { useDeletePersonalizedFeed } from '@/composables/feeds/useDeletePersonalizedFeed';
@@ -112,6 +116,8 @@ const initialFeedData = reactive<InputPersonalizedFeedData>({
   },
   posts: [],
   totalCount: 0,
+  deliveryFrequency: DeliveryFrequencyEnum.Weekly,
+  sortPriority: SortPriorityEnum.PublishedAtDesc,
 });
 
 /**
@@ -127,6 +133,8 @@ const currentFeedData = ref<InputPersonalizedFeedData>({
   },
   posts: [],
   totalCount: 0,
+  deliveryFrequency: DeliveryFrequencyEnum.Weekly,
+  sortPriority: SortPriorityEnum.PublishedAtDesc,
 });
 
 /**
@@ -166,7 +174,22 @@ const hasFormChanges = computed(() => {
   const hasDateRangeChanged =
     currentFeedData.value.filters.dateRange !== initialFeedData.filters.dateRange;
 
-  return hasTitleChanged || hasTagsChanged || hasAuthorsChanged || hasDateRangeChanged;
+  // 配信間隔に変更があるか
+  const hasDeliveryFrequencyChanged =
+    currentFeedData.value.deliveryFrequency !== initialFeedData.deliveryFrequency;
+
+  // 記事の優先順位に変更があるか
+  const hasSortPriorityChanged =
+    currentFeedData.value.sortPriority !== initialFeedData.sortPriority;
+
+  return (
+    hasTitleChanged ||
+    hasTagsChanged ||
+    hasAuthorsChanged ||
+    hasDateRangeChanged ||
+    hasDeliveryFrequencyChanged ||
+    hasSortPriorityChanged
+  );
 });
 
 /**
@@ -418,6 +441,8 @@ const fetchPersonalizedFeed = async (id: string): Promise<void> => {
     initialFeedData.filters.tags = [...inputData.filters.tags];
     initialFeedData.filters.authors = [...inputData.filters.authors];
     initialFeedData.filters.dateRange = inputData.filters.dateRange;
+    initialFeedData.deliveryFrequency = inputData.deliveryFrequency || DeliveryFrequencyEnum.Weekly;
+    initialFeedData.sortPriority = inputData.sortPriority || SortPriorityEnum.PublishedAtDesc;
     initialFeedData.posts = [...inputData.posts];
     initialFeedData.totalCount = inputData.totalCount;
 
@@ -431,6 +456,8 @@ const fetchPersonalizedFeed = async (id: string): Promise<void> => {
       },
       posts: [...inputData.posts],
       totalCount: inputData.totalCount,
+      deliveryFrequency: inputData.deliveryFrequency || DeliveryFrequencyEnum.Weekly,
+      sortPriority: inputData.sortPriority || SortPriorityEnum.PublishedAtDesc,
     };
 
     console.log('Loaded feed data:', result);

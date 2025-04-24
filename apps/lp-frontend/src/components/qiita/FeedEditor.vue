@@ -18,6 +18,51 @@ div
         )
 
       v-divider
+
+      //- 配信設定
+      .my-4
+        .d-flex.align-center.justify-space-between.mb-4
+          .text-subtitle-1.font-weight-bold 配信設定
+
+        //- 配信間隔
+        .mb-3
+          .d-flex.align-center.mb-2
+            v-icon(size="small" class="mr-1") mdi-calendar-clock
+            span.font-weight-medium 配信間隔
+          v-radio-group(
+            v-model="deliveryFrequency"
+            inline
+            density="compact"
+            :error-messages="getFieldErrorMessages('deliveryFrequency')"
+            :error="hasFieldError('deliveryFrequency')"
+          )
+            v-radio(
+              v-for="option in deliveryFrequencyOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            )
+
+        //- 記事の優先順位
+        .mb-3
+          .d-flex.align-center.mb-2
+            v-icon(size="small" class="mr-1") mdi-sort
+            span.font-weight-medium 記事の優先順位
+          v-radio-group(
+            v-model="sortPriority"
+            inline
+            density="compact"
+            :error-messages="getFieldErrorMessages('sortPriority')"
+            :error="hasFieldError('sortPriority')"
+          )
+            v-radio(
+              v-for="option in sortPriorityOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            )
+
+      v-divider
       //- フィルターオプション
       .my-4
         .d-flex.align-center.justify-space-between.mb-4
@@ -95,6 +140,10 @@ div
 
 <script setup lang="ts">
 import type { QiitaPostDto } from '@/api';
+import {
+  PersonalizedFeedDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum,
+  PersonalizedFeedDtoSortPriorityEnum as SortPriorityEnum,
+} from '@/api';
 import { useGetQiitaPosts } from '@/composables/qiita-api/useGetQiitaPosts';
 import { defineEmits, defineProps, reactive, ref, watch } from 'vue';
 import type { InputPersonalizedFeedData } from '~/types/personalized-feed';
@@ -110,6 +159,8 @@ const props = defineProps({
         tags: [],
         dateRange: -1,
       },
+      deliveryFrequency: DeliveryFrequencyEnum.Weekly,
+      sortPriority: SortPriorityEnum.PublishedAtDesc,
       posts: [],
       totalCount: 0,
     }),
@@ -143,6 +194,25 @@ const app = useNuxtApp();
 
 // 番組名
 const programTitle = ref(props.initialData.programTitle);
+
+// 配信間隔
+const deliveryFrequency = ref<DeliveryFrequencyEnum>(
+  props.initialData.deliveryFrequency || DeliveryFrequencyEnum.Weekly,
+);
+const deliveryFrequencyOptions = [
+  { value: DeliveryFrequencyEnum.Daily, label: '毎日' },
+  { value: DeliveryFrequencyEnum.TwiceWeekly, label: '週2回' },
+  { value: DeliveryFrequencyEnum.Weekly, label: '毎週' },
+];
+
+// 記事の優先順位
+const sortPriority = ref<SortPriorityEnum>(
+  (props.initialData.sortPriority as SortPriorityEnum) || SortPriorityEnum.PublishedAtDesc,
+);
+const sortPriorityOptions = [
+  { value: SortPriorityEnum.PublishedAtDesc, label: '新着順' },
+  { value: SortPriorityEnum.LikesDesc, label: '人気順（いいね数）' },
+];
 
 // 絞り込み条件の型
 interface IFilters {
@@ -191,6 +261,8 @@ const emitFeedData = (): void => {
     },
     posts: filteredQiitaPosts.value,
     totalCount: filteredQiitaPostsTotalCount.value,
+    deliveryFrequency: deliveryFrequency.value,
+    sortPriority: sortPriority.value,
   } satisfies InputPersonalizedFeedData);
 };
 
@@ -201,6 +273,16 @@ watch(
     console.log('initialData changed:', newInitialData);
     // 番組名を更新
     programTitle.value = newInitialData.programTitle;
+
+    // 配信間隔を更新
+    if (newInitialData.deliveryFrequency) {
+      deliveryFrequency.value = newInitialData.deliveryFrequency as DeliveryFrequencyEnum;
+    }
+
+    // 記事の優先順位を更新
+    if (newInitialData.sortPriority) {
+      sortPriority.value = newInitialData.sortPriority as SortPriorityEnum;
+    }
 
     // フィルター条件を更新
     filters.authors = [...newInitialData.filters.authors];
@@ -232,6 +314,16 @@ watch(programTitle, (_newValue) => {
   emitFeedData();
 });
 
+// 配信間隔が変更されたときに親コンポーネントへ通知
+watch(deliveryFrequency, (_newValue) => {
+  emitFeedData();
+});
+
+// 記事の優先順位が変更されたときに親コンポーネントへ通知
+watch(sortPriority, (_newValue) => {
+  emitFeedData();
+});
+
 // 絞り込み条件に応じてAPIで取得した記事リスト
 const filteredQiitaPosts = ref<QiitaPostDto[]>([]);
 
@@ -239,7 +331,7 @@ const filteredQiitaPosts = ref<QiitaPostDto[]>([]);
  * フィルター条件が変更されたことを検知して、Qiita API で記事を取得する
  */
 watch(
-  [filters, programTitle],
+  [filters, programTitle, deliveryFrequency, sortPriority],
   () => {
     if (isFiltersChanged() && isAuthorOrTagSelected()) {
       // フィルター条件が変更された場合、Qiita API で記事を取得する

@@ -67,6 +67,18 @@ export interface CreatePersonalizedFeedRequestDto {
      */
     'deliveryConfig': object;
     /**
+     * 配信間隔
+     * @type {string}
+     * @memberof CreatePersonalizedFeedRequestDto
+     */
+    'deliveryFrequency'?: CreatePersonalizedFeedRequestDtoDeliveryFrequencyEnum;
+    /**
+     * 記事の優先順位
+     * @type {string}
+     * @memberof CreatePersonalizedFeedRequestDto
+     */
+    'sortPriority'?: CreatePersonalizedFeedRequestDtoSortPriorityEnum;
+    /**
      * フィルターグループ一覧
      * @type {Array<FilterGroupDto>}
      * @memberof CreatePersonalizedFeedRequestDto
@@ -79,6 +91,21 @@ export interface CreatePersonalizedFeedRequestDto {
      */
     'isActive'?: boolean;
 }
+
+export const CreatePersonalizedFeedRequestDtoDeliveryFrequencyEnum = {
+    Daily: 'DAILY',
+    TwiceWeekly: 'TWICE_WEEKLY',
+    Weekly: 'WEEKLY'
+} as const;
+
+export type CreatePersonalizedFeedRequestDtoDeliveryFrequencyEnum = typeof CreatePersonalizedFeedRequestDtoDeliveryFrequencyEnum[keyof typeof CreatePersonalizedFeedRequestDtoDeliveryFrequencyEnum];
+export const CreatePersonalizedFeedRequestDtoSortPriorityEnum = {
+    PublishedAtDesc: 'PUBLISHED_AT_DESC',
+    LikesDesc: 'LIKES_DESC'
+} as const;
+
+export type CreatePersonalizedFeedRequestDtoSortPriorityEnum = typeof CreatePersonalizedFeedRequestDtoSortPriorityEnum[keyof typeof CreatePersonalizedFeedRequestDtoSortPriorityEnum];
+
 /**
  * 
  * @export
@@ -421,6 +448,18 @@ export interface PersonalizedFeedDto {
      */
     'deliveryConfig': object;
     /**
+     * 配信間隔
+     * @type {string}
+     * @memberof PersonalizedFeedDto
+     */
+    'deliveryFrequency': PersonalizedFeedDtoDeliveryFrequencyEnum;
+    /**
+     * 記事の優先順位
+     * @type {string}
+     * @memberof PersonalizedFeedDto
+     */
+    'sortPriority': PersonalizedFeedDtoSortPriorityEnum;
+    /**
      * 有効かどうか
      * @type {boolean}
      * @memberof PersonalizedFeedDto
@@ -439,6 +478,21 @@ export interface PersonalizedFeedDto {
      */
     'updatedAt': string;
 }
+
+export const PersonalizedFeedDtoDeliveryFrequencyEnum = {
+    Daily: 'DAILY',
+    TwiceWeekly: 'TWICE_WEEKLY',
+    Weekly: 'WEEKLY'
+} as const;
+
+export type PersonalizedFeedDtoDeliveryFrequencyEnum = typeof PersonalizedFeedDtoDeliveryFrequencyEnum[keyof typeof PersonalizedFeedDtoDeliveryFrequencyEnum];
+export const PersonalizedFeedDtoSortPriorityEnum = {
+    PublishedAtDesc: 'PUBLISHED_AT_DESC',
+    LikesDesc: 'LIKES_DESC'
+} as const;
+
+export type PersonalizedFeedDtoSortPriorityEnum = typeof PersonalizedFeedDtoSortPriorityEnum[keyof typeof PersonalizedFeedDtoSortPriorityEnum];
+
 /**
  * 
  * @export
@@ -476,6 +530,18 @@ export interface PersonalizedFeedWithFiltersDto {
      */
     'deliveryConfig': object;
     /**
+     * 配信間隔
+     * @type {string}
+     * @memberof PersonalizedFeedWithFiltersDto
+     */
+    'deliveryFrequency': PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum;
+    /**
+     * 記事の優先順位
+     * @type {string}
+     * @memberof PersonalizedFeedWithFiltersDto
+     */
+    'sortPriority': PersonalizedFeedWithFiltersDtoSortPriorityEnum;
+    /**
      * 有効かどうか
      * @type {boolean}
      * @memberof PersonalizedFeedWithFiltersDto
@@ -500,6 +566,21 @@ export interface PersonalizedFeedWithFiltersDto {
      */
     'filterGroups'?: Array<ResponseFilterGroupDto>;
 }
+
+export const PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum = {
+    Daily: 'DAILY',
+    TwiceWeekly: 'TWICE_WEEKLY',
+    Weekly: 'WEEKLY'
+} as const;
+
+export type PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum = typeof PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum[keyof typeof PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum];
+export const PersonalizedFeedWithFiltersDtoSortPriorityEnum = {
+    PublishedAtDesc: 'PUBLISHED_AT_DESC',
+    LikesDesc: 'LIKES_DESC'
+} as const;
+
+export type PersonalizedFeedWithFiltersDtoSortPriorityEnum = typeof PersonalizedFeedWithFiltersDtoSortPriorityEnum[keyof typeof PersonalizedFeedWithFiltersDtoSortPriorityEnum];
+
 /**
  * 
  * @export
@@ -991,6 +1072,18 @@ export interface UpdatePersonalizedFeedRequestDto {
      */
     'deliveryConfig'?: object;
     /**
+     * 配信間隔
+     * @type {string}
+     * @memberof UpdatePersonalizedFeedRequestDto
+     */
+    'deliveryFrequency'?: UpdatePersonalizedFeedRequestDtoDeliveryFrequencyEnum;
+    /**
+     * 記事の優先順位
+     * @type {string}
+     * @memberof UpdatePersonalizedFeedRequestDto
+     */
+    'sortPriority'?: UpdatePersonalizedFeedRequestDtoSortPriorityEnum;
+    /**
      * フィルターグループ一覧
      * @type {Array<FilterGroupDto>}
      * @memberof UpdatePersonalizedFeedRequestDto
@@ -1003,6 +1096,21 @@ export interface UpdatePersonalizedFeedRequestDto {
      */
     'isActive'?: boolean;
 }
+
+export const UpdatePersonalizedFeedRequestDtoDeliveryFrequencyEnum = {
+    Daily: 'DAILY',
+    TwiceWeekly: 'TWICE_WEEKLY',
+    Weekly: 'WEEKLY'
+} as const;
+
+export type UpdatePersonalizedFeedRequestDtoDeliveryFrequencyEnum = typeof UpdatePersonalizedFeedRequestDtoDeliveryFrequencyEnum[keyof typeof UpdatePersonalizedFeedRequestDtoDeliveryFrequencyEnum];
+export const UpdatePersonalizedFeedRequestDtoSortPriorityEnum = {
+    PublishedAtDesc: 'PUBLISHED_AT_DESC',
+    LikesDesc: 'LIKES_DESC'
+} as const;
+
+export type UpdatePersonalizedFeedRequestDtoSortPriorityEnum = typeof UpdatePersonalizedFeedRequestDtoSortPriorityEnum[keyof typeof UpdatePersonalizedFeedRequestDtoSortPriorityEnum];
+
 /**
  * 
  * @export

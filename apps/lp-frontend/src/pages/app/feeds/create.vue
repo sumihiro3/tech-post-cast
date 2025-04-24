@@ -51,6 +51,10 @@ v-container.max-width-container
 
 <script setup lang="ts">
 import { useNuxtApp } from '#app';
+import {
+  PersonalizedFeedDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum,
+  PersonalizedFeedDtoSortPriorityEnum as SortPriorityEnum,
+} from '@/api';
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 import FeedEditor from '@/components/qiita/FeedEditor.vue';
 import { useCreatePersonalizedFeed } from '@/composables/feeds/useCreatePersonalizedFeed';
@@ -79,6 +83,8 @@ const initialFeedData = reactive<InputPersonalizedFeedData>({
   },
   posts: [],
   totalCount: 0,
+  deliveryFrequency: DeliveryFrequencyEnum.Weekly,
+  sortPriority: SortPriorityEnum.PublishedAtDesc,
 });
 
 /**
@@ -94,6 +100,8 @@ const currentFeedData = ref<InputPersonalizedFeedData>({
   },
   posts: [],
   totalCount: 0,
+  deliveryFrequency: DeliveryFrequencyEnum.Weekly,
+  sortPriority: SortPriorityEnum.PublishedAtDesc,
 });
 
 /**
@@ -115,8 +123,21 @@ const hasFormChanges = computed(() => {
   const hasAuthorsSelected = (currentFeedData.value.filters.authors?.length || 0) > 0;
   // 日付範囲が初期値と異なるか
   const hasDateRangeChanged = currentFeedData.value.filters.dateRange !== -1;
+  // 配信間隔が初期値と異なるか
+  const hasDeliveryFrequencyChanged =
+    currentFeedData.value.deliveryFrequency !== DeliveryFrequencyEnum.Weekly;
+  // 記事の優先順位が初期値と異なるか
+  const hasSortPriorityChanged =
+    currentFeedData.value.sortPriority !== SortPriorityEnum.PublishedAtDesc;
 
-  return hasTitleChanged || hasTagsSelected || hasAuthorsSelected || hasDateRangeChanged;
+  return (
+    hasTitleChanged ||
+    hasTagsSelected ||
+    hasAuthorsSelected ||
+    hasDateRangeChanged ||
+    hasDeliveryFrequencyChanged ||
+    hasSortPriorityChanged
+  );
 });
 
 /**

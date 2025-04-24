@@ -1205,6 +1205,25 @@
               "time": "08:00"
             }
           },
+          "deliveryFrequency": {
+            "type": "string",
+            "description": "配信間隔",
+            "enum": [
+              "DAILY",
+              "TWICE_WEEKLY",
+              "WEEKLY"
+            ],
+            "example": "WEEKLY"
+          },
+          "sortPriority": {
+            "type": "string",
+            "description": "記事の優先順位",
+            "enum": [
+              "PUBLISHED_AT_DESC",
+              "LIKES_DESC"
+            ],
+            "example": "PUBLISHED_AT_DESC"
+          },
           "isActive": {
             "type": "boolean",
             "description": "有効かどうか",
@@ -1229,6 +1248,8 @@
           "dataSource",
           "filterConfig",
           "deliveryConfig",
+          "deliveryFrequency",
+          "sortPriority",
           "isActive",
           "createdAt",
           "updatedAt"
@@ -1455,6 +1476,25 @@
               "time": "08:00"
             }
           },
+          "deliveryFrequency": {
+            "type": "string",
+            "description": "配信間隔",
+            "enum": [
+              "DAILY",
+              "TWICE_WEEKLY",
+              "WEEKLY"
+            ],
+            "example": "WEEKLY"
+          },
+          "sortPriority": {
+            "type": "string",
+            "description": "記事の優先順位",
+            "enum": [
+              "PUBLISHED_AT_DESC",
+              "LIKES_DESC"
+            ],
+            "example": "PUBLISHED_AT_DESC"
+          },
           "isActive": {
             "type": "boolean",
             "description": "有効かどうか",
@@ -1486,6 +1526,8 @@
           "dataSource",
           "filterConfig",
           "deliveryConfig",
+          "deliveryFrequency",
+          "sortPriority",
           "isActive",
           "createdAt",
           "updatedAt"
@@ -1618,6 +1660,27 @@
               "frequency": "daily",
               "time": "08:00"
             }
+          },
+          "deliveryFrequency": {
+            "type": "string",
+            "description": "配信間隔",
+            "default": "WEEKLY",
+            "enum": [
+              "DAILY",
+              "TWICE_WEEKLY",
+              "WEEKLY"
+            ],
+            "example": "WEEKLY"
+          },
+          "sortPriority": {
+            "type": "string",
+            "description": "記事の優先順位",
+            "default": "PUBLISHED_AT_DESC",
+            "enum": [
+              "PUBLISHED_AT_DESC",
+              "LIKES_DESC"
+            ],
+            "example": "PUBLISHED_AT_DESC"
           },
           "filterGroups": {
             "description": "フィルターグループ一覧",
@@ -1767,6 +1830,25 @@
               "frequency": "daily",
               "time": "08:00"
             }
+          },
+          "deliveryFrequency": {
+            "type": "string",
+            "description": "配信間隔",
+            "enum": [
+              "DAILY",
+              "TWICE_WEEKLY",
+              "WEEKLY"
+            ],
+            "example": "WEEKLY"
+          },
+          "sortPriority": {
+            "type": "string",
+            "description": "記事の優先順位",
+            "enum": [
+              "PUBLISHED_AT_DESC",
+              "LIKES_DESC"
+            ],
+            "example": "PUBLISHED_AT_DESC"
           },
           "filterGroups": {
             "description": "フィルターグループ一覧",
