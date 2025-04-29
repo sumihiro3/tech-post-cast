@@ -11924,6 +11924,28 @@ kolorist@^1.8.0:
   resolved "https://registry.yarnpkg.com/kolorist/-/kolorist-1.8.0.tgz#edddbbbc7894bc13302cdf740af6374d4a04743c"
   integrity sha512-Y+60/zizpJ3HRH8DCss+q95yr6145JXZo46OTpFvDZWLfRCE4qChOyk1b26nMaNpfHHgxagk9dXT5OP0Tfe+dQ==
 
+langfuse-core@^3.37.2:
+  version "3.37.2"
+  resolved "https://registry.yarnpkg.com/langfuse-core/-/langfuse-core-3.37.2.tgz#ca4e2690514a182f398975768619b10bca6ff6ed"
+  integrity sha512-3iFz1UZzKDi9GEjIRRSSqcKbusmB17uR9qYxMR1BHQYuBkQv2wIV+HI793hWh3tmc6q2pmqPMjtJdoFVBhucDA==
+  dependencies:
+    mustache "^4.2.0"
+
+langfuse-vercel@^3.37.2:
+  version "3.37.2"
+  resolved "https://registry.yarnpkg.com/langfuse-vercel/-/langfuse-vercel-3.37.2.tgz#033aa40db693f915bcc6ed656897d8cce7a934dd"
+  integrity sha512-27ZTdti+1U3Q2iXOitj149ZmBhpc+2FMnZW69/IzJSKKzijpH+es5cFvXnYQRF4es1MmsTViwc7Qtyw9rUiuZw==
+  dependencies:
+    langfuse "^3.37.2"
+    langfuse-core "^3.37.2"
+
+langfuse@^3.37.2:
+  version "3.37.2"
+  resolved "https://registry.yarnpkg.com/langfuse/-/langfuse-3.37.2.tgz#e4bdaefa82b377c057def329b6a6f85365961624"
+  integrity sha512-C4P56hJDNk8vWNJR102JhgyCYXbt3HG19PY0brurlrU4dh5pq91JPt44jyiT5RzUs+NFew//gCkgFEcQd3RogA==
+  dependencies:
+    langfuse-core "^3.37.2"
+
 launch-editor@^2.9.1:
   version "2.10.0"
   resolved "https://registry.yarnpkg.com/launch-editor/-/launch-editor-2.10.0.tgz#5ca3edfcb9667df1e8721310f3a40f1127d4bc42"
