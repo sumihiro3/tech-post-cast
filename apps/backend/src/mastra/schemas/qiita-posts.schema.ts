@@ -37,3 +37,25 @@ export const summarizedQiitaPostSchema = z
  * Qiita 記事の要約の型定義
  */
 export type SummarizedQiitaPost = z.infer<typeof summarizedQiitaPostSchema>;
+
+/**
+ * Qiita 記事の要約と要点を表すスキーマ定義
+ */
+export const qiitaPostWithSummaryAndKeyPointsSchema = z
+  .object({
+    id: z.string().describe('記事のID'),
+    title: z.string().describe('記事のタイトル'),
+    summary: z.string().describe('要約の内容'),
+    keyPoints: z.array(z.string()).describe('記事の要点'),
+    author: z.string().describe('記事の作者'),
+    tags: z.array(z.string()).describe('記事のタグ'),
+    createdAt: z.string().describe('記事の作成日時'),
+  })
+  .describe('Qiita 記事の要約を表すスキーマ');
+
+/**
+ * Qiita 記事の要約と要点の型定義
+ */
+export type QiitaPostWithSummaryAndKeyPoints = z.infer<
+  typeof qiitaPostWithSummaryAndKeyPointsSchema
+>;
