@@ -5,15 +5,16 @@ import { isMastra } from '.';
 import {
   getPersonalizedProgramScriptGenerationInstructions,
   personalizedProgramScriptGenerationAgent,
-  qiitaPostSummarizeAgent,
+  qiitaPostSummarizeAndExtractKeyPointsAgent,
 } from '../agents';
 import {
   PersonalizedProgramScript,
   personalizedProgramScriptSchema,
   QiitaPost,
   qiitaPostSchema,
+  QiitaPostWithSummaryAndKeyPoints,
+  qiitaPostWithSummaryAndKeyPointsSchema,
   SummarizedQiitaPost,
-  summarizedQiitaPostSchema,
 } from '../schemas';
 
 /** 番組台本生成ワークフローを動的に生成するステップ名 */
@@ -47,8 +48,10 @@ export const createPersonalizedProgramScriptGenerationWorkflow = new Step({
       throw new Error(errorMessage);
     }
     const posts = context?.triggerData.posts as QiitaPost[];
+    const userName = context?.triggerData.userName as string;
     logger.debug(`posts: ${JSON.stringify(posts)}`);
     logger.debug(`posts length: ${posts.length}`);
+    logger.debug(`userName: ${userName}`);
     const workflow = new Workflow({
       name: 'dynamic Workflow',
       triggerSchema: z.object({
@@ -72,7 +75,7 @@ export const createPersonalizedProgramScriptGenerationWorkflow = new Step({
     // 各記事の要約が終了するのを待つ
     workflow.after(summarizeSteps);
     // 要約が終わったら、台本生成のステップを定義
-    workflow.step(createScriptStep());
+    workflow.step(createScriptStep(userName));
     // 動的ワークフローを構築してコミット
     workflow.commit();
     logger.info(
@@ -115,7 +118,7 @@ const createSummarizeStep = (index: number, post: QiitaPost) => {
     id: `${SUMMARIZE_POST_STEP_PREFIX}${index}`,
     description: `Qiita 記事の要約を生成するステップ: ${index}`,
     inputSchema: qiitaPostSchema,
-    outputSchema: summarizedQiitaPostSchema,
+    outputSchema: qiitaPostWithSummaryAndKeyPointsSchema,
     payload: post,
     execute: async ({ context, mastra }) => {
       const logger = mastra.getLogger();
@@ -124,17 +127,22 @@ const createSummarizeStep = (index: number, post: QiitaPost) => {
       logger.debug(`post: ${JSON.stringify(post)}`);
       const postId = post.id;
       logger.info(`記事の要約を開始します ID: ${postId}`);
-      const result =
-        await qiitaPostSummarizeAgent.generate(`以下の記事を要約してください。
+      const result = await qiitaPostSummarizeAndExtractKeyPointsAgent.generate(
+        `以下の記事を要約してください。なお、出力構造は output で指定したスキーマに従って出力してください。
           ----\n
           ${post.content}
-          \n----`);
-      logger.debug(`Summarize result: ${JSON.stringify(result)}`);
-      logger.info(`記事の要約が完了しました ID: ${postId}`);
+          \n----`,
+        {
+          output: qiitaPostWithSummaryAndKeyPointsSchema,
+        },
+      );
+      logger.info(`記事の要約が完了しました`, { result });
+      const summarizeResult = result.object as QiitaPostWithSummaryAndKeyPoints;
       return {
         id: postId,
         title: post.title,
-        summary: result.text,
+        summary: summarizeResult.summary,
+        keyPoints: summarizeResult.keyPoints,
         author: post.author,
         tags: post.tags,
         createdAt: post.createdAt,
@@ -146,8 +154,9 @@ const createSummarizeStep = (index: number, post: QiitaPost) => {
 
 /**
  * 番組の台本を生成するステップ
+ * @param userName ユーザー名
  */
-const createScriptStep = () => {
+const createScriptStep = (userName: string) => {
   const scriptStep = new Step({
     id: GENERATE_SCRIPT_STEP,
     description: '番組の台本を生成するステップ',
@@ -181,6 +190,7 @@ const createScriptStep = () => {
         `Tech Post Cast`,
         summarizedPosts,
         new Date(),
+        userName,
       );
       logger.debug(`${agent.name} Instructions: ${instructions}`);
       agent.__updateInstructions(instructions);

@@ -3,7 +3,7 @@ import { z } from 'zod';
 /**
  * パーソナルプログラム中で紹介する記事の解説文を表すスキーマ
  */
-export const personalProgramPostDescriptionSchema = z
+export const personalizedProgramPostDescriptionSchema = z
   .object({
     id: z.string().describe('記事のID'),
     title: z.string().describe('記事のタイトル'),
@@ -14,8 +14,8 @@ export const personalProgramPostDescriptionSchema = z
 /**
  * パーソナルプログラム中で紹介する記事の解説文を表す型
  */
-export type PersonalProgramPostDescription = z.infer<
-  typeof personalProgramPostDescriptionSchema
+export type PersonalizedProgramPostDescription = z.infer<
+  typeof personalizedProgramPostDescriptionSchema
 >;
 
 /**
@@ -26,7 +26,7 @@ export const personalizedProgramScriptSchema = z
     title: z.string().describe('番組のタイトル'),
     intro: z.string().describe('番組のイントロダクション'),
     posts: z
-      .array(personalProgramPostDescriptionSchema)
+      .array(personalizedProgramPostDescriptionSchema)
       .describe('番組で紹介する記事解説文のリスト'),
     ending: z.string().describe('番組のエンディング'),
   })

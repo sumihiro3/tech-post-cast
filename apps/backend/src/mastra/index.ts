@@ -30,6 +30,7 @@ const telemetry: OtelConfig = {
 export const personalizedProgramWorkflow = new Workflow({
   name: 'personalizedProgramWorkflow',
   triggerSchema: z.object({
+    userName: z.string().describe('ユーザー名'),
     posts: z.array(qiitaPostSchema).describe('記事のリスト'),
   }),
   mastra: new Mastra({
