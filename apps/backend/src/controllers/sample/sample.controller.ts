@@ -3,6 +3,8 @@ import {
   HeadlineTopicProgramScript,
   PostSummary,
 } from '@domains/radio-program/headline-topic-program';
+import { PersonalizedFeedFilterMapper } from '@domains/radio-program/personalized-feed/personalized-feed-filter.mapper';
+import { IPersonalizedFeedsRepository } from '@domains/radio-program/personalized-feed/personalized-feeds.repository.interface';
 import { HeadlineTopicProgramsRepository } from '@infrastructure/database/headline-topic-programs/headline-topic-programs.repository';
 import { S3ProgramFileUploader } from '@infrastructure/external-api/aws/s3';
 import { OpenAiApiClient } from '@infrastructure/external-api/openai-api/openai-api.client';
@@ -27,6 +29,9 @@ export class SampleController {
     @Inject('ProgramFileUploader')
     private readonly s3ProgramFileUploader: S3ProgramFileUploader,
     private readonly headlineTopicProgramsRepository: HeadlineTopicProgramsRepository,
+    @Inject('PersonalizedFeedsRepository')
+    private readonly personalizedFeedsRepository: IPersonalizedFeedsRepository,
+    private readonly personalizedFeedFilterMapper: PersonalizedFeedFilterMapper,
   ) {}
 
   @Post('summary')
@@ -169,5 +174,42 @@ export class SampleController {
       filePath,
     });
     this.logger.log(`ファイルアップロードが完了しました`, { result });
+  }
+
+  @Get('personalized-feed/:id')
+  async getQiitaPostsByUserPersonalizedFeed(@Param('id') userId: string) {
+    this.logger.debug(
+      `SampleController.getQiitaPostsByUserPersonalizedFeed called`,
+      {
+        userId,
+      },
+    );
+    try {
+      const personalizedFeeds =
+        await this.personalizedFeedsRepository.findActiveByUserId(userId);
+      this.logger.debug(
+        `${personalizedFeeds.length} 件のパーソナルフィードを取得しました`,
+        { personalizedFeeds },
+      );
+      const feed = personalizedFeeds[0];
+      const findOptions =
+        this.personalizedFeedFilterMapper.buildQiitaFilterOptions(feed);
+      const posts =
+        await this.qiitaPostsApiClient.findQiitaPostsByPersonalizedFeed(
+          findOptions,
+        );
+      this.logger.debug(`${posts.length} 件のQiita記事を取得しました`);
+      return posts.map((post) => ({
+        id: post.id,
+        title: post.title,
+        author: post.user,
+        createdAt: post.created_at,
+        tags: post.tags,
+      }));
+    } catch (error) {
+      const errorMessage = `パーソナルフィードの取得中にエラーが発生しました`;
+      this.logger.error(errorMessage, { error }, error.stack);
+      throw new InternalServerErrorException(errorMessage);
+    }
   }
 }
