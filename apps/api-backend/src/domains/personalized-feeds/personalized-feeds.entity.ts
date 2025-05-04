@@ -1,7 +1,6 @@
 import {
   DeliveryFrequency,
   PersonalizedFeed as PrismaPersonalizedFeed,
-  SortPriority,
 } from '@prisma/client';
 import { PersonalizedFeedWithFilters as PrismaPersonalizedFeedWithFilters } from '@tech-post-cast/database';
 
@@ -16,7 +15,6 @@ export class PersonalizedFeed {
   readonly filterConfig: Record<string, any>;
   readonly deliveryConfig: Record<string, any>;
   readonly deliveryFrequency: DeliveryFrequency;
-  readonly sortPriority: SortPriority;
   readonly isActive: boolean;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -29,7 +27,6 @@ export class PersonalizedFeed {
     this.filterConfig = data.filterConfig as Record<string, any>;
     this.deliveryConfig = data.deliveryConfig as Record<string, any>;
     this.deliveryFrequency = data.deliveryFrequency;
-    this.sortPriority = data.sortPriority;
     this.isActive = data.isActive;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;

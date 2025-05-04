@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { DeliveryFrequency, SortPriority } from '@prisma/client';
+import { DeliveryFrequency } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
@@ -205,19 +205,6 @@ export class CreatePersonalizedFeedRequestDto {
     message: '配信間隔は有効な値である必要があります',
   })
   deliveryFrequency?: DeliveryFrequency = DeliveryFrequency.WEEKLY;
-
-  @ApiProperty({
-    description: '記事の優先順位',
-    required: false,
-    default: SortPriority.PUBLISHED_AT_DESC,
-    enum: SortPriority,
-    example: SortPriority.PUBLISHED_AT_DESC,
-  })
-  @IsOptional()
-  @IsEnum(SortPriority, {
-    message: '記事の優先順位は有効な値である必要があります',
-  })
-  sortPriority?: SortPriority = SortPriority.PUBLISHED_AT_DESC;
 
   @ApiProperty({
     description: 'フィルターグループ一覧',

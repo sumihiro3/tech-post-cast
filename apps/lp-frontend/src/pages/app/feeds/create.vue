@@ -51,10 +51,7 @@ v-container.max-width-container
 
 <script setup lang="ts">
 import { useNuxtApp } from '#app';
-import {
-  PersonalizedFeedDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum,
-  PersonalizedFeedDtoSortPriorityEnum as SortPriorityEnum,
-} from '@/api';
+import { PersonalizedFeedDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum } from '@/api';
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 import FeedEditor from '@/components/qiita/FeedEditor.vue';
 import { useCreatePersonalizedFeed } from '@/composables/feeds/useCreatePersonalizedFeed';
@@ -70,6 +67,9 @@ definePageMeta({
   layout: 'user-app',
 });
 
+/** 記事公開日の範囲のデフォルト値 */
+const DEFAULT_DATE_RANGE: number = 7;
+
 /**
  * フィードの初期データ
  * 新規作成ではデフォルト値を設定
@@ -79,12 +79,11 @@ const initialFeedData = reactive<InputPersonalizedFeedData>({
   filters: {
     tags: [],
     authors: [],
-    dateRange: -1,
+    dateRange: DEFAULT_DATE_RANGE,
   },
   posts: [],
   totalCount: 0,
   deliveryFrequency: DeliveryFrequencyEnum.Weekly,
-  sortPriority: SortPriorityEnum.PublishedAtDesc,
 });
 
 /**
@@ -96,12 +95,11 @@ const currentFeedData = ref<InputPersonalizedFeedData>({
   filters: {
     tags: [],
     authors: [],
-    dateRange: -1,
+    dateRange: DEFAULT_DATE_RANGE,
   },
   posts: [],
   totalCount: 0,
   deliveryFrequency: DeliveryFrequencyEnum.Weekly,
-  sortPriority: SortPriorityEnum.PublishedAtDesc,
 });
 
 /**
@@ -126,17 +124,13 @@ const hasFormChanges = computed(() => {
   // 配信間隔が初期値と異なるか
   const hasDeliveryFrequencyChanged =
     currentFeedData.value.deliveryFrequency !== DeliveryFrequencyEnum.Weekly;
-  // 記事の優先順位が初期値と異なるか
-  const hasSortPriorityChanged =
-    currentFeedData.value.sortPriority !== SortPriorityEnum.PublishedAtDesc;
 
   return (
     hasTitleChanged ||
     hasTagsSelected ||
     hasAuthorsSelected ||
     hasDateRangeChanged ||
-    hasDeliveryFrequencyChanged ||
-    hasSortPriorityChanged
+    hasDeliveryFrequencyChanged
   );
 });
 

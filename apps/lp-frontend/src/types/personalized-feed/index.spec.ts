@@ -17,6 +17,7 @@ describe('パーソナライズフィード変換関数のテスト', () => {
           dataSource: 'qiita',
           filterConfig: { dateRange: 'すべて' },
           deliveryConfig: { frequency: 'daily', time: '10:00' },
+          deliveryFrequency: 'DAILY',
           isActive: true,
           createdAt: '2025-04-15T10:00:00.000Z',
           updatedAt: '2025-04-15T10:00:00.000Z',
@@ -76,7 +77,6 @@ describe('パーソナライズフィード変換関数のテスト', () => {
     });
 
     it('フィルターグループが空の場合、空の配列とデフォルト値が設定されること', () => {
-      // モックデータを作成（フィルターグループなし）
       const mockResponse: GetPersonalizedFeedWithFiltersResponseDto = {
         feed: {
           id: 'feed_123',
@@ -84,6 +84,7 @@ describe('パーソナライズフィード変換関数のテスト', () => {
           dataSource: 'qiita',
           filterConfig: { dateRange: 'すべて' },
           deliveryConfig: { frequency: 'daily', time: '10:00' },
+          deliveryFrequency: 'DAILY',
           isActive: true,
           createdAt: '2025-04-15T10:00:00.000Z',
           updatedAt: '2025-04-15T10:00:00.000Z',
@@ -104,8 +105,7 @@ describe('パーソナライズフィード変換関数のテスト', () => {
     });
 
     it('日付範囲フィルターがない場合、デフォルト値が設定されること', () => {
-      // モックデータを作成（日付範囲フィルターなし）
-      const title = 'テスト番組';
+      const title = 'テストフィード';
       const mockResponse: GetPersonalizedFeedWithFiltersResponseDto = {
         feed: {
           id: 'feed_123',
@@ -113,6 +113,7 @@ describe('パーソナライズフィード変換関数のテスト', () => {
           dataSource: 'qiita',
           filterConfig: { dateRange: 'すべて' },
           deliveryConfig: { frequency: 'daily', time: '10:00' },
+          deliveryFrequency: 'DAILY',
           isActive: true,
           createdAt: '2025-04-15T10:00:00.000Z',
           updatedAt: '2025-04-15T10:00:00.000Z',
@@ -271,7 +272,8 @@ describe('パーソナライズフィード変換関数のテスト', () => {
       const result = convertInputDataToUpdateDto(inputData);
 
       // 変換結果を検証
-      expect(result.name).toBe('テスト番組（更新後）');
+      const title = 'テスト番組（更新後）';
+      expect(result.name).toBe(title);
 
       // filterConfigを検証
       expect(result.filterConfig).toEqual({ dateRange: 90 });
@@ -279,7 +281,7 @@ describe('パーソナライズフィード変換関数のテスト', () => {
       // filterGroupsを検証
       expect(result.filterGroups?.length).toBe(1);
       const filterGroup = result.filterGroups?.[0];
-      expect(filterGroup?.name).toBe('フィルターグループ1');
+      expect(filterGroup?.name).toBe(`${title} のフィルターグループ1`);
       expect(filterGroup?.logicType).toBe('OR');
 
       // tagFiltersを検証

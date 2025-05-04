@@ -4,7 +4,6 @@ import type {
   FilterGroupDto,
   GetPersonalizedFeedWithFiltersResponseDto,
   PersonalizedFeedDtoDeliveryFrequencyEnum,
-  PersonalizedFeedDtoSortPriorityEnum,
   QiitaPostDto,
   TagFilterDto,
   UpdatePersonalizedFeedRequestDto,
@@ -23,7 +22,6 @@ export interface InputPersonalizedFeedData {
   posts: QiitaPostDto[];
   totalCount: number;
   deliveryFrequency?: PersonalizedFeedDtoDeliveryFrequencyEnum; // 配信間隔
-  sortPriority?: PersonalizedFeedDtoSortPriorityEnum; // 記事の優先順位
 }
 
 /**
@@ -87,7 +85,6 @@ export function convertApiResponseToInputData(
     posts: [], // APIレスポンスには記事データは含まれていないので空配列
     totalCount: 0, // APIレスポンスには記事の総数は含まれていないのでゼロ
     deliveryFrequency: feedData.deliveryFrequency, // 配信間隔
-    sortPriority: feedData.sortPriority, // 記事の優先順位
   };
 }
 
@@ -155,7 +152,6 @@ export function convertInputDataToCreateDto(
     filterConfig,
     deliveryConfig,
     deliveryFrequency: inputData.deliveryFrequency || 'DAILY', // 配信間隔
-    sortPriority: inputData.sortPriority || 'PUBLISHED_AT_DESC', // 記事の優先順位
     filterGroups: [filterGroup],
     isActive: true,
   };
@@ -218,7 +214,6 @@ export function convertInputDataToUpdateDto(
     name: inputData.programTitle,
     filterConfig,
     deliveryFrequency: inputData.deliveryFrequency, // 配信間隔
-    sortPriority: inputData.sortPriority, // 記事の優先順位
     filterGroups: [filterGroup],
   };
 }

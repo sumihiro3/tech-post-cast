@@ -220,7 +220,6 @@ export class PersonalizedFeedsController {
       filterConfig: dto.filterConfig ? 'provided' : 'not provided',
       deliveryConfig: dto.deliveryConfig ? 'provided' : 'not provided',
       deliveryFrequency: dto.deliveryFrequency,
-      sortPriority: dto.sortPriority,
       isActive: dto.isActive,
       hasFilterGroups: dto.filterGroups && dto.filterGroups.length > 0,
       filterGroupsCount: dto.filterGroups?.length || 0,
@@ -240,7 +239,6 @@ export class PersonalizedFeedsController {
         filterConfig: dto.filterConfig || {},
         deliveryConfig: dto.deliveryConfig || {},
         deliveryFrequency: dto.deliveryFrequency,
-        sortPriority: dto.sortPriority,
         isActive: dto.isActive ?? true,
         filterGroups: dto.filterGroups?.map((group) => ({
           name: group.name,
@@ -319,7 +317,6 @@ export class PersonalizedFeedsController {
         name: dto.name,
         dataSource: dto.dataSource,
         deliveryFrequency: dto.deliveryFrequency,
-        sortPriority: dto.sortPriority,
         hasFilterGroups: dto.filterGroups && dto.filterGroups.length > 0,
         filterGroupsCount: dto.filterGroups?.length || 0,
         tagFiltersCount: dto.filterGroups?.[0]?.tagFilters?.length || 0,
@@ -340,7 +337,6 @@ export class PersonalizedFeedsController {
         filterConfig: dto.filterConfig,
         deliveryConfig: dto.deliveryConfig,
         deliveryFrequency: dto.deliveryFrequency,
-        sortPriority: dto.sortPriority,
         isActive: dto.isActive,
         filterGroups: dto.filterGroups?.map((group) => ({
           name: group.name,

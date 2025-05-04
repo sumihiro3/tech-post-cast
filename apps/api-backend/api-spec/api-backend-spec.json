@@ -1215,15 +1215,6 @@
             ],
             "example": "WEEKLY"
           },
-          "sortPriority": {
-            "type": "string",
-            "description": "記事の優先順位",
-            "enum": [
-              "PUBLISHED_AT_DESC",
-              "LIKES_DESC"
-            ],
-            "example": "PUBLISHED_AT_DESC"
-          },
           "isActive": {
             "type": "boolean",
             "description": "有効かどうか",
@@ -1249,7 +1240,6 @@
           "filterConfig",
           "deliveryConfig",
           "deliveryFrequency",
-          "sortPriority",
           "isActive",
           "createdAt",
           "updatedAt"
@@ -1486,15 +1476,6 @@
             ],
             "example": "WEEKLY"
           },
-          "sortPriority": {
-            "type": "string",
-            "description": "記事の優先順位",
-            "enum": [
-              "PUBLISHED_AT_DESC",
-              "LIKES_DESC"
-            ],
-            "example": "PUBLISHED_AT_DESC"
-          },
           "isActive": {
             "type": "boolean",
             "description": "有効かどうか",
@@ -1527,7 +1508,6 @@
           "filterConfig",
           "deliveryConfig",
           "deliveryFrequency",
-          "sortPriority",
           "isActive",
           "createdAt",
           "updatedAt"
@@ -1671,16 +1651,6 @@
               "WEEKLY"
             ],
             "example": "WEEKLY"
-          },
-          "sortPriority": {
-            "type": "string",
-            "description": "記事の優先順位",
-            "default": "PUBLISHED_AT_DESC",
-            "enum": [
-              "PUBLISHED_AT_DESC",
-              "LIKES_DESC"
-            ],
-            "example": "PUBLISHED_AT_DESC"
           },
           "filterGroups": {
             "description": "フィルターグループ一覧",
@@ -1840,15 +1810,6 @@
               "WEEKLY"
             ],
             "example": "WEEKLY"
-          },
-          "sortPriority": {
-            "type": "string",
-            "description": "記事の優先順位",
-            "enum": [
-              "PUBLISHED_AT_DESC",
-              "LIKES_DESC"
-            ],
-            "example": "PUBLISHED_AT_DESC"
           },
           "filterGroups": {
             "description": "フィルターグループ一覧",

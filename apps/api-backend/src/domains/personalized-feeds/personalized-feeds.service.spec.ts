@@ -2,7 +2,7 @@ import { IAppUserRepository } from '@/domains/app-user/app-user.repository.inter
 import { UserNotFoundError } from '@/types/errors';
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { DeliveryFrequency, SortPriority } from '@prisma/client';
+import { DeliveryFrequency } from '@prisma/client';
 import {
   PersonalizedFeed,
   PersonalizedFeedWithFilters,
@@ -39,7 +39,6 @@ describe('PersonalizedFeedsService', () => {
     filterConfig: { minLikes: 5 },
     deliveryConfig: { frequency: 'daily', time: '08:00' },
     deliveryFrequency: DeliveryFrequency.WEEKLY,
-    sortPriority: SortPriority.PUBLISHED_AT_DESC,
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -138,7 +137,6 @@ describe('PersonalizedFeedsService', () => {
         filterConfig: { minLikes: 5 },
         deliveryConfig: { frequency: 'daily', time: '08:00' },
         deliveryFrequency: DeliveryFrequency.WEEKLY,
-        sortPriority: SortPriority.PUBLISHED_AT_DESC,
         isActive: true,
         filterGroups: [filterGroupDto],
       };
@@ -166,7 +164,6 @@ describe('PersonalizedFeedsService', () => {
         filterConfig: {},
         deliveryConfig: {},
         deliveryFrequency: DeliveryFrequency.WEEKLY,
-        sortPriority: SortPriority.PUBLISHED_AT_DESC,
         isActive: true,
         filterGroups: [],
       };

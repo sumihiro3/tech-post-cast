@@ -9,7 +9,7 @@ import {
   TagFilter,
 } from '@/domains/personalized-feeds/personalized-feeds.entity';
 import { ApiProperty } from '@nestjs/swagger';
-import { DeliveryFrequency, SortPriority } from '@prisma/client';
+import { DeliveryFrequency } from '@prisma/client';
 import {
   IsArray,
   IsBoolean,
@@ -381,17 +381,6 @@ export class PersonalizedFeedDto {
   deliveryFrequency: DeliveryFrequency;
 
   @ApiProperty({
-    description: '記事の優先順位',
-    required: true,
-    enum: SortPriority,
-    example: SortPriority.PUBLISHED_AT_DESC,
-  })
-  @IsEnum(SortPriority, {
-    message: '記事の優先順位は有効な値である必要があります',
-  })
-  sortPriority: SortPriority;
-
-  @ApiProperty({
     description: '有効かどうか',
     required: true,
     example: true,
@@ -439,7 +428,6 @@ export class PersonalizedFeedDto {
     dto.filterConfig = entity.filterConfig;
     dto.deliveryConfig = entity.deliveryConfig;
     dto.deliveryFrequency = entity.deliveryFrequency as DeliveryFrequency;
-    dto.sortPriority = entity.sortPriority as SortPriority;
     dto.isActive = entity.isActive;
     dto.createdAt = entity.createdAt.toISOString();
     dto.updatedAt = entity.updatedAt.toISOString();
@@ -476,7 +464,6 @@ export class PersonalizedFeedWithFiltersDto extends PersonalizedFeedDto {
     dto.filterConfig = entity.filterConfig;
     dto.deliveryConfig = entity.deliveryConfig;
     dto.deliveryFrequency = entity.deliveryFrequency as DeliveryFrequency;
-    dto.sortPriority = entity.sortPriority as SortPriority;
     dto.isActive = entity.isActive;
     dto.createdAt = entity.createdAt.toISOString();
     dto.updatedAt = entity.updatedAt.toISOString();

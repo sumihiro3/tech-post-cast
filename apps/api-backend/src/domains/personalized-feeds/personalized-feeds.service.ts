@@ -209,7 +209,6 @@ export class PersonalizedFeedsService {
             filterConfig: params.filterConfig,
             deliveryConfig: params.deliveryConfig,
             deliveryFrequency: params.deliveryFrequency,
-            sortPriority: params.sortPriority,
             isActive: params.isActive ?? true,
           },
           filterGroup: filterGroup
@@ -230,7 +229,6 @@ export class PersonalizedFeedsService {
           userId,
           name: params.name,
           deliveryFrequency: params.deliveryFrequency,
-          sortPriority: params.sortPriority,
           hasFilterGroup: !!result.filterGroup,
           filterGroupId: result.filterGroup?.id,
           tagFiltersCount: result.tagFilters?.length || 0,
@@ -319,7 +317,6 @@ export class PersonalizedFeedsService {
             filterConfig: params.filterConfig,
             deliveryConfig: params.deliveryConfig,
             deliveryFrequency: params.deliveryFrequency,
-            sortPriority: params.sortPriority,
             isActive: params.isActive,
           },
           filterGroup: filterGroup
@@ -342,7 +339,6 @@ export class PersonalizedFeedsService {
             name: params.name,
             dataSource: params.dataSource,
             deliveryFrequency: params.deliveryFrequency,
-            sortPriority: params.sortPriority,
           },
           hasFilterGroup: !!result.filterGroup,
           filterGroupId: result.filterGroup?.id,

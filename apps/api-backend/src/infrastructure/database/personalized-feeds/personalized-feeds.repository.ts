@@ -289,7 +289,6 @@ export class PersonalizedFeedsRepository
           filterConfig: feed.filterConfig,
           deliveryConfig: feed.deliveryConfig,
           deliveryFrequency: feed.deliveryFrequency,
-          sortPriority: feed.sortPriority,
           isActive: feed.isActive,
           createdAt: now,
           updatedAt: now,
@@ -749,8 +748,6 @@ export class PersonalizedFeedsRepository
         updateData.deliveryConfig = params.deliveryConfig;
       if (params.deliveryFrequency !== undefined)
         updateData.deliveryFrequency = params.deliveryFrequency;
-      if (params.sortPriority !== undefined)
-        updateData.sortPriority = params.sortPriority;
       if (params.isActive !== undefined) updateData.isActive = params.isActive;
 
       // パーソナライズフィードを更新
@@ -958,8 +955,6 @@ export class PersonalizedFeedsRepository
           updateData.deliveryConfig = params.feed.deliveryConfig;
         if (params.feed.deliveryFrequency !== undefined)
           updateData.deliveryFrequency = params.feed.deliveryFrequency;
-        if (params.feed.sortPriority !== undefined)
-          updateData.sortPriority = params.feed.sortPriority;
         if (params.feed.isActive !== undefined)
           updateData.isActive = params.feed.isActive;
 

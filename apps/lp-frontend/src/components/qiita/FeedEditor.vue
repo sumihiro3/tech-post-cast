@@ -43,25 +43,6 @@ div
               :value="option.value"
             )
 
-        //- 記事の優先順位
-        .mb-3
-          .d-flex.align-center.mb-2
-            v-icon(size="small" class="mr-1") mdi-sort
-            span.font-weight-medium 記事の優先順位
-          v-radio-group(
-            v-model="sortPriority"
-            inline
-            density="compact"
-            :error-messages="getFieldErrorMessages('sortPriority')"
-            :error="hasFieldError('sortPriority')"
-          )
-            v-radio(
-              v-for="option in sortPriorityOptions"
-              :key="option.value"
-              :label="option.label"
-              :value="option.value"
-            )
-
       v-divider
       //- フィルターオプション
       .my-4
@@ -140,13 +121,13 @@ div
 
 <script setup lang="ts">
 import type { QiitaPostDto } from '@/api';
-import {
-  PersonalizedFeedDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum,
-  PersonalizedFeedDtoSortPriorityEnum as SortPriorityEnum,
-} from '@/api';
+import { PersonalizedFeedDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum } from '@/api';
 import { useGetQiitaPosts } from '@/composables/qiita-api/useGetQiitaPosts';
 import { defineEmits, defineProps, reactive, ref, watch } from 'vue';
 import type { InputPersonalizedFeedData } from '~/types/personalized-feed';
+
+/** 記事公開日の範囲のデフォルト値 */
+const DEFAULT_DATE_RANGE: number = 7;
 
 const props = defineProps({
   // 編集モードの場合、初期値を渡す
@@ -157,10 +138,9 @@ const props = defineProps({
       filters: {
         authors: [],
         tags: [],
-        dateRange: -1,
+        dateRange: 7,
       },
       deliveryFrequency: DeliveryFrequencyEnum.Weekly,
-      sortPriority: SortPriorityEnum.PublishedAtDesc,
       posts: [],
       totalCount: 0,
     }),
@@ -205,15 +185,6 @@ const deliveryFrequencyOptions = [
   { value: DeliveryFrequencyEnum.Weekly, label: '毎週' },
 ];
 
-// 記事の優先順位
-const sortPriority = ref<SortPriorityEnum>(
-  (props.initialData.sortPriority as SortPriorityEnum) || SortPriorityEnum.PublishedAtDesc,
-);
-const sortPriorityOptions = [
-  { value: SortPriorityEnum.PublishedAtDesc, label: '新着順' },
-  { value: SortPriorityEnum.LikesDesc, label: '人気順（いいね数）' },
-];
-
 // 絞り込み条件の型
 interface IFilters {
   authors: string[];
@@ -228,7 +199,7 @@ const filters = reactive<IFilters>({
   dateRange:
     typeof props.initialData.filters.dateRange === 'number'
       ? props.initialData.filters.dateRange
-      : -1, // 数値でない場合はデフォルト値の-1（すべて）を設定
+      : DEFAULT_DATE_RANGE, // 数値でない場合はデフォルト値を設定
 });
 
 // 前回のフィルター条件
@@ -238,7 +209,7 @@ const previousFilters = ref<IFilters>({
   dateRange:
     typeof props.initialData.filters.dateRange === 'number'
       ? props.initialData.filters.dateRange
-      : -1, // 数値でない場合はデフォルト値の-1（すべて）を設定
+      : DEFAULT_DATE_RANGE, // 数値でない場合はデフォルト値を設定
 });
 
 // フィルターを適用した記事の総数
@@ -262,7 +233,6 @@ const emitFeedData = (): void => {
     posts: filteredQiitaPosts.value,
     totalCount: filteredQiitaPostsTotalCount.value,
     deliveryFrequency: deliveryFrequency.value,
-    sortPriority: sortPriority.value,
   } satisfies InputPersonalizedFeedData);
 };
 
@@ -279,16 +249,13 @@ watch(
       deliveryFrequency.value = newInitialData.deliveryFrequency as DeliveryFrequencyEnum;
     }
 
-    // 記事の優先順位を更新
-    if (newInitialData.sortPriority) {
-      sortPriority.value = newInitialData.sortPriority as SortPriorityEnum;
-    }
-
     // フィルター条件を更新
     filters.authors = [...newInitialData.filters.authors];
     filters.tags = [...newInitialData.filters.tags];
     filters.dateRange =
-      typeof newInitialData.filters.dateRange === 'number' ? newInitialData.filters.dateRange : -1;
+      typeof newInitialData.filters.dateRange === 'number'
+        ? newInitialData.filters.dateRange
+        : DEFAULT_DATE_RANGE;
 
     // 前回のフィルター条件も更新
     previousFilters.value = {
@@ -297,7 +264,7 @@ watch(
       dateRange:
         typeof newInitialData.filters.dateRange === 'number'
           ? newInitialData.filters.dateRange
-          : -1,
+          : DEFAULT_DATE_RANGE,
     };
 
     // 初期値がある場合は記事を取得
@@ -319,11 +286,6 @@ watch(deliveryFrequency, (_newValue) => {
   emitFeedData();
 });
 
-// 記事の優先順位が変更されたときに親コンポーネントへ通知
-watch(sortPriority, (_newValue) => {
-  emitFeedData();
-});
-
 // 絞り込み条件に応じてAPIで取得した記事リスト
 const filteredQiitaPosts = ref<QiitaPostDto[]>([]);
 
@@ -331,7 +293,7 @@ const filteredQiitaPosts = ref<QiitaPostDto[]>([]);
  * フィルター条件が変更されたことを検知して、Qiita API で記事を取得する
  */
 watch(
-  [filters, programTitle, deliveryFrequency, sortPriority],
+  [filters, programTitle, deliveryFrequency],
   () => {
     if (isFiltersChanged() && isAuthorOrTagSelected()) {
       // フィルター条件が変更された場合、Qiita API で記事を取得する
@@ -350,7 +312,7 @@ watch(
       previousFilters.value = {
         authors: [],
         tags: [],
-        dateRange: -1, // 「すべて」を表す値として-1を使用
+        dateRange: DEFAULT_DATE_RANGE,
       };
       emitFeedData();
     }
@@ -391,14 +353,12 @@ const fetchQiitaPosts = async (): Promise<void> => {
 const clearFilters = (): void => {
   filters.authors = [];
   filters.tags = [];
-  filters.dateRange = -1; // 「すべて」を表す値として-1を使用
+  filters.dateRange = 7;
 };
 
 // 日付範囲のリスト（日数指定）
 // 値は公開日から何日前までの記事を取得するかを表す数値
-// -1は「すべて」を意味する特殊な値
 const dateRanges = [
-  { value: -1, label: 'すべて' },
   { value: 7, label: '1週間以内' },
   { value: 30, label: '1ヶ月以内' },
   { value: 90, label: '3ヶ月以内' },
