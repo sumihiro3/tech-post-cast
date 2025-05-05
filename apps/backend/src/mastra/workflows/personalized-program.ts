@@ -49,9 +49,11 @@ export const createPersonalizedProgramScriptGenerationWorkflow = new Step({
     }
     const posts = context?.triggerData.posts as QiitaPost[];
     const userName = context?.triggerData.userName as string;
+    const programDate = context?.triggerData.programDate as Date;
     logger.debug(`posts: ${JSON.stringify(posts)}`);
     logger.debug(`posts length: ${posts.length}`);
     logger.debug(`userName: ${userName}`);
+    logger.debug(`programDate: ${programDate}`);
     const workflow = new Workflow({
       name: 'dynamic Workflow',
       triggerSchema: z.object({
@@ -75,7 +77,7 @@ export const createPersonalizedProgramScriptGenerationWorkflow = new Step({
     // 各記事の要約が終了するのを待つ
     workflow.after(summarizeSteps);
     // 要約が終わったら、台本生成のステップを定義
-    workflow.step(createScriptStep(userName));
+    workflow.step(createScriptStep(userName, programDate));
     // 動的ワークフローを構築してコミット
     workflow.commit();
     logger.info(
@@ -155,8 +157,9 @@ const createSummarizeStep = (index: number, post: QiitaPost) => {
 /**
  * 番組の台本を生成するステップ
  * @param userName ユーザー名
+ * @param programDate 番組日
  */
-const createScriptStep = (userName: string) => {
+const createScriptStep = (userName: string, programDate: Date) => {
   const scriptStep = new Step({
     id: GENERATE_SCRIPT_STEP,
     description: '番組の台本を生成するステップ',
@@ -189,7 +192,7 @@ const createScriptStep = (userName: string) => {
       const instructions = getPersonalizedProgramScriptGenerationInstructions(
         `Tech Post Cast`,
         summarizedPosts,
-        new Date(),
+        programDate,
         userName,
       );
       logger.debug(`${agent.name} Instructions: ${instructions}`);

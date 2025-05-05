@@ -32,6 +32,7 @@ export const personalizedProgramWorkflow = new Workflow({
   triggerSchema: z.object({
     userName: z.string().describe('ユーザー名'),
     posts: z.array(qiitaPostSchema).describe('記事のリスト'),
+    programDate: z.date().describe('番組日'),
   }),
   mastra: new Mastra({
     telemetry,
