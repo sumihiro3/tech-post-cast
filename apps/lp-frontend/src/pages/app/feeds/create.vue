@@ -12,7 +12,7 @@ v-container.max-width-container
   //- タイトル
   v-row(justify="center")
     v-col(cols="12")
-      .text-center.text-h4.font-weight-bold.mb-6 番組設定の新規作成
+      .text-center.text-h4.font-weight-bold.mb-6 パーソナルフィード設定の新規作成
 
   //- FeedEditorコンポーネントを使用
   FeedEditor(
@@ -70,6 +70,9 @@ definePageMeta({
 /** 記事公開日の範囲のデフォルト値 */
 const DEFAULT_DATE_RANGE: number = 7;
 
+/** いいね数のデフォルト値 */
+const DEFAULT_LIKES_COUNT: number = 0;
+
 /**
  * フィードの初期データ
  * 新規作成ではデフォルト値を設定
@@ -80,6 +83,7 @@ const initialFeedData = reactive<InputPersonalizedFeedData>({
     tags: [],
     authors: [],
     dateRange: DEFAULT_DATE_RANGE,
+    likesCount: DEFAULT_LIKES_COUNT,
   },
   posts: [],
   totalCount: 0,
@@ -96,6 +100,7 @@ const currentFeedData = ref<InputPersonalizedFeedData>({
     tags: [],
     authors: [],
     dateRange: DEFAULT_DATE_RANGE,
+    likesCount: DEFAULT_LIKES_COUNT,
   },
   posts: [],
   totalCount: 0,

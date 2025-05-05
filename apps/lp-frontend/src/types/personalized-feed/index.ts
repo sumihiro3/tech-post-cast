@@ -18,6 +18,7 @@ export interface InputPersonalizedFeedData {
     authors: string[];
     tags: string[];
     dateRange: number; // 文字列から数値に変更（日数指定）
+    likesCount: number; // いいね数
   };
   posts: QiitaPostDto[];
   totalCount: number;
@@ -41,7 +42,8 @@ export function convertApiResponseToInputData(
   // フィルターグループから著者とタグを抽出
   const authors: string[] = [];
   const tags: string[] = [];
-  let dateRange: number = -1; // デフォルト値として -1 (すべて) を設定
+  let dateRange: number = 7;
+  let likesCount: number = 0;
 
   // フィルターグループがある場合は処理する
   if (feedData.filterGroups && feedData.filterGroups.length > 0) {
@@ -72,6 +74,14 @@ export function convertApiResponseToInputData(
         dateRange = filter.daysAgo;
       }
     }
+
+    // いいね数フィルターを抽出
+    if (filterGroup.likesCountFilters) {
+      const filter = filterGroup.likesCountFilters[0];
+      if (filter && filter.minLikes) {
+        likesCount = filter.minLikes;
+      }
+    }
   }
 
   // 入力フォーム用のデータ構造に変換して返す
@@ -81,6 +91,7 @@ export function convertApiResponseToInputData(
       authors,
       tags,
       dateRange,
+      likesCount,
     },
     posts: [], // APIレスポンスには記事データは含まれていないので空配列
     totalCount: 0, // APIレスポンスには記事の総数は含まれていないのでゼロ
@@ -105,6 +116,7 @@ export function convertInputDataToCreateDto(
     tagFilters: [],
     authorFilters: [],
     dateRangeFilters: [],
+    likesCountFilters: [],
   };
 
   // タグフィルターを追加
@@ -133,6 +145,17 @@ export function convertInputDataToCreateDto(
       },
     ];
   }
+
+  // いいね数フィルターを追加
+  let minLikes = 0;
+  if (inputData.filters.likesCount > 0) {
+    minLikes = inputData.filters.likesCount;
+  }
+  filterGroup.likesCountFilters = [
+    {
+      minLikes: minLikes,
+    },
+  ];
 
   // フィルター設定を作成
   const filterConfig = {
@@ -175,6 +198,7 @@ export function convertInputDataToUpdateDto(
     tagFilters: [],
     authorFilters: [],
     dateRangeFilters: [],
+    likesCountFilters: [],
   };
 
   // タグフィルターを追加
@@ -195,11 +219,26 @@ export function convertInputDataToUpdateDto(
     );
   }
 
-  // 日付範囲フィルターを追加（-1=すべて以外の場合のみ）
+  // 日付範囲フィルターを追加
   if (inputData.filters.dateRange > 0) {
     filterGroup.dateRangeFilters = [
       {
         daysAgo: inputData.filters.dateRange,
+      },
+    ];
+  }
+
+  // いいね数フィルターを追加
+  if (inputData.filters.likesCount > 0) {
+    filterGroup.likesCountFilters = [
+      {
+        minLikes: inputData.filters.likesCount,
+      },
+    ];
+  } else {
+    filterGroup.likesCountFilters = [
+      {
+        minLikes: 0,
       },
     ];
   }

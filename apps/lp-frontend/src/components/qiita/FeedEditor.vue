@@ -61,11 +61,27 @@ div
           :max-tags="10"
         )
 
+        //- いいね数フィルター
+        .mb-3
+          .d-flex.align-center.mb-6
+            v-icon(size="small" class="mr-1") mdi-thumb-up
+            span.font-weight-medium いいね数
+          v-slider(
+            v-model="filters.likesCount"
+            :min="0"
+            :max="100"
+            :step="5"
+            show-ticks="always"
+            thumb-label="always"
+            color="primary"
+          )
+
         //- 配信日フィルター
         .mb-3
           .d-flex.align-center.mb-2
             v-icon(size="small" class="mr-1") mdi-calendar
             span.font-weight-medium 記事公開日の範囲
+            span.ml-1.error--text.text-caption (必須)
           v-chip-group(
             v-model="filters.dateRange"
             mandatory
@@ -107,16 +123,22 @@ div
     .d-flex.align-center.mb-4
       .text-h6.font-weight-medium 対象記事のプレビュ（{{ filteredQiitaPostsTotalCount }}件）
 
-    div(v-if="filteredQiitaPosts && filteredQiitaPosts.length === 0")
+    div(v-if="filters.likesCount > 0")
+      v-card
+        v-card-text.text-center.pa-4
+          .text-body-1.text-medium-emphasis プレビュは利用できません
+
+    div(v-else-if="filteredQiitaPosts && filteredQiitaPosts.length === 0")
       v-card
         v-card-text.text-center.pa-4
           .text-body-1.text-medium-emphasis 条件に一致する記事が見つかりませんでした。
 
-    qiita-post-list-item(
-      v-for="post in filteredQiitaPosts"
-      :key="post.id"
-      :post="post"
-    )
+    div(v-else)
+      qiita-post-list-item(
+        v-for="post in filteredQiitaPosts"
+        :key="post.id"
+        :post="post"
+      )
 </template>
 
 <script setup lang="ts">
@@ -139,6 +161,7 @@ const props = defineProps({
         authors: [],
         tags: [],
         dateRange: 7,
+        likesCount: 0,
       },
       deliveryFrequency: DeliveryFrequencyEnum.Weekly,
       posts: [],
@@ -190,6 +213,7 @@ interface IFilters {
   authors: string[];
   tags: string[];
   dateRange: number; // 文字列から数値に変更
+  likesCount: number; // いいね数フィルターを追加
 }
 
 // 絞り込み条件
@@ -200,6 +224,7 @@ const filters = reactive<IFilters>({
     typeof props.initialData.filters.dateRange === 'number'
       ? props.initialData.filters.dateRange
       : DEFAULT_DATE_RANGE, // 数値でない場合はデフォルト値を設定
+  likesCount: props.initialData.filters.likesCount || 0, // いいね数の初期値を設定
 });
 
 // 前回のフィルター条件
@@ -210,6 +235,7 @@ const previousFilters = ref<IFilters>({
     typeof props.initialData.filters.dateRange === 'number'
       ? props.initialData.filters.dateRange
       : DEFAULT_DATE_RANGE, // 数値でない場合はデフォルト値を設定
+  likesCount: props.initialData.filters.likesCount || 0, // いいね数の前回値も設定
 });
 
 // フィルターを適用した記事の総数
@@ -229,6 +255,7 @@ const emitFeedData = (): void => {
       authors: filters.authors,
       tags: filters.tags,
       dateRange: filters.dateRange,
+      likesCount: filters.likesCount, // いいね数フィルターを追加
     },
     posts: filteredQiitaPosts.value,
     totalCount: filteredQiitaPostsTotalCount.value,
@@ -256,6 +283,7 @@ watch(
       typeof newInitialData.filters.dateRange === 'number'
         ? newInitialData.filters.dateRange
         : DEFAULT_DATE_RANGE;
+    filters.likesCount = newInitialData.filters.likesCount || 0; // いいね数の更新
 
     // 前回のフィルター条件も更新
     previousFilters.value = {
@@ -265,6 +293,7 @@ watch(
         typeof newInitialData.filters.dateRange === 'number'
           ? newInitialData.filters.dateRange
           : DEFAULT_DATE_RANGE,
+      likesCount: newInitialData.filters.likesCount || 0, // いいね数の更新
     };
 
     // 初期値がある場合は記事を取得
@@ -286,6 +315,9 @@ watch(deliveryFrequency, (_newValue) => {
   emitFeedData();
 });
 
+// 前回 Qiita API で取得した記事リスト
+const previousQiitaPosts = ref<QiitaPostDto[]>([]);
+
 // 絞り込み条件に応じてAPIで取得した記事リスト
 const filteredQiitaPosts = ref<QiitaPostDto[]>([]);
 
@@ -303,16 +335,19 @@ watch(
         authors: [...filters.authors],
         tags: [...filters.tags],
         dateRange: filters.dateRange,
+        likesCount: filters.likesCount,
       };
       emitFeedData();
     } else if (!isAuthorOrTagSelected()) {
       // 著者またはタグが選択されていない場合、フィルターをクリアする
       filteredQiitaPosts.value = [];
+      previousQiitaPosts.value = [];
       filteredQiitaPostsTotalCount.value = 0;
       previousFilters.value = {
         authors: [],
         tags: [],
         dateRange: DEFAULT_DATE_RANGE,
+        likesCount: 0,
       };
       emitFeedData();
     }
@@ -328,7 +363,8 @@ const isFiltersChanged = (): boolean => {
   return (
     !arraysEqual(previousFilters.value.authors, filters.authors) ||
     !arraysEqual(previousFilters.value.tags, filters.tags) ||
-    previousFilters.value.dateRange !== filters.dateRange
+    previousFilters.value.dateRange !== filters.dateRange ||
+    previousFilters.value.likesCount !== filters.likesCount
   );
 };
 
@@ -344,9 +380,24 @@ const arraysEqual = (a: string[], b: string[]): boolean => {
  * Qiita API で条件に応じた記事を取得する
  */
 const fetchQiitaPosts = async (): Promise<void> => {
+  // いいね数が設定されている場合は API を呼び出さない
+  if (filters.likesCount > 0) {
+    filteredQiitaPosts.value = [];
+    filteredQiitaPostsTotalCount.value = 0;
+    return;
+  }
   const result = await useGetQiitaPosts(app, filters.authors, filters.tags, filters.dateRange);
+  previousQiitaPosts.value = result.posts;
+  // if (filters.likesCount > 0) {
+  //   // いいね数フィルターが設定されている場合、フィルタリングを行う
+  //   filteredQiitaPosts.value = result.posts.filter(
+  //     (post) => post.likes_count >= filters.likesCount,
+  //   );
+  //   filteredQiitaPostsTotalCount.value = filteredQiitaPosts.value.length;
+  // } else {
   filteredQiitaPosts.value = result.posts;
   filteredQiitaPostsTotalCount.value = result.totalCount;
+  // }
 };
 
 // フィルターをクリアする関数
@@ -354,6 +405,7 @@ const clearFilters = (): void => {
   filters.authors = [];
   filters.tags = [];
   filters.dateRange = 7;
+  filters.likesCount = 0; // いいね数もリセット
 };
 
 // 日付範囲のリスト（日数指定）

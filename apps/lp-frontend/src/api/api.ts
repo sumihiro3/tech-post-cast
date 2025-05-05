@@ -192,7 +192,13 @@ export interface FilterGroupDto {
      * @type {Array<DateRangeFilterDto>}
      * @memberof FilterGroupDto
      */
-    'dateRangeFilters'?: Array<DateRangeFilterDto>;
+    'dateRangeFilters': Array<DateRangeFilterDto>;
+    /**
+     * いいね数フィルター一覧
+     * @type {Array<LikesCountFilterDto>}
+     * @memberof FilterGroupDto
+     */
+    'likesCountFilters': Array<LikesCountFilterDto>;
 }
 /**
  * 
@@ -398,6 +404,19 @@ export interface HeadlineTopicProgramsCountDto {
      * @memberof HeadlineTopicProgramsCountDto
      */
     'count': number;
+}
+/**
+ * 
+ * @export
+ * @interface LikesCountFilterDto
+ */
+export interface LikesCountFilterDto {
+    /**
+     * 最小いいね数 (指定した数以上のいいねがある記事を対象とする)
+     * @type {number}
+     * @memberof LikesCountFilterDto
+     */
+    'minLikes': number;
 }
 /**
  * 
@@ -916,7 +935,13 @@ export interface ResponseFilterGroupDto {
      * @type {Array<ResponseDateRangeFilterDto>}
      * @memberof ResponseFilterGroupDto
      */
-    'dateRangeFilters'?: Array<ResponseDateRangeFilterDto>;
+    'dateRangeFilters': Array<ResponseDateRangeFilterDto>;
+    /**
+     * いいね数フィルター一覧
+     * @type {Array<LikesCountFilterDto>}
+     * @memberof ResponseFilterGroupDto
+     */
+    'likesCountFilters': Array<LikesCountFilterDto>;
     /**
      * 作成日時
      * @type {string}
