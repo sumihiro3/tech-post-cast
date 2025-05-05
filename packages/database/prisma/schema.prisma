@@ -312,10 +312,10 @@ model FeedFilterGroup {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  personalizedFeed PersonalizedFeed   @relation(fields: [filterId], references: [id])
-  tagFilters       TagFilter[]
-  authorFilters    AuthorFilter[]
-  dateRangeFilters DateRangeFilter[]
+  personalizedFeed  PersonalizedFeed   @relation(fields: [filterId], references: [id])
+  tagFilters        TagFilter[]
+  authorFilters     AuthorFilter[]
+  dateRangeFilters  DateRangeFilter[]
   likesCountFilters LikesCountFilter[]
 
   @@map("feed_filter_groups")
