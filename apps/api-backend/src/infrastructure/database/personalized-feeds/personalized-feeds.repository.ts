@@ -678,6 +678,7 @@ export class PersonalizedFeedsRepository
       {
         feedData: params.feed,
         hasFilterGroup: !!params.filterGroup,
+        filterGroupData: params.filterGroup,
       },
     );
 
@@ -785,7 +786,8 @@ export class PersonalizedFeedsRepository
             params.filterGroup.likesCountFilters &&
             params.filterGroup.likesCountFilters.length > 0
           ) {
-            for (const likesCountFilter of params.filterGroup.likesCountFilters) {
+            for (const likesCountFilter of params.filterGroup
+              .likesCountFilters) {
               const createdLikesCountFilter =
                 await client.likesCountFilter.create({
                   data: {
@@ -1202,7 +1204,8 @@ export class PersonalizedFeedsRepository
             params.filterGroup.likesCountFilters &&
             params.filterGroup.likesCountFilters.length > 0
           ) {
-            for (const likesCountFilter of params.filterGroup.likesCountFilters) {
+            for (const likesCountFilter of params.filterGroup
+              .likesCountFilters) {
               const createdLikesCountFilter =
                 await client.likesCountFilter.create({
                   data: {
