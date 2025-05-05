@@ -46,6 +46,7 @@ export class FilterGroup {
   readonly tagFilters?: TagFilter[];
   readonly authorFilters?: AuthorFilter[];
   readonly dateRangeFilters?: DateRangeFilter[];
+  readonly likesCountFilters?: LikesCountFilter[];
 
   constructor(data: any) {
     this.id = data.id;
@@ -60,6 +61,9 @@ export class FilterGroup {
     );
     this.dateRangeFilters = data.dateRangeFilters?.map(
       (dateRange: any) => new DateRangeFilter(dateRange),
+    );
+    this.likesCountFilters = data.likesCountFilters?.map(
+      (likesCount: any) => new LikesCountFilter(likesCount),
     );
   }
 }
@@ -111,6 +115,23 @@ export class DateRangeFilter {
     this.id = data.id;
     this.groupId = data.groupId;
     this.daysAgo = data.daysAgo;
+    this.createdAt = data.createdAt;
+  }
+}
+
+/**
+ * いいね数フィルターエンティティ
+ */
+export class LikesCountFilter {
+  readonly id: string;
+  readonly groupId: string;
+  readonly minLikes: number;
+  readonly createdAt: Date;
+
+  constructor(data: any) {
+    this.id = data.id;
+    this.groupId = data.groupId;
+    this.minLikes = data.minLikes;
     this.createdAt = data.createdAt;
   }
 }

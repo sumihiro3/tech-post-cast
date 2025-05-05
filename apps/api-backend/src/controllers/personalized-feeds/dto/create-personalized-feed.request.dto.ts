@@ -9,6 +9,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  Min,
   Validate,
   ValidateNested,
   ValidatorConstraint,
@@ -82,6 +83,22 @@ export class DateRangeFilterDto {
 }
 
 /**
+ * いいね数フィルターのDTO
+ */
+export class LikesCountFilterDto {
+  @ApiProperty({
+    description: '最小いいね数 (指定した数以上のいいねがある記事を対象とする)',
+    required: true,
+    example: 10,
+    type: Number,
+  })
+  @IsNotEmpty({ message: 'いいね数は必須です' })
+  @Min(0, { message: 'いいね数は0以上である必要があります' })
+  @Type(() => Number)
+  minLikes: number;
+}
+
+/**
  * フィルターグループのDTO
  */
 export class FilterGroupDto {
@@ -141,6 +158,17 @@ export class FilterGroupDto {
     message: '公開日フィルターは1つだけ設定できます',
   })
   dateRangeFilters?: DateRangeFilterDto[] = [];
+
+  @ApiProperty({
+    description: 'いいね数フィルター一覧',
+    required: false,
+    type: [LikesCountFilterDto],
+  })
+  @IsArray({ message: 'いいね数フィルターは配列である必要があります' })
+  @ValidateNested({ each: true })
+  @Type(() => LikesCountFilterDto)
+  @IsOptional()
+  likesCountFilters?: LikesCountFilterDto[] = [];
 }
 
 /**
