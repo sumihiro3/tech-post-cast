@@ -9,6 +9,8 @@ const personalizedFeedWithFilters = Prisma.validator<Prisma.PersonalizedFeedDefa
       include: {
         tagFilters: true,
         authorFilters: true,
+        dateRangeFilters: true,
+        likesCountFilters: true,
       },
     },
   },

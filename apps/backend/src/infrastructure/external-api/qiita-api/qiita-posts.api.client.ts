@@ -159,7 +159,7 @@ export class QiitaPostsApiClient implements IQiitaPostsApiClient {
       maxPage = response.maxPage;
       page++;
     } while (page <= maxPage);
-
+    this.logger.debug(`Qiita API から取得した記事数: ${posts.length} 件`);
     return posts;
   }
 
