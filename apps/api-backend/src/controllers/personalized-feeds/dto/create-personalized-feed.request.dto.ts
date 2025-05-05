@@ -9,6 +9,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  Min,
   Validate,
   ValidateNested,
   ValidatorConstraint,
@@ -23,16 +24,37 @@ export class SingleDateRangeFilterConstraint
   implements ValidatorConstraintInterface
 {
   validate(dateRangeFilters: DateRangeFilterDto[] | undefined) {
-    // 定義されていない場合はOK
-    if (!dateRangeFilters) return true;
-    // 空配列の場合もOK
-    if (dateRangeFilters.length === 0) return true;
+    // 定義されていない場合はNG
+    if (!dateRangeFilters) return false;
+    // 空配列の場合もNG
+    if (dateRangeFilters.length === 0) return false;
     // 1つだけの場合はOK
     return dateRangeFilters.length === 1;
   }
 
   defaultMessage() {
-    return '公開日フィルターは1つだけ設定できます';
+    return '公開日フィルターは1つだけ設定する必要があります';
+  }
+}
+
+/**
+ * いいね数フィルターが1つだけであることを検証するカスタムバリデーター
+ */
+@ValidatorConstraint({ name: 'singleLikesCountFilter', async: false })
+export class SingleLikesCountFilterConstraint
+  implements ValidatorConstraintInterface
+{
+  validate(likesCountFilters: LikesCountFilterDto[] | undefined) {
+    // 定義されていない場合はNG
+    if (!likesCountFilters) return false;
+    // 空配列の場合もNG
+    if (likesCountFilters.length === 0) return false;
+    // 1つだけの場合はOK
+    return likesCountFilters.length === 1;
+  }
+
+  defaultMessage() {
+    return 'いいね数フィルターは1つだけ設定する必要があります';
   }
 }
 
@@ -77,8 +99,25 @@ export class DateRangeFilterDto {
     type: Number,
   })
   @IsNotEmpty({ message: '日数は必須です' })
+  @Min(1, { message: '日数は1以上である必要があります' })
   @Type(() => Number)
   daysAgo: number;
+}
+
+/**
+ * いいね数フィルターのDTO
+ */
+export class LikesCountFilterDto {
+  @ApiProperty({
+    description: '最小いいね数 (指定した数以上のいいねがある記事を対象とする)',
+    required: true,
+    example: 10,
+    type: Number,
+  })
+  @IsNotEmpty({ message: 'いいね数は必須です' })
+  @Min(0, { message: 'いいね数は0以上である必要があります' })
+  @Type(() => Number)
+  minLikes: number;
 }
 
 /**
@@ -130,17 +169,29 @@ export class FilterGroupDto {
 
   @ApiProperty({
     description: '公開日フィルター一覧',
-    required: false,
+    required: true,
     type: [DateRangeFilterDto],
   })
   @IsArray({ message: '公開日フィルターは配列である必要があります' })
   @ValidateNested({ each: true })
   @Type(() => DateRangeFilterDto)
-  @IsOptional()
   @Validate(SingleDateRangeFilterConstraint, {
-    message: '公開日フィルターは1つだけ設定できます',
+    message: '公開日フィルターは1つだけ設定する必要があります',
   })
-  dateRangeFilters?: DateRangeFilterDto[] = [];
+  dateRangeFilters: DateRangeFilterDto[] = [];
+
+  @ApiProperty({
+    description: 'いいね数フィルター一覧',
+    required: true,
+    type: [LikesCountFilterDto],
+  })
+  @IsArray({ message: 'いいね数フィルターは配列である必要があります' })
+  @ValidateNested({ each: true })
+  @Type(() => LikesCountFilterDto)
+  @Validate(SingleLikesCountFilterConstraint, {
+    message: 'いいね数フィルターは1つだけ設定する必要があります',
+  })
+  likesCountFilters: LikesCountFilterDto[] = [];
 }
 
 /**

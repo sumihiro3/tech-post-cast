@@ -2,6 +2,7 @@ import {
   AuthorFilter,
   DateRangeFilter,
   FilterGroup,
+  LikesCountFilter,
   PersonalizedFeed,
   TagFilter,
 } from './personalized-feeds.entity';
@@ -19,10 +20,12 @@ export type FilterGroupParams = Omit<
   | 'tagFilters'
   | 'authorFilters'
   | 'dateRangeFilters'
+  | 'likesCountFilters'
 > & {
   tagFilters?: Pick<TagFilter, 'tagName'>[];
   authorFilters?: Pick<AuthorFilter, 'authorId'>[];
   dateRangeFilters?: Pick<DateRangeFilter, 'daysAgo'>[];
+  likesCountFilters?: Pick<LikesCountFilter, 'minLikes'>[];
 };
 
 /**

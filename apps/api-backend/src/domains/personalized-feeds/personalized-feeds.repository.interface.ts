@@ -67,6 +67,19 @@ export interface DateRangeFilter {
   createdAt: Date;
 }
 
+// いいね数フィルターに関する型定義
+export interface CreateLikesCountFilterParams {
+  groupId: string;
+  minLikes: number;
+}
+
+export interface LikesCountFilter {
+  id: string;
+  groupId: string;
+  minLikes: number;
+  createdAt: Date;
+}
+
 // フィードとフィルターグループの作成に関する型定義
 export interface CreateFeedWithFilterGroupParams {
   feed: Omit<PersonalizedFeed, 'id' | 'createdAt' | 'updatedAt'>;
@@ -76,6 +89,7 @@ export interface CreateFeedWithFilterGroupParams {
     tagFilters?: Array<{ tagName: string }>;
     authorFilters?: Array<{ authorId: string }>;
     dateRangeFilters?: Array<{ daysAgo: number }>;
+    likesCountFilters?: Array<{ minLikes: number }>;
   };
 }
 
@@ -99,6 +113,7 @@ export interface UpdateFeedWithFilterGroupParams {
     tagFilters?: Array<{ tagName: string }>;
     authorFilters?: Array<{ authorId: string }>;
     dateRangeFilters?: Array<{ daysAgo: number }>;
+    likesCountFilters?: Array<{ minLikes: number }>;
   };
 }
 
@@ -108,6 +123,7 @@ export interface FeedWithFilterGroupResult {
   tagFilters?: TagFilter[];
   authorFilters?: AuthorFilter[];
   dateRangeFilters?: DateRangeFilter[];
+  likesCountFilters?: LikesCountFilter[];
 }
 
 /**
@@ -236,6 +252,22 @@ export interface IPersonalizedFeedsRepository {
    * @returns 削除された公開日フィルターの数
    */
   deleteDateRangeFiltersByGroupId(groupId: string): Promise<number>;
+
+  /**
+   * いいね数フィルターを新規作成する
+   * @param params いいね数フィルター作成パラメータ
+   * @returns 作成されたいいね数フィルター
+   */
+  createLikesCountFilter(
+    params: CreateLikesCountFilterParams,
+  ): Promise<LikesCountFilter>;
+
+  /**
+   * 特定のフィルターグループに紐づくいいね数フィルターをすべて削除する
+   * @param groupId フィルターグループID
+   * @returns 削除されたいいね数フィルターの数
+   */
+  deleteLikesCountFiltersByGroupId(groupId: string): Promise<number>;
 
   /**
    * パーソナライズフィードとフィルターグループを同一トランザクションで更新する

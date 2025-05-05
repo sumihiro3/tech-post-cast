@@ -312,10 +312,11 @@ model FeedFilterGroup {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  personalizedFeed PersonalizedFeed  @relation(fields: [filterId], references: [id])
-  tagFilters       TagFilter[]
-  authorFilters    AuthorFilter[]
-  dateRangeFilters DateRangeFilter[]
+  personalizedFeed  PersonalizedFeed   @relation(fields: [filterId], references: [id])
+  tagFilters        TagFilter[]
+  authorFilters     AuthorFilter[]
+  dateRangeFilters  DateRangeFilter[]
+  likesCountFilters LikesCountFilter[]
 
   @@map("feed_filter_groups")
 }
@@ -355,6 +356,19 @@ model DateRangeFilter {
   feedFilterGroup FeedFilterGroup @relation(fields: [groupId], references: [id])
 
   @@map("date_range_filters")
+}
+
+// いいね数フィルター
+model LikesCountFilter {
+  id        String   @id @default(cuid()) @db.VarChar(50)
+  groupId   String   @map("group_id") @db.VarChar(50)
+  // 最小いいね数 (以上)
+  minLikes  Int      @default(0) @map("min_likes")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  feedFilterGroup FeedFilterGroup @relation(fields: [groupId], references: [id])
+
+  @@map("likes_count_filters")
 }
 
 // パーソナライズフィードを元に生成された番組

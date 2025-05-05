@@ -218,6 +218,7 @@ export class PersonalizedFeedsService {
                 tagFilters: filterGroup.tagFilters,
                 authorFilters: filterGroup.authorFilters,
                 dateRangeFilters: filterGroup.dateRangeFilters,
+                likesCountFilters: filterGroup.likesCountFilters,
               }
             : undefined,
         });
@@ -258,6 +259,12 @@ export class PersonalizedFeedsService {
                   (dateRangeFilter) => ({
                     ...dateRangeFilter,
                     createdAt: dateRangeFilter.createdAt || new Date(),
+                  }),
+                ),
+                likesCountFilters: (result.likesCountFilters || []).map(
+                  (likesCountFilter) => ({
+                    ...likesCountFilter,
+                    createdAt: likesCountFilter.createdAt || new Date(),
                   }),
                 ),
               },
@@ -326,6 +333,7 @@ export class PersonalizedFeedsService {
                 tagFilters: filterGroup.tagFilters,
                 authorFilters: filterGroup.authorFilters,
                 dateRangeFilters: filterGroup.dateRangeFilters,
+                likesCountFilters: filterGroup.likesCountFilters,
               }
             : undefined,
         });
@@ -371,6 +379,12 @@ export class PersonalizedFeedsService {
                     (dateRangeFilter) => ({
                       ...dateRangeFilter,
                       createdAt: dateRangeFilter.createdAt || new Date(),
+                    }),
+                  ),
+                  likesCountFilters: (result.likesCountFilters || []).map(
+                    (likesCountFilter) => ({
+                      ...likesCountFilter,
+                      createdAt: likesCountFilter.createdAt || new Date(),
                     }),
                   ),
                 },
@@ -485,6 +499,15 @@ export class PersonalizedFeedsService {
         }
       }
 
+      if (group.likesCountFilters && group.likesCountFilters.length > 0) {
+        for (const likesCountFilter of group.likesCountFilters) {
+          await this.personalizedFeedsRepository.createLikesCountFilter({
+            groupId: createdGroup.id,
+            minLikes: likesCountFilter.minLikes,
+          });
+        }
+      }
+
       this.logger.debug(
         `フィルターグループ [${createdGroup.id}] を作成しました`,
         {
@@ -494,6 +517,7 @@ export class PersonalizedFeedsService {
           tagFiltersCount: group.tagFilters?.length || 0,
           authorFiltersCount: group.authorFilters?.length || 0,
           dateRangeFiltersCount: group.dateRangeFilters?.length || 0,
+          likesCountFiltersCount: group.likesCountFilters?.length || 0,
         },
       );
     } catch (error) {
