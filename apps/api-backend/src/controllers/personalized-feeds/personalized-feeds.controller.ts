@@ -229,6 +229,10 @@ export class PersonalizedFeedsController {
         dto.filterGroups?.[0]?.dateRangeFilters?.length || 0,
       dateRangeFilter:
         dto.filterGroups?.[0]?.dateRangeFilters?.[0]?.daysAgo || null,
+      likesCountFiltersCount:
+        dto.filterGroups?.[0]?.likesCountFilters?.length || 0,
+      likesCountFilter:
+        dto.filterGroups?.[0]?.likesCountFilters?.[0]?.minLikes || null,
     });
 
     try {
@@ -246,6 +250,7 @@ export class PersonalizedFeedsController {
           tagFilters: group.tagFilters,
           authorFilters: group.authorFilters,
           dateRangeFilters: group.dateRangeFilters,
+          likesCountFilters: group.likesCountFilters,
         })),
       };
 
@@ -325,6 +330,10 @@ export class PersonalizedFeedsController {
           dto.filterGroups?.[0]?.dateRangeFilters?.length || 0,
         dateRangeFilter:
           dto.filterGroups?.[0]?.dateRangeFilters?.[0]?.daysAgo || null,
+        likesCountFiltersCount:
+          dto.filterGroups?.[0]?.likesCountFilters?.length || 0,
+        likesCountFilter:
+          dto.filterGroups?.[0]?.likesCountFilters?.[0]?.minLikes || null,
       },
     });
 
@@ -344,6 +353,7 @@ export class PersonalizedFeedsController {
           tagFilters: group.tagFilters,
           authorFilters: group.authorFilters,
           dateRangeFilters: group.dateRangeFilters,
+          likesCountFilters: group.likesCountFilters,
         })),
       };
 
