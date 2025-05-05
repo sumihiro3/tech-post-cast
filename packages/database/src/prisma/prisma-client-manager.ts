@@ -16,6 +16,7 @@ const MODEL_ID_PREFIXES: Record<string, string> = {
   HeadlineTopicProgram: 'htprogram_',
   Program: 'program_',
   FeedFilterGroup: 'feed-flt-gr_',
+  LikesCountFilter: 'likes-flt_',
   TagFilter: 'tag-flt_',
   AuthorFilter: 'author-flt_',
   PersonalizedFeedProgram: 'feed-pgm_',
