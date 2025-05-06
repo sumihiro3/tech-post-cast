@@ -1,3 +1,4 @@
+import { AppUser } from '@prisma/client';
 import { PersonalizedFeedWithFilters } from '@tech-post-cast/database';
 
 /**
@@ -13,10 +14,10 @@ export interface IPersonalizedFeedsRepository {
 
   /**
    * 指定ユーザーのアクティブなパーソナルフィード一覧を取得する
-   * @param userId ユーザーID
+   * @param user ユーザー
    * @returns アクティブなパーソナルフィード一覧
    */
-  findActiveByUserId(userId: string): Promise<PersonalizedFeedWithFilters[]>;
+  findActiveByUser(user: AppUser): Promise<PersonalizedFeedWithFilters[]>;
 
   /**
    * パーソナルフィードの件数を取得する

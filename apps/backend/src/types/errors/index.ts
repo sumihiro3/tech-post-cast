@@ -1,4 +1,5 @@
 export * from './app-config.error';
+export * from './app-user.error';
 export * from './file-uploader.error';
 export * from './headline-topic-program.error';
 export * from './openai-api.error';

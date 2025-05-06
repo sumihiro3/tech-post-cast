@@ -1,5 +1,6 @@
 import { IPersonalizedFeedsRepository } from '@domains/radio-program/personalized-feed/personalized-feeds.repository.interface';
 import { Injectable, Logger } from '@nestjs/common';
+import { AppUser } from '@prisma/client';
 import {
   PersonalizedFeedWithFilters,
   PrismaService,
@@ -46,18 +47,18 @@ export class PersonalizedFeedsRepository
 
   /**
    * 指定ユーザーのアクティブなパーソナルフィード一覧を取得する
-   * @param userId ユーザーID
+   * @param user ユーザー
    * @returns アクティブなパーソナルフィード一覧
    */
-  async findActiveByUserId(
-    userId: string,
+  async findActiveByUser(
+    user: AppUser,
   ): Promise<PersonalizedFeedWithFilters[]> {
-    this.logger.debug(`PersonalizedFeedsRepository.findActiveByUserId called`, {
-      userId,
+    this.logger.debug(`PersonalizedFeedsRepository.findActiveByUser called`, {
+      user,
     });
     const result = await this.prisma.personalizedFeed.findMany({
       where: {
-        userId,
+        userId: user.id,
         isActive: true,
       },
       include: {
@@ -76,7 +77,7 @@ export class PersonalizedFeedsRepository
     this.logger.debug(
       `指定ユーザーのアクティブなパーソナルフィード一覧を取得しました`,
       {
-        userId,
+        userId: user,
         count: result.length,
       },
     );

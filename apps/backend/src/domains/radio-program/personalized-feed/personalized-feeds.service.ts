@@ -14,12 +14,14 @@ import {
   InsufficientPostsError,
   PersonalizeProgramError,
 } from '@/types/errors';
+import { IAppUsersRepository } from '@domains/app-user/app-users.repository.interface';
 import { IQiitaPostsRepository } from '@domains/qiita-posts/qiita-posts.repository.interface';
 import { QiitaPostsApiClient } from '@infrastructure/external-api/qiita-api/qiita-posts.api.client';
 import { createLogger } from '@mastra/core/logger';
 import { Mastra } from '@mastra/core/mastra';
 import { Workflow } from '@mastra/core/workflows';
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { AppUser } from '@prisma/client';
 import { QiitaPostApiResponse } from '@tech-post-cast/commons';
 import { PersonalizedFeedWithFilters } from '@tech-post-cast/database';
 import { z } from 'zod';
@@ -40,11 +42,13 @@ export class PersonalizedFeedsService {
   constructor(
     private readonly appConfig: AppConfigService,
     private readonly filterMapper: PersonalizedFeedFilterMapper,
+    private readonly qiitaPostsApiClient: QiitaPostsApiClient,
     @Inject('PersonalizedFeedsRepository')
     private readonly personalizedFeedsRepository: IPersonalizedFeedsRepository,
     @Inject('QiitaPostsRepository')
     private readonly qiitaPostsRepository: IQiitaPostsRepository,
-    private readonly qiitaPostsApiClient: QiitaPostsApiClient,
+    @Inject('AppUsersRepository')
+    private readonly appUsersRepository: IAppUsersRepository,
   ) {
     // パーソナルフィード用番組台本生成ワークフローの設定
     const personalizedProgramWorkflow = new Workflow({
@@ -87,23 +91,29 @@ export class PersonalizedFeedsService {
       programDate,
     });
     try {
+      // ユーザーの存在確認
+      const user = await this.appUsersRepository.findOne(userId);
+      if (!user) {
+        const errorMessage = `ユーザー [${userId}] が見つかりませんでした`;
+        this.logger.error(errorMessage, { userId });
+        throw new PersonalizeProgramError(errorMessage);
+      }
       // ユーザーのアクティブなパーソナルフィード（番組設定）を取得する
       const feeds =
-        await this.personalizedFeedsRepository.findActiveByUserId(userId);
+        await this.personalizedFeedsRepository.findActiveByUser(user);
       this.logger.debug(
-        `ユーザー [${userId}] のアクティブなパーソナルフィードを取得しました`,
+        `ユーザー [${user.id}] のアクティブなパーソナルフィードを取得しました`,
         { feeds },
       );
       if (feeds.length === 0) {
         this.logger.warn(
-          `ユーザー [${userId}] のアクティブなパーソナルフィードが見つかりませんでした`,
-          { userId },
+          `ユーザー [${user.id}] のアクティブなパーソナルフィードが見つかりませんでした`,
         );
         return;
       }
       // パーソナルフィードに合致した番組を生成する
       // TODO アクティブなパーソナルフィードが複数ある場合、すべてのフィードに基づいて番組を生成する
-      await this.buildProgram(userId, feeds[0], programDate);
+      await this.buildProgram(user, feeds[0], programDate);
     } catch (error) {
       const errorMessage = `ユーザー [${userId}] のアクティブなパーソナルフィードに基づいた番組の生成中にエラーが発生しました`;
       this.logger.error(errorMessage, { error }, error.stack);
@@ -113,23 +123,23 @@ export class PersonalizedFeedsService {
 
   /**
    * 指定ユーザーのアクティブなパーソナルフィードに基づいた番組を生成する
-   * @param userId ユーザーID
+   * @param user ユーザー
    * @param feed パーソナルフィード
    * @param programDate 番組日
    */
   async buildProgram(
-    userId: string,
+    user: AppUser,
     feed: PersonalizedFeedWithFilters,
     programDate: Date,
   ) {
     this.logger.debug(`PersonalizedFeedsService.buildProgram called`, {
-      userId,
+      userId: user.id,
       feedId: feed.id,
       programDate,
     });
     // 番組台本の生成
     const { script, posts } = await this.generatePersonalizedProgramScript(
-      userId,
+      user,
       feed,
       programDate,
     );
@@ -138,25 +148,27 @@ export class PersonalizedFeedsService {
     // TODO DB に番組での紹介記事を登録する
     // TODO DB にパーソナルプログラムを登録する
     this.logger.debug(
-      `ユーザー [${userId}] のアクティブなパーソナルフィード [${feed.id}] に基づいた番組を生成しました`,
+      `ユーザー [${user}] のアクティブなパーソナルフィード [${feed.id}] に基づいた番組を生成しました`,
       { script },
     );
   }
 
   /**
    * パーソナルフィードの設定に基づいた番組の台本を生成する
-   * @param personalizedFeedId パーソナルフィードの ID
+   * @param user
+   * @param feed パーソナルフィード
    * @param programDate 番組日
    * @returns 生成した番組の台本
    */
   async generatePersonalizedProgramScript(
-    userId: string,
+    user: AppUser,
     feed: PersonalizedFeedWithFilters,
     programDate: Date,
   ): Promise<PersonalizedProgramScriptGenerationResult> {
     this.logger.debug(
       `PersonalizedFeedsService.generatePersonalizedProgramScript called`,
       {
+        userId: user.id,
         feedId: feed.id,
         feedName: feed.name,
         programDate,
@@ -215,7 +227,7 @@ export class PersonalizedFeedsService {
     // 紹介対象記事を元に番組の台本生成フローを実行する
     const script = await this.runPersonalizedProgramScriptGenerationWorkflow(
       programDate,
-      userId,
+      user,
       limitedPosts,
     );
     this.logger.log(
@@ -280,20 +292,20 @@ export class PersonalizedFeedsService {
   /**
    * パーソナル番組の台本生成ワークフローを実行する
    * @param programDate 番組日
-   * @param userName ユーザー名
+   * @param user ユーザー
    * @param posts Qiita記事リスト
    * @returns 生成された台本
    */
   async runPersonalizedProgramScriptGenerationWorkflow(
     programDate: Date,
-    userName: string,
+    user: AppUser,
     posts: QiitaPostApiResponse[],
   ): Promise<PersonalizedProgramScript> {
     this.logger.debug(
       `PersonalizedFeedsService.runPersonalizedProgramScriptGenerationWorkflow called`,
       {
         programDate,
-        userName,
+        userId: user.id,
         posts: posts.map((post) => ({
           id: post.id,
           title: post.title,
@@ -305,6 +317,7 @@ export class PersonalizedFeedsService {
       const workflow = this.mastra.getWorkflow('personalizedProgramWorkflow');
       const run = workflow.createRun();
       const programPosts = posts.map((post) => this.convertToQiitaPost(post));
+      const userName = `${user.lastName} ${user.firstName}`;
       // ワークフローを実行する
       const result = await run.start({
         triggerData: {

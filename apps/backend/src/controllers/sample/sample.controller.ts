@@ -1,3 +1,4 @@
+import { IAppUsersRepository } from '@domains/app-user/app-users.repository.interface';
 import { QiitaPostApiResponse } from '@domains/qiita-posts/qiita-posts.entity';
 import {
   HeadlineTopicProgramScript,
@@ -31,6 +32,8 @@ export class SampleController {
     private readonly headlineTopicProgramsRepository: HeadlineTopicProgramsRepository,
     @Inject('PersonalizedFeedsRepository')
     private readonly personalizedFeedsRepository: IPersonalizedFeedsRepository,
+    @Inject('AppUsersRepository')
+    private readonly appUsersRepository: IAppUsersRepository,
     private readonly personalizedFeedFilterMapper: PersonalizedFeedFilterMapper,
   ) {}
 
@@ -185,8 +188,16 @@ export class SampleController {
       },
     );
     try {
+      const user = await this.appUsersRepository.findOne(userId);
+      if (!user) {
+        const errorMessage = `指定されたユーザーは存在しません`;
+        this.logger.error(errorMessage, { userId });
+        throw new InternalServerErrorException(errorMessage);
+      }
+      this.logger.debug(`ユーザー情報を取得しました`, { user });
+      // ユーザーのパーソナルフィードを取得する
       const personalizedFeeds =
-        await this.personalizedFeedsRepository.findActiveByUserId(userId);
+        await this.personalizedFeedsRepository.findActiveByUser(user);
       this.logger.debug(
         `${personalizedFeeds.length} 件のパーソナルフィードを取得しました`,
         { personalizedFeeds },
