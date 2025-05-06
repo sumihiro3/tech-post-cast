@@ -25,7 +25,7 @@ export class HeadlineTopicProgramsService {
     private readonly appConfig: AppConfigService,
     private readonly qiitaPostsRepository: QiitaPostsRepository,
     private readonly qiitaPostsApiClient: QiitaPostsApiClient,
-    private readonly headlineTopicProgramMaker: HeadlineTopicProgramBuilder,
+    private readonly headlineTopicProgramBuilder: HeadlineTopicProgramBuilder,
     private readonly headlineTopicProgramsRepository: HeadlineTopicProgramsRepository,
     private readonly twitterApiClient: TwitterApiClient,
   ) {}
@@ -75,7 +75,7 @@ export class HeadlineTopicProgramsService {
       });
       // ヘッドライントピック番組を生成する
       this.logger.log(`ヘッドライントピック番組のファイル生成を開始します`);
-      const program = await this.headlineTopicProgramMaker.buildProgram(
+      const program = await this.headlineTopicProgramBuilder.buildProgram(
         programDate,
         popularPosts,
       );
@@ -132,7 +132,7 @@ export class HeadlineTopicProgramsService {
     }
     // 番組を再生成する
     const regeneratedProgram =
-      await this.headlineTopicProgramMaker.regenerateProgram(
+      await this.headlineTopicProgramBuilder.regenerateProgram(
         program,
         regenerationType,
       );
@@ -223,7 +223,7 @@ export class HeadlineTopicProgramsService {
       );
     }
     // 台本のベクトル化を行う
-    await this.headlineTopicProgramMaker.vectorizeProgram(program);
+    await this.headlineTopicProgramBuilder.vectorizeProgram(program);
     this.logger.log(
       `ヘッドライントピック番組 [${id}] 台本のベクトル化が完了しました！`,
     );
