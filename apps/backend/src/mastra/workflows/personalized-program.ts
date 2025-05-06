@@ -18,8 +18,12 @@ import {
 } from '../schemas';
 
 /** 番組台本生成ワークフローを動的に生成するステップ名 */
-const CREATE_GENERATE_SCRIPT_WORKFLOW =
+export const CREATE_GENERATE_SCRIPT_WORKFLOW =
   'createPersonalizedProgramScriptGenerationWorkflow';
+
+/** 番組台本生成ワークフロー名 */
+const PERSONALIZED_PROGRAM_SCRIPT_GENERATION_WORKFLOW =
+  'PersonalizedProgramScriptGenerationWorkflow';
 
 /** 番組生成ステップ名 */
 const GENERATE_SCRIPT_STEP = 'generateScriptStep';
@@ -33,7 +37,7 @@ const SUMMARIZE_POST_STEP_PREFIX = 'summarizePost_';
 export const createPersonalizedProgramScriptGenerationWorkflow = new Step({
   id: CREATE_GENERATE_SCRIPT_WORKFLOW,
   outputSchema: z.object({
-    dynamicWorkflowResult: z.any(),
+    scriptGenerationWorkflowResult: z.any(),
   }),
   execute: async ({ context, mastra }) => {
     const logger = mastra.getLogger();
@@ -55,7 +59,7 @@ export const createPersonalizedProgramScriptGenerationWorkflow = new Step({
     logger.debug(`userName: ${userName}`);
     logger.debug(`programDate: ${programDate}`);
     const workflow = new Workflow({
-      name: 'dynamic Workflow',
+      name: PERSONALIZED_PROGRAM_SCRIPT_GENERATION_WORKFLOW,
       triggerSchema: z.object({
         posts: z.array(qiitaPostSchema).describe('記事のリスト'),
       }),
@@ -93,9 +97,10 @@ export const createPersonalizedProgramScriptGenerationWorkflow = new Step({
     logger.debug(
       `番組台本生成ワークフロー実行結果: ${JSON.stringify(result.results)}`,
     );
-    let dynamicWorkflowResult;
+    let scriptGenerationWorkflowResult;
     if (result.results[GENERATE_SCRIPT_STEP]?.status === 'success') {
-      dynamicWorkflowResult = result.results[GENERATE_SCRIPT_STEP]?.output;
+      scriptGenerationWorkflowResult =
+        result.results[GENERATE_SCRIPT_STEP]?.output;
     } else {
       logger.error(`番組台本生成ワークフローの実行に失敗しました`, {
         result,
@@ -104,10 +109,10 @@ export const createPersonalizedProgramScriptGenerationWorkflow = new Step({
     }
     // 動的ワークフローからの結果を返す
     logger.info(`番組台本生成ワークフローの実行が完了しました`, {
-      dynamicWorkflowResult,
+      result: scriptGenerationWorkflowResult,
     });
     return {
-      dynamicWorkflowResult,
+      scriptGenerationWorkflowResult,
     };
   },
 });
