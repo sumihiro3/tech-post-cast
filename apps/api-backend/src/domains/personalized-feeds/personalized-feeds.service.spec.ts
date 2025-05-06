@@ -1,4 +1,4 @@
-import { IAppUserRepository } from '@/domains/app-user/app-user.repository.interface';
+import { IAppUsersRepository } from '@/domains/app-users/app-users.repository.interface';
 import { UserNotFoundError } from '@/types/errors';
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -17,7 +17,7 @@ import {
 describe('PersonalizedFeedsService', () => {
   let service: PersonalizedFeedsService;
   let personalizedFeedsRepository: jest.Mocked<IPersonalizedFeedsRepository>;
-  let appUserRepository: jest.Mocked<IAppUserRepository>;
+  let appUserRepository: jest.Mocked<IAppUsersRepository>;
 
   const mockUser = {
     id: 'user_123456',
@@ -91,7 +91,7 @@ describe('PersonalizedFeedsService', () => {
 
     appUserRepository = {
       findOne: jest.fn(),
-    } as unknown as jest.Mocked<IAppUserRepository>;
+    } as unknown as jest.Mocked<IAppUsersRepository>;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -101,7 +101,7 @@ describe('PersonalizedFeedsService', () => {
           useValue: personalizedFeedsRepository,
         },
         {
-          provide: 'IAppUserRepository',
+          provide: 'IAppUsersRepository',
           useValue: appUserRepository,
         },
       ],

@@ -4,18 +4,18 @@ import {
   AppUserFindError,
   AppUserUpdateError,
 } from '@/types/errors';
-import { IAppUserRepository } from '@domains/app-user/app-user.repository.interface';
+import { IAppUsersRepository } from '@domains/app-users/app-users.repository.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { AppUser } from '@prisma/client';
 import { PrismaClientManager } from '@tech-post-cast/database';
 
 /**
- * IAppUserRepository の実装
+ * IAppUsersRepository の実装
  * Prisma を利用してデータベースにアクセスする
  */
 @Injectable()
-export class AppUserRepository implements IAppUserRepository {
-  private readonly logger = new Logger(AppUserRepository.name);
+export class AppUsersRepository implements IAppUsersRepository {
+  private readonly logger = new Logger(AppUsersRepository.name);
 
   constructor(private readonly prisma: PrismaClientManager) {}
 

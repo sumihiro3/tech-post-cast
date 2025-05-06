@@ -1,5 +1,5 @@
 import { FilterGroupDto } from '@/controllers/personalized-feeds/dto/create-personalized-feed.request.dto';
-import { IAppUserRepository } from '@/domains/app-user/app-user.repository.interface';
+import { IAppUsersRepository } from '@/domains/app-users/app-users.repository.interface';
 import { UserNotFoundError } from '@/types/errors';
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AppUser } from '@prisma/client';
@@ -22,8 +22,8 @@ export class PersonalizedFeedsService {
   constructor(
     @Inject('IPersonalizedFeedsRepository')
     private readonly personalizedFeedsRepository: IPersonalizedFeedsRepository,
-    @Inject('IAppUserRepository')
-    private readonly appUserRepository: IAppUserRepository,
+    @Inject('IAppUsersRepository')
+    private readonly appUserRepository: IAppUsersRepository,
   ) {}
 
   /**

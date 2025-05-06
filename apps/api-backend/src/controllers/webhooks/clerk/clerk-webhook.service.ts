@@ -4,7 +4,7 @@ import {
   AppUserUpdateError,
 } from '@/types/errors';
 import { UserJSON, WebhookEvent } from '@clerk/backend';
-import { IAppUserRepository } from '@domains/app-user/app-user.repository.interface';
+import { IAppUsersRepository } from '@domains/app-users/app-users.repository.interface';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaClientManager } from '@tech-post-cast/database';
 
@@ -14,7 +14,7 @@ export class ClerkWebhookService {
 
   constructor(
     @Inject('AppUserRepository')
-    private readonly appUserRepository: IAppUserRepository,
+    private readonly appUserRepository: IAppUsersRepository,
     private readonly prismaClientManager: PrismaClientManager,
   ) {}
 

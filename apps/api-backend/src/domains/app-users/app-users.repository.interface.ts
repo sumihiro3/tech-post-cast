@@ -3,7 +3,7 @@ import { AppUser } from '@prisma/client';
 /**
  * アプリケーションユーザーリポジトリのインターフェース
  */
-export interface IAppUserRepository {
+export interface IAppUsersRepository {
   /**
    * 指定IDのユーザーを取得する
    * @param userId 取得するユーザーID

@@ -1,4 +1,4 @@
-import { AppUserRepository } from '@infrastructure/database/app-users/app-user.repository';
+import { AppUsersRepository } from '@infrastructure/database/app-users/app-users.repository';
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '@tech-post-cast/database';
 import { ClerkWebhookController } from './clerk-webhook.controller';
@@ -11,7 +11,7 @@ import { ClerkWebhookService } from './clerk-webhook.service';
     ClerkWebhookService,
     {
       provide: 'AppUserRepository',
-      useClass: AppUserRepository,
+      useClass: AppUsersRepository,
     },
   ],
 })
