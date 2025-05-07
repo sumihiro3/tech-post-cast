@@ -9,30 +9,20 @@
 ### 紹介記事テーブル設計
 
 - **優先度**: P0
-- **状態**: 未着手
+- **状態**: 完了
 - **期限**: 未設定
 - **説明**: 記事情報を保存するためのテーブル設計
 - **依存関係**: なし
 - **詳細**:
-    - 記事テーブル (articles)
-        - id: UUID (PK)
-        - external_id: string (Qiita記事ID)
-        - title: string
-        - url: string
-        - author: string
-        - published_at: timestamp
-        - tags: string[]
-        - summary: text
-        - created_at: timestamp
-        - updated_at: timestamp
-    - プログラム記事関連テーブル（program_articles）
-        - id: UUID (PK)
-        - program_id: UUID (FK to programs)
-        - article_id: UUID (FK to articles)
-        - relevance_score: float（記事の関連性スコア）
-        - mentioned_at: timestamp（プログラム内で言及された時間）
-        - created_at: timestamp
-        - updated_at: timestamp
+    - 既存のテーブル構成（QiitaPost, PersonalizedFeedProgram）で要件を満たせることを確認
+    - QiitaPostモデルには記事の基本情報（ID、タイトル、URL、著者など）が保存されている
+    - PersonalizedFeedProgramとQiitaPostの多対多関連で記事とプログラムの紐付けが可能
+    - 変更は不要と判断
+- **振り返り**:
+    - 当初は関連性スコア、言及時間などの追加情報のための中間テーブルを検討したが、ユーザーの要件を再確認した結果、既存構成で十分と判断
+    - パーソナルフィードの条件に基づいて記事が選別されるため、関連性スコアは不要
+    - 言及時間はプログラム生成日時で代用可能
+    - 多対多関連の自動生成される中間テーブルで十分であり、追加情報は必要なし
 
 ## バックエンド実装タスク
 
@@ -97,12 +87,14 @@
 ### マイグレーション実行計画
 
 - **優先度**: P1
-- **状態**: 未着手
+- **状態**: 完了（不要と判断）
 - **期限**: 未設定
 - **説明**: 新しいテーブルのマイグレーション計画
 - **依存関係**: 紹介記事テーブル設計
+- **詳細**:
+    - 既存のテーブル構成で要件を満たせるため、追加のマイグレーションは不要と判断
 - **サブタスク**:
-    1. マイグレーションスクリプト作成
-    2. テスト環境でのマイグレーションテスト
-    3. 本番環境デプロイ計画
-    4. ロールバック計画
+    1. ~~マイグレーションスクリプト作成~~ （不要）
+    2. ~~テスト環境でのマイグレーションテスト~~ （不要）
+    3. ~~本番環境デプロイ計画~~ （不要）
+    4. ~~ロールバック計画~~ （不要）
