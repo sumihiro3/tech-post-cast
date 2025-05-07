@@ -1,3 +1,9 @@
+---
+description: NestJSバックエンド実装ルール
+globs: "apps/api-backend/**/*"
+alwaysApply: false
+---
+
 # NestJSバックエンド実装ルール
 
 **適用対象**: apps/api-backend/**/*

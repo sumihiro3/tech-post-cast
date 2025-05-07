@@ -23,3 +23,27 @@ suggestions:
       variableCase: camelCase
       constantCase: UPPER_CASE
       fileCase: kebab-case
+
+# プロジェクトルールの参照設定
+rules:
+  paths:
+    - .cursor/rules/**/*.mdc
+    - .cursor/rules/**/*.md
+    - docs/coding-rules/**/*.md
+
+  # モノレポ共通ルールは常に参照
+  always_include:
+    - .cursor/rules/common.mdc
+
+  # ファイルパターンごとの固有ルール
+  path_specific:
+    'apps/api-backend/**/*':
+      - .cursor/rules/api-backend.mdc
+      - docs/coding-rules/api-backend.md
+    'apps/lp-frontend/**/*':
+      - .cursor/rules/lp-frontend.mdc
+      - docs/coding-rules/lp-frontend.md
+
+  # タスク管理関連のファイルに対するルール
+  '**/*.md':
+    - .cursor/rules/task-management.mdc
