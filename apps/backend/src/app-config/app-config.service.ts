@@ -79,6 +79,46 @@ export class AppConfigService {
         'HEADLINE_TOPIC_PROGRAM_PICTURE_FILE_PATH が設定されていません',
       );
     }
+    if (!this.PersonalizedProgramTargetDir) {
+      throw new AppConfigValidationError(
+        'PERSONALIZED_PROGRAM_TARGET_DIR が設定されていません',
+      );
+    }
+    if (!this.PersonalizedProgramBgmFilePath) {
+      throw new AppConfigValidationError(
+        'PERSONALIZED_PROGRAM_BGM_FILE_PATH が設定されていません',
+      );
+    }
+    if (!this.PersonalizedProgramOpeningFilePath) {
+      throw new AppConfigValidationError(
+        'PERSONALIZED_PROGRAM_OPENING_FILE_PATH が設定されていません',
+      );
+    }
+    if (!this.PersonalizedProgramEndingFilePath) {
+      throw new AppConfigValidationError(
+        'PERSONALIZED_PROGRAM_ENDING_FILE_PATH が設定されていません',
+      );
+    }
+    if (!this.PersonalizedProgramSe1FilePath) {
+      throw new AppConfigValidationError(
+        'PERSONALIZED_PROGRAM_SE_1_FILE_PATH が設定されていません',
+      );
+    }
+    if (!this.PersonalizedProgramSe2FilePath) {
+      throw new AppConfigValidationError(
+        'PERSONALIZED_PROGRAM_SE_2_FILE_PATH が設定されていません',
+      );
+    }
+    if (!this.PersonalizedProgramSe3FilePath) {
+      throw new AppConfigValidationError(
+        'PERSONALIZED_PROGRAM_SE_3_FILE_PATH が設定されていません',
+      );
+    }
+    if (!this.PersonalizedProgramPictureFilePath) {
+      throw new AppConfigValidationError(
+        'PERSONALIZED_PROGRAM_PICTURE_FILE_PATH が設定されていません',
+      );
+    }
     if (!this.ProgramAudioBucketName) {
       throw new AppConfigValidationError(
         'PROGRAM_AUDIO_BUCKET_NAME が設定されていません',
@@ -157,6 +197,16 @@ export class AppConfigService {
         this.HeadlineTopicProgramSeLongFilePath,
       HeadlineTopicProgramPictureFilePath:
         this.HeadlineTopicProgramPictureFilePath,
+      PersonalizedProgramTargetDir: this.PersonalizedProgramTargetDir,
+      PersonalizedProgramBgmFilePath: this.PersonalizedProgramBgmFilePath,
+      PersonalizedProgramOpeningFilePath:
+        this.PersonalizedProgramOpeningFilePath,
+      PersonalizedProgramEndingFilePath: this.PersonalizedProgramEndingFilePath,
+      PersonalizedProgramSe1FilePath: this.PersonalizedProgramSe1FilePath,
+      PersonalizedProgramSe2FilePath: this.PersonalizedProgramSe2FilePath,
+      PersonalizedProgramSe3FilePath: this.PersonalizedProgramSe3FilePath,
+      PersonalizedProgramPictureFilePath:
+        this.PersonalizedProgramPictureFilePath,
       ProgramAudioBucketName: this.ProgramAudioBucketName,
       ProgramAudioFileUrlPrefix: this.ProgramAudioFileUrlPrefix,
       CloudflareAccessKeyId: this.CloudflareAccessKeyId,
@@ -295,6 +345,62 @@ export class AppConfigService {
    */
   get HeadlineTopicProgramPictureFilePath(): string {
     return this.config.get<string>('HEADLINE_TOPIC_PROGRAM_PICTURE_FILE_PATH');
+  }
+
+  /**
+   * パーソナライズド番組のターゲットディレクトリ
+   */
+  get PersonalizedProgramTargetDir(): string {
+    return this.config.get<string>('PERSONALIZED_PROGRAM_TARGET_DIR');
+  }
+
+  /**
+   * パーソナライズド番組用BGMファイルのパス
+   */
+  get PersonalizedProgramBgmFilePath(): string {
+    return this.config.get<string>('PERSONALIZED_PROGRAM_BGM_FILE_PATH');
+  }
+
+  /**
+   * パーソナライズド番組用オープニングファイルのパス
+   */
+  get PersonalizedProgramOpeningFilePath(): string {
+    return this.config.get<string>('PERSONALIZED_PROGRAM_OPENING_FILE_PATH');
+  }
+
+  /**
+   * パーソナライズド番組用エンディングファイルのパス
+   */
+  get PersonalizedProgramEndingFilePath(): string {
+    return this.config.get<string>('PERSONALIZED_PROGRAM_ENDING_FILE_PATH');
+  }
+
+  /**
+   * パーソナライズド番組用効果音1ファイルのパス
+   */
+  get PersonalizedProgramSe1FilePath(): string {
+    return this.config.get<string>('PERSONALIZED_PROGRAM_SE_1_FILE_PATH');
+  }
+
+  /**
+   * パーソナライズド番組用効果音2ファイルのパス
+   */
+  get PersonalizedProgramSe2FilePath(): string {
+    return this.config.get<string>('PERSONALIZED_PROGRAM_SE_2_FILE_PATH');
+  }
+
+  /**
+   * パーソナライズド番組用効果音3ファイルのパス
+   */
+  get PersonalizedProgramSe3FilePath(): string {
+    return this.config.get<string>('PERSONALIZED_PROGRAM_SE_3_FILE_PATH');
+  }
+
+  /**
+   * パーソナライズド番組用画像ファイルのパス
+   */
+  get PersonalizedProgramPictureFilePath(): string {
+    return this.config.get<string>('PERSONALIZED_PROGRAM_PICTURE_FILE_PATH');
   }
 
   /**

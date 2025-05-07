@@ -1,10 +1,13 @@
 import { AppConfigService } from '@/app-config/app-config.service';
+import { PersonalizedProgramScript } from '@/mastra/schemas';
 import { TextToSpeechError } from '@/types/errors';
 import { HeadlineTopicProgramScript } from '@domains/radio-program/headline-topic-program';
 import {
   HeadlineTopicProgramAudioFilesGenerateCommand,
   HeadlineTopicProgramAudioFilesGenerateResult,
   ITextToSpeechClient,
+  PersonalizedProgramAudioFilesGenerateCommand,
+  PersonalizedProgramAudioFilesGenerateResult,
 } from '@domains/radio-program/text-to-speech.interface';
 import { TextToSpeechClient as TTSClient } from '@google-cloud/text-to-speech';
 import { google } from '@google-cloud/text-to-speech/build/protos/protos';
@@ -47,40 +50,7 @@ export class TextToSpeechClient implements ITextToSpeechClient {
   }
 
   /**
-   * Text-to-Speech API を実行して音声ファイルを生成する
-   * @param request Text-to-Speech API リクエスト
-   * @param outputFilePath 出力先ファイルパス
-   */
-  async synthesizeSpeech(
-    request: google.cloud.texttospeech.v1.ISynthesizeSpeechRequest,
-    outputFilePath: string,
-  ): Promise<void> {
-    this.logger.debug(`TextToSpeechClient.synthesizeSpeech called`, {
-      request,
-    });
-    try {
-      // Text-to-Speech API を実行して音声データを取得する
-      const [response] = await this.ttsClient.synthesizeSpeech(request);
-      if (!response.audioContent) {
-        throw new TextToSpeechError(
-          'Text to Speech API からのレスポンスがありませんでした',
-        );
-      }
-      // 音声ファイルを出力する
-      fs.writeFileSync(outputFilePath, response.audioContent, 'binary');
-      await setTimeout(1000);
-    } catch (error) {
-      const errorMessage = `音声ファイル生成に失敗しました`;
-      this.logger.error(errorMessage, { error });
-      if (!(error instanceof TextToSpeechError)) {
-        error = new TextToSpeechError(errorMessage, { cause: error });
-      }
-      throw error;
-    }
-  }
-
-  /**
-   * 番組の台本から音声ファイルを生成する
+   * 番組の台本からヘッドライントピック番組の音声ファイルを生成する
    * @param command 生成要求コマンド
    * @returns ヘッドライントピック番組音声ファイルの生成結果
    */
@@ -92,10 +62,7 @@ export class TextToSpeechClient implements ITextToSpeechClient {
       { command },
     );
     try {
-      if (!fs.existsSync(command.outputDir)) {
-        // 出力先ディレクトリが存在しない場合は作成する
-        fs.mkdirSync(command.outputDir, { recursive: true });
-      }
+      this.createOutputDir(command.outputDir);
       // ヘッドライントピック番組の SSML 群を生成する
       const ssmlList = await this.generateHeadlineTopicProgramSsml(
         command.script,
@@ -139,6 +106,110 @@ export class TextToSpeechClient implements ITextToSpeechClient {
   }
 
   /**
+   * 番組の台本からパーソナルプログラムの音声ファイルを生成する
+   * @param command 生成要求コマンド
+   * @returns パーソナルプログラム音声ファイルの生成結果
+   */
+  async generatePersonalizedProgramAudioFiles(
+    command: PersonalizedProgramAudioFilesGenerateCommand,
+  ): Promise<PersonalizedProgramAudioFilesGenerateResult> {
+    this.logger.debug(
+      `TextToSpeechClient.generatePersonalizedProgramAudioFiles called`,
+      { userId: command.user.id, feedId: command.feed.id },
+    );
+    try {
+      this.createOutputDir(command.outputDir);
+
+      // パーソナルプログラムの SSML 群を生成する
+      const ssmlList = await this.generatePersonalizedProgramSsml(
+        command.script,
+      );
+
+      // 出力ディレクトリパス
+      const outputDirPath = `${command.outputDir}/${command.feed.id}/${command.programDate.getTime()}`;
+      this.createOutputDir(outputDirPath);
+
+      const feedId = command.feed.id;
+
+      // イントロ部分の音声ファイルを生成する
+      const introRequest = this.generateTextToSpeechRequest(ssmlList.opening);
+      const openingAudioFilePath = `${outputDirPath}/opening.mp3`;
+      await this.synthesizeSpeech(introRequest, openingAudioFilePath);
+
+      // 記事解説の音声ファイルを生成する
+      const postExplanationAudioFilePaths = await Promise.all(
+        ssmlList.postExplanations.map(async (ssml, index) => {
+          const postIndex = index + 1;
+          const introRequest = this.generateTextToSpeechRequest(ssml.intro);
+          const introAudioFilePath = `${outputDirPath}/$post-${postIndex}_intro.mp3`;
+          await this.synthesizeSpeech(introRequest, introAudioFilePath);
+
+          const explanationRequest = this.generateTextToSpeechRequest(
+            ssml.explanation,
+          );
+          const explanationAudioFilePath = `${outputDirPath}/post-${postIndex}_explanation.mp3`;
+          await this.synthesizeSpeech(
+            explanationRequest,
+            explanationAudioFilePath,
+          );
+
+          const summaryRequest = this.generateTextToSpeechRequest(ssml.summary);
+          const summaryAudioFilePath = `${outputDirPath}/post-${postIndex}_summary.mp3`;
+          await this.synthesizeSpeech(summaryRequest, summaryAudioFilePath);
+
+          return {
+            introAudioFilePath,
+            explanationAudioFilePath,
+            summaryAudioFilePath,
+          };
+        }),
+      );
+
+      // エンディング部分の音声ファイルを生成する
+      const endingRequest = this.generateTextToSpeechRequest(ssmlList.ending);
+      const endingAudioFilePath = `${outputDirPath}/ending.mp3`;
+      await this.synthesizeSpeech(endingRequest, endingAudioFilePath);
+
+      // 生成結果を返す
+      const result: PersonalizedProgramAudioFilesGenerateResult = {
+        openingAudioFilePath,
+        postExplanationAudioFilePaths,
+        endingAudioFilePath,
+      };
+
+      this.logger.log(`パーソナルプログラムの音声ファイルを生成しました`, {
+        userId: command.user.id,
+        feedId: command.feed.id,
+        result,
+      });
+
+      return result;
+    } catch (error) {
+      const errorMessage = `パーソナルプログラムの音声ファイル生成に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        userId: command.user.id,
+        feedId: command.feed.id,
+      });
+      if (!(error instanceof TextToSpeechError)) {
+        error = new TextToSpeechError(errorMessage, { cause: error });
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 出力先ディレクトリを作成する
+   * @param path 出力先ディレクトリパス
+   */
+  createOutputDir(path: string) {
+    if (!fs.existsSync(path)) {
+      // 出力先ディレクトリが存在しない場合は作成する
+      fs.mkdirSync(path, { recursive: true });
+    }
+  }
+
+  /**
    * Text to speech のリクエストを生成する
    * @param ssml SSML
    * @returns Text to speech リクエスト
@@ -166,6 +237,40 @@ export class TextToSpeechClient implements ITextToSpeechClient {
       },
     };
     return request;
+  }
+
+  /**
+   * Text-to-Speech API を実行して音声ファイルを生成する
+   * @param request Text-to-Speech API リクエスト
+   * @param outputFilePath 出力先ファイルパス
+   */
+  async synthesizeSpeech(
+    request: google.cloud.texttospeech.v1.ISynthesizeSpeechRequest,
+    outputFilePath: string,
+  ): Promise<void> {
+    this.logger.debug(`TextToSpeechClient.synthesizeSpeech called`, {
+      request,
+    });
+    try {
+      // Text-to-Speech API を実行して音声データを取得する
+      const [response] = await this.ttsClient.synthesizeSpeech(request);
+      if (!response.audioContent) {
+        throw new TextToSpeechError(
+          'Text to Speech API からのレスポンスがありませんでした',
+        );
+      }
+      // 音声ファイルを出力する
+      fs.writeFileSync(outputFilePath, response.audioContent, 'binary');
+      this.logger.log(`音声ファイルを生成しました [${outputFilePath}]`);
+      await setTimeout(1000);
+    } catch (error) {
+      const errorMessage = `音声ファイル生成に失敗しました`;
+      this.logger.error(errorMessage, { error });
+      if (!(error instanceof TextToSpeechError)) {
+        error = new TextToSpeechError(errorMessage, { cause: error });
+      }
+      throw error;
+    }
   }
 
   /**
@@ -200,6 +305,50 @@ export class TextToSpeechClient implements ITextToSpeechClient {
   }
 
   /**
+   * パーソナルプログラム各パートの音声ファイル生成用の SSML を生成する
+   * @param script 台本
+   * @returns パーソナルプログラム各パート用の SSML 生成結果
+   */
+  async generatePersonalizedProgramSsml(
+    script: PersonalizedProgramScript,
+  ): Promise<PersonalizedProgramSsml> {
+    this.logger.debug(
+      `TextToSpeechClient.generatePersonalizedProgramSsml called`,
+      { scriptTitle: script.title },
+    );
+
+    // SSML を生成する
+    const opening = `<speak>${await this.formatAudioText(script.opening)}<break time="1000ms"/></speak>`;
+
+    const postExplanations: PersonalizedProgramPostExplanationSsml[] = [];
+    for (const post of script.posts) {
+      const introSsml = `<speak>${await this.formatAudioText(post.intro)}<break time="1000ms"/></speak>`;
+      const explanationSsml = `<speak>${await this.formatAudioText(post.explanation)}<break time="1000ms"/></speak>`;
+      const summarySsml = `<speak>${await this.formatAudioText(post.summary)}<break time="1000ms"/></speak>`;
+
+      postExplanations.push({
+        intro: introSsml,
+        explanation: explanationSsml,
+        summary: summarySsml,
+      });
+    }
+
+    const ending = `<speak>${await this.formatAudioText(script.ending)}<break time="200ms"/></speak>`;
+
+    const result: PersonalizedProgramSsml = {
+      opening,
+      postExplanations,
+      ending,
+    };
+
+    this.logger.log(`パーソナルプログラムの SSML を生成しました`, {
+      postCount: script.posts.length,
+    });
+
+    return result;
+  }
+
+  /**
    * 音声文章の整形処理を実施する
    *   - SSML 予約文字をエスケープする
    *   - 音声読上げ時に不要となる文字を削除する
@@ -230,6 +379,8 @@ export class TextToSpeechClient implements ITextToSpeechClient {
     // Text-to-Speech API はバッククォートと絵文字を読み上げるため
     // 台本としては可読性の観点からそれらは残しておくので、SSML 生成時にだけ削除する
     text = text.replaceAll('`', '');
+    // 改行文字を削除する
+    text = text.replaceAll('\n', '');
     // 絵文字を削除する
     text = this.removeEmoji(text);
     // 句点を読み上げ後に一時停止する
@@ -287,6 +438,42 @@ export interface HeadlineTopicProgramSsml {
    * 記事サマリの SSML 一覧
    */
   postSummaries: string[];
+  /**
+   * エンディング部の SSML
+   */
+  ending: string;
+}
+
+/**
+ * パーソナルプログラムの記事解説のSSSMLを表す型
+ */
+interface PersonalizedProgramPostExplanationSsml {
+  /**
+   * 導入部分のSSML
+   */
+  intro: string;
+  /**
+   * 解説部分のSSML
+   */
+  explanation: string;
+  /**
+   * まとめ部分のSSML
+   */
+  summary: string;
+}
+
+/**
+ * パーソナルプログラム各パート用の SSML 生成結果
+ */
+interface PersonalizedProgramSsml {
+  /**
+   * オープニング部の SSML
+   */
+  opening: string;
+  /**
+   * 記事解説の SSML 一覧
+   */
+  postExplanations: PersonalizedProgramPostExplanationSsml[];
   /**
    * エンディング部の SSML
    */
