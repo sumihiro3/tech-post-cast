@@ -20,3 +20,23 @@ export class InsufficientPostsError extends PersonalizeProgramError {
     super(message, options);
   }
 }
+
+/**
+ * パーソナルプログラムの記事データ永続化エラー
+ */
+export class PersonalizedProgramPersistenceError extends PersonalizeProgramError {
+  override name = 'PersonalizedProgramPersistenceError';
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}
+
+/**
+ * パーソナルプログラムのファイルアップロードエラー
+ */
+export class PersonalizedProgramUploadError extends PersonalizeProgramError {
+  override name = 'PersonalizedProgramUploadError';
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}

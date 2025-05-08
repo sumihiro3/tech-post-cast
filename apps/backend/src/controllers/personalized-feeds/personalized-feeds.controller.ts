@@ -1,4 +1,5 @@
 import { AppConfigService } from '@/app-config/app-config.service';
+import { BackendBearerTokenGuard } from '@/guards/bearer-token.guard';
 import { IAppUsersRepository } from '@domains/app-user/app-users.repository.interface';
 import { PersonalizedFeedsBuilder } from '@domains/radio-program/personalized-feed/personalized-feeds-builder';
 import {
@@ -10,7 +11,9 @@ import {
   NotFoundException,
   Param,
   Post,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiHeader, ApiOperation } from '@nestjs/swagger';
 const fs = require('fs');
 const path = require('path');
 const util = require('util');
@@ -54,6 +57,18 @@ export class PersonalizedFeedsController {
   }
 
   @Post('/:userId')
+  @ApiOperation({
+    operationId: 'PersonalizedFeedsController.createProgram',
+    summary:
+      '指定ユーザーのパーソナルフィードに基づいた番組（パーソナルプログラム）を生成する',
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: '認証トークン',
+    example: 'Bearer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    required: true,
+  })
+  @UseGuards(BackendBearerTokenGuard)
   async createProgram(@Param('userId') userId: string): Promise<void> {
     this.logger.debug(`PersonalizedFeedsController.createProgram called`, {
       userId,
@@ -66,7 +81,7 @@ export class PersonalizedFeedsController {
         this.logger.error(errorMessage, { userId: user });
         throw new NotFoundException(errorMessage);
       }
-      const result = await this.personalizedFeedsBuilder.createProgramByUserId(
+      const result = await this.personalizedFeedsBuilder.createProgramByUser(
         user,
         new Date(),
       );

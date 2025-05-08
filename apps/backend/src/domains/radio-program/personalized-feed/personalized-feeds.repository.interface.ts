@@ -1,5 +1,9 @@
-import { AppUser } from '@prisma/client';
+import { AppUser, PersonalizedFeedProgram, QiitaPost } from '@prisma/client';
 import { PersonalizedFeedWithFilters } from '@tech-post-cast/database';
+import {
+  PersonalizedProgramGenerateResult,
+  ProgramUploadResult,
+} from '../personalized-feed';
 
 /**
  * パーソナルフィードのリポジトリインターフェイス
@@ -32,4 +36,23 @@ export interface IPersonalizedFeedsRepository {
    * @returns パーソナルフィード一覧
    */
   find(page: number, limit: number): Promise<PersonalizedFeedWithFilters[]>;
+
+  /**
+   * パーソナライズプログラムを作成する
+   * @param user ユーザー
+   * @param feed パーソナルフィード
+   * @param programDate 番組日
+   * @param posts 記事一覧
+   * @param generateResult 番組生成結果
+   * @param uploadResult アップロード結果
+   * @returns 作成されたパーソナライズプログラム
+   */
+  createPersonalizedProgram(
+    user: AppUser,
+    feed: PersonalizedFeedWithFilters,
+    programDate: Date,
+    posts: QiitaPost[],
+    generateResult: PersonalizedProgramGenerateResult,
+    uploadResult: ProgramUploadResult,
+  ): Promise<PersonalizedFeedProgram>;
 }

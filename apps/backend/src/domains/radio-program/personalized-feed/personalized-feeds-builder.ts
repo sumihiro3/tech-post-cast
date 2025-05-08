@@ -2,8 +2,8 @@ import { AppConfigService } from '@/app-config/app-config.service';
 import { qiitaPostSummarizeAgent } from '@/mastra/agents';
 import {
   PersonalizedProgramScript,
-  personalizedProgramScriptSchema,
   QiitaPost,
+  personalizedProgramScriptSchema,
   qiitaPostSchema,
 } from '@/mastra/schemas';
 import {
@@ -13,6 +13,8 @@ import {
 import {
   InsufficientPostsError,
   PersonalizeProgramError,
+  PersonalizedProgramPersistenceError,
+  PersonalizedProgramUploadError,
 } from '@/types/errors';
 import { IQiitaPostsRepository } from '@domains/qiita-posts/qiita-posts.repository.interface';
 import { QiitaPostsApiClient } from '@infrastructure/external-api/qiita-api/qiita-posts.api.client';
@@ -20,8 +22,8 @@ import { createLogger } from '@mastra/core/logger';
 import { Mastra } from '@mastra/core/mastra';
 import { Workflow } from '@mastra/core/workflows';
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { AppUser } from '@prisma/client';
-import { QiitaPostApiResponse } from '@tech-post-cast/commons';
+import { AppUser, PersonalizedFeedProgram } from '@prisma/client';
+import { QiitaPostApiResponse, formatDate } from '@tech-post-cast/commons';
 import { PersonalizedFeedWithFilters } from '@tech-post-cast/database';
 import { setTimeout } from 'timers/promises';
 import { z } from 'zod';
@@ -31,7 +33,10 @@ import {
   PersonalizedProgramMetadata,
   PersonalizedProgramScriptGenerationResult,
 } from '.';
-import { IProgramFileUploader } from '../file-uploader.interface';
+import {
+  IProgramFileUploader,
+  ProgramFileUploadCommand,
+} from '../file-uploader.interface';
 import {
   IProgramFileMaker,
   ProgramFileChapter,
@@ -41,6 +46,7 @@ import {
   PersonalizedProgramAudioFilesGenerateCommand,
   PersonalizedProgramAudioFilesGenerateResult,
 } from '../text-to-speech.interface';
+import { ProgramUploadResult } from './index';
 import { PersonalizedFeedFilterMapper } from './personalized-feed-filter.mapper';
 import { IPersonalizedFeedsRepository } from './personalized-feeds.repository.interface';
 
@@ -102,14 +108,118 @@ export class PersonalizedFeedsBuilder {
   }
 
   /**
-   * 指定ユーザーのアクティブなパーソナライズフィードに基づいた番組を生成する
+   * 指定ユーザーのアクティブなパーソナルフィードに基づいた番組を生成する
+   * @param user ユーザー
+   * @param feed パーソナルフィード
+   * @param programDate 番組日
+   * @returns 生成したパーソナルプログラム
+   */
+  async buildProgram(
+    user: AppUser,
+    feed: PersonalizedFeedWithFilters,
+    programDate: Date,
+  ): Promise<PersonalizedFeedProgram> {
+    this.logger.debug(`PersonalizedFeedsBuilder.buildProgram called`, {
+      userId: user.id,
+      feedId: feed.id,
+      programDate,
+    });
+
+    try {
+      // 番組台本の生成
+      const { script, posts } = await this.generatePersonalizedProgramScript(
+        user,
+        feed,
+        programDate,
+      );
+
+      // 番組の台本読み上げ音声ファイルを生成する
+      const audioFilesGenerateResult =
+        await this.generatePersonalizedProgramAudioFiles(
+          user,
+          feed,
+          programDate,
+          script,
+        );
+
+      this.logger.debug(
+        `パーソナルプログラムの音声ファイル生成が完了しました`,
+        {
+          userId: user.id,
+          feedId: feed.id,
+          audioFilesGenerateResult,
+        },
+      );
+
+      // BGM などを組み合わせてパーソナルプログラムの音声ファイルを生成する
+      const generateResult = await this.generateProgramFiles(
+        user,
+        feed,
+        script,
+        programDate,
+        audioFilesGenerateResult,
+      );
+
+      this.logger.debug(`パーソナルプログラムの生成が完了しました`, {
+        userId: user.id,
+        feedId: feed.id,
+        generateResult,
+      });
+
+      // 1. 番組音声ファイルをS3にアップロード
+      const uploadResult = await this.uploadProgramFiles(
+        generateResult.audioFilePath,
+        user,
+        feed,
+        programDate,
+      );
+      this.logger.log(`S3 に番組ファイルをアップロードしました`, {
+        uploadResult,
+      });
+
+      // 2. DB に記事を登録
+      const registeredPosts =
+        await this.qiitaPostsRepository.upsertQiitaPosts(posts);
+      this.logger.debug(`${registeredPosts.length} 件の記事を登録しました`);
+
+      // 3. DB にパーソナルプログラムを登録
+      const program =
+        await this.personalizedFeedsRepository.createPersonalizedProgram(
+          user,
+          feed,
+          programDate,
+          registeredPosts,
+          generateResult,
+          uploadResult,
+        );
+
+      this.logger.log(`パーソナルプログラムを生成しました`, { program });
+
+      return program;
+    } catch (error) {
+      const errorMessage = `ユーザー [${user.id}] のアクティブなパーソナルフィードに基づいた番組の生成中にエラーが発生しました`;
+      this.logger.error(errorMessage, { error }, error.stack);
+
+      // エラー種別に応じて適切なエラーをスローする
+      if (error instanceof PersonalizedProgramUploadError) {
+        throw error; // アップロードエラーはそのまま再スロー
+      } else if (error instanceof PersonalizedProgramPersistenceError) {
+        throw error; // 永続化エラーはそのまま再スロー
+      } else {
+        throw new PersonalizeProgramError(errorMessage, { cause: error });
+      }
+    }
+  }
+
+  /**
+   * 指定ユーザーのアクティブなパーソナルフィードに基づいた番組を生成する
    * @param user ユーザー
    * @param programDate 番組日
    * @returns 生成した番組
    */
-  async createProgramByUserId(user: AppUser, programDate: Date): Promise<void> {
+  async createProgramByUser(user: AppUser, programDate: Date): Promise<void> {
     this.logger.debug(`PersonalizedFeedsBuilder.createProgramByUserId called`, {
-      userId: user,
+      userId: user.id,
       programDate,
     });
     try {
@@ -129,72 +239,14 @@ export class PersonalizedFeedsBuilder {
       // パーソナルフィードに合致した番組を生成する
       // TODO アクティブなパーソナルフィードが複数ある場合、すべてのフィードに基づいて番組を生成する
       await this.buildProgram(user, feeds[0], programDate);
+      this.logger.log(
+        `ユーザー [${user.id}] のアクティブなパーソナルフィードに基づいた番組を生成しました`,
+      );
     } catch (error) {
-      const errorMessage = `ユーザー [${user}] のアクティブなパーソナルフィードに基づいた番組の生成中にエラーが発生しました`;
+      const errorMessage = `ユーザー [${user.id}] のアクティブなパーソナルフィードに基づいた番組の生成中にエラーが発生しました`;
       this.logger.error(errorMessage, { error }, error.stack);
       throw new PersonalizeProgramError(errorMessage, { cause: error });
     }
-  }
-
-  /**
-   * 指定ユーザーのアクティブなパーソナルフィードに基づいた番組を生成する
-   * @param user ユーザー
-   * @param feed パーソナルフィード
-   * @param programDate 番組日
-   */
-  async buildProgram(
-    user: AppUser,
-    feed: PersonalizedFeedWithFilters,
-    programDate: Date,
-  ) {
-    this.logger.debug(`PersonalizedFeedsBuilder.buildProgram called`, {
-      userId: user.id,
-      feedId: feed.id,
-      programDate,
-    });
-    // 番組台本の生成
-    const { script, posts } = await this.generatePersonalizedProgramScript(
-      user,
-      feed,
-      programDate,
-    );
-    // 番組の台本読み上げ音声ファイルを生成する
-    const audioFilesGenerateResult =
-      await this.generatePersonalizedProgramAudioFiles(
-        user,
-        feed,
-        programDate,
-        script,
-      );
-
-    this.logger.debug(`パーソナルプログラムの音声ファイル生成が完了しました`, {
-      userId: user.id,
-      feedId: feed.id,
-      audioFilesGenerateResult,
-    });
-
-    // BGM などを組み合わせてパーソナルプログラムの音声ファイルを生成する
-    const generateResult = await this.generateProgramFiles(
-      user,
-      feed,
-      script,
-      programDate,
-      audioFilesGenerateResult,
-    );
-
-    this.logger.debug(`パーソナルプログラムの生成が完了しました`, {
-      userId: user.id,
-      feedId: feed.id,
-      generateResult,
-    });
-
-    // TODO 番組音声ファイルを S3 にアップロードする
-    // TODO DB に番組での紹介記事を登録する
-    // TODO DB にパーソナルプログラムを登録する
-    this.logger.debug(
-      `ユーザー [${user}] のアクティブなパーソナルフィード [${feed.id}] に基づいた番組を生成しました`,
-      { script },
-    );
   }
 
   /**
@@ -743,6 +795,66 @@ export class PersonalizedFeedsBuilder {
       const errorMessage = `パーソナル番組の台本生成中にエラーが発生しました`;
       this.logger.error(errorMessage, { error }, error.stack);
       throw new PersonalizeProgramError(errorMessage, { cause: error });
+    }
+  }
+
+  /**
+   * 番組音声ファイルを S3 にアップロードする
+   * @param audioFilePath 番組音声ファイルのパス
+   * @param user ユーザー
+   * @param feed パーソナルフィード
+   * @param programDate 番組日
+   * @returns アップロード結果
+   */
+  async uploadProgramFiles(
+    audioFilePath: string,
+    user: AppUser,
+    feed: PersonalizedFeedWithFilters,
+    programDate: Date,
+  ): Promise<ProgramUploadResult> {
+    this.logger.debug(`PersonalizedFeedsBuilder.uploadProgramFiles called`, {
+      audioFilePath,
+      userId: user.id,
+      feedId: feed.id,
+      programDate,
+    });
+
+    try {
+      const bucketName = this.appConfig.ProgramAudioBucketName;
+      const dt = formatDate(programDate, 'YYYYMMDD');
+      const programId = `personalized-program`;
+      const objectKeyPrefix = `${programId}/${feed.id}/${dt}/${programId}_${Date.now()}`;
+
+      // 番組音声ファイルをアップロード
+      const audioFileUploadCommand: ProgramFileUploadCommand = {
+        programId,
+        programDate,
+        bucketName,
+        uploadPath: `${objectKeyPrefix}.mp3`,
+        filePath: audioFilePath,
+        contentType: 'audio/mpeg',
+      };
+
+      const audioUrl = await this.programFileUploader.upload(
+        audioFileUploadCommand,
+      );
+
+      this.logger.log(`番組音声ファイルをアップロードしました`, {
+        uploadCommand: audioFileUploadCommand,
+        audioUrl,
+      });
+
+      return {
+        audioUrl,
+      };
+    } catch (error) {
+      const errorMessage = `番組音声ファイルのアップロード中にエラーが発生しました`;
+      this.logger.error(
+        errorMessage,
+        { error, userId: user.id, feedId: feed.id },
+        error.stack,
+      );
+      throw new PersonalizedProgramUploadError(errorMessage, { cause: error });
     }
   }
 }
