@@ -1,4 +1,5 @@
 import { WebhookEvent } from '@clerk/backend';
+import { Plan } from '@prisma/client';
 
 declare module 'express-serve-static-core' {
   interface LoginUser {
@@ -19,5 +20,9 @@ declare module 'express-serve-static-core' {
      * @see https://clerk.com/docs/backend-requests/manual-jwt
      */
     user?: LoginUser;
+    /**
+     * サブスクリプション情報
+     */
+    subscriptionPlan?: Plan;
   }
 }

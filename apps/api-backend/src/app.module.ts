@@ -5,12 +5,12 @@ import { PersonalizedFeedsModule } from '@/controllers/personalized-feeds/person
 import { ProgramContentApiModule } from '@/controllers/program-content-api/program-content-api.module';
 import { QiitaPostsModule } from '@/controllers/qiita-posts/qiita-posts.module';
 import { ClerkWebhookModule } from '@/controllers/webhooks/clerk/clerk-webhook.module';
-import { MiddlewareConsumer, Module } from '@nestjs/common';
+import { SubscriptionMiddleware } from '@/middlewares/subscription.middleware';
+import { SubscriptionService } from '@domains/subscription/subscription.service';
+import { SubscriptionRepository } from '@infrastructure/database/subscription/subscription.repository';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import {
-  CustomLoggerModule,
-  RequestLoggingMiddleware,
-} from '@tech-post-cast/commons';
+import { CustomLoggerModule } from '@tech-post-cast/commons';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -30,10 +30,18 @@ import { AppService } from './app.service';
     PersonalizedFeedsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: 'SubscriptionRepository',
+      useClass: SubscriptionRepository,
+    },
+    SubscriptionService,
+  ],
+  exports: [SubscriptionService],
 })
-export class AppModule {
+export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(RequestLoggingMiddleware).forRoutes('');
+    consumer.apply(SubscriptionMiddleware).forRoutes('*');
   }
 }

@@ -240,6 +240,7 @@ model AppUser {
   personalizedProgramFilters PersonalizedFeed[]
   personalizedPrograms       PersonalizedFeedProgram[]
   subscriptions              Subscription[]
+  subscriptionHistories      SubscriptionHistory[]
 
   // テーブル名
   @@map("app_users")
@@ -252,10 +253,14 @@ model Plan {
   price       Int // 月額金額（円）
   description String   @db.VarChar(255)
   isActive    Boolean  @default(true) @map("is_active")
+  maxFeeds    Int      @default(1) @map("max_feeds")
+  maxAuthors  Int      @default(1) @map("max_authors")
+  maxTags     Int      @default(1) @map("max_tags")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  subscriptions Subscription[]
+  subscriptions         Subscription[]
+  subscriptionHistories SubscriptionHistory[]
 
   @@map("plans")
 }
@@ -268,13 +273,33 @@ model Subscription {
   startDate DateTime  @default(now()) @map("start_date")
   endDate   DateTime? @map("end_date")
   isActive  Boolean   @default(true) @map("is_active")
+  status    String    @default("ACTIVE") @db.VarChar(20)
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
 
-  user AppUser @relation(fields: [userId], references: [id])
-  plan Plan    @relation(fields: [planId], references: [id])
+  user      AppUser               @relation(fields: [userId], references: [id])
+  plan      Plan                  @relation(fields: [planId], references: [id])
+  histories SubscriptionHistory[]
 
   @@map("subscriptions")
+}
+
+// サブスクリプション履歴
+model SubscriptionHistory {
+  id             String    @id @default(cuid()) @db.VarChar(50)
+  subscriptionId String    @map("subscription_id") @db.VarChar(50)
+  userId         String    @map("user_id") @db.VarChar(50)
+  planId         String    @map("plan_id") @db.VarChar(50)
+  status         String    @db.VarChar(20)
+  startDate      DateTime  @map("start_date")
+  endDate        DateTime? @map("end_date")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+  user         AppUser      @relation(fields: [userId], references: [id])
+  plan         Plan         @relation(fields: [planId], references: [id])
+
+  @@map("subscription_histories")
 }
 
 // 各ユーザーのパーソナライズフィード設定

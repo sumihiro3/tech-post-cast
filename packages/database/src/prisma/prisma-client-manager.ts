@@ -8,18 +8,18 @@ import { PrismaService } from './prisma.service';
 // モデル別の接頭辞マッピングを定義
 const MODEL_ID_PREFIXES: Record<string, string> = {
   ListenerLetter: 'listener-letter_',
-  Plan: 'plan_',
-  Subscription: 'subscr_',
   PersonalizedFeed: 'feed_',
-  AppUser: 'user_',
-  QiitaPost: 'post_',
-  HeadlineTopicProgram: 'htprogram_',
-  Program: 'program_',
+  HeadlineTopicProgram: 'hlt-pgm_',
   FeedFilterGroup: 'feed-flt-gr_',
   LikesCountFilter: 'likes-flt_',
   TagFilter: 'tag-flt_',
   AuthorFilter: 'author-flt_',
+  DateRangeFilter: 'date-range-flt_',
   PersonalizedFeedProgram: 'feed-pgm_',
+  AppUser: 'user_',
+  Plan: 'plan_',
+  Subscription: 'subscr_',
+  SubscriptionHistory: 'subscr-hist_',
   // 他のモデルも必要に応じて追加
 };
 
