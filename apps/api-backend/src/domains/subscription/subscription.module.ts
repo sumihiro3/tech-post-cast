@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
-import { EventEmitterModule } from '@nestjs/event-emitter';
+import { PrismaModule } from '@tech-post-cast/database';
 import { SubscriptionRepository } from '../../infrastructure/database/subscription/subscription.repository';
 import { SubscriptionListener } from './subscription.listener';
 import { SubscriptionService } from './subscription.service';
 
 @Module({
-  imports: [EventEmitterModule.forRoot()],
+  imports: [PrismaModule],
   providers: [
     SubscriptionService,
     SubscriptionListener,

@@ -44,7 +44,13 @@ export type UserWithSubscription = Prisma.AppUserGetPayload<typeof userWithSubsc
  * サブスクリプション情報の型
  */
 export type SubscriptionInfo = {
+  id: string;
+  userId: string;
+  planId: string;
   status: SubscriptionStatus;
+  startDate: Date;
+  endDate: Date;
+  isActive: boolean;
   plan?: {
     id: string;
     name: string;
@@ -54,12 +60,7 @@ export type SubscriptionInfo = {
     maxAuthors: number;
     maxTags: number;
   };
-  limits: {
-    maxFeeds: number;
-    maxAuthors: number;
-    maxTags: number;
-  };
-} | null;
+};
 
 /**
  * ユーザーとサブスクリプション情報の結果型

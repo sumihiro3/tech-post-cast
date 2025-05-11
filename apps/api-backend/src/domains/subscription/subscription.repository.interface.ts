@@ -1,22 +1,5 @@
 import { Plan, Subscription, SubscriptionHistory } from '@prisma/client';
-import { SubscriptionStatus } from '@tech-post-cast/database';
-
-/**
- * サブスクリプション情報の型定義
- */
-export type SubscriptionInfo = {
-  id: string;
-  userId: string;
-  status: SubscriptionStatus;
-  plan?: {
-    id: string;
-    limits: {
-      maxFeeds: number;
-      maxAuthors: number;
-      maxTags: number;
-    };
-  };
-};
+import { SubscriptionInfo, SubscriptionStatus } from '@tech-post-cast/database';
 
 /**
  * プラン制限の型定義

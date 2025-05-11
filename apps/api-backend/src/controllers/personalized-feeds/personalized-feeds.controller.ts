@@ -1,10 +1,12 @@
 import { CurrentUserId } from '@/auth/decorators/current-user-id.decorator';
 import { ClerkJwtGuard } from '@/auth/guards/clerk-jwt.guard';
+import { SubscriptionDecorator } from '@/decorators/subscription.decorator';
 import { PersonalizedFeedsService } from '@/domains/personalized-feeds/personalized-feeds.service';
 import {
   CreatePersonalizedFeedParams,
   UpdatePersonalizedFeedParams,
 } from '@/domains/personalized-feeds/personalized-feeds.types';
+import { SubscriptionGuard } from '@/guards/subscription.guard';
 import { UserNotFoundError } from '@/types/errors';
 import {
   Body,
@@ -22,6 +24,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { SubscriptionInfo } from '@tech-post-cast/database';
 import {
   CreatePersonalizedFeedRequestDto,
   CreatePersonalizedFeedWithFiltersResponseDto,
@@ -209,9 +212,11 @@ export class PersonalizedFeedsController {
     status: 400,
     description: 'リクエストパラメータが不正',
   })
+  @UseGuards(SubscriptionGuard)
   async createPersonalizedFeed(
     @Body() dto: CreatePersonalizedFeedRequestDto,
     @CurrentUserId() userId: string, // JWTトークンからユーザーIDを取得
+    @SubscriptionDecorator() subscription: SubscriptionInfo, // サブスクリプション情報
   ): Promise<CreatePersonalizedFeedWithFiltersResponseDto> {
     this.logger.verbose(`PersonalizedFeedsController.createPersonalizedFeed`, {
       userId,
@@ -253,6 +258,7 @@ export class PersonalizedFeedsController {
           likesCountFilters: group.likesCountFilters,
         })),
       };
+      this.logger.debug(`サブスクリプション情報`, { subscription });
 
       // パーソナライズフィードを作成
       const feed = await this.personalizedFeedsService.create(

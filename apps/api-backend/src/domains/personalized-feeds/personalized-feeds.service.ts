@@ -20,9 +20,9 @@ export class PersonalizedFeedsService {
   private readonly logger = new Logger(PersonalizedFeedsService.name);
 
   constructor(
-    @Inject('IPersonalizedFeedsRepository')
+    @Inject('PersonalizedFeedsRepository')
     private readonly personalizedFeedsRepository: IPersonalizedFeedsRepository,
-    @Inject('IAppUsersRepository')
+    @Inject('AppUsersRepository')
     private readonly appUserRepository: IAppUsersRepository,
   ) {}
 
@@ -182,6 +182,7 @@ export class PersonalizedFeedsService {
   async create(
     userId: string,
     params: CreatePersonalizedFeedParams,
+    // subscription: SubscriptionInfo,
   ): Promise<PersonalizedFeedWithFilters> {
     // UIでは1つのフィルターグループのみをサポート
     const filterGroup =

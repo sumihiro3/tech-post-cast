@@ -194,13 +194,14 @@ export class AppUsersRepository implements IAppUsersRepository {
       return {
         user,
         subscription: {
+          id: subscription.id,
+          userId: subscription.userId,
+          planId: subscription.planId,
           status: subscription.status as SubscriptionStatus,
+          startDate: subscription.startDate,
+          endDate: subscription.endDate,
+          isActive: subscription.isActive,
           plan: subscription.plan,
-          limits: {
-            maxFeeds: subscription.plan.maxFeeds,
-            maxAuthors: subscription.plan.maxAuthors,
-            maxTags: subscription.plan.maxTags,
-          },
         },
       };
     } catch (error) {
