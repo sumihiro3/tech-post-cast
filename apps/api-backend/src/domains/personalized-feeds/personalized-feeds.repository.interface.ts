@@ -144,6 +144,13 @@ export interface IPersonalizedFeedsRepository {
   ): Promise<PersonalizedFeedsResult>;
 
   /**
+   * 指定されたユーザーIDに紐づくパーソナライズフィードの数を取得する
+   * @param userId ユーザーID
+   * @returns パーソナライズフィードの数
+   */
+  countByUserId(userId: string): Promise<number>;
+
+  /**
    * 指定されたユーザーIDに紐づくパーソナライズフィードの一覧をフィルター情報付きで取得する
    * @param userId ユーザーID
    * @param page ページ番号（1から始まる）

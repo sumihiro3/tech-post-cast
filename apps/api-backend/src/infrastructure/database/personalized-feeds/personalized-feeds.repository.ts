@@ -106,6 +106,43 @@ export class PersonalizedFeedsRepository
   }
 
   /**
+   * 指定されたユーザーIDに紐づくパーソナライズフィードの数を取得する
+   * @param userId ユーザーID
+   * @returns パーソナライズフィードの数
+   */
+  async countByUserId(userId: string): Promise<number> {
+    this.logger.debug('PersonalizedFeedsRepository.countByUserId called', {
+      userId,
+    });
+
+    try {
+      const client = this.prisma.getClient();
+
+      // アクティブなフィードの数を取得
+      const count = await client.personalizedFeed.count({
+        where: {
+          userId,
+          isActive: true,
+        },
+      });
+
+      this.logger.debug('パーソナライズフィード数を取得しました', {
+        userId,
+        count,
+      });
+
+      return count;
+    } catch (error) {
+      const errorMessage = `パーソナライズフィード数の取得に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        userId,
+      });
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
    * 指定されたユーザーIDに紐づくパーソナライズフィードの一覧をフィルター情報付きで取得する
    * @param userId ユーザーID
    * @param page ページ番号（1から始まる）

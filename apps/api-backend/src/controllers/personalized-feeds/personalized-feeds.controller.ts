@@ -7,8 +7,12 @@ import {
   UpdatePersonalizedFeedParams,
 } from '@/domains/personalized-feeds/personalized-feeds.types';
 import { SubscriptionGuard } from '@/guards/subscription.guard';
-import { UserNotFoundError } from '@/types/errors';
 import {
+  PersonalizedFeedCreationLimitError,
+  UserNotFoundError,
+} from '@/types/errors';
+import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -264,6 +268,7 @@ export class PersonalizedFeedsController {
       const feed = await this.personalizedFeedsService.create(
         userId,
         createParams,
+        subscription,
       );
 
       // フィルター情報を含むDTOに変換して返却
@@ -276,6 +281,12 @@ export class PersonalizedFeedsController {
           error: error.message,
         });
         throw new NotFoundException(error.message);
+      } else if (error instanceof PersonalizedFeedCreationLimitError) {
+        this.logger.warn(`パーソナライズフィードの作成制限に達しています`, {
+          userId,
+          error: error.message,
+        });
+        throw new BadRequestException(error.message);
       }
       // その他のエラーはログ出力して再スロー
       this.logger.error(`パーソナライズフィードの作成に失敗しました`, error);

@@ -1,8 +1,17 @@
 import { FilterGroupDto } from '@/controllers/personalized-feeds/dto/create-personalized-feed.request.dto';
 import { IAppUsersRepository } from '@/domains/app-users/app-users.repository.interface';
-import { UserNotFoundError } from '@/types/errors';
+import {
+  PersonalizedFeedCreationLimitError,
+  PersonalizedFeedError,
+  UserNotFoundError,
+} from '@/types/errors';
+import {
+  ISubscriptionRepository,
+  PlanLimits,
+} from '@domains/subscription/subscription.repository.interface';
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AppUser } from '@prisma/client';
+import { SubscriptionInfo, SubscriptionStatus } from '@tech-post-cast/database';
 import {
   PersonalizedFeed,
   PersonalizedFeedWithFilters,
@@ -24,6 +33,8 @@ export class PersonalizedFeedsService {
     private readonly personalizedFeedsRepository: IPersonalizedFeedsRepository,
     @Inject('AppUsersRepository')
     private readonly appUserRepository: IAppUsersRepository,
+    @Inject('SubscriptionRepository')
+    private readonly subscriptionRepository: ISubscriptionRepository,
   ) {}
 
   /**
@@ -176,30 +187,33 @@ export class PersonalizedFeedsService {
    * ユーザーのパーソナライズフィードを新規作成する
    * @param userId ユーザーID
    * @param params パーソナライズフィードの作成パラメータ
+   * @param subscription ユーザーのサブスクリプション情報
    * @returns フィルター情報を含む作成されたパーソナライズフィード
    * @throws UserNotFoundError ユーザーが存在しない場合
+   * @throws PersonalizedFeedCreationLimitError 制限に達している場合
    */
   async create(
     userId: string,
     params: CreatePersonalizedFeedParams,
-    // subscription: SubscriptionInfo,
+    subscription: SubscriptionInfo,
   ): Promise<PersonalizedFeedWithFilters> {
+    this.logger.debug('PersonalizedFeedsService.create called', {
+      userId,
+      params,
+      subscription,
+    });
     // UIでは1つのフィルターグループのみをサポート
     const filterGroup =
       params.filterGroups && params.filterGroups.length > 0
         ? params.filterGroups[0]
         : undefined;
-
-    this.logger.debug('PersonalizedFeedsService.create', {
-      userId,
-      params,
-      hasFilterGroup: !!filterGroup,
-    });
-
     // ユーザーの存在確認
     const user = await this.validateUserExists(userId);
 
     try {
+      // ユーザーのサブスクリプション状態に応じたパーソナライズフィードの作成制限をチェック
+      await this.checkFeedCreationLimits(user, subscription, params);
+
       // パーソナライズフィードとフィルターグループをトランザクションで作成
       const result =
         await this.personalizedFeedsRepository.createWithFilterGroup({
@@ -561,6 +575,92 @@ export class PersonalizedFeedsService {
         throw new UserNotFoundError(userId, error);
       }
       throw error;
+    }
+  }
+
+  /**
+   * フィード作成前の制限チェック
+   * サブスクリプションの状態に応じて、フィードの作成制限をチェックする
+   *
+   * @param user ユーザー
+   * @param subscription ユーザーのサブスクリプション情報
+   * @param params 作成するフィードの情報
+   * @throws PersonalizedFeedCreationLimitError 制限に達している場合
+   */
+  async checkFeedCreationLimits(
+    user: AppUser,
+    subscription: SubscriptionInfo,
+    params: CreatePersonalizedFeedParams,
+  ): Promise<void> {
+    this.logger.debug(
+      `PersonalizedFeedsService.checkFeedCreationLimits called`,
+      {
+        user,
+        params,
+      },
+    );
+
+    // アクティブなサブスクリプションがない場合はエラー
+    if (subscription.status !== SubscriptionStatus.ACTIVE) {
+      throw new PersonalizedFeedCreationLimitError(
+        'パーソナライズフィードの作成には有効なサブスクリプションが必要です',
+      );
+    }
+
+    try {
+      // プランの制限値を取得
+      const limits: PlanLimits = {
+        maxFeeds: subscription.plan.maxFeeds,
+        maxTags: subscription.plan.maxTags,
+        maxAuthors: subscription.plan.maxAuthors,
+      };
+
+      // 現在のフィード数を取得
+      const currentFeedCount =
+        await this.personalizedFeedsRepository.countByUserId(user.id);
+
+      // フィード数の制限チェック
+      if (currentFeedCount >= limits.maxFeeds) {
+        throw new PersonalizedFeedCreationLimitError(
+          `フィード作成数の上限（${limits.maxFeeds}）に達しています。プランをアップグレードするか、既存のフィードを削除してください。`,
+        );
+      }
+
+      // タグ数の制限チェック
+      if (
+        params.filterGroups &&
+        params.filterGroups[0]?.tagFilters &&
+        params.filterGroups[0].tagFilters.length > limits.maxTags
+      ) {
+        throw new PersonalizedFeedCreationLimitError(
+          `1つのフィードに設定できるタグ数の上限（${limits.maxTags}）を超えています。タグ数を減らすか、プランをアップグレードしてください。`,
+        );
+      }
+
+      // 著者数の制限チェック
+      if (
+        params.filterGroups &&
+        params.filterGroups[0]?.authorFilters &&
+        params.filterGroups[0].authorFilters.length > limits.maxAuthors
+      ) {
+        throw new PersonalizedFeedCreationLimitError(
+          `1つのフィードに設定できる著者数の上限（${limits.maxAuthors}）を超えています。著者数を減らすか、プランをアップグレードしてください。`,
+        );
+      }
+
+      this.logger.debug(`フィード作成制限チェック完了 - 制限内です`);
+    } catch (error) {
+      if (error instanceof PersonalizedFeedCreationLimitError) {
+        throw error;
+      }
+      this.logger.error(
+        `フィード作成制限チェック中にエラーが発生しました`,
+        error.message,
+        error.stack,
+      );
+      throw new PersonalizedFeedError(
+        'パーソナルフィードの作成制限チェック中にエラーが発生しました。しばらく経ってから再度お試しください。',
+      );
     }
   }
 }
