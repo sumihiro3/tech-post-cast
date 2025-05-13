@@ -220,6 +220,8 @@ model ListenerLetter {
 model AppUser {
   // ユーザーの一意なID（ClerkのユーザーID）
   id           String    @id @db.VarChar(50)
+  // ユーザーの表示名
+  displayName  String    @default("") @map("display_name") @db.VarChar(100)
   // ユーザーの姓
   firstName    String?   @map("first_name") @db.VarChar(50)
   // ユーザーの名
@@ -237,10 +239,19 @@ model AppUser {
   // 最後にサインインした日時
   lastSignInAt DateTime? @map("last_sign_in_at")
 
+  // Stripe関連フィールド
+  // Stripeの顧客ID
+  stripeCustomerId       String? @map("stripe_customer_id") @db.VarChar(100)
+  // デフォルトの支払い方法ID
+  defaultPaymentMethodId String? @map("default_payment_method_id") @db.VarChar(100)
+
+  // リレーション
   personalizedProgramFilters PersonalizedFeed[]
   personalizedPrograms       PersonalizedFeedProgram[]
   subscriptions              Subscription[]
   subscriptionHistories      SubscriptionHistory[]
+  paymentMethods             PaymentMethod[]
+  invoices                   Invoice[]
 
   // テーブル名
   @@map("app_users")
@@ -259,6 +270,14 @@ model Plan {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  // Stripe関連フィールド
+  // Stripeの価格ID
+  stripePriceId   String? @map("stripe_price_id") @db.VarChar(100)
+  // 価格タイプ（定期課金または一時払い）
+  stripePriceType String  @default("recurring") @map("stripe_price_type") @db.VarChar(20) // recurring または one_time
+  // 請求間隔（月次または年次）
+  billingInterval String  @default("month") @map("billing_interval") @db.VarChar(20) // month または year
+
   subscriptions         Subscription[]
   subscriptionHistories SubscriptionHistory[]
 
@@ -273,13 +292,32 @@ model Subscription {
   startDate DateTime  @default(now()) @map("start_date")
   endDate   DateTime? @map("end_date")
   isActive  Boolean   @default(true) @map("is_active")
-  status    String    @default("ACTIVE") @db.VarChar(20)
+  status    String    @default("ACTIVE") @db.VarChar(20) // ACTIVE, PAST_DUE, CANCELED, TRIALING, INCOMPLETE
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
+
+  // Stripe関連フィールド
+  // StripeのサブスクリプションID
+  stripeSubscriptionId String?   @map("stripe_subscription_id") @db.VarChar(100)
+  // Stripeの価格ID
+  stripePriceId        String?   @map("stripe_price_id") @db.VarChar(100)
+  // 現在の請求期間の開始日時
+  currentPeriodStart   DateTime? @map("current_period_start")
+  // 現在の請求期間の終了日時
+  currentPeriodEnd     DateTime? @map("current_period_end")
+  // サブスクリプションのキャンセル予定日時
+  cancelAt             DateTime? @map("cancel_at")
+  // サブスクリプションが実際にキャンセルされた日時
+  canceledAt           DateTime? @map("canceled_at")
+  // トライアル期間の開始日時
+  trialStart           DateTime? @map("trial_start")
+  // トライアル期間の終了日時
+  trialEnd             DateTime? @map("trial_end")
 
   user      AppUser               @relation(fields: [userId], references: [id])
   plan      Plan                  @relation(fields: [planId], references: [id])
   histories SubscriptionHistory[]
+  invoices  Invoice[]
 
   @@map("subscriptions")
 }
@@ -294,6 +332,24 @@ model SubscriptionHistory {
   startDate      DateTime  @map("start_date")
   endDate        DateTime? @map("end_date")
   createdAt      DateTime  @default(now()) @map("created_at")
+
+  // Stripe関連フィールド
+  // StripeのサブスクリプションID
+  stripeSubscriptionId String?   @map("stripe_subscription_id") @db.VarChar(100)
+  // Stripeの価格ID
+  stripePriceId        String?   @map("stripe_price_id") @db.VarChar(100)
+  // 現在の請求期間の開始日時
+  currentPeriodStart   DateTime? @map("current_period_start")
+  // 現在の請求期間の終了日時
+  currentPeriodEnd     DateTime? @map("current_period_end")
+  // サブスクリプションのキャンセル予定日時
+  cancelAt             DateTime? @map("cancel_at")
+  // サブスクリプションが実際にキャンセルされた日時
+  canceledAt           DateTime? @map("canceled_at")
+  // StripeのイベントID
+  stripeEventId        String?   @map("stripe_event_id") @db.VarChar(100)
+  // Stripeのイベントタイプ
+  stripeEventType      String?   @map("stripe_event_type") @db.VarChar(100)
 
   subscription Subscription @relation(fields: [subscriptionId], references: [id])
   user         AppUser      @relation(fields: [userId], references: [id])
@@ -422,4 +478,88 @@ model PersonalizedFeedProgram {
   posts QiitaPost[]
 
   @@map("personalized_feed_programs")
+}
+
+// 支払い方法
+model PaymentMethod {
+  id             String   @id @default(cuid()) @db.VarChar(50)
+  userId         String   @map("user_id") @db.VarChar(50)
+  // Stripeの支払い方法ID
+  stripeMethodId String   @map("stripe_method_id") @db.VarChar(100)
+  // 支払い方法のタイプ（カード、銀行口座など）
+  type           String   @db.VarChar(50) // card, bank, etc.
+  // デフォルトの支払い方法かどうか
+  isDefault      Boolean  @default(false) @map("is_default")
+  // クレジットカード番号の下4桁
+  last4          String?  @db.VarChar(4) // クレジットカード番号の下4桁
+  // カードブランド（Visa、Mastercardなど）
+  brand          String?  @db.VarChar(20) // visa, mastercard, etc.
+  // カードの有効期限（月）
+  expiryMonth    Int?     @map("expiry_month")
+  // カードの有効期限（年）
+  expiryYear     Int?     @map("expiry_year")
+  // 支払い方法が有効かどうか
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user AppUser @relation(fields: [userId], references: [id])
+
+  @@map("payment_methods")
+}
+
+// 請求書
+model Invoice {
+  id                    String    @id @default(cuid()) @db.VarChar(50)
+  userId                String    @map("user_id") @db.VarChar(50)
+  subscriptionId        String?   @map("subscription_id") @db.VarChar(50)
+  // Stripeの請求書ID
+  stripeInvoiceId       String    @map("stripe_invoice_id") @db.VarChar(100)
+  // Stripeの支払いインテントID
+  stripePaymentIntentId String?   @map("stripe_payment_intent_id") @db.VarChar(100)
+  // 請求金額
+  amount                Int
+  // 通貨（デフォルトは日本円）
+  currency              String    @default("jpy") @db.VarChar(3)
+  // 請求書のステータス
+  status                String    @db.VarChar(20) // paid, open, void, uncollectible
+  // 支払い完了日時
+  paidAt                DateTime? @map("paid_at")
+  // 請求書PDFのURL
+  invoicePdf            String?   @map("invoice_pdf") @db.VarChar(255)
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  user         AppUser       @relation(fields: [userId], references: [id])
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@map("invoices")
+}
+
+// StripeのWebhookイベント
+model StripeWebhookEvent {
+  // イベントの一意の識別子
+  id            String    @id @default(cuid()) @db.VarChar(50)
+  // Stripeイベントの一意のID（Stripe側で生成されるID）
+  stripeEventId String    @unique @map("stripe_event_id") @db.VarChar(100)
+  // イベントのタイプ（例：customer.subscription.updated, customer.subscription.deleted）
+  type          String    @db.VarChar(100)
+  // イベントのペイロードデータ（JSON形式で保存）
+  data          Json      @db.Json
+  // イベントの作成日時
+  created       DateTime  @default(now())
+  // イベントが処理されたかどうかを示すフラグ
+  processed     Boolean   @default(false)
+  // イベントが処理された日時
+  processedAt   DateTime? @map("processed_at")
+  // イベント処理中に発生したエラーメッセージ
+  error         String?   @db.Text
+  // イベント処理の再試行回数
+  retryCount    Int       @default(0) @map("retry_count")
+  // 最後に再試行された日時
+  lastRetryAt   DateTime? @map("last_retry_at")
+
+  @@index([type])
+  @@index([processed])
+  @@map("stripe_webhook_events")
 }
