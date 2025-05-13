@@ -45,5 +45,12 @@
     "markdown-preview-enhanced.hideDefaultVSCodeMarkdownPreviewButtons": false,
     "markdown.marp.themes": ["docs/slides/styles/custom.css"],
     "editor.gotoLocation.multipleDefinitions": "goto",
+    "editor.indentSize": "tabSize",
+    "[markdown]": {
+      "editor.formatOnSave": true,
+      "editor.formatOnPaste": true,
+      "editor.defaultFormatter": "DavidAnson.vscode-markdownlint",
+      "editor.tabSize": 4,
+    },
   },
 }
