@@ -1,14 +1,36 @@
 import { Prisma } from '@prisma/client';
 
 /**
- * サブスクリプションの状態を表す列挙型
+ * サブスクリプションのステータス
  */
 export enum SubscriptionStatus {
-  /** アクティブ */
+  /**
+   * 有効
+   */
   ACTIVE = 'ACTIVE',
-  /** 期限切れ */
+  /**
+   * 期限切れ
+   */
   EXPIRED = 'EXPIRED',
-  /** 未購入 */
+  /**
+   * 過去の支払いがあり、支払いが遅れている
+   */
+  PAST_DUE = 'PAST_DUE',
+  /**
+   * キャンセル済み
+   */
+  CANCELED = 'CANCELED',
+  /**
+   * トライアル中
+   */
+  TRIALING = 'TRIALING',
+  /**
+   * 支払いが不完全
+   */
+  INCOMPLETE = 'INCOMPLETE',
+  /**
+   * 未購入
+   */
   NONE = 'NONE',
 }
 

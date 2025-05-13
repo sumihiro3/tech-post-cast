@@ -1,3 +1,4 @@
+import { AppConfigService } from '@/app-config/app-config.service';
 import { IAppUsersRepository } from '@/domains/app-users/app-users.repository.interface';
 import {
   AppUserCreateError,
@@ -20,7 +21,10 @@ import {
 export class AppUsersRepository implements IAppUsersRepository {
   private readonly logger = new Logger(AppUsersRepository.name);
 
-  constructor(private readonly prisma: PrismaClientManager) {}
+  constructor(
+    private readonly appConfigService: AppConfigService,
+    private readonly prisma: PrismaClientManager,
+  ) {}
 
   /**
    * 指定されたユーザーIDに対応するユーザーを取得する
@@ -59,16 +63,36 @@ export class AppUsersRepository implements IAppUsersRepository {
    */
   async create(appUser: AppUser): Promise<AppUser> {
     this.logger.debug('AppUserRepository.create called', { appUser });
-
     try {
-      const client = this.prisma.getClient();
-      const result = await client.appUser.upsert({
-        where: { id: appUser.id },
-        update: appUser,
-        create: appUser,
-      });
-      this.logger.debug(`ユーザー [${appUser.id}] を作成しました`, {
-        appUser: result,
+      // ユーザーの新規作成時にユーザーサブスクリプション（フリープラン）も併せて作成する
+      const result = await this.prisma.transaction(async () => {
+        const client = this.prisma.getClient();
+        const now = new Date();
+
+        const createdUser = await client.appUser.create({
+          data: {
+            ...appUser,
+            createdAt: now,
+            updatedAt: now,
+          },
+        });
+        // ユーザーサブスクリプション
+        const createdSubscription = await client.subscription.create({
+          data: {
+            userId: createdUser.id,
+            planId: this.appConfigService.FreePlanId,
+            startDate: now,
+            isActive: true,
+            status: SubscriptionStatus.ACTIVE,
+            createdAt: now,
+            updatedAt: now,
+          },
+        });
+        this.logger.debug(`ユーザー [${appUser.id}] を作成しました`, {
+          appUser: createdUser,
+          subscription: createdSubscription,
+        });
+        return createdUser;
       });
       return result;
     } catch (error) {
@@ -132,6 +156,10 @@ export class AppUsersRepository implements IAppUsersRepository {
         where: { id: userId },
         data: { isActive: false },
       });
+
+      // TODO ユーザーのサブスクリプションをキャンセルする
+      // データベースのサブスクリプションのステータスを更新する
+      // Stripeのサブスクリプションをキャンセルする
 
       this.logger.debug('AppUserRepository.delete succeeded', { userId });
     } catch (error) {
