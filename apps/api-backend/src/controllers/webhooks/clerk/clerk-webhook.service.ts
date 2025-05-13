@@ -67,9 +67,12 @@ export class ClerkWebhookService {
         email: userJson.email_addresses[0].email_address,
         firstName: userJson.first_name,
         lastName: userJson.last_name,
+        displayName: `${userJson.first_name} ${userJson.last_name}`,
         imageUrl: userJson.image_url,
         isActive: true,
         lastSignInAt: new Date(userJson.last_sign_in_at),
+        stripeCustomerId: undefined,
+        defaultPaymentMethodId: undefined,
         createdAt: new Date(userJson.created_at),
         updatedAt: new Date(userJson.updated_at),
       });
@@ -96,14 +99,22 @@ export class ClerkWebhookService {
     });
     // ユーザー更新時の処理
     try {
-      const appUser = await this.appUserRepository.update({
+      const appUser = await this.appUserRepository.findOne(userJson.id);
+      if (!appUser) {
+        this.logger.warn(`ユーザー [${userJson.id}] が見つかりません`);
+        return;
+      }
+      const updatedUser = await this.appUserRepository.update({
         id: userJson.id,
         email: userJson.email_addresses[0].email_address,
         firstName: userJson.first_name,
         lastName: userJson.last_name,
+        displayName: `${userJson.first_name} ${userJson.last_name}`,
         imageUrl: userJson.image_url,
         isActive: true,
         lastSignInAt: new Date(userJson.last_sign_in_at),
+        stripeCustomerId: appUser.stripeCustomerId,
+        defaultPaymentMethodId: appUser.defaultPaymentMethodId,
         createdAt: new Date(userJson.created_at),
         updatedAt: new Date(userJson.updated_at),
       });
@@ -134,6 +145,13 @@ export class ClerkWebhookService {
     }
     // ユーザー削除時の処理
     try {
+      const user = await this.appUserRepository.findOne(userId);
+      if (!user) {
+        this.logger.warn(
+          `ユーザー [${userId}] は登録されていません。削除処理はスキップします。`,
+        );
+        return;
+      }
       await this.appUserRepository.delete(userId);
       this.logger.log(`ユーザー [${userId}] を削除しました`);
     } catch (error) {

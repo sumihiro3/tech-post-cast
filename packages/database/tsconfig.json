@@ -8,5 +8,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "declaration": true
-  }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["prisma/seed.ts"]
 }
