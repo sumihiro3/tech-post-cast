@@ -29,7 +29,7 @@ export class SubscriptionGuard implements CanActivate {
 
     try {
       this.logger.debug(
-        `ユーザーID: ${userId} のサブスクリプション状態を確認します`,
+        `ユーザーID [${userId}] のサブスクリプション状態を確認します`,
       );
       // サブスクリプション状態を取得
       const subscriptionInfo =
@@ -42,7 +42,7 @@ export class SubscriptionGuard implements CanActivate {
       // プレミアム機能へのアクセスチェック
       if (status !== SubscriptionStatus.ACTIVE) {
         this.logger.error(
-          `ユーザーID: ${userId} のサブスクリプション状態が ${status} です`,
+          `ユーザーID [${userId}] のサブスクリプション状態が [${status}] です`,
         );
         throw new UnauthorizedException(
           'この機能にアクセスするには有効なサブスクリプションが必要です',

@@ -51,3 +51,14 @@ export type UpdatePersonalizedFeedParams = {
 > & {
     filterGroups?: FilterGroupParams[];
   };
+
+/**
+ * パーソナライズフィード更新パラメータかどうかをチェック
+ * @param params パラメータ
+ * @returns パーソナライズフィード更新パラメータかどうか
+ */
+export function isUpdatePersonalizedFeedParams(
+  params: CreatePersonalizedFeedParams | UpdatePersonalizedFeedParams,
+): params is UpdatePersonalizedFeedParams {
+  return 'id' in params && typeof params.id === 'string';
+}

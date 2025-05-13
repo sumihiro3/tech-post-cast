@@ -14,13 +14,14 @@ import { AppUser } from '@prisma/client';
 import { SubscriptionInfo, SubscriptionStatus } from '@tech-post-cast/database';
 import {
   PersonalizedFeed,
-  PersonalizedFeedWithFilters,
   PersonalizedFeedsResult,
   PersonalizedFeedsWithFiltersResult,
+  PersonalizedFeedWithFilters,
 } from './personalized-feeds.entity';
 import { IPersonalizedFeedsRepository } from './personalized-feeds.repository.interface';
 import {
   CreatePersonalizedFeedParams,
+  isUpdatePersonalizedFeedParams,
   UpdatePersonalizedFeedParams,
 } from './personalized-feeds.types';
 
@@ -309,10 +310,12 @@ export class PersonalizedFeedsService {
   async update(
     userId: string,
     params: UpdatePersonalizedFeedParams,
+    subscription: SubscriptionInfo,
   ): Promise<PersonalizedFeedWithFilters> {
     this.logger.debug('PersonalizedFeedsService.update', {
       userId,
       params,
+      subscription,
       hasFilterGroups: params.filterGroups && params.filterGroups.length > 0,
     });
 
@@ -329,6 +332,8 @@ export class PersonalizedFeedsService {
     const existingFeed = await this.findById(params.id, userId);
 
     try {
+      // ユーザーのサブスクリプション状態に応じたパーソナライズフィードの作成制限をチェック
+      await this.checkFeedCreationLimits(user, subscription, params);
       // パーソナライズフィードとフィルターグループをトランザクションで更新
       const result =
         await this.personalizedFeedsRepository.updateWithFilterGroup({
@@ -590,12 +595,13 @@ export class PersonalizedFeedsService {
   async checkFeedCreationLimits(
     user: AppUser,
     subscription: SubscriptionInfo,
-    params: CreatePersonalizedFeedParams,
+    params: CreatePersonalizedFeedParams | UpdatePersonalizedFeedParams,
   ): Promise<void> {
     this.logger.debug(
       `PersonalizedFeedsService.checkFeedCreationLimits called`,
       {
         user,
+        subscription,
         params,
       },
     );
@@ -619,8 +625,14 @@ export class PersonalizedFeedsService {
       const currentFeedCount =
         await this.personalizedFeedsRepository.countByUserId(user.id);
 
-      // フィード数の制限チェック
-      if (currentFeedCount >= limits.maxFeeds) {
+      const isUpdate = isUpdatePersonalizedFeedParams(params);
+      // ユーザーのサブスクリプションのフィード数の上限をチェックする
+      if (
+        // 新規作成の場合、作成後に上限を超える場合はエラー
+        (!isUpdate && currentFeedCount + 1 > limits.maxFeeds) ||
+        // 更新の場合、既に作成されているフィード数が上限に達している場合はエラー
+        (isUpdate && currentFeedCount > limits.maxFeeds)
+      ) {
         throw new PersonalizedFeedCreationLimitError(
           `フィード作成数の上限（${limits.maxFeeds}）に達しています。プランをアップグレードするか、既存のフィードを削除してください。`,
         );

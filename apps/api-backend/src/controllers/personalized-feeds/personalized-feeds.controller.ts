@@ -82,7 +82,7 @@ export class PersonalizedFeedsController {
   ): Promise<
     GetPersonalizedFeedsResponseDto | GetPersonalizedFeedsWithFiltersResponseDto
   > {
-    this.logger.verbose(`PersonalizedFeedsController.getPersonalizedFeeds`, {
+    this.logger.debug(`PersonalizedFeedsController.getPersonalizedFeeds`, {
       userId,
       page: dto.page,
       perPage: dto.perPage,
@@ -160,7 +160,7 @@ export class PersonalizedFeedsController {
     @Param('id') id: string,
     @CurrentUserId() userId: string, // JWTトークンからユーザーIDを取得
   ): Promise<GetPersonalizedFeedWithFiltersResponseDto> {
-    this.logger.verbose(`PersonalizedFeedsController.getPersonalizedFeed`, {
+    this.logger.debug(`PersonalizedFeedsController.getPersonalizedFeed`, {
       id,
       userId,
     });
@@ -222,7 +222,7 @@ export class PersonalizedFeedsController {
     @CurrentUserId() userId: string, // JWTトークンからユーザーIDを取得
     @SubscriptionDecorator() subscription: SubscriptionInfo, // サブスクリプション情報
   ): Promise<CreatePersonalizedFeedWithFiltersResponseDto> {
-    this.logger.verbose(`PersonalizedFeedsController.createPersonalizedFeed`, {
+    this.logger.debug(`PersonalizedFeedsController.createPersonalizedFeed`, {
       userId,
       name: dto.name,
       dataSource: dto.dataSource,
@@ -274,8 +274,8 @@ export class PersonalizedFeedsController {
       // フィルター情報を含むDTOに変換して返却
       return CreatePersonalizedFeedWithFiltersResponseDto.fromEntity(feed);
     } catch (error) {
-      // UserNotFoundErrorをNotFoundExceptionに変換
       if (error instanceof UserNotFoundError) {
+        // UserNotFoundErrorをNotFoundExceptionに変換
         this.logger.warn(`ユーザーが見つかりません`, {
           userId,
           error: error.message,
@@ -327,12 +327,14 @@ export class PersonalizedFeedsController {
     status: 400,
     description: 'リクエストパラメータが不正',
   })
+  @UseGuards(SubscriptionGuard)
   async updatePersonalizedFeed(
     @Param('id') id: string,
     @Body() dto: UpdatePersonalizedFeedRequestDto,
     @CurrentUserId() userId: string, // JWTトークンからユーザーIDを取得
+    @SubscriptionDecorator() subscription: SubscriptionInfo, // サブスクリプション情報
   ): Promise<UpdatePersonalizedFeedWithFiltersResponseDto> {
-    this.logger.verbose(`PersonalizedFeedsController.updatePersonalizedFeed`, {
+    this.logger.debug(`PersonalizedFeedsController.updatePersonalizedFeed`, {
       id,
       userId,
       updates: {
@@ -378,6 +380,7 @@ export class PersonalizedFeedsController {
       const feed = await this.personalizedFeedsService.update(
         userId,
         updateParams,
+        subscription,
       );
 
       // フィルター情報を含むDTOに変換して返却
@@ -388,13 +391,19 @@ export class PersonalizedFeedsController {
         throw error;
       }
 
-      // UserNotFoundErrorをNotFoundExceptionに変換
       if (error instanceof UserNotFoundError) {
+        // UserNotFoundErrorをNotFoundExceptionに変換
         this.logger.warn(`ユーザーが見つかりません`, {
           userId,
           error: error.message,
         });
         throw new NotFoundException(error.message);
+      } else if (error instanceof PersonalizedFeedCreationLimitError) {
+        this.logger.warn(`パーソナライズフィードの作成制限に達しています`, {
+          userId,
+          error: error.message,
+        });
+        throw new BadRequestException(error.message);
       }
 
       // その他のエラーはログ出力して再スロー
@@ -436,7 +445,7 @@ export class PersonalizedFeedsController {
     @Param('id') id: string,
     @CurrentUserId() userId: string, // JWTトークンからユーザーIDを取得
   ): Promise<DeletePersonalizedFeedResponseDto> {
-    this.logger.verbose(`PersonalizedFeedsController.deletePersonalizedFeed`, {
+    this.logger.debug(`PersonalizedFeedsController.deletePersonalizedFeed`, {
       id,
       userId,
     });

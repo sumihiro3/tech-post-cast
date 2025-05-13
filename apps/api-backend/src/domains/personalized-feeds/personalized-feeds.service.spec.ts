@@ -31,12 +31,15 @@ describe('PersonalizedFeedsService', () => {
     id: userId,
     firstName: 'テスト', // 追加
     lastName: 'ユーザー', // 追加
+    displayName: 'テストユーザー',
     email: 'test@example.com',
-    imageUrl: 'https://example.com/image.jpg', // 追加
+    imageUrl: 'https://example.com/image.jpg',
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
-    lastSignInAt: new Date(), // 追加
+    lastSignInAt: new Date(),
+    stripeCustomerId: 'cus_123456',
+    defaultPaymentMethodId: 'pm_123456',
   };
 
   const mockPersonalizedFeed = {
@@ -275,7 +278,11 @@ describe('PersonalizedFeedsService', () => {
         filterGroups: [filterGroupDto],
       };
 
-      const result = await service.update('user_123456', updateParams);
+      const result = await service.update(
+        'user_123456',
+        updateParams,
+        mockSubscription,
+      );
 
       expect(personalizedFeedsRepository.findById).toHaveBeenCalledWith(
         'feed_123456',
@@ -308,9 +315,9 @@ describe('PersonalizedFeedsService', () => {
         name: '更新されたフィード名',
       };
 
-      await expect(service.update('user_123456', updateParams)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update('user_123456', updateParams, mockSubscription),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -343,10 +350,31 @@ describe('PersonalizedFeedsService', () => {
       ).rejects.toThrow(PersonalizedFeedCreationLimitError);
     });
 
-    it('フィード数が上限に達した場合、エラーを投げる', async () => {
+    it('新規フィード作成時、フィード数が上限に達した場合はエラーを投げる', async () => {
       // Arrange
       mockSubscription.plan.maxFeeds = 10;
       personalizedFeedsRepository.countByUserId.mockResolvedValue(10); // 10フィード（上限10）
+
+      const params = {
+        ...mockPersonalizedFeedWithFilters,
+      };
+      delete params['id'];
+      const createParams: CreatePersonalizedFeedParams = params;
+
+      // Act & Assert
+      await expect(
+        service.checkFeedCreationLimits(
+          mockUser,
+          mockSubscription,
+          createParams,
+        ),
+      ).rejects.toThrow(PersonalizedFeedCreationLimitError);
+    });
+
+    it('フィード更新時、フィード数が上限を超えている場合はエラーを投げる', async () => {
+      // Arrange
+      mockSubscription.plan.maxFeeds = 10;
+      personalizedFeedsRepository.countByUserId.mockResolvedValue(11); // 11フィード（上限10）
 
       // Act & Assert
       await expect(
