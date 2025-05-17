@@ -20,3 +20,13 @@ export class AppUserFindError extends AppUserError {
     super(message, options);
   }
 }
+
+/**
+ * アプリケーションユーザーが見つからない場合のエラー
+ */
+export class AppUserNotFoundError extends AppUserError {
+  override name = 'AppUserNotFoundError';
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}
