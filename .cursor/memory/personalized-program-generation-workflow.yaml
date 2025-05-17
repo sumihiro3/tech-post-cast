@@ -4,26 +4,34 @@ main:
     - init:
         assign:
           # 番組生成バックエンドのURL
-          # TODO: 環境変数から取得するようにする
-          - baseUrl: https://kkrxv971-3000.asse.devtunnels.ms
+          - apiBaseUrl: ${sys.get_env("API_BASE_URL")}
+          # APIトークン
+          - apiToken: ${"Bearer " + sys.get_env("API_TOKEN")}
           # 並列処理の最大数
           - concurrencyLimit: 3
           # Qiita APIのレートリミットがこの値を下回ると停止する
           - minQiitaRateRemaining: 100
-    - logBaseUrl:
+          # 番組生成に成功した件数
+          - successCount: 0
+          # 番組生成に失敗したフィードID
+          - failedFeedIds: []
+    - logApiBaseUrl:
         call: sys.log
         args:
-          text: ${"Base URL is " + baseUrl}
+          text: ${"API Base URL is " + apiBaseUrl}
           severity: DEBUG
     # 番組生成対象のパーソナルフィード一覧を取得する
-    - getActiveFeeds:
+    - getActiveFeeds1:
         call: http.get
         args:
-          url: ${baseUrl + "/personalized-feeds/active-feeds"}
+          url: ${apiBaseUrl + "/personalized-feeds/active-feeds"}
+          headers:
+            Authorization: ${apiToken}
         result: feeds
     # パーソナルフィードごとに番組生成を行う
     - processFeeds:
         parallel:
+          shared: [successCount, failedFeedIds]
           # 並列処理の最大数
           concurrency_limit: ${concurrencyLimit}
           for:
@@ -42,7 +50,9 @@ main:
                       - makeRequest:
                           call: http.post
                           args:
-                            url: ${baseUrl + "/personalized-feeds/generate-program/"}
+                            url: ${apiBaseUrl + "/personalized-feeds/generate-program/"}
+                            headers:
+                              Authorization: ${apiToken}
                             body:
                               feedId: ${feed.id}
                           result: programResult
@@ -52,6 +62,10 @@ main:
                           args:
                             text: ${"Generated program ID (" + programResult.body.programId + "); Qiita rate remaining (" + programResult.body.qiitaRateRemaining + ");"}
                             severity: INFO
+                      # 番組生成に成功した場合は成功件数をインクリメントする
+                      - incrementSuccessCount:
+                          assign:
+                            - successCount: ${successCount + 1}
                       # Qiita APIのレートリミットが下限を下回っていないかを確認する
                       - checkRateLimit:
                           switch:
@@ -92,26 +106,37 @@ main:
                       - notifyError:
                           call: http.post
                           args:
-                            url: ${baseUrl + "/personalized-feeds/notify-error"}
+                            url: ${apiBaseUrl + "/personalized-feeds/notify-error"}
+                            headers:
+                              Authorization: ${apiToken}
                             body:
                               feedId: ${feed.id}
                               error: ${e}
+                      - addFailedFeedId:
+                          assign:
+                            - failedFeedIds: ${list.concat(failedFeedIds, feed.id)}
     # 番組生成完了通知を行う
     - finalize:
         steps:
           - notifyCompletion:
               call: http.post
               args:
-                url: ${baseUrl + "/personalized-feeds/finalize"}
+                url: ${apiBaseUrl + "/personalized-feeds/finalize"}
+                headers:
+                  Authorization: ${apiToken}
                 body:
-                  # 処理対象のパーソナルフィード数
-                  totalFeeds: ${len(feeds.body)}
                   # 処理完了時間
                   timestamp: ${sys.now()}
+                  # 処理対象のパーソナルフィード数
+                  totalFeeds: ${len(feeds.body)}
+                  # 番組生成に成功した件数
+                  successCount: ${successCount}
+                  # 番組生成に失敗したフィードID
+                  failedFeedIds: ${failedFeedIds}
               result: finalizeResult
           - logCompletion:
               call: sys.log
               args:
                 text: 'Program generation completed!!'
           - returnResult:
-              return: 'OK'
+              return: 'Done!'
