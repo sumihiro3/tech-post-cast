@@ -47,7 +47,7 @@ main:
               - generateProgram:
                   try:
                     steps:
-                      - makeRequest:
+                      - generateProgramRequest:
                           call: http.post
                           args:
                             url: ${apiBaseUrl + "/personalized-feeds/generate-program/"}
