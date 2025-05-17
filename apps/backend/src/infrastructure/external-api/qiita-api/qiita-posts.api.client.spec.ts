@@ -249,8 +249,8 @@ describe('QiitaPostsApiClient', () => {
       });
 
       // Assert - 結果の検証
-      expect(result).toHaveLength(1);
-      expect(result[0].title).toBe('テスト記事');
+      expect(result.posts).toHaveLength(1);
+      expect(result.posts[0].title).toBe('テスト記事');
       expect(apiClient.get).toHaveBeenCalledWith('/items', {
         params: {
           query: 'created:>=2024-03-20 created:<=2024-03-21',
@@ -288,7 +288,7 @@ describe('QiitaPostsApiClient', () => {
       global.Date = realDate;
 
       // Assert - 結果の検証
-      expect(result).toHaveLength(1);
+      expect(result.posts).toHaveLength(1);
       expect(apiClient.get).toHaveBeenCalledWith('/items', {
         params: {
           query: 'created:>=2024-04-27',
@@ -321,7 +321,7 @@ describe('QiitaPostsApiClient', () => {
       });
 
       // Assert - 結果の検証
-      expect(result).toHaveLength(1);
+      expect(result.posts).toHaveLength(1);
       expect(apiClient.get).toHaveBeenCalledWith('/items', {
         params: {
           query: 'tag:javascript,typescript',
@@ -354,7 +354,7 @@ describe('QiitaPostsApiClient', () => {
       });
 
       // Assert - 結果の検証
-      expect(result).toHaveLength(1);
+      expect(result.posts).toHaveLength(1);
       expect(apiClient.get).toHaveBeenCalledWith('/items', {
         params: {
           query: 'tag:javascript,typescript',
@@ -387,7 +387,7 @@ describe('QiitaPostsApiClient', () => {
       });
 
       // Assert - 結果の検証
-      expect(result).toHaveLength(1);
+      expect(result.posts).toHaveLength(1);
       expect(apiClient.get).toHaveBeenCalledWith('/items', {
         params: {
           query: 'user:user1,user2',
@@ -430,7 +430,7 @@ describe('QiitaPostsApiClient', () => {
       });
 
       // Assert - 結果の検証
-      expect(result).toHaveLength(1);
+      expect(result.posts).toHaveLength(1);
       expect(apiClient.get).toHaveBeenCalledWith('/items', {
         params: {
           query:
@@ -446,7 +446,7 @@ describe('QiitaPostsApiClient', () => {
       const result = await service.findQiitaPostsByPersonalizedFeed({});
 
       // Assert - 結果の検証
-      expect(result).toHaveLength(0);
+      expect(result.posts).toHaveLength(0);
       expect(service.getApiClient().get).not.toHaveBeenCalled();
     });
 
@@ -484,7 +484,7 @@ describe('QiitaPostsApiClient', () => {
       });
 
       // Assert - 結果の検証
-      expect(result).toHaveLength(3);
+      expect(result.posts).toHaveLength(3);
       expect(apiClient.get).toHaveBeenCalledTimes(3);
       expect(apiClient.get).toHaveBeenNthCalledWith(1, '/items', {
         params: {
@@ -533,7 +533,7 @@ describe('QiitaPostsApiClient', () => {
       ]);
 
       // Assert - 結果の検証
-      expect(result).toHaveLength(1);
+      expect(result.posts).toHaveLength(1);
       expect(spy).toHaveBeenCalledWith({
         tagFilters: [
           {
@@ -566,7 +566,7 @@ describe('QiitaPostsApiClient', () => {
       );
 
       // Assert - 結果の検証
-      expect(result).toHaveLength(1);
+      expect(result.posts).toHaveLength(1);
       expect(spy).toHaveBeenCalledWith({
         tagFilters: [
           {
@@ -598,7 +598,7 @@ describe('QiitaPostsApiClient', () => {
       const result = await service.findQiitaPostsByAuthors(['user1', 'user2']);
 
       // Assert - 結果の検証
-      expect(result).toHaveLength(1);
+      expect(result.posts).toHaveLength(1);
       expect(spy).toHaveBeenCalledWith({
         authorFilters: [
           {

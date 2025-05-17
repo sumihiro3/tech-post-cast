@@ -189,3 +189,15 @@ export class QiitaPostApiResponse implements IQiitaPostApiResponse {
     this.slide = response.slide;
   }
 }
+
+/** Qiita API からのレスポンスデータ */
+export interface FindQiitaPostApiResponseData {
+  /** 最大ページ数 */
+  maxPage: number;
+  /** API 残り回数 */
+  rateRemaining: number;
+  /** API リセット時間 */
+  rateReset: number;
+  /** ページ内の記事一覧 */
+  posts: QiitaPostApiResponse[];
+}

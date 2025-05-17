@@ -205,10 +205,11 @@ export class SampleController {
       const feed = personalizedFeeds[0];
       const findOptions =
         this.personalizedFeedFilterMapper.buildQiitaFilterOptions(feed);
-      const posts =
+      const findResult =
         await this.qiitaPostsApiClient.findQiitaPostsByPersonalizedFeed(
           findOptions,
         );
+      const posts = findResult.posts;
       this.logger.debug(`${posts.length} 件のQiita記事を取得しました`);
       return posts.map((post) => ({
         id: post.id,

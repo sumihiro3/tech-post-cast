@@ -1,4 +1,7 @@
-import { QiitaPostApiResponse } from './qiita-posts.entity';
+import {
+  FindQiitaPostApiResponseData,
+  QiitaPostApiResponse,
+} from './qiita-posts.entity';
 
 /**
  * タグでフィルタリングするための条件
@@ -91,7 +94,7 @@ export interface IQiitaPostsApiClient {
    */
   findQiitaPostsByPersonalizedFeed(
     options: QiitaFeedFilterOptions,
-  ): Promise<QiitaPostApiResponse[]>;
+  ): Promise<FindQiitaPostApiResponseData>;
 
   /**
    * 指定されたタグを含む記事を検索する
@@ -102,12 +105,14 @@ export interface IQiitaPostsApiClient {
   findQiitaPostsByTags(
     tagNames: string[],
     logicType?: 'AND' | 'OR',
-  ): Promise<QiitaPostApiResponse[]>;
+  ): Promise<FindQiitaPostApiResponseData>;
 
   /**
    * 指定された著者が投稿した記事を検索する
    * @param authorIds 著者IDのリスト
    * @returns 条件に一致する記事一覧
    */
-  findQiitaPostsByAuthors(authorIds: string[]): Promise<QiitaPostApiResponse[]>;
+  findQiitaPostsByAuthors(
+    authorIds: string[],
+  ): Promise<FindQiitaPostApiResponseData>;
 }

@@ -1,6 +1,6 @@
 import { PersonalizedProgramPersistenceError } from '@/types/errors';
 import {
-  PersonalizedProgramGenerateResult,
+  PersonalizedProgramAudioGenerateResult,
   ProgramUploadResult,
 } from '@domains/radio-program/personalized-feed';
 import { IPersonalizedFeedsRepository } from '@domains/radio-program/personalized-feed/personalized-feeds.repository.interface';
@@ -74,7 +74,6 @@ export class PersonalizedFeedsRepository
         isActive: true,
       },
       include: {
-        user: true,
         filterGroups: {
           include: {
             tagFilters: true,
@@ -93,6 +92,29 @@ export class PersonalizedFeedsRepository
         count: result.length,
       },
     );
+    return result;
+  }
+
+  /**
+   * アクティブなパーソナルフィード一覧を取得する
+   * @returns アクティブなパーソナルフィード一覧
+   */
+  async findActive(): Promise<PersonalizedFeedWithFilters[]> {
+    this.logger.debug(`PersonalizedFeedsRepository.findActive called`);
+    const client = this.prisma.getClient();
+    const result = await client.personalizedFeed.findMany({
+      where: { isActive: true },
+      include: {
+        filterGroups: {
+          include: {
+            tagFilters: true,
+            authorFilters: true,
+            dateRangeFilters: true,
+            likesCountFilters: true,
+          },
+        },
+      },
+    });
     return result;
   }
 
@@ -169,7 +191,7 @@ export class PersonalizedFeedsRepository
     feed: PersonalizedFeedWithFilters,
     programDate: Date,
     posts: QiitaPost[],
-    generateResult: PersonalizedProgramGenerateResult,
+    generateResult: PersonalizedProgramAudioGenerateResult,
     uploadResult: ProgramUploadResult,
   ): Promise<PersonalizedFeedProgram> {
     this.logger.verbose(

@@ -1,22 +1,27 @@
-import { AppConfigService } from '@/app-config/app-config.service';
 import { BackendBearerTokenGuard } from '@/guards/bearer-token.guard';
-import { IAppUsersRepository } from '@domains/app-user/app-users.repository.interface';
+import {
+  AppUserNotFoundError,
+  PersonalizedFeedNotFoundError,
+} from '@/types/errors';
 import { PersonalizedFeedsBuilder } from '@domains/radio-program/personalized-feed/personalized-feeds-builder';
 import {
+  BadRequestException,
+  Body,
   Controller,
+  Get,
   HttpException,
-  Inject,
   InternalServerErrorException,
   Logger,
   NotFoundException,
-  Param,
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiHeader, ApiOperation } from '@nestjs/swagger';
-const fs = require('fs');
-const path = require('path');
-const util = require('util');
+import { ApiHeader, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ActiveFeedDto,
+  GenerateProgramResponseDto,
+  PersonalizedFeedCreateRequestDto,
+} from './dto/personalized-feed.dto';
 
 @Controller('personalized-feeds')
 export class PersonalizedFeedsController {
@@ -24,43 +29,14 @@ export class PersonalizedFeedsController {
     PersonalizedFeedsController.name,
   );
 
-  // mastra: Mastra;
-
   constructor(
-    private readonly appConfigService: AppConfigService,
     private readonly personalizedFeedsBuilder: PersonalizedFeedsBuilder,
-    @Inject('AppUsersRepository')
-    private readonly appUsersRepository: IAppUsersRepository,
-  ) {
-    // const personalizedProgramWorkflow = new Workflow({
-    //   name: 'personalizedProgramWorkflow',
-    //   triggerSchema: z.object({
-    //     userName: z.string().describe('ユーザー名'),
-    //     posts: z.array(qiitaPostSchema).describe('記事のリスト'),
-    //   }),
-    //   mastra: new Mastra(),
-    //   result: {
-    //     schema: personalizedProgramScriptSchema,
-    //   },
-    // });
-    // personalizedProgramWorkflow
-    //   .step(createPersonalizedProgramScriptGenerationWorkflow)
-    //   .commit();
-    // this.mastra = new Mastra({
-    //   workflows: { personalizedProgramWorkflow },
-    //   agents: { qiitaPostSummarizeAgent },
-    //   logger: createLogger({
-    //     name: 'TechPostCastBackend',
-    //     level: 'info',
-    //   }),
-    // });
-  }
+  ) {}
 
-  @Post('/:userId')
+  @Get('/active-feeds')
   @ApiOperation({
-    operationId: 'PersonalizedFeedsController.createProgram',
-    summary:
-      '指定ユーザーのパーソナルフィードに基づいた番組（パーソナルプログラム）を生成する',
+    operationId: 'PersonalizedFeedsController.getActiveFeeds',
+    summary: 'アクティブなパーソナルフィード一覧を取得する',
   })
   @ApiHeader({
     name: 'Authorization',
@@ -68,47 +44,26 @@ export class PersonalizedFeedsController {
     example: 'Bearer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
     required: true,
   })
+  @ApiResponse({
+    status: 200,
+    description: 'アクティブなパーソナルフィードIDの一覧を取得する',
+    type: [ActiveFeedDto],
+  })
   @UseGuards(BackendBearerTokenGuard)
-  async createProgram(@Param('userId') userId: string): Promise<void> {
-    this.logger.debug(`PersonalizedFeedsController.createProgram called`, {
-      userId,
-    });
+  async getActiveFeeds(): Promise<ActiveFeedDto[]> {
+    this.logger.debug(`PersonalizedFeedsController.getActiveFeeds called`);
     try {
-      // ユーザーの存在確認
-      const user = await this.appUsersRepository.findOne(userId);
-      if (!user) {
-        const errorMessage = `ユーザー [${user}] が見つかりませんでした`;
-        this.logger.error(errorMessage, { userId: user });
-        throw new NotFoundException(errorMessage);
-      }
-      const result = await this.personalizedFeedsBuilder.createProgramByUser(
-        user,
-        new Date(),
+      const activeFeeds = await this.personalizedFeedsBuilder.getActiveFeeds();
+      this.logger.log(
+        `[${activeFeeds.length}] 件のアクティブなパーソナルフィードを取得しました`,
       );
-      this.logger.debug(`実行結果: ${JSON.stringify(result)}`);
-      // const id = `08bdfadfb760043f2183`;
-      // // txt ファイルから content を取得
-      // const content = await this.getContent();
-      // const post: QiitaPost = {
-      //   id,
-      //   content,
-      //   author: 'QiitaUser',
-      //   tags: ['tag1', 'tag2'],
-      //   createdAt: new Date().toISOString(),
-      // };
-
-      // const workflow = this.mastra.getWorkflow('personalizedProgramWorkflow');
-      // const run = workflow.createRun();
-      // const result = await run.start({
-      //   triggerData: {
-      //     posts: [post],
-      //   },
-      // });
-      // this.logger.debug(
-      //   `番組台本生成ワークフロー実行結果: ${JSON.stringify(result.results)}`,
-      // );
+      return activeFeeds.map((feed) => {
+        const dto = new ActiveFeedDto();
+        dto.id = feed.id;
+        return dto;
+      });
     } catch (error) {
-      const errorMessage = `番組台本生成中にエラーが発生しました`;
+      const errorMessage = `パーソナルフィード一覧取得中にエラーが発生しました`;
       this.logger.error(errorMessage, error);
       if (error instanceof Error) {
         this.logger.error(error.message, error.stack);
@@ -118,17 +73,126 @@ export class PersonalizedFeedsController {
     }
   }
 
-  private async getContent() {
-    const filePath = `/Users/sumihiro/projects/TechPostCast/tech-post-cast/apps/backend/src/controllers/personalized-feeds/content.txt`;
-    const readFile = util.promisify(fs.readFile);
-    // ファイルパスが正しいことを確認
-    const absoluteFilePath = path.resolve(filePath);
-    this.logger.debug(`Reading content from file: ${absoluteFilePath}`);
-    // ファイルを非同期で読み込む
-    const content = await readFile(absoluteFilePath, 'utf8');
+  @Post('/generate-program')
+  @ApiOperation({
+    operationId: 'PersonalizedFeedsController.generateProgram',
+    summary:
+      '指定されたパーソナルフィードに基づいた番組（パーソナルプログラム）を生成する',
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: '認証トークン',
+    example: 'Bearer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description: '番組生成結果を返す',
+    type: GenerateProgramResponseDto,
+  })
+  @UseGuards(BackendBearerTokenGuard)
+  async generateProgramByFeed(
+    @Body() dto: PersonalizedFeedCreateRequestDto,
+  ): Promise<GenerateProgramResponseDto> {
     this.logger.debug(
-      `File content loaded, length: ${content.length} characters`,
+      `PersonalizedFeedsController.generateProgramByFeed called`,
+      {
+        dto,
+      },
     );
-    return content;
+    try {
+      // パーソナルフィードIDを指定して番組生成を行う
+      const { program, qiitaApiRateRemaining, qiitaApiRateReset } =
+        await this.personalizedFeedsBuilder.buildProgramByFeed(
+          dto.feedId,
+          dto.getProgramDate(),
+        );
+      this.logger.log(
+        `パーソナルフィード [${dto.feedId}] に基づいた番組を生成しました`,
+        {
+          programId: program.id,
+          title: program.title,
+          qiitaApiRateRemaining,
+          qiitaApiRateReset,
+        },
+      );
+      const responseDto = new GenerateProgramResponseDto();
+      responseDto.programId = program.id;
+      responseDto.qiitaApiRateRemaining = qiitaApiRateRemaining;
+      responseDto.qiitaApiRateReset = qiitaApiRateReset;
+      return responseDto;
+    } catch (error) {
+      const errorMessage = `番組生成中にエラーが発生しました`;
+      this.logger.error(errorMessage, error);
+      if (error instanceof Error) {
+        this.logger.error(error.message, error.stack);
+      }
+      if (error instanceof HttpException) throw error;
+      if (error instanceof PersonalizedFeedNotFoundError) {
+        throw new NotFoundException(error.message);
+      } else if (error instanceof AppUserNotFoundError) {
+        throw new BadRequestException(error.message);
+      } else {
+        throw new InternalServerErrorException(errorMessage);
+      }
+    }
+  }
+
+  @Post('/notify-error')
+  @ApiOperation({
+    operationId: 'PersonalizedFeedsController.notifyError',
+    summary: 'エラー通知を送信する',
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: '認証トークン',
+    example: 'Bearer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'エラー通知を受信したことを返す',
+  })
+  @UseGuards(BackendBearerTokenGuard)
+  async notifyError(
+    @Body() body: { feedId: string; error: any },
+  ): Promise<void> {
+    this.logger.debug(`PersonalizedFeedsController.notifyError called`, {
+      feedId: body.feedId,
+      error: body.error,
+    });
+  }
+
+  @Post('/finalize')
+  @ApiOperation({
+    operationId: 'PersonalizedFeedsController.finalize',
+    summary: '終了通知を送信する',
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: '認証トークン',
+    example: 'Bearer xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    required: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description: '終了通知を受信したことを返す',
+  })
+  @UseGuards(BackendBearerTokenGuard)
+  async finalize(
+    @Body()
+    body: {
+      totalFeeds: number;
+      timestamp: number;
+      successCount: number;
+      failedFeedIds: string[];
+    },
+  ): Promise<void> {
+    this.logger.debug(`PersonalizedFeedsController.finalize called`, {
+      totalFeeds: body.totalFeeds,
+      timestamp: body.timestamp,
+      successCount: body.successCount,
+      failedFeedIds: body.failedFeedIds,
+    });
   }
 }

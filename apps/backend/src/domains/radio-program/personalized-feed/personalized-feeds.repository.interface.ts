@@ -1,7 +1,7 @@
 import { AppUser, PersonalizedFeedProgram, QiitaPost } from '@prisma/client';
 import { PersonalizedFeedWithFilters } from '@tech-post-cast/database';
 import {
-  PersonalizedProgramGenerateResult,
+  PersonalizedProgramAudioGenerateResult,
   ProgramUploadResult,
 } from '../personalized-feed';
 
@@ -22,6 +22,12 @@ export interface IPersonalizedFeedsRepository {
    * @returns アクティブなパーソナルフィード一覧
    */
   findActiveByUser(user: AppUser): Promise<PersonalizedFeedWithFilters[]>;
+
+  /**
+   * アクティブなパーソナルフィード一覧を取得する
+   * @returns アクティブなパーソナルフィード一覧
+   */
+  findActive(): Promise<PersonalizedFeedWithFilters[]>;
 
   /**
    * パーソナルフィードの件数を取得する
@@ -52,7 +58,7 @@ export interface IPersonalizedFeedsRepository {
     feed: PersonalizedFeedWithFilters,
     programDate: Date,
     posts: QiitaPost[],
-    generateResult: PersonalizedProgramGenerateResult,
+    generateResult: PersonalizedProgramAudioGenerateResult,
     uploadResult: ProgramUploadResult,
   ): Promise<PersonalizedFeedProgram>;
 }

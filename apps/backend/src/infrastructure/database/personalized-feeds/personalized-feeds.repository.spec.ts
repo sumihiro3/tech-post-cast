@@ -1,6 +1,6 @@
 import { PersonalizedProgramPersistenceError } from '@/types/errors';
 import {
-  PersonalizedProgramGenerateResult,
+  PersonalizedProgramAudioGenerateResult,
   ProgramUploadResult,
 } from '@domains/radio-program/personalized-feed';
 import { Logger } from '@nestjs/common';
@@ -17,12 +17,15 @@ const mockAppUser: AppUser = {
   id: 'user1',
   firstName: 'Test',
   lastName: 'User',
+  displayName: 'Test User',
   email: 'test@example.com',
   imageUrl: 'https://example.com/image.jpg',
   isActive: true,
   createdAt: new Date('2025-01-01'),
   updatedAt: new Date('2025-01-01'),
   lastSignInAt: new Date('2025-01-01'),
+  stripeCustomerId: 'stripe_customer_id',
+  defaultPaymentMethodId: 'default_payment_method_id',
 };
 
 // PersonalizedFeedWithFiltersの型に合わせてモックデータを修正
@@ -76,7 +79,7 @@ const mockQiitaPosts: QiitaPost[] = [
 ];
 
 // PersonalizedProgramScript型に合わせて修正
-const mockProgramGenerateResult: PersonalizedProgramGenerateResult = {
+const mockProgramGenerateResult: PersonalizedProgramAudioGenerateResult = {
   audioFileName: 'test.mp3',
   audioFilePath: '/tmp/test.mp3',
   audioDuration: 1000,
@@ -297,7 +300,6 @@ describe('PersonalizedFeedsRepository', () => {
           isActive: true,
         },
         include: {
-          user: true,
           filterGroups: {
             include: {
               tagFilters: true,

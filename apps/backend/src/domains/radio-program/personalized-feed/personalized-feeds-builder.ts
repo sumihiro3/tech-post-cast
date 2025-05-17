@@ -11,23 +11,27 @@ import {
   createPersonalizedProgramScriptGenerationWorkflow,
 } from '@/mastra/workflows';
 import {
+  AppUserNotFoundError,
   InsufficientPostsError,
   PersonalizeProgramError,
+  PersonalizedFeedNotFoundError,
   PersonalizedProgramPersistenceError,
   PersonalizedProgramUploadError,
 } from '@/types/errors';
+import { IAppUsersRepository } from '@domains/app-user/app-users.repository.interface';
 import { IQiitaPostsRepository } from '@domains/qiita-posts/qiita-posts.repository.interface';
 import { QiitaPostsApiClient } from '@infrastructure/external-api/qiita-api/qiita-posts.api.client';
 import { createLogger } from '@mastra/core/logger';
 import { Mastra } from '@mastra/core/mastra';
 import { Workflow } from '@mastra/core/workflows';
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { AppUser, PersonalizedFeedProgram } from '@prisma/client';
+import { AppUser } from '@prisma/client';
 import { QiitaPostApiResponse, formatDate } from '@tech-post-cast/commons';
 import { PersonalizedFeedWithFilters } from '@tech-post-cast/database';
 import { setTimeout } from 'timers/promises';
 import { z } from 'zod';
 import {
+  PersonalizedProgramAudioGenerateResult,
   PersonalizedProgramChapterInfo,
   PersonalizedProgramGenerateResult,
   PersonalizedProgramMetadata,
@@ -67,6 +71,8 @@ export class PersonalizedFeedsBuilder {
     private readonly appConfig: AppConfigService,
     private readonly filterMapper: PersonalizedFeedFilterMapper,
     private readonly qiitaPostsApiClient: QiitaPostsApiClient,
+    @Inject('AppUsersRepository')
+    private readonly appUsersRepository: IAppUsersRepository,
     @Inject('PersonalizedFeedsRepository')
     private readonly personalizedFeedsRepository: IPersonalizedFeedsRepository,
     @Inject('QiitaPostsRepository')
@@ -108,6 +114,102 @@ export class PersonalizedFeedsBuilder {
   }
 
   /**
+   * 番組生成対象となるアクティブなパーソナルフィード一覧を取得する
+   * @returns アクティブなパーソナルフィード一覧
+   */
+  async getActiveFeeds(): Promise<PersonalizedFeedWithFilters[]> {
+    this.logger.debug(`PersonalizedFeedsBuilder.getActiveFeeds called`);
+    const feeds = await this.personalizedFeedsRepository.findActive();
+    return feeds;
+  }
+
+  /**
+   * 指定パーソナルフィードに基づいた番組を生成する
+   * @param feedId パーソナルフィードID
+   * @param programDate 番組日
+   * @returns 生成したパーソナルプログラム
+   */
+  async buildProgramByFeed(
+    feedId: string,
+    programDate: Date,
+  ): Promise<PersonalizedProgramGenerateResult> {
+    this.logger.debug(`PersonalizedFeedsBuilder.buildProgramByFeed called`, {
+      feedId,
+      programDate,
+    });
+    try {
+      // パーソナルフィードを取得する
+      const feed = await this.personalizedFeedsRepository.findOne(feedId);
+      if (!feed) {
+        throw new PersonalizedFeedNotFoundError(
+          `パーソナルフィード [${feedId}] が見つかりませんでした`,
+        );
+      }
+      // パーソナルフィードのユーザーを取得する
+      const user = await this.appUsersRepository.findOne(feed.userId);
+      if (!user) {
+        throw new AppUserNotFoundError(
+          `パーソナルフィード [${feedId}] のユーザー [${feed.userId}] が見つかりませんでした`,
+        );
+      }
+      // パーソナルフィードIDを指定して番組生成を行う
+      const result = await this.buildProgram(user, feed, programDate);
+      this.logger.log(
+        `パーソナルフィード [${feedId}] に基づいた番組を生成しました`,
+        {
+          result,
+        },
+      );
+      return result;
+    } catch (error) {
+      const errorMessage = `パーソナルフィード [${feedId}] に基づいた番組の生成中にエラーが発生しました`;
+      this.logger.error(errorMessage, { error }, error.stack);
+      if (error instanceof PersonalizeProgramError) {
+        throw error;
+      }
+      throw new PersonalizeProgramError(errorMessage, { cause: error });
+    }
+  }
+
+  /**
+   * 指定ユーザーのアクティブなパーソナルフィードに基づいた番組を生成する
+   * @param user ユーザー
+   * @param programDate 番組日
+   * @returns 生成した番組
+   */
+  async buildProgramByUser(user: AppUser, programDate: Date): Promise<void> {
+    this.logger.debug(`PersonalizedFeedsBuilder.buildProgramByUser called`, {
+      userId: user.id,
+      programDate,
+    });
+    try {
+      // ユーザーのアクティブなパーソナルフィード（番組設定）を取得する
+      const feeds =
+        await this.personalizedFeedsRepository.findActiveByUser(user);
+      this.logger.debug(
+        `ユーザー [${user.id}] のアクティブなパーソナルフィードを取得しました`,
+        { feeds },
+      );
+      if (feeds.length === 0) {
+        this.logger.warn(
+          `ユーザー [${user.id}] のアクティブなパーソナルフィードが見つかりませんでした`,
+        );
+        return;
+      }
+      // パーソナルフィードに合致した番組を生成する
+      // TODO アクティブなパーソナルフィードが複数ある場合、すべてのフィードに基づいて番組を生成する
+      await this.buildProgram(user, feeds[0], programDate);
+      this.logger.log(
+        `ユーザー [${user.id}] のアクティブなパーソナルフィードに基づいた番組を生成しました`,
+      );
+    } catch (error) {
+      const errorMessage = `ユーザー [${user.id}] のアクティブなパーソナルフィードに基づいた番組の生成中にエラーが発生しました`;
+      this.logger.error(errorMessage, { error }, error.stack);
+      throw new PersonalizeProgramError(errorMessage, { cause: error });
+    }
+  }
+
+  /**
    * 指定ユーザーのアクティブなパーソナルフィードに基づいた番組を生成する
    * @param user ユーザー
    * @param feed パーソナルフィード
@@ -118,20 +220,17 @@ export class PersonalizedFeedsBuilder {
     user: AppUser,
     feed: PersonalizedFeedWithFilters,
     programDate: Date,
-  ): Promise<PersonalizedFeedProgram> {
+  ): Promise<PersonalizedProgramGenerateResult> {
     this.logger.debug(`PersonalizedFeedsBuilder.buildProgram called`, {
       userId: user.id,
       feedId: feed.id,
       programDate,
     });
-
     try {
       // 番組台本の生成
-      const { script, posts } = await this.generatePersonalizedProgramScript(
-        user,
-        feed,
-        programDate,
-      );
+      const scriptGenerationResult =
+        await this.generatePersonalizedProgramScript(user, feed, programDate);
+      const { script, posts } = scriptGenerationResult;
 
       // 番組の台本読み上げ音声ファイルを生成する
       const audioFilesGenerateResult =
@@ -195,7 +294,11 @@ export class PersonalizedFeedsBuilder {
 
       this.logger.log(`パーソナルプログラムを生成しました`, { program });
 
-      return program;
+      return {
+        program,
+        qiitaApiRateRemaining: scriptGenerationResult.qiitaApiRateRemaining,
+        qiitaApiRateReset: scriptGenerationResult.qiitaApiRateReset,
+      };
     } catch (error) {
       const errorMessage = `ユーザー [${user.id}] のアクティブなパーソナルフィードに基づいた番組の生成中にエラーが発生しました`;
       this.logger.error(errorMessage, { error }, error.stack);
@@ -208,44 +311,6 @@ export class PersonalizedFeedsBuilder {
       } else {
         throw new PersonalizeProgramError(errorMessage, { cause: error });
       }
-    }
-  }
-
-  /**
-   * 指定ユーザーのアクティブなパーソナルフィードに基づいた番組を生成する
-   * @param user ユーザー
-   * @param programDate 番組日
-   * @returns 生成した番組
-   */
-  async createProgramByUser(user: AppUser, programDate: Date): Promise<void> {
-    this.logger.debug(`PersonalizedFeedsBuilder.createProgramByUserId called`, {
-      userId: user.id,
-      programDate,
-    });
-    try {
-      // ユーザーのアクティブなパーソナルフィード（番組設定）を取得する
-      const feeds =
-        await this.personalizedFeedsRepository.findActiveByUser(user);
-      this.logger.debug(
-        `ユーザー [${user.id}] のアクティブなパーソナルフィードを取得しました`,
-        { feeds },
-      );
-      if (feeds.length === 0) {
-        this.logger.warn(
-          `ユーザー [${user.id}] のアクティブなパーソナルフィードが見つかりませんでした`,
-        );
-        return;
-      }
-      // パーソナルフィードに合致した番組を生成する
-      // TODO アクティブなパーソナルフィードが複数ある場合、すべてのフィードに基づいて番組を生成する
-      await this.buildProgram(user, feeds[0], programDate);
-      this.logger.log(
-        `ユーザー [${user.id}] のアクティブなパーソナルフィードに基づいた番組を生成しました`,
-      );
-    } catch (error) {
-      const errorMessage = `ユーザー [${user.id}] のアクティブなパーソナルフィードに基づいた番組の生成中にエラーが発生しました`;
-      this.logger.error(errorMessage, { error }, error.stack);
-      throw new PersonalizeProgramError(errorMessage, { cause: error });
     }
   }
 
@@ -308,7 +373,7 @@ export class PersonalizedFeedsBuilder {
     script: PersonalizedProgramScript,
     programDate: Date,
     programAudioFileGenerateResult: PersonalizedProgramAudioFilesGenerateResult,
-  ): Promise<PersonalizedProgramGenerateResult> {
+  ): Promise<PersonalizedProgramAudioGenerateResult> {
     this.logger.debug(`PersonalizedFeedsBuilder.generateProgramFiles called`, {
       userId: user.id,
       feedId: feed.id,
@@ -373,7 +438,7 @@ export class PersonalizedFeedsBuilder {
     });
 
     // 生成結果を返却
-    const result: PersonalizedProgramGenerateResult = {
+    const result: PersonalizedProgramAudioGenerateResult = {
       audioFileName: programAudioFileName,
       audioFilePath: outputFilePath,
       audioDuration: audioResult.duration,
@@ -625,8 +690,9 @@ export class PersonalizedFeedsBuilder {
     );
     // パーソナルフィードの設定に合致した Qiita 記事を取得する
     const filter = this.filterMapper.buildQiitaFilterOptions(feed);
-    const posts =
+    const response =
       await this.qiitaPostsApiClient.findQiitaPostsByPersonalizedFeed(filter);
+    const posts = response.posts;
     this.logger.debug(
       `パーソナルフィード [${feed.id}] に基づいた記事を取得しました`,
       {
@@ -639,6 +705,8 @@ export class PersonalizedFeedsBuilder {
           title: post.title,
           likes: post.likes_count,
         })),
+        qiitaApiRateRemaining: response.rateRemaining,
+        qiitaApiRateReset: response.rateReset,
       },
     );
     const filteredPosts = this.filterPostsByLikesCount(posts, feed);
@@ -656,6 +724,8 @@ export class PersonalizedFeedsBuilder {
         programDate,
         postsLength: notExistsPosts.length,
       });
+      // TODO パーソナルフィードの設定に基づいた番組台本の生成に必要な記事が見つからない場合、
+      // エラーを出すのではなく、番組を生成できなかったことをユーザーに通知する
       throw new InsufficientPostsError(errorMessage);
     }
     // 番組で紹介する記事の件数を制限する
@@ -696,6 +766,8 @@ export class PersonalizedFeedsBuilder {
     return {
       script,
       posts: limitedPosts,
+      qiitaApiRateRemaining: response.rateRemaining,
+      qiitaApiRateReset: response.rateReset,
     };
   }
 

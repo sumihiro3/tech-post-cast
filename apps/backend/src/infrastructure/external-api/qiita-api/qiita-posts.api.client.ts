@@ -7,6 +7,7 @@ import {
   TagFilterCondition,
 } from '@/domains/qiita-posts/qiita-posts.api.client.interface';
 import {
+  FindQiitaPostApiResponseData,
   IQiitaPostApiResponse,
   QiitaPostApiResponse,
 } from '@domains/qiita-posts/qiita-posts.entity';
@@ -26,6 +27,10 @@ type QiitaPostApiResponseData = {
   currentPage: number;
   /** 最大ページ数 */
   maxPage: number;
+  /** API 残り回数 */
+  rateRemaining: number;
+  /** API リセット時間 */
+  rateReset: number;
   /** ページ内の記事一覧 */
   posts: IQiitaPostApiResponse[];
 };
@@ -92,7 +97,7 @@ export class QiitaPostsApiClient implements IQiitaPostsApiClient {
    */
   async findQiitaPostsByPersonalizedFeed(
     options: QiitaFeedFilterOptions,
-  ): Promise<QiitaPostApiResponse[]> {
+  ): Promise<FindQiitaPostApiResponseData> {
     this.logger.verbose(
       `QiitaPostsApiClient.findQiitaPostsByPersonalizedFeed`,
       {
@@ -133,7 +138,12 @@ export class QiitaPostsApiClient implements IQiitaPostsApiClient {
 
     // クエリが空の場合は空の配列を返す
     if (queryParts.length === 0) {
-      return [];
+      return {
+        maxPage: 0,
+        rateRemaining: 0,
+        rateReset: 0,
+        posts: [],
+      };
     }
 
     // 最終的な検索クエリを作成
@@ -149,6 +159,8 @@ export class QiitaPostsApiClient implements IQiitaPostsApiClient {
     let page = startPage;
     let maxPage = 1;
     const posts: QiitaPostApiResponse[] = [];
+    let rateRemaining = 0;
+    let rateReset = 0;
 
     do {
       const response = await this.findQiitaPostsByPage(query, page, perPage);
@@ -157,10 +169,17 @@ export class QiitaPostsApiClient implements IQiitaPostsApiClient {
         posts.push(new QiitaPostApiResponse(post));
       }
       maxPage = response.maxPage;
+      rateRemaining = response.rateRemaining;
+      rateReset = response.rateReset;
       page++;
     } while (page <= maxPage);
     this.logger.debug(`Qiita API から取得した記事数: ${posts.length} 件`);
-    return posts;
+    return {
+      maxPage,
+      rateRemaining,
+      rateReset,
+      posts,
+    };
   }
 
   /**
@@ -172,7 +191,7 @@ export class QiitaPostsApiClient implements IQiitaPostsApiClient {
   async findQiitaPostsByTags(
     tagNames: string[],
     logicType: 'AND' | 'OR' = 'OR',
-  ): Promise<QiitaPostApiResponse[]> {
+  ): Promise<FindQiitaPostApiResponseData> {
     this.logger.verbose(`QiitaPostsApiClient.findQiitaPostsByTags`, {
       tagNames,
       logicType,
@@ -183,7 +202,7 @@ export class QiitaPostsApiClient implements IQiitaPostsApiClient {
       logicType,
     };
 
-    return this.findQiitaPostsByPersonalizedFeed({
+    return await this.findQiitaPostsByPersonalizedFeed({
       tagFilters: [tagFilter],
     });
   }
@@ -195,7 +214,7 @@ export class QiitaPostsApiClient implements IQiitaPostsApiClient {
    */
   async findQiitaPostsByAuthors(
     authorIds: string[],
-  ): Promise<QiitaPostApiResponse[]> {
+  ): Promise<FindQiitaPostApiResponseData> {
     this.logger.verbose(`QiitaPostsApiClient.findQiitaPostsByAuthors`, {
       authorIds,
     });
@@ -257,6 +276,8 @@ export class QiitaPostsApiClient implements IQiitaPostsApiClient {
       return {
         currentPage: page,
         maxPage: Math.ceil(totalCount / perPage),
+        rateRemaining: parseInt(response.headers['Rate-Remaining'] || '0'),
+        rateReset: parseInt(response.headers['Rate-Reset'] || '0'),
         posts: response.data,
       };
     } catch (error) {

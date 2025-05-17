@@ -1,4 +1,5 @@
 import { PersonalizedProgramScript } from '@/mastra/schemas';
+import { PersonalizedFeedProgram } from '@prisma/client';
 import { formatDate, QiitaPostApiResponse } from '@tech-post-cast/commons';
 import { ProgramFileChapter } from '../program-file-maker.interface';
 import { PersonalizedProgramAudioFilesGenerateResult } from '../text-to-speech.interface';
@@ -11,6 +12,10 @@ export type PersonalizedProgramScriptGenerationResult = {
   script: PersonalizedProgramScript;
   /** 番組で紹介している Qiita 記事 */
   posts: QiitaPostApiResponse[];
+  /** Qiita API 残り回数 */
+  qiitaApiRateRemaining: number;
+  /** Qiita API リセット時間 */
+  qiitaApiRateReset: number;
 };
 
 /**
@@ -34,9 +39,9 @@ export interface PersonalizedProgramChapterInfo {
 }
 
 /**
- * パーソナルプログラムの生成結果を表すインターフェイス
+ * パーソナルプログラムの音声ファイルの生成結果を表すインターフェイス
  */
-export interface PersonalizedProgramGenerateResult {
+export interface PersonalizedProgramAudioGenerateResult {
   /** 音声ファイル名 */
   audioFileName: string;
   /** 音声ファイルパス */
@@ -104,4 +109,16 @@ export class PersonalizedProgramMetadata {
     this.filename = fileName;
     this.chapters = chapters;
   }
+}
+
+/**
+ * パーソナルプログラムの生成結果を表すインターフェイス
+ */
+export interface PersonalizedProgramGenerateResult {
+  /** パーソナルプログラム */
+  program: PersonalizedFeedProgram;
+  /** Qiita API 残り回数 */
+  qiitaApiRateRemaining: number;
+  /** Qiita API リセット時間 */
+  qiitaApiRateReset: number;
 }
