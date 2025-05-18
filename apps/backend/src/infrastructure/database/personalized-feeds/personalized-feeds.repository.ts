@@ -1,4 +1,7 @@
-import { PersonalizedProgramPersistenceError } from '@/types/errors';
+import {
+  PersonalizedProgramAttemptPersistenceError,
+  PersonalizedProgramPersistenceError,
+} from '@/types/errors';
 import {
   PersonalizedProgramAudioGenerateResult,
   ProgramUploadResult,
@@ -7,12 +10,16 @@ import { IPersonalizedFeedsRepository } from '@domains/radio-program/personalize
 import { Injectable, Logger } from '@nestjs/common';
 import {
   AppUser,
+  PersonalizedFeed,
   PersonalizedFeedProgram,
+  PersonalizedProgramAttempt,
   Prisma,
   QiitaPost,
 } from '@prisma/client';
 import {
   PersonalizedFeedWithFilters,
+  PersonalizedProgramAttemptFailureReason,
+  PersonalizedProgramAttemptStatus,
   PrismaClientManager,
 } from '@tech-post-cast/database';
 
@@ -246,6 +253,166 @@ export class PersonalizedFeedsRepository
         programDate,
       });
       throw new PersonalizedProgramPersistenceError(errorMessage, {
+        cause: error,
+      });
+    }
+  }
+
+  /**
+   * 指定フィードで、指定日に生成された番組があるかどうかを確認する
+   * @param feedId パーソナルフィードID
+   * @param programDate 番組日
+   * @returns 番組があるかどうか
+   */
+  async findProgramByFeedIdAndDate(
+    feed: PersonalizedFeed,
+    programDate: Date,
+  ): Promise<boolean> {
+    this.logger.debug(
+      `PersonalizedFeedsRepository.findProgramByFeedIdAndDate called`,
+      {
+        feedId: feed.id,
+        programDate,
+      },
+    );
+    let result = false;
+    try {
+      const client = this.prisma.getClient();
+      const program = await client.personalizedFeedProgram.findFirst({
+        where: {
+          feedId: feed.id,
+          createdAt: programDate,
+        },
+      });
+      result = program !== null;
+    } catch (error) {
+      const errorMessage = `パーソナルフィード [${feed.id}] に基づいた番組の生成に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        feedId: feed.id,
+        programDate,
+      });
+      throw new PersonalizedProgramPersistenceError(errorMessage, {
+        cause: error,
+      });
+    }
+    return result;
+  }
+
+  /**
+   * パーソナライズフィードを元に生成された番組の成功の試行履歴を作成する
+   * @param user ユーザー
+   * @param feed パーソナルフィード
+   * @param programDate 番組日
+   * @param postCount 紹介記事数
+   * @param programId 番組ID
+   */
+  async addPersonalizedProgramSuccessAttempt(
+    user: AppUser,
+    feed: PersonalizedFeedWithFilters,
+    programDate: Date,
+    postCount: number,
+    programId: string,
+  ): Promise<PersonalizedProgramAttempt> {
+    this.logger.debug(
+      `PersonalizedFeedsRepository.addPersonalizedProgramSuccessAttempt called`,
+      {
+        userId: user.id,
+        feedId: feed.id,
+        programDate,
+        postCount,
+        programId,
+      },
+    );
+    try {
+      const client = this.prisma.getClient();
+      const result = await client.personalizedProgramAttempt.create({
+        data: {
+          userId: user.id,
+          feedId: feed.id,
+          status: PersonalizedProgramAttemptStatus.SUCCESS,
+          postCount,
+          programId,
+          createdAt: programDate,
+        },
+      });
+      this.logger.debug(
+        `パーソナライズフィードを元に生成された番組の成功の試行履歴を作成しました`,
+        {
+          result,
+        },
+      );
+      return result;
+    } catch (error) {
+      const errorMessage = `パーソナライズフィードを元に生成された番組の成功の試行履歴の作成に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        userId: user.id,
+        feedId: feed.id,
+        programDate,
+        postCount,
+        programId,
+      });
+      throw new PersonalizedProgramAttemptPersistenceError(errorMessage, {
+        cause: error,
+      });
+    }
+  }
+
+  /**
+   * パーソナライズフィードを元に生成された番組の失敗の試行履歴を作成する
+   * @param user ユーザー
+   * @param feed パーソナルフィード
+   * @param programDate 番組日
+   * @param reason 失敗理由
+   * @returns 試行履歴
+   */
+  async addPersonalizedProgramFailureAttempt(
+    user: AppUser,
+    feed: PersonalizedFeedWithFilters,
+    programDate: Date,
+    postCount: number,
+    reason: PersonalizedProgramAttemptFailureReason,
+  ): Promise<PersonalizedProgramAttempt> {
+    this.logger.debug(
+      `PersonalizedFeedsRepository.addPersonalizedProgramFailureAttempt called`,
+      {
+        userId: user.id,
+        feedId: feed.id,
+        programDate,
+        postCount,
+        reason,
+      },
+    );
+    try {
+      const client = this.prisma.getClient();
+      const result = await client.personalizedProgramAttempt.create({
+        data: {
+          userId: user.id,
+          feedId: feed.id,
+          status: PersonalizedProgramAttemptStatus.FAILED,
+          reason,
+          postCount,
+          createdAt: programDate,
+        },
+      });
+      this.logger.debug(
+        `パーソナライズフィードを元に生成された番組の失敗の試行履歴を作成しました`,
+        {
+          result,
+        },
+      );
+      return result;
+    } catch (error) {
+      const errorMessage = `パーソナライズフィードを元に生成された番組の失敗の試行履歴の作成に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        userId: user.id,
+        feedId: feed.id,
+        programDate,
+        reason,
+      });
+      throw new PersonalizedProgramAttemptPersistenceError(errorMessage, {
         cause: error,
       });
     }

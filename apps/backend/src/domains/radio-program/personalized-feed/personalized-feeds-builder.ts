@@ -15,6 +15,7 @@ import {
   InsufficientPostsError,
   PersonalizeProgramError,
   PersonalizedFeedNotFoundError,
+  PersonalizedProgramAlreadyExistsError,
   PersonalizedProgramPersistenceError,
   PersonalizedProgramUploadError,
 } from '@/types/errors';
@@ -27,7 +28,10 @@ import { Workflow } from '@mastra/core/workflows';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { AppUser } from '@prisma/client';
 import { QiitaPostApiResponse, formatDate } from '@tech-post-cast/commons';
-import { PersonalizedFeedWithFilters } from '@tech-post-cast/database';
+import {
+  PersonalizedProgramAttemptFailureReason as FailureReason,
+  PersonalizedFeedWithFilters,
+} from '@tech-post-cast/database';
 import { setTimeout } from 'timers/promises';
 import { z } from 'zod';
 import {
@@ -150,6 +154,23 @@ export class PersonalizedFeedsBuilder {
       if (!user) {
         throw new AppUserNotFoundError(
           `パーソナルフィード [${feedId}] のユーザー [${feed.userId}] が見つかりませんでした`,
+        );
+      }
+      // 指定フィードで、指定日に生成された番組があるかどうかを確認する
+      // ある場合は、その番組を返却する
+      const isExists =
+        await this.personalizedFeedsRepository.findProgramByFeedIdAndDate(
+          feed,
+          programDate,
+        );
+      if (isExists) {
+        this.logger.log(
+          `パーソナルフィード [${feedId}] に基づいた番組がすでに生成されています`,
+          { programDate },
+        );
+        throw new PersonalizedProgramAlreadyExistsError(
+          `パーソナルフィード [${feedId}] に基づいた番組がすでに生成されています`,
+          programDate,
         );
       }
       // パーソナルフィードIDを指定して番組生成を行う
@@ -292,8 +313,23 @@ export class PersonalizedFeedsBuilder {
           uploadResult,
         );
 
-      this.logger.log(`パーソナルプログラムを生成しました`, { program });
+      // 4. パーソナライズフィードを元に生成された番組の成功の試行履歴を作成
+      const attempt =
+        await this.personalizedFeedsRepository.addPersonalizedProgramSuccessAttempt(
+          user,
+          feed,
+          programDate,
+          registeredPosts.length,
+          program.id,
+        );
 
+      this.logger.log(
+        `パーソナルフィード [${feed.id}] に基づいた番組の生成に成功しました`,
+        {
+          program,
+          attempt,
+        },
+      );
       return {
         program,
         qiitaApiRateRemaining: scriptGenerationResult.qiitaApiRateRemaining,
@@ -304,13 +340,39 @@ export class PersonalizedFeedsBuilder {
       this.logger.error(errorMessage, { error }, error.stack);
 
       // エラー種別に応じて適切なエラーをスローする
+      let reason = FailureReason.OTHER;
       if (error instanceof PersonalizedProgramUploadError) {
-        throw error; // アップロードエラーはそのまま再スロー
+        // アップロードエラー
+        reason = FailureReason.UPLOAD_ERROR;
       } else if (error instanceof PersonalizedProgramPersistenceError) {
-        throw error; // 永続化エラーはそのまま再スロー
+        // 永続化エラー
+        reason = FailureReason.PERSISTENCE_ERROR;
+      } else if (error instanceof InsufficientPostsError) {
+        // 記事不足エラー
+        reason = FailureReason.NOT_ENOUGH_POSTS;
       } else {
-        throw new PersonalizeProgramError(errorMessage, { cause: error });
+        // 不明なエラー
+        reason = FailureReason.OTHER;
+        error = new PersonalizeProgramError(errorMessage, { cause: error });
       }
+
+      // 失敗の試行履歴を作成する
+      const attempt =
+        await this.personalizedFeedsRepository.addPersonalizedProgramFailureAttempt(
+          user,
+          feed,
+          programDate,
+          0,
+          reason,
+        );
+      this.logger.log(
+        `パーソナルフィード [${feed.id}] に基づいた番組の生成に失敗しました`,
+        {
+          attempt,
+        },
+      );
+      // エラーをスローする
+      throw error;
     }
   }
 
@@ -722,10 +784,10 @@ export class PersonalizedFeedsBuilder {
         feedId: feed.id,
         feedName: feed.name,
         programDate,
+        postCount: notExistsPosts.length,
         postsLength: notExistsPosts.length,
       });
-      // TODO パーソナルフィードの設定に基づいた番組台本の生成に必要な記事が見つからない場合、
-      // エラーを出すのではなく、番組を生成できなかったことをユーザーに通知する
+      // パーソナルフィードの設定に基づいた番組台本の生成に必要な数の記事が見つからない場合はエラーをスローする
       throw new InsufficientPostsError(errorMessage);
     }
     // 番組で紹介する記事の件数を制限する

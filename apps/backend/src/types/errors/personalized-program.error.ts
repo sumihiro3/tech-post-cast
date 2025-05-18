@@ -32,10 +32,32 @@ export class PersonalizedProgramPersistenceError extends PersonalizeProgramError
 }
 
 /**
+ * パーソナルプログラムがすでに生成されているエラーを表すクラス
+ */
+export class PersonalizedProgramAlreadyExistsError extends PersonalizeProgramError {
+  override name = 'PersonalizedProgramAlreadyExistsError';
+  programDate: Date;
+  constructor(message: string, programDate: Date, options?: ErrorOptions) {
+    super(message, options);
+    this.programDate = programDate;
+  }
+}
+
+/**
  * パーソナルプログラムのファイルアップロードエラー
  */
 export class PersonalizedProgramUploadError extends PersonalizeProgramError {
   override name = 'PersonalizedProgramUploadError';
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}
+
+/**
+ * パーソナライズフィードを元に生成された番組の試行履歴の作成に失敗したエラー
+ */
+export class PersonalizedProgramAttemptPersistenceError extends PersonalizeProgramError {
+  override name = 'PersonalizedProgramAttemptPersistenceError';
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);
   }

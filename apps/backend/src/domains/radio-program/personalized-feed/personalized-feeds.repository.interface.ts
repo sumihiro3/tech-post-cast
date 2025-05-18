@@ -1,5 +1,14 @@
-import { AppUser, PersonalizedFeedProgram, QiitaPost } from '@prisma/client';
-import { PersonalizedFeedWithFilters } from '@tech-post-cast/database';
+import {
+  AppUser,
+  PersonalizedFeed,
+  PersonalizedFeedProgram,
+  PersonalizedProgramAttempt,
+  QiitaPost,
+} from '@prisma/client';
+import {
+  PersonalizedFeedWithFilters,
+  PersonalizedProgramAttemptFailureReason,
+} from '@tech-post-cast/database';
 import {
   PersonalizedProgramAudioGenerateResult,
   ProgramUploadResult,
@@ -61,4 +70,48 @@ export interface IPersonalizedFeedsRepository {
     generateResult: PersonalizedProgramAudioGenerateResult,
     uploadResult: ProgramUploadResult,
   ): Promise<PersonalizedFeedProgram>;
+
+  /**
+   * 指定フィードで、指定日に生成された番組があるかどうかを確認する
+   * @param feedId パーソナルフィードID
+   * @param programDate 番組日
+   * @returns 番組があるかどうか
+   */
+  findProgramByFeedIdAndDate(
+    feed: PersonalizedFeed,
+    programDate: Date,
+  ): Promise<boolean>;
+
+  /**
+   * パーソナライズフィードを元に生成された番組の成功の試行履歴を作成する
+   * @param user ユーザー
+   * @param feed パーソナルフィード
+   * @param programDate 番組日
+   * @param postCount 紹介記事数
+   * @param programId 番組ID
+   */
+  addPersonalizedProgramSuccessAttempt(
+    user: AppUser,
+    feed: PersonalizedFeedWithFilters,
+    programDate: Date,
+    postCount: number,
+    programId: string,
+  ): Promise<PersonalizedProgramAttempt>;
+
+  /**
+   * パーソナライズフィードを元に生成された番組の失敗の試行履歴を作成する
+   * @param user ユーザー
+   * @param feed パーソナルフィード
+   * @param programDate 番組日
+   * @param postCount 紹介記事数
+   * @param reason 失敗理由
+   * @returns 試行履歴
+   */
+  addPersonalizedProgramFailureAttempt(
+    user: AppUser,
+    feed: PersonalizedFeedWithFilters,
+    programDate: Date,
+    postCount: number,
+    reason: PersonalizedProgramAttemptFailureReason,
+  ): Promise<PersonalizedProgramAttempt>;
 }
