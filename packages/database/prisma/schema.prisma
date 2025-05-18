@@ -246,12 +246,13 @@ model AppUser {
   defaultPaymentMethodId String? @map("default_payment_method_id") @db.VarChar(100)
 
   // リレーション
-  personalizedProgramFilters PersonalizedFeed[]
-  personalizedPrograms       PersonalizedFeedProgram[]
-  subscriptions              Subscription[]
-  subscriptionHistories      SubscriptionHistory[]
-  paymentMethods             PaymentMethod[]
-  invoices                   Invoice[]
+  personalizedProgramFilters  PersonalizedFeed[]
+  personalizedPrograms        PersonalizedFeedProgram[]
+  personalizedProgramAttempts PersonalizedProgramAttempt[]
+  subscriptions               Subscription[]
+  subscriptionHistories       SubscriptionHistory[]
+  paymentMethods              PaymentMethod[]
+  invoices                    Invoice[]
 
   // テーブル名
   @@map("app_users")
@@ -373,12 +374,14 @@ model PersonalizedFeed {
   createdAt         DateTime          @default(now()) @map("created_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")
 
-  user         AppUser                   @relation(fields: [userId], references: [id])
+  user         AppUser                      @relation(fields: [userId], references: [id])
   // フィルター設定
   // フィルターグループは、AND/OR の論理演算子で組み合わせることができる
   filterGroups FeedFilterGroup[]
   // フィード設定を元に生成された番組
   programs     PersonalizedFeedProgram[]
+  // フィード設定を元に生成された番組の試行履歴
+  attempts     PersonalizedProgramAttempt[]
 
   @@map("personalized_feeds")
 }
@@ -471,13 +474,33 @@ model PersonalizedFeedProgram {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  user  AppUser          @relation(fields: [userId], references: [id])
+  user     AppUser                      @relation(fields: [userId], references: [id])
   // フィード設定
-  feed  PersonalizedFeed @relation(fields: [feedId], references: [id])
+  feed     PersonalizedFeed             @relation(fields: [feedId], references: [id])
+  // 番組生成の試行履歴
+  attempts PersonalizedProgramAttempt[]
   // 番組で紹介している投稿の一覧
-  posts QiitaPost[]
+  posts    QiitaPost[]
 
   @@map("personalized_feed_programs")
+}
+
+// パーソナライズフィードを元に生成された番組の試行履歴
+model PersonalizedProgramAttempt {
+  id        String   @id @default(cuid()) @db.VarChar(100)
+  userId    String   @map("user_id") @db.VarChar(50)
+  feedId    String   @map("feed_id") @db.VarChar(50)
+  status    String   @db.VarChar(20) // "SUCCESS" or "FAILED"
+  reason    String?  @db.VarChar(255) // 失敗理由（例: "NOT_ENOUGH_POSTS"）
+  postCount Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      AppUser                  @relation(fields: [userId], references: [id])
+  feed      PersonalizedFeed         @relation(fields: [feedId], references: [id])
+  program   PersonalizedFeedProgram? @relation(fields: [programId], references: [id])
+  programId String?                  @map("program_id") @db.VarChar(100)
+
+  @@map("personalized_program_attempts")
 }
 
 // 支払い方法
