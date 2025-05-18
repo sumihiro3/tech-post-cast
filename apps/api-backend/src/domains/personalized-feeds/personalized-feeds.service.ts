@@ -1,25 +1,41 @@
 import { FilterGroupDto } from '@/controllers/personalized-feeds/dto/create-personalized-feed.request.dto';
-import { IAppUserRepository } from '@/domains/app-user/app-user.repository.interface';
-import { UserNotFoundError } from '@/types/errors';
+import { IAppUsersRepository } from '@/domains/app-users/app-users.repository.interface';
+import {
+  PersonalizedFeedCreationLimitError,
+  PersonalizedFeedError,
+  UserNotFoundError,
+} from '@/types/errors';
+import {
+  ISubscriptionRepository,
+  PlanLimits,
+} from '@domains/subscription/subscription.repository.interface';
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AppUser } from '@prisma/client';
+import { SubscriptionInfo, SubscriptionStatus } from '@tech-post-cast/database';
 import {
   PersonalizedFeed,
-  PersonalizedFeedWithFilters,
   PersonalizedFeedsResult,
   PersonalizedFeedsWithFiltersResult,
+  PersonalizedFeedWithFilters,
 } from './personalized-feeds.entity';
 import { IPersonalizedFeedsRepository } from './personalized-feeds.repository.interface';
+import {
+  CreatePersonalizedFeedParams,
+  isUpdatePersonalizedFeedParams,
+  UpdatePersonalizedFeedParams,
+} from './personalized-feeds.types';
 
 @Injectable()
 export class PersonalizedFeedsService {
   private readonly logger = new Logger(PersonalizedFeedsService.name);
 
   constructor(
-    @Inject('IPersonalizedFeedsRepository')
+    @Inject('PersonalizedFeedsRepository')
     private readonly personalizedFeedsRepository: IPersonalizedFeedsRepository,
-    @Inject('IAppUserRepository')
-    private readonly appUserRepository: IAppUserRepository,
+    @Inject('AppUsersRepository')
+    private readonly appUserRepository: IAppUsersRepository,
+    @Inject('SubscriptionRepository')
+    private readonly subscriptionRepository: ISubscriptionRepository,
   ) {}
 
   /**
@@ -171,52 +187,45 @@ export class PersonalizedFeedsService {
   /**
    * ユーザーのパーソナライズフィードを新規作成する
    * @param userId ユーザーID
-   * @param name フィード名
-   * @param dataSource データソース
-   * @param filterConfig フィルター設定
-   * @param deliveryConfig 配信設定
-   * @param filterGroups フィルターグループ一覧（1つのみ有効）
-   * @param isActive 有効状態
+   * @param params パーソナライズフィードの作成パラメータ
+   * @param subscription ユーザーのサブスクリプション情報
    * @returns フィルター情報を含む作成されたパーソナライズフィード
    * @throws UserNotFoundError ユーザーが存在しない場合
+   * @throws PersonalizedFeedCreationLimitError 制限に達している場合
    */
   async create(
     userId: string,
-    name: string,
-    dataSource: string,
-    filterConfig: Record<string, any>,
-    deliveryConfig: Record<string, any>,
-    isActive: boolean = true,
-    filterGroups: FilterGroupDto[] = [],
+    params: CreatePersonalizedFeedParams,
+    subscription: SubscriptionInfo,
   ): Promise<PersonalizedFeedWithFilters> {
+    this.logger.debug('PersonalizedFeedsService.create called', {
+      userId,
+      params,
+      subscription,
+    });
     // UIでは1つのフィルターグループのみをサポート
     const filterGroup =
-      filterGroups && filterGroups.length > 0 ? filterGroups[0] : undefined;
-
-    this.logger.debug('PersonalizedFeedsService.create', {
-      userId,
-      name,
-      dataSource,
-      filterConfig,
-      deliveryConfig,
-      isActive,
-      hasFilterGroup: !!filterGroup,
-    });
-
+      params.filterGroups && params.filterGroups.length > 0
+        ? params.filterGroups[0]
+        : undefined;
     // ユーザーの存在確認
     const user = await this.validateUserExists(userId);
 
     try {
+      // ユーザーのサブスクリプション状態に応じたパーソナライズフィードの作成制限をチェック
+      await this.checkFeedCreationLimits(user, subscription, params);
+
       // パーソナライズフィードとフィルターグループをトランザクションで作成
       const result =
         await this.personalizedFeedsRepository.createWithFilterGroup({
           feed: {
-            name,
+            name: params.name,
             userId: user.id,
-            dataSource,
-            filterConfig,
-            deliveryConfig,
-            isActive,
+            dataSource: params.dataSource,
+            filterConfig: params.filterConfig,
+            deliveryConfig: params.deliveryConfig,
+            deliveryFrequency: params.deliveryFrequency,
+            isActive: params.isActive ?? true,
           },
           filterGroup: filterGroup
             ? {
@@ -225,6 +234,7 @@ export class PersonalizedFeedsService {
                 tagFilters: filterGroup.tagFilters,
                 authorFilters: filterGroup.authorFilters,
                 dateRangeFilters: filterGroup.dateRangeFilters,
+                likesCountFilters: filterGroup.likesCountFilters,
               }
             : undefined,
         });
@@ -234,7 +244,8 @@ export class PersonalizedFeedsService {
         {
           feedId: result.feed.id,
           userId,
-          name,
+          name: params.name,
+          deliveryFrequency: params.deliveryFrequency,
           hasFilterGroup: !!result.filterGroup,
           filterGroupId: result.filterGroup?.id,
           tagFiltersCount: result.tagFilters?.length || 0,
@@ -266,6 +277,12 @@ export class PersonalizedFeedsService {
                     createdAt: dateRangeFilter.createdAt || new Date(),
                   }),
                 ),
+                likesCountFilters: (result.likesCountFilters || []).map(
+                  (likesCountFilter) => ({
+                    ...likesCountFilter,
+                    createdAt: likesCountFilter.createdAt || new Date(),
+                  }),
+                ),
               },
             ]
           : [],
@@ -276,7 +293,7 @@ export class PersonalizedFeedsService {
       this.logger.error(`パーソナライズフィードの作成に失敗しました`, {
         error,
         userId,
-        name,
+        name: params.name,
       });
       throw error;
     }
@@ -284,50 +301,50 @@ export class PersonalizedFeedsService {
 
   /**
    * パーソナライズフィードを更新する
-   * @param id パーソナライズフィードID
    * @param userId ユーザーID
-   * @param updates 更新内容
-   * @param filterGroups 更新するフィルターグループ情報
+   * @param params 更新するパーソナライズフィードのパラメータ
    * @returns フィルター情報を含む更新されたパーソナライズフィード
    * @throws NotFoundException フィードが存在しない場合
    * @throws UserNotFoundError ユーザーが存在しない場合
    */
   async update(
-    id: string,
     userId: string,
-    updates: {
-      name?: string;
-      dataSource?: string;
-      filterConfig?: Record<string, any>;
-      deliveryConfig?: Record<string, any>;
-      isActive?: boolean;
-    },
-    filterGroups?: FilterGroupDto[],
+    params: UpdatePersonalizedFeedParams,
+    subscription: SubscriptionInfo,
   ): Promise<PersonalizedFeedWithFilters> {
     this.logger.debug('PersonalizedFeedsService.update', {
-      id,
       userId,
-      updates,
-      hasFilterGroups: filterGroups && filterGroups.length > 0,
+      params,
+      subscription,
+      hasFilterGroups: params.filterGroups && params.filterGroups.length > 0,
     });
 
     // UIでは1つのフィルターグループのみをサポート
     const filterGroup =
-      filterGroups && filterGroups.length > 0 ? filterGroups[0] : undefined;
+      params.filterGroups && params.filterGroups.length > 0
+        ? params.filterGroups[0]
+        : undefined;
 
     // ユーザーの存在確認
     const user = await this.validateUserExists(userId);
 
     // 現在のフィードを取得して存在確認
-    const existingFeed = await this.findById(id, userId);
+    const existingFeed = await this.findById(params.id, userId);
 
     try {
+      // ユーザーのサブスクリプション状態に応じたパーソナライズフィードの作成制限をチェック
+      await this.checkFeedCreationLimits(user, subscription, params);
       // パーソナライズフィードとフィルターグループをトランザクションで更新
       const result =
         await this.personalizedFeedsRepository.updateWithFilterGroup({
           feed: {
-            id,
-            ...updates,
+            id: params.id,
+            name: params.name,
+            dataSource: params.dataSource,
+            filterConfig: params.filterConfig,
+            deliveryConfig: params.deliveryConfig,
+            deliveryFrequency: params.deliveryFrequency,
+            isActive: params.isActive,
           },
           filterGroup: filterGroup
             ? {
@@ -336,15 +353,21 @@ export class PersonalizedFeedsService {
                 tagFilters: filterGroup.tagFilters,
                 authorFilters: filterGroup.authorFilters,
                 dateRangeFilters: filterGroup.dateRangeFilters,
+                likesCountFilters: filterGroup.likesCountFilters,
               }
             : undefined,
         });
 
       this.logger.log(
-        `ユーザー [${userId}] のパーソナライズフィード [${id}] を更新しました`,
+        `ユーザー [${userId}] のパーソナライズフィード [${params.id}] を更新しました`,
         {
-          feedId: id,
+          feedId: params.id,
           userId,
+          updates: {
+            name: params.name,
+            dataSource: params.dataSource,
+            deliveryFrequency: params.deliveryFrequency,
+          },
           hasFilterGroup: !!result.filterGroup,
           filterGroupId: result.filterGroup?.id,
           tagFiltersCount: result.tagFilters?.length || 0,
@@ -355,7 +378,7 @@ export class PersonalizedFeedsService {
 
       // isActiveをfalseに設定した場合（論理削除の場合）は、
       // findByIdWithFiltersでは取得できないため、リポジトリから返された結果を整形して返す
-      if (updates.isActive === false) {
+      if (params.isActive === false) {
         const feedWithFilters: PersonalizedFeedWithFilters = {
           ...result.feed,
           filterGroups: result.filterGroup
@@ -378,6 +401,12 @@ export class PersonalizedFeedsService {
                       createdAt: dateRangeFilter.createdAt || new Date(),
                     }),
                   ),
+                  likesCountFilters: (result.likesCountFilters || []).map(
+                    (likesCountFilter) => ({
+                      ...likesCountFilter,
+                      createdAt: likesCountFilter.createdAt || new Date(),
+                    }),
+                  ),
                 },
               ]
             : [],
@@ -386,11 +415,11 @@ export class PersonalizedFeedsService {
       }
 
       // それ以外の場合は、更新後のフィードをフィルター情報付きで取得して返す
-      return await this.findByIdWithFilters(id, userId);
+      return await this.findByIdWithFilters(params.id, userId);
     } catch (error) {
       this.logger.error(`パーソナライズフィードの更新に失敗しました`, {
         error,
-        id,
+        id: params.id,
         userId,
       });
       throw error;
@@ -490,6 +519,15 @@ export class PersonalizedFeedsService {
         }
       }
 
+      if (group.likesCountFilters && group.likesCountFilters.length > 0) {
+        for (const likesCountFilter of group.likesCountFilters) {
+          await this.personalizedFeedsRepository.createLikesCountFilter({
+            groupId: createdGroup.id,
+            minLikes: likesCountFilter.minLikes,
+          });
+        }
+      }
+
       this.logger.debug(
         `フィルターグループ [${createdGroup.id}] を作成しました`,
         {
@@ -499,6 +537,7 @@ export class PersonalizedFeedsService {
           tagFiltersCount: group.tagFilters?.length || 0,
           authorFiltersCount: group.authorFilters?.length || 0,
           dateRangeFiltersCount: group.dateRangeFilters?.length || 0,
+          likesCountFiltersCount: group.likesCountFilters?.length || 0,
         },
       );
     } catch (error) {
@@ -541,6 +580,99 @@ export class PersonalizedFeedsService {
         throw new UserNotFoundError(userId, error);
       }
       throw error;
+    }
+  }
+
+  /**
+   * フィード作成前の制限チェック
+   * サブスクリプションの状態に応じて、フィードの作成制限をチェックする
+   *
+   * @param user ユーザー
+   * @param subscription ユーザーのサブスクリプション情報
+   * @param params 作成するフィードの情報
+   * @throws PersonalizedFeedCreationLimitError 制限に達している場合
+   */
+  async checkFeedCreationLimits(
+    user: AppUser,
+    subscription: SubscriptionInfo,
+    params: CreatePersonalizedFeedParams | UpdatePersonalizedFeedParams,
+  ): Promise<void> {
+    this.logger.debug(
+      `PersonalizedFeedsService.checkFeedCreationLimits called`,
+      {
+        user,
+        subscription,
+        params,
+      },
+    );
+
+    // アクティブなサブスクリプションがない場合はエラー
+    if (subscription.status !== SubscriptionStatus.ACTIVE) {
+      throw new PersonalizedFeedCreationLimitError(
+        'パーソナライズフィードの作成には有効なサブスクリプションが必要です',
+      );
+    }
+
+    try {
+      // プランの制限値を取得
+      const limits: PlanLimits = {
+        maxFeeds: subscription.plan.maxFeeds,
+        maxTags: subscription.plan.maxTags,
+        maxAuthors: subscription.plan.maxAuthors,
+      };
+
+      // 現在のフィード数を取得
+      const currentFeedCount =
+        await this.personalizedFeedsRepository.countByUserId(user.id);
+
+      const isUpdate = isUpdatePersonalizedFeedParams(params);
+      // ユーザーのサブスクリプションのフィード数の上限をチェックする
+      if (
+        // 新規作成の場合、作成後に上限を超える場合はエラー
+        (!isUpdate && currentFeedCount + 1 > limits.maxFeeds) ||
+        // 更新の場合、既に作成されているフィード数が上限に達している場合はエラー
+        (isUpdate && currentFeedCount > limits.maxFeeds)
+      ) {
+        throw new PersonalizedFeedCreationLimitError(
+          `フィード作成数の上限（${limits.maxFeeds}）に達しています。プランをアップグレードするか、既存のフィードを削除してください。`,
+        );
+      }
+
+      // タグ数の制限チェック
+      if (
+        params.filterGroups &&
+        params.filterGroups[0]?.tagFilters &&
+        params.filterGroups[0].tagFilters.length > limits.maxTags
+      ) {
+        throw new PersonalizedFeedCreationLimitError(
+          `1つのフィードに設定できるタグ数の上限（${limits.maxTags}）を超えています。タグ数を減らすか、プランをアップグレードしてください。`,
+        );
+      }
+
+      // 著者数の制限チェック
+      if (
+        params.filterGroups &&
+        params.filterGroups[0]?.authorFilters &&
+        params.filterGroups[0].authorFilters.length > limits.maxAuthors
+      ) {
+        throw new PersonalizedFeedCreationLimitError(
+          `1つのフィードに設定できる著者数の上限（${limits.maxAuthors}）を超えています。著者数を減らすか、プランをアップグレードしてください。`,
+        );
+      }
+
+      this.logger.debug(`フィード作成制限チェック完了 - 制限内です`);
+    } catch (error) {
+      if (error instanceof PersonalizedFeedCreationLimitError) {
+        throw error;
+      }
+      this.logger.error(
+        `フィード作成制限チェック中にエラーが発生しました`,
+        error.message,
+        error.stack,
+      );
+      throw new PersonalizedFeedError(
+        'パーソナルフィードの作成制限チェック中にエラーが発生しました。しばらく経ってから再度お試しください。',
+      );
     }
   }
 }

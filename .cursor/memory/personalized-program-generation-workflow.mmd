@@ -1,0 +1,57 @@
+sequenceDiagram
+	participant Scheduler
+	participant Workflow
+	participant Backend
+	participant Database
+	participant Qiita
+	participant CloudStorage as Cloud Storage
+	participant LP
+
+	activate Scheduler
+	Scheduler ->> Workflow: 定時実行
+	activate Workflow
+	deactivate Scheduler
+	Workflow ->> Backend: 生成対象のパーソナルフィード一覧を取得する
+	activate Backend
+	Backend ->> Database: アクティブなパーソナルフィード一覧を取得する
+	activate Database
+	Database -->> Backend: 結果
+	deactivate Database
+	Backend -->> Workflow: 生成対象のパーソナルフィード一覧
+	deactivate Backend
+
+	loop 生成対象のパーソナルフィードの件数分
+		Workflow ->> Backend: パーソナルプログラム生成要求
+		activate Backend
+		Backend ->> Database: パーソナルフィード、ユーザー、サブスクリプションの取得
+		activate Database
+		Database -->> Backend: 結果
+		deactivate Database
+		Backend ->> Qiita: 番組設定対象の記事を検索する
+		activate Qiita
+		Qiita -->> Backend: 検索結果記事
+		deactivate Qiita
+		Backend ->> Database: 対象記事の絞り込み
+		activate Database
+		Database -->> Backend: 生成対象記事（番組生成済み記事を除外）
+		deactivate Database
+		Backend ->> Backend: 番組生成
+		Backend ->> CloudStorage: 番組音声ファイルの格納
+		activate CloudStorage
+		CloudStorage -->> Backend: 番組ファイル公開用 URL
+		deactivate CloudStorage
+		Backend ->> Database: 番組情報格納
+		activate Database
+		Database -->> Backend: 結果
+		deactivate Database
+		Backend -->> Workflow: 結果
+		deactivate Backend
+	end
+
+	%% Workflow ->> LP: サイト再生成要求
+	%% activate LP
+	%% LP -->> Workflow: 結果
+	%% deactivate LP
+
+	Workflow ->> Workflow: 終了処理
+	deactivate Workflow

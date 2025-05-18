@@ -1,6 +1,7 @@
 import { PersonalizedFeedsService } from '@/domains/personalized-feeds/personalized-feeds.service';
-import { AppUserRepository } from '@/infrastructure/database/app-users/app-user.repository';
+import { AppUsersRepository } from '@/infrastructure/database/app-users/app-users.repository';
 import { PersonalizedFeedsRepository } from '@/infrastructure/database/personalized-feeds/personalized-feeds.repository';
+import { SubscriptionRepository } from '@infrastructure/database/subscription/subscription.repository';
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '@tech-post-cast/database';
 import { PersonalizedFeedsController } from './personalized-feeds.controller';
@@ -11,12 +12,16 @@ import { PersonalizedFeedsController } from './personalized-feeds.controller';
   providers: [
     PersonalizedFeedsService,
     {
-      provide: 'IPersonalizedFeedsRepository',
+      provide: 'SubscriptionRepository',
+      useClass: SubscriptionRepository,
+    },
+    {
+      provide: 'PersonalizedFeedsRepository',
       useClass: PersonalizedFeedsRepository,
     },
     {
-      provide: 'IAppUserRepository',
-      useClass: AppUserRepository,
+      provide: 'AppUsersRepository',
+      useClass: AppUsersRepository,
     },
   ],
   exports: [PersonalizedFeedsService],

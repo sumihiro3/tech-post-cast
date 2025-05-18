@@ -1,6 +1,7 @@
 // filepath: /Users/sumihiro/projects/TechPostCast/tech-post-cast/apps/api-backend/src/controllers/personalized-feeds/dto/update-personalized-feed-with-filters.response.dto.ts
 import { PersonalizedFeedWithFilters } from '@/domains/personalized-feeds/personalized-feeds.entity';
 import { ApiProperty } from '@nestjs/swagger';
+import { LikesCountFilterDto } from './create-personalized-feed.request.dto';
 
 /**
  * タグフィルターDTO
@@ -92,6 +93,12 @@ class FilterGroupDto {
     type: [DateRangeFilterDto],
   })
   dateRangeFilters: DateRangeFilterDto[];
+
+  @ApiProperty({
+    description: 'いいね数フィルター一覧',
+    type: [LikesCountFilterDto],
+  })
+  likesCountFilters: LikesCountFilterDto[];
 }
 
 /**
@@ -201,6 +208,14 @@ export class UpdatePersonalizedFeedWithFiltersResponseDto {
         (dateRange) => ({
           id: dateRange.id,
           daysAgo: dateRange.daysAgo,
+        }),
+      );
+
+      // いいね数フィルター情報を設定
+      groupDto.likesCountFilters = (group.likesCountFilters || []).map(
+        (likesCount) => ({
+          id: likesCount.id,
+          minLikes: likesCount.minLikes,
         }),
       );
 

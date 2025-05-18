@@ -12,7 +12,7 @@ v-container.max-width-container
   //- タイトル
   v-row(justify="center")
     v-col(cols="12")
-      .text-center.text-h4.font-weight-bold.mb-6 番組設定の編集
+      .text-center.text-h4.font-weight-bold.mb-6 パーソナルフィード設定の編集
 
   //- FeedEditorコンポーネントを使用
   FeedEditor(
@@ -77,6 +77,7 @@ v-container.max-width-container
 
 <script setup lang="ts">
 import { useNuxtApp } from '#app';
+import { PersonalizedFeedDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum } from '@/api';
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 import FeedEditor from '@/components/qiita/FeedEditor.vue';
 import { useDeletePersonalizedFeed } from '@/composables/feeds/useDeletePersonalizedFeed';
@@ -99,6 +100,12 @@ definePageMeta({
 
 const { user } = useUser();
 
+/** 記事公開日の範囲のデフォルト値 */
+const DEFAULT_DATE_RANGE: number = 7;
+
+/** いいね数のデフォルト値 */
+const DEFAULT_LIKES_COUNT: number = 0;
+
 /**
  * フィードの初期データ
  * APIから取得した値で初期化される
@@ -108,10 +115,12 @@ const initialFeedData = reactive<InputPersonalizedFeedData>({
   filters: {
     tags: [],
     authors: [],
-    dateRange: -1, // 文字列から数値に変更（日数指定）
+    dateRange: DEFAULT_DATE_RANGE,
+    likesCount: DEFAULT_LIKES_COUNT,
   },
   posts: [],
   totalCount: 0,
+  deliveryFrequency: DeliveryFrequencyEnum.Weekly,
 });
 
 /**
@@ -123,10 +132,12 @@ const currentFeedData = ref<InputPersonalizedFeedData>({
   filters: {
     tags: [],
     authors: [],
-    dateRange: -1, // 文字列から数値に変更（日数指定）
+    dateRange: DEFAULT_DATE_RANGE,
+    likesCount: DEFAULT_LIKES_COUNT,
   },
   posts: [],
   totalCount: 0,
+  deliveryFrequency: DeliveryFrequencyEnum.Weekly,
 });
 
 /**
@@ -166,7 +177,17 @@ const hasFormChanges = computed(() => {
   const hasDateRangeChanged =
     currentFeedData.value.filters.dateRange !== initialFeedData.filters.dateRange;
 
-  return hasTitleChanged || hasTagsChanged || hasAuthorsChanged || hasDateRangeChanged;
+  // 配信間隔に変更があるか
+  const hasDeliveryFrequencyChanged =
+    currentFeedData.value.deliveryFrequency !== initialFeedData.deliveryFrequency;
+
+  return (
+    hasTitleChanged ||
+    hasTagsChanged ||
+    hasAuthorsChanged ||
+    hasDateRangeChanged ||
+    hasDeliveryFrequencyChanged
+  );
 });
 
 /**
@@ -418,6 +439,8 @@ const fetchPersonalizedFeed = async (id: string): Promise<void> => {
     initialFeedData.filters.tags = [...inputData.filters.tags];
     initialFeedData.filters.authors = [...inputData.filters.authors];
     initialFeedData.filters.dateRange = inputData.filters.dateRange;
+    initialFeedData.filters.likesCount = inputData.filters.likesCount;
+    initialFeedData.deliveryFrequency = inputData.deliveryFrequency || DeliveryFrequencyEnum.Weekly;
     initialFeedData.posts = [...inputData.posts];
     initialFeedData.totalCount = inputData.totalCount;
 
@@ -428,9 +451,11 @@ const fetchPersonalizedFeed = async (id: string): Promise<void> => {
         tags: [...inputData.filters.tags],
         authors: [...inputData.filters.authors],
         dateRange: inputData.filters.dateRange,
+        likesCount: inputData.filters.likesCount,
       },
       posts: [...inputData.posts],
       totalCount: inputData.totalCount,
+      deliveryFrequency: inputData.deliveryFrequency || DeliveryFrequencyEnum.Weekly,
     };
 
     console.log('Loaded feed data:', result);

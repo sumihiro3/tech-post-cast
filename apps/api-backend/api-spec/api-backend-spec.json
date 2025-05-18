@@ -1205,6 +1205,16 @@
               "time": "08:00"
             }
           },
+          "deliveryFrequency": {
+            "type": "string",
+            "description": "配信間隔",
+            "enum": [
+              "DAILY",
+              "TWICE_WEEKLY",
+              "WEEKLY"
+            ],
+            "example": "WEEKLY"
+          },
           "isActive": {
             "type": "boolean",
             "description": "有効かどうか",
@@ -1229,6 +1239,7 @@
           "dataSource",
           "filterConfig",
           "deliveryConfig",
+          "deliveryFrequency",
           "isActive",
           "createdAt",
           "updatedAt"
@@ -1352,6 +1363,19 @@
           "createdAt"
         ]
       },
+      "LikesCountFilterDto": {
+        "type": "object",
+        "properties": {
+          "minLikes": {
+            "type": "number",
+            "description": "最小いいね数 (指定した数以上のいいねがある記事を対象とする)",
+            "example": 10
+          }
+        },
+        "required": [
+          "minLikes"
+        ]
+      },
       "ResponseFilterGroupDto": {
         "type": "object",
         "properties": {
@@ -1396,6 +1420,13 @@
               "$ref": "#/components/schemas/ResponseDateRangeFilterDto"
             }
           },
+          "likesCountFilters": {
+            "description": "いいね数フィルター一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LikesCountFilterDto"
+            }
+          },
           "createdAt": {
             "type": "string",
             "description": "作成日時",
@@ -1414,6 +1445,8 @@
           "filterId",
           "name",
           "logicType",
+          "dateRangeFilters",
+          "likesCountFilters",
           "createdAt",
           "updatedAt"
         ]
@@ -1455,6 +1488,16 @@
               "time": "08:00"
             }
           },
+          "deliveryFrequency": {
+            "type": "string",
+            "description": "配信間隔",
+            "enum": [
+              "DAILY",
+              "TWICE_WEEKLY",
+              "WEEKLY"
+            ],
+            "example": "WEEKLY"
+          },
           "isActive": {
             "type": "boolean",
             "description": "有効かどうか",
@@ -1486,6 +1529,7 @@
           "dataSource",
           "filterConfig",
           "deliveryConfig",
+          "deliveryFrequency",
           "isActive",
           "createdAt",
           "updatedAt"
@@ -1580,11 +1624,20 @@
             "items": {
               "$ref": "#/components/schemas/DateRangeFilterDto"
             }
+          },
+          "likesCountFilters": {
+            "description": "いいね数フィルター一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LikesCountFilterDto"
+            }
           }
         },
         "required": [
           "name",
-          "logicType"
+          "logicType",
+          "dateRangeFilters",
+          "likesCountFilters"
         ]
       },
       "CreatePersonalizedFeedRequestDto": {
@@ -1618,6 +1671,17 @@
               "frequency": "daily",
               "time": "08:00"
             }
+          },
+          "deliveryFrequency": {
+            "type": "string",
+            "description": "配信間隔",
+            "default": "WEEKLY",
+            "enum": [
+              "DAILY",
+              "TWICE_WEEKLY",
+              "WEEKLY"
+            ],
+            "example": "WEEKLY"
           },
           "filterGroups": {
             "description": "フィルターグループ一覧",
@@ -1767,6 +1831,16 @@
               "frequency": "daily",
               "time": "08:00"
             }
+          },
+          "deliveryFrequency": {
+            "type": "string",
+            "description": "配信間隔",
+            "enum": [
+              "DAILY",
+              "TWICE_WEEKLY",
+              "WEEKLY"
+            ],
+            "example": "WEEKLY"
           },
           "filterGroups": {
             "description": "フィルターグループ一覧",

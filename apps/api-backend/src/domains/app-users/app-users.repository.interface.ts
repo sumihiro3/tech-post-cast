@@ -1,9 +1,10 @@
 import { AppUser } from '@prisma/client';
+import { UserWithSubscriptionResult } from '@tech-post-cast/database';
 
 /**
  * アプリケーションユーザーリポジトリのインターフェース
  */
-export interface IAppUserRepository {
+export interface IAppUsersRepository {
   /**
    * 指定IDのユーザーを取得する
    * @param userId 取得するユーザーID
@@ -30,4 +31,11 @@ export interface IAppUserRepository {
    * @param userId 削除するユーザーID
    */
   delete(userId: string): Promise<void>;
+
+  /**
+   * サブスクリプション情報を含めたユーザー情報を取得する
+   * @param userId - ユーザーID
+   * @returns ユーザー情報とサブスクリプション情報
+   */
+  findOneWithSubscription(userId: string): Promise<UserWithSubscriptionResult>;
 }

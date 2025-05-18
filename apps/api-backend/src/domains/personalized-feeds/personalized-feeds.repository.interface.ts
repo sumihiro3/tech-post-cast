@@ -1,3 +1,4 @@
+import { DeliveryFrequency } from '@prisma/client';
 import {
   PersonalizedFeed,
   PersonalizedFeedWithFilters,
@@ -66,6 +67,19 @@ export interface DateRangeFilter {
   createdAt: Date;
 }
 
+// いいね数フィルターに関する型定義
+export interface CreateLikesCountFilterParams {
+  groupId: string;
+  minLikes: number;
+}
+
+export interface LikesCountFilter {
+  id: string;
+  groupId: string;
+  minLikes: number;
+  createdAt: Date;
+}
+
 // フィードとフィルターグループの作成に関する型定義
 export interface CreateFeedWithFilterGroupParams {
   feed: Omit<PersonalizedFeed, 'id' | 'createdAt' | 'updatedAt'>;
@@ -75,25 +89,31 @@ export interface CreateFeedWithFilterGroupParams {
     tagFilters?: Array<{ tagName: string }>;
     authorFilters?: Array<{ authorId: string }>;
     dateRangeFilters?: Array<{ daysAgo: number }>;
+    likesCountFilters?: Array<{ minLikes: number }>;
   };
+}
+
+// パーソナライズフィードの更新に関する型定義
+export interface UpdateFeedParams {
+  id: string;
+  name?: string;
+  dataSource?: string;
+  filterConfig?: Record<string, any>;
+  deliveryConfig?: Record<string, any>;
+  deliveryFrequency?: DeliveryFrequency;
+  isActive?: boolean;
 }
 
 // フィードとフィルターグループの更新に関する型定義
 export interface UpdateFeedWithFilterGroupParams {
-  feed: {
-    id: string;
-    name?: string;
-    dataSource?: string;
-    filterConfig?: Record<string, any>;
-    deliveryConfig?: Record<string, any>;
-    isActive?: boolean;
-  };
+  feed: UpdateFeedParams;
   filterGroup?: {
     name: string;
     logicType: string;
     tagFilters?: Array<{ tagName: string }>;
     authorFilters?: Array<{ authorId: string }>;
     dateRangeFilters?: Array<{ daysAgo: number }>;
+    likesCountFilters?: Array<{ minLikes: number }>;
   };
 }
 
@@ -103,6 +123,7 @@ export interface FeedWithFilterGroupResult {
   tagFilters?: TagFilter[];
   authorFilters?: AuthorFilter[];
   dateRangeFilters?: DateRangeFilter[];
+  likesCountFilters?: LikesCountFilter[];
 }
 
 /**
@@ -121,6 +142,13 @@ export interface IPersonalizedFeedsRepository {
     page?: number,
     perPage?: number,
   ): Promise<PersonalizedFeedsResult>;
+
+  /**
+   * 指定されたユーザーIDに紐づくパーソナライズフィードの数を取得する
+   * @param userId ユーザーID
+   * @returns パーソナライズフィードの数
+   */
+  countByUserId(userId: string): Promise<number>;
 
   /**
    * 指定されたユーザーIDに紐づくパーソナライズフィードの一覧をフィルター情報付きで取得する
@@ -202,14 +230,7 @@ export interface IPersonalizedFeedsRepository {
    * @param feed 更新するパーソナライズフィードの情報
    * @returns 更新されたパーソナライズフィード
    */
-  update(feed: {
-    id: string;
-    name?: string;
-    dataSource?: string;
-    filterConfig?: Record<string, any>;
-    deliveryConfig?: Record<string, any>;
-    isActive?: boolean;
-  }): Promise<PersonalizedFeed>;
+  update(feed: UpdateFeedParams): Promise<PersonalizedFeed>;
 
   /**
    * フィルターグループを更新する
@@ -238,6 +259,22 @@ export interface IPersonalizedFeedsRepository {
    * @returns 削除された公開日フィルターの数
    */
   deleteDateRangeFiltersByGroupId(groupId: string): Promise<number>;
+
+  /**
+   * いいね数フィルターを新規作成する
+   * @param params いいね数フィルター作成パラメータ
+   * @returns 作成されたいいね数フィルター
+   */
+  createLikesCountFilter(
+    params: CreateLikesCountFilterParams,
+  ): Promise<LikesCountFilter>;
+
+  /**
+   * 特定のフィルターグループに紐づくいいね数フィルターをすべて削除する
+   * @param groupId フィルターグループID
+   * @returns 削除されたいいね数フィルターの数
+   */
+  deleteLikesCountFiltersByGroupId(groupId: string): Promise<number>;
 
   /**
    * パーソナライズフィードとフィルターグループを同一トランザクションで更新する

@@ -1,8 +1,18 @@
 import { CurrentUserId } from '@/auth/decorators/current-user-id.decorator';
 import { ClerkJwtGuard } from '@/auth/guards/clerk-jwt.guard';
+import { SubscriptionDecorator } from '@/decorators/subscription.decorator';
 import { PersonalizedFeedsService } from '@/domains/personalized-feeds/personalized-feeds.service';
-import { UserNotFoundError } from '@/types/errors';
 import {
+  CreatePersonalizedFeedParams,
+  UpdatePersonalizedFeedParams,
+} from '@/domains/personalized-feeds/personalized-feeds.types';
+import { SubscriptionGuard } from '@/guards/subscription.guard';
+import {
+  PersonalizedFeedCreationLimitError,
+  UserNotFoundError,
+} from '@/types/errors';
+import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -18,6 +28,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { SubscriptionInfo } from '@tech-post-cast/database';
 import {
   CreatePersonalizedFeedRequestDto,
   CreatePersonalizedFeedWithFiltersResponseDto,
@@ -71,7 +82,7 @@ export class PersonalizedFeedsController {
   ): Promise<
     GetPersonalizedFeedsResponseDto | GetPersonalizedFeedsWithFiltersResponseDto
   > {
-    this.logger.verbose(`PersonalizedFeedsController.getPersonalizedFeeds`, {
+    this.logger.debug(`PersonalizedFeedsController.getPersonalizedFeeds`, {
       userId,
       page: dto.page,
       perPage: dto.perPage,
@@ -149,7 +160,7 @@ export class PersonalizedFeedsController {
     @Param('id') id: string,
     @CurrentUserId() userId: string, // JWTトークンからユーザーIDを取得
   ): Promise<GetPersonalizedFeedWithFiltersResponseDto> {
-    this.logger.verbose(`PersonalizedFeedsController.getPersonalizedFeed`, {
+    this.logger.debug(`PersonalizedFeedsController.getPersonalizedFeed`, {
       id,
       userId,
     });
@@ -205,16 +216,19 @@ export class PersonalizedFeedsController {
     status: 400,
     description: 'リクエストパラメータが不正',
   })
+  @UseGuards(SubscriptionGuard)
   async createPersonalizedFeed(
     @Body() dto: CreatePersonalizedFeedRequestDto,
     @CurrentUserId() userId: string, // JWTトークンからユーザーIDを取得
+    @SubscriptionDecorator() subscription: SubscriptionInfo, // サブスクリプション情報
   ): Promise<CreatePersonalizedFeedWithFiltersResponseDto> {
-    this.logger.verbose(`PersonalizedFeedsController.createPersonalizedFeed`, {
+    this.logger.debug(`PersonalizedFeedsController.createPersonalizedFeed`, {
       userId,
       name: dto.name,
       dataSource: dto.dataSource,
       filterConfig: dto.filterConfig ? 'provided' : 'not provided',
       deliveryConfig: dto.deliveryConfig ? 'provided' : 'not provided',
+      deliveryFrequency: dto.deliveryFrequency,
       isActive: dto.isActive,
       hasFilterGroups: dto.filterGroups && dto.filterGroups.length > 0,
       filterGroupsCount: dto.filterGroups?.length || 0,
@@ -224,30 +238,55 @@ export class PersonalizedFeedsController {
         dto.filterGroups?.[0]?.dateRangeFilters?.length || 0,
       dateRangeFilter:
         dto.filterGroups?.[0]?.dateRangeFilters?.[0]?.daysAgo || null,
+      likesCountFiltersCount:
+        dto.filterGroups?.[0]?.likesCountFilters?.length || 0,
+      likesCountFilter:
+        dto.filterGroups?.[0]?.likesCountFilters?.[0]?.minLikes || null,
     });
 
     try {
+      // DTOからドメインパラメータに変換
+      const createParams: CreatePersonalizedFeedParams = {
+        name: dto.name,
+        dataSource: dto.dataSource,
+        filterConfig: dto.filterConfig || {},
+        deliveryConfig: dto.deliveryConfig || {},
+        deliveryFrequency: dto.deliveryFrequency,
+        isActive: dto.isActive ?? true,
+        filterGroups: dto.filterGroups?.map((group) => ({
+          name: group.name,
+          logicType: group.logicType || 'OR',
+          tagFilters: group.tagFilters,
+          authorFilters: group.authorFilters,
+          dateRangeFilters: group.dateRangeFilters,
+          likesCountFilters: group.likesCountFilters,
+        })),
+      };
+      this.logger.debug(`サブスクリプション情報`, { subscription });
+
       // パーソナライズフィードを作成
       const feed = await this.personalizedFeedsService.create(
         userId,
-        dto.name,
-        dto.dataSource,
-        dto.filterConfig,
-        dto.deliveryConfig,
-        dto.isActive,
-        dto.filterGroups,
+        createParams,
+        subscription,
       );
 
       // フィルター情報を含むDTOに変換して返却
       return CreatePersonalizedFeedWithFiltersResponseDto.fromEntity(feed);
     } catch (error) {
-      // UserNotFoundErrorをNotFoundExceptionに変換
       if (error instanceof UserNotFoundError) {
+        // UserNotFoundErrorをNotFoundExceptionに変換
         this.logger.warn(`ユーザーが見つかりません`, {
           userId,
           error: error.message,
         });
         throw new NotFoundException(error.message);
+      } else if (error instanceof PersonalizedFeedCreationLimitError) {
+        this.logger.warn(`パーソナライズフィードの作成制限に達しています`, {
+          userId,
+          error: error.message,
+        });
+        throw new BadRequestException(error.message);
       }
       // その他のエラーはログ出力して再スロー
       this.logger.error(`パーソナライズフィードの作成に失敗しました`, error);
@@ -288,17 +327,20 @@ export class PersonalizedFeedsController {
     status: 400,
     description: 'リクエストパラメータが不正',
   })
+  @UseGuards(SubscriptionGuard)
   async updatePersonalizedFeed(
     @Param('id') id: string,
     @Body() dto: UpdatePersonalizedFeedRequestDto,
     @CurrentUserId() userId: string, // JWTトークンからユーザーIDを取得
+    @SubscriptionDecorator() subscription: SubscriptionInfo, // サブスクリプション情報
   ): Promise<UpdatePersonalizedFeedWithFiltersResponseDto> {
-    this.logger.verbose(`PersonalizedFeedsController.updatePersonalizedFeed`, {
+    this.logger.debug(`PersonalizedFeedsController.updatePersonalizedFeed`, {
       id,
       userId,
       updates: {
         name: dto.name,
         dataSource: dto.dataSource,
+        deliveryFrequency: dto.deliveryFrequency,
         hasFilterGroups: dto.filterGroups && dto.filterGroups.length > 0,
         filterGroupsCount: dto.filterGroups?.length || 0,
         tagFiltersCount: dto.filterGroups?.[0]?.tagFilters?.length || 0,
@@ -307,22 +349,38 @@ export class PersonalizedFeedsController {
           dto.filterGroups?.[0]?.dateRangeFilters?.length || 0,
         dateRangeFilter:
           dto.filterGroups?.[0]?.dateRangeFilters?.[0]?.daysAgo || null,
+        likesCountFiltersCount:
+          dto.filterGroups?.[0]?.likesCountFilters?.length || 0,
+        likesCountFilter:
+          dto.filterGroups?.[0]?.likesCountFilters?.[0]?.minLikes || null,
       },
     });
 
     try {
+      // DTOからドメインパラメータに変換
+      const updateParams: UpdatePersonalizedFeedParams = {
+        id: id,
+        name: dto.name,
+        dataSource: dto.dataSource,
+        filterConfig: dto.filterConfig,
+        deliveryConfig: dto.deliveryConfig,
+        deliveryFrequency: dto.deliveryFrequency,
+        isActive: dto.isActive,
+        filterGroups: dto.filterGroups?.map((group) => ({
+          name: group.name,
+          logicType: group.logicType || 'OR',
+          tagFilters: group.tagFilters,
+          authorFilters: group.authorFilters,
+          dateRangeFilters: group.dateRangeFilters,
+          likesCountFilters: group.likesCountFilters,
+        })),
+      };
+
       // パーソナライズフィードを更新
       const feed = await this.personalizedFeedsService.update(
-        id,
         userId,
-        {
-          name: dto.name,
-          dataSource: dto.dataSource,
-          filterConfig: dto.filterConfig,
-          deliveryConfig: dto.deliveryConfig,
-          isActive: dto.isActive,
-        },
-        dto.filterGroups,
+        updateParams,
+        subscription,
       );
 
       // フィルター情報を含むDTOに変換して返却
@@ -333,13 +391,19 @@ export class PersonalizedFeedsController {
         throw error;
       }
 
-      // UserNotFoundErrorをNotFoundExceptionに変換
       if (error instanceof UserNotFoundError) {
+        // UserNotFoundErrorをNotFoundExceptionに変換
         this.logger.warn(`ユーザーが見つかりません`, {
           userId,
           error: error.message,
         });
         throw new NotFoundException(error.message);
+      } else if (error instanceof PersonalizedFeedCreationLimitError) {
+        this.logger.warn(`パーソナライズフィードの作成制限に達しています`, {
+          userId,
+          error: error.message,
+        });
+        throw new BadRequestException(error.message);
       }
 
       // その他のエラーはログ出力して再スロー
@@ -381,7 +445,7 @@ export class PersonalizedFeedsController {
     @Param('id') id: string,
     @CurrentUserId() userId: string, // JWTトークンからユーザーIDを取得
   ): Promise<DeletePersonalizedFeedResponseDto> {
-    this.logger.verbose(`PersonalizedFeedsController.deletePersonalizedFeed`, {
+    this.logger.debug(`PersonalizedFeedsController.deletePersonalizedFeed`, {
       id,
       userId,
     });

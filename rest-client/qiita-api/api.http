@@ -1,6 +1,8 @@
 
 ### item
-GET https://qiita.com/api/v2/items?query=user:Domao,MS-0610,sumihiro3+tag:typescript,nuxt3,LINE+created:>=2024-02-22
+# GET https://qiita.com/api/v2/items?query=user:Domao,MS-0610,sumihiro3+tag:typescript,nuxt3,LINE+created:>=2024-02-22
+# GET https://qiita.com/api/v2/items?query=created:>=2024-03-20+created:<=2024-03-21&sort=likes
+GET https://qiita.com/api/v2/items?query=created:>=2021-03-20+created:<=2025-05-21+user:sumihiro3+tag:TypeScript,LINE&sort=like
 
 # +title:Mastra
 

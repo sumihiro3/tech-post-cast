@@ -9,16 +9,19 @@ import {
   TagFilter,
 } from '@/domains/personalized-feeds/personalized-feeds.entity';
 import { ApiProperty } from '@nestjs/swagger';
+import { DeliveryFrequency, LikesCountFilter } from '@prisma/client';
 import {
   IsArray,
   IsBoolean,
   IsDateString,
+  IsEnum,
   IsNotEmpty,
   IsObject,
   IsOptional,
   IsPositive,
   IsString,
 } from 'class-validator';
+import { LikesCountFilterDto } from './create-personalized-feed.request.dto';
 
 /**
  * タグフィルターレスポンスDTO
@@ -191,6 +194,62 @@ export class ResponseDateRangeFilterDto {
 }
 
 /**
+ * いいね数フィルターレスポンスDTO
+ */
+export class ResponseLikesCountFilterDto {
+  @ApiProperty({
+    description: 'いいね数フィルターID',
+    required: true,
+    example: 'likes-count-flt_1234567890',
+    type: String,
+  })
+  @IsString()
+  @IsNotEmpty()
+  id: string;
+
+  @ApiProperty({
+    description: 'フィルターグループID',
+    required: true,
+    example: 'feed-flt-gr_1234567890',
+    type: String,
+  })
+  @IsString()
+  @IsNotEmpty()
+  groupId: string;
+
+  @ApiProperty({
+    description: '最小いいね数 (指定した数以上のいいねがある記事を対象とする)',
+    required: true,
+    example: 10,
+    type: Number,
+  })
+  @IsPositive()
+  minLikes: number;
+
+  @ApiProperty({
+    description: '作成日時',
+    required: true,
+    example: '2025-04-13T09:00:00.000Z',
+    type: String,
+    format: 'date-time',
+  })
+  @IsDateString()
+  createdAt: string;
+
+  /**
+   * エンティティからDTOを作成する
+   */
+  static fromEntity(entity: LikesCountFilter): LikesCountFilterDto {
+    const dto = new ResponseLikesCountFilterDto();
+    dto.id = entity.id;
+    dto.groupId = entity.groupId;
+    dto.minLikes = entity.minLikes;
+    dto.createdAt = entity.createdAt.toISOString();
+    return dto;
+  }
+}
+
+/**
  * フィルターグループレスポンスDTO
  */
 export class ResponseFilterGroupDto {
@@ -254,12 +313,19 @@ export class ResponseFilterGroupDto {
 
   @ApiProperty({
     description: '日付範囲フィルター一覧',
-    required: false,
+    required: true,
     type: [ResponseDateRangeFilterDto],
   })
   @IsArray()
-  @IsOptional()
-  dateRangeFilters?: ResponseDateRangeFilterDto[];
+  dateRangeFilters: ResponseDateRangeFilterDto[];
+
+  @ApiProperty({
+    description: 'いいね数フィルター一覧',
+    required: true,
+    type: [LikesCountFilterDto],
+  })
+  @IsArray()
+  likesCountFilters: LikesCountFilterDto[];
 
   @ApiProperty({
     description: '作成日時',
@@ -306,6 +372,12 @@ export class ResponseFilterGroupDto {
     if (entity.dateRangeFilters && entity.dateRangeFilters.length > 0) {
       dto.dateRangeFilters = entity.dateRangeFilters.map((dateRange) =>
         ResponseDateRangeFilterDto.fromEntity(dateRange),
+      );
+    }
+
+    if (entity.likesCountFilters && entity.likesCountFilters.length > 0) {
+      dto.likesCountFilters = entity.likesCountFilters.map((likesCount) =>
+        ResponseLikesCountFilterDto.fromEntity(likesCount),
       );
     }
 
@@ -368,6 +440,17 @@ export class PersonalizedFeedDto {
   deliveryConfig: Record<string, any>;
 
   @ApiProperty({
+    description: '配信間隔',
+    required: true,
+    enum: DeliveryFrequency,
+    example: DeliveryFrequency.WEEKLY,
+  })
+  @IsEnum(DeliveryFrequency, {
+    message: '配信間隔は有効な値である必要があります',
+  })
+  deliveryFrequency: DeliveryFrequency;
+
+  @ApiProperty({
     description: '有効かどうか',
     required: true,
     example: true,
@@ -414,6 +497,7 @@ export class PersonalizedFeedDto {
     dto.dataSource = entity.dataSource;
     dto.filterConfig = entity.filterConfig;
     dto.deliveryConfig = entity.deliveryConfig;
+    dto.deliveryFrequency = entity.deliveryFrequency as DeliveryFrequency;
     dto.isActive = entity.isActive;
     dto.createdAt = entity.createdAt.toISOString();
     dto.updatedAt = entity.updatedAt.toISOString();
@@ -449,6 +533,7 @@ export class PersonalizedFeedWithFiltersDto extends PersonalizedFeedDto {
     dto.dataSource = entity.dataSource;
     dto.filterConfig = entity.filterConfig;
     dto.deliveryConfig = entity.deliveryConfig;
+    dto.deliveryFrequency = entity.deliveryFrequency as DeliveryFrequency;
     dto.isActive = entity.isActive;
     dto.createdAt = entity.createdAt.toISOString();
     dto.updatedAt = entity.updatedAt.toISOString();

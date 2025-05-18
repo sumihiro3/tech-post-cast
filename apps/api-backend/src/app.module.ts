@@ -5,12 +5,11 @@ import { PersonalizedFeedsModule } from '@/controllers/personalized-feeds/person
 import { ProgramContentApiModule } from '@/controllers/program-content-api/program-content-api.module';
 import { QiitaPostsModule } from '@/controllers/qiita-posts/qiita-posts.module';
 import { ClerkWebhookModule } from '@/controllers/webhooks/clerk/clerk-webhook.module';
-import { MiddlewareConsumer, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import {
-  CustomLoggerModule,
-  RequestLoggingMiddleware,
-} from '@tech-post-cast/commons';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { CustomLoggerModule } from '@tech-post-cast/commons';
+import { PrismaModule } from '@tech-post-cast/database';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -22,6 +21,8 @@ import { AppService } from './app.service';
     }),
     CustomLoggerModule,
     AppConfigModule,
+    PrismaModule,
+    EventEmitterModule.forRoot(),
     AuthModule,
     ProgramContentApiModule,
     ApiV1Module,
@@ -32,8 +33,4 @@ import { AppService } from './app.service';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(RequestLoggingMiddleware).forRoutes('');
-  }
-}
+export class AppModule {}

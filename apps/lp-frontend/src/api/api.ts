@@ -67,6 +67,12 @@ export interface CreatePersonalizedFeedRequestDto {
      */
     'deliveryConfig': object;
     /**
+     * 配信間隔
+     * @type {string}
+     * @memberof CreatePersonalizedFeedRequestDto
+     */
+    'deliveryFrequency'?: CreatePersonalizedFeedRequestDtoDeliveryFrequencyEnum;
+    /**
      * フィルターグループ一覧
      * @type {Array<FilterGroupDto>}
      * @memberof CreatePersonalizedFeedRequestDto
@@ -79,6 +85,15 @@ export interface CreatePersonalizedFeedRequestDto {
      */
     'isActive'?: boolean;
 }
+
+export const CreatePersonalizedFeedRequestDtoDeliveryFrequencyEnum = {
+    Daily: 'DAILY',
+    TwiceWeekly: 'TWICE_WEEKLY',
+    Weekly: 'WEEKLY'
+} as const;
+
+export type CreatePersonalizedFeedRequestDtoDeliveryFrequencyEnum = typeof CreatePersonalizedFeedRequestDtoDeliveryFrequencyEnum[keyof typeof CreatePersonalizedFeedRequestDtoDeliveryFrequencyEnum];
+
 /**
  * 
  * @export
@@ -177,7 +192,13 @@ export interface FilterGroupDto {
      * @type {Array<DateRangeFilterDto>}
      * @memberof FilterGroupDto
      */
-    'dateRangeFilters'?: Array<DateRangeFilterDto>;
+    'dateRangeFilters': Array<DateRangeFilterDto>;
+    /**
+     * いいね数フィルター一覧
+     * @type {Array<LikesCountFilterDto>}
+     * @memberof FilterGroupDto
+     */
+    'likesCountFilters': Array<LikesCountFilterDto>;
 }
 /**
  * 
@@ -387,6 +408,19 @@ export interface HeadlineTopicProgramsCountDto {
 /**
  * 
  * @export
+ * @interface LikesCountFilterDto
+ */
+export interface LikesCountFilterDto {
+    /**
+     * 最小いいね数 (指定した数以上のいいねがある記事を対象とする)
+     * @type {number}
+     * @memberof LikesCountFilterDto
+     */
+    'minLikes': number;
+}
+/**
+ * 
+ * @export
  * @interface PersonalizedFeedDto
  */
 export interface PersonalizedFeedDto {
@@ -421,6 +455,12 @@ export interface PersonalizedFeedDto {
      */
     'deliveryConfig': object;
     /**
+     * 配信間隔
+     * @type {string}
+     * @memberof PersonalizedFeedDto
+     */
+    'deliveryFrequency': PersonalizedFeedDtoDeliveryFrequencyEnum;
+    /**
      * 有効かどうか
      * @type {boolean}
      * @memberof PersonalizedFeedDto
@@ -439,6 +479,15 @@ export interface PersonalizedFeedDto {
      */
     'updatedAt': string;
 }
+
+export const PersonalizedFeedDtoDeliveryFrequencyEnum = {
+    Daily: 'DAILY',
+    TwiceWeekly: 'TWICE_WEEKLY',
+    Weekly: 'WEEKLY'
+} as const;
+
+export type PersonalizedFeedDtoDeliveryFrequencyEnum = typeof PersonalizedFeedDtoDeliveryFrequencyEnum[keyof typeof PersonalizedFeedDtoDeliveryFrequencyEnum];
+
 /**
  * 
  * @export
@@ -476,6 +525,12 @@ export interface PersonalizedFeedWithFiltersDto {
      */
     'deliveryConfig': object;
     /**
+     * 配信間隔
+     * @type {string}
+     * @memberof PersonalizedFeedWithFiltersDto
+     */
+    'deliveryFrequency': PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum;
+    /**
      * 有効かどうか
      * @type {boolean}
      * @memberof PersonalizedFeedWithFiltersDto
@@ -500,6 +555,15 @@ export interface PersonalizedFeedWithFiltersDto {
      */
     'filterGroups'?: Array<ResponseFilterGroupDto>;
 }
+
+export const PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum = {
+    Daily: 'DAILY',
+    TwiceWeekly: 'TWICE_WEEKLY',
+    Weekly: 'WEEKLY'
+} as const;
+
+export type PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum = typeof PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum[keyof typeof PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum];
+
 /**
  * 
  * @export
@@ -871,7 +935,13 @@ export interface ResponseFilterGroupDto {
      * @type {Array<ResponseDateRangeFilterDto>}
      * @memberof ResponseFilterGroupDto
      */
-    'dateRangeFilters'?: Array<ResponseDateRangeFilterDto>;
+    'dateRangeFilters': Array<ResponseDateRangeFilterDto>;
+    /**
+     * いいね数フィルター一覧
+     * @type {Array<LikesCountFilterDto>}
+     * @memberof ResponseFilterGroupDto
+     */
+    'likesCountFilters': Array<LikesCountFilterDto>;
     /**
      * 作成日時
      * @type {string}
@@ -991,6 +1061,12 @@ export interface UpdatePersonalizedFeedRequestDto {
      */
     'deliveryConfig'?: object;
     /**
+     * 配信間隔
+     * @type {string}
+     * @memberof UpdatePersonalizedFeedRequestDto
+     */
+    'deliveryFrequency'?: UpdatePersonalizedFeedRequestDtoDeliveryFrequencyEnum;
+    /**
      * フィルターグループ一覧
      * @type {Array<FilterGroupDto>}
      * @memberof UpdatePersonalizedFeedRequestDto
@@ -1003,6 +1079,15 @@ export interface UpdatePersonalizedFeedRequestDto {
      */
     'isActive'?: boolean;
 }
+
+export const UpdatePersonalizedFeedRequestDtoDeliveryFrequencyEnum = {
+    Daily: 'DAILY',
+    TwiceWeekly: 'TWICE_WEEKLY',
+    Weekly: 'WEEKLY'
+} as const;
+
+export type UpdatePersonalizedFeedRequestDtoDeliveryFrequencyEnum = typeof UpdatePersonalizedFeedRequestDtoDeliveryFrequencyEnum[keyof typeof UpdatePersonalizedFeedRequestDtoDeliveryFrequencyEnum];
+
 /**
  * 
  * @export

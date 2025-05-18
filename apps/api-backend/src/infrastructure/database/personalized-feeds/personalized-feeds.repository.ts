@@ -10,12 +10,15 @@ import {
   CreateDateRangeFilterParams,
   CreateFeedWithFilterGroupParams,
   CreateFilterGroupParams,
+  CreateLikesCountFilterParams,
   CreateTagFilterParams,
   DateRangeFilter,
   FeedWithFilterGroupResult,
   FilterGroup,
   IPersonalizedFeedsRepository,
+  LikesCountFilter,
   TagFilter,
+  UpdateFeedParams,
   UpdateFeedWithFilterGroupParams,
   UpdateFilterGroupParams,
 } from '@/domains/personalized-feeds/personalized-feeds.repository.interface';
@@ -103,6 +106,43 @@ export class PersonalizedFeedsRepository
   }
 
   /**
+   * 指定されたユーザーIDに紐づくパーソナライズフィードの数を取得する
+   * @param userId ユーザーID
+   * @returns パーソナライズフィードの数
+   */
+  async countByUserId(userId: string): Promise<number> {
+    this.logger.debug('PersonalizedFeedsRepository.countByUserId called', {
+      userId,
+    });
+
+    try {
+      const client = this.prisma.getClient();
+
+      // アクティブなフィードの数を取得
+      const count = await client.personalizedFeed.count({
+        where: {
+          userId,
+          isActive: true,
+        },
+      });
+
+      this.logger.debug('パーソナライズフィード数を取得しました', {
+        userId,
+        count,
+      });
+
+      return count;
+    } catch (error) {
+      const errorMessage = `パーソナライズフィード数の取得に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        userId,
+      });
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
    * 指定されたユーザーIDに紐づくパーソナライズフィードの一覧をフィルター情報付きで取得する
    * @param userId ユーザーID
    * @param page ページ番号（1から始まる）
@@ -147,6 +187,7 @@ export class PersonalizedFeedsRepository
               tagFilters: true,
               authorFilters: true,
               dateRangeFilters: true,
+              likesCountFilters: true,
             },
           },
         },
@@ -240,6 +281,7 @@ export class PersonalizedFeedsRepository
               tagFilters: true,
               authorFilters: true,
               dateRangeFilters: true,
+              likesCountFilters: true,
             },
           },
         },
@@ -282,7 +324,13 @@ export class PersonalizedFeedsRepository
       // パーソナライズフィードを作成
       const createdFeed = await client.personalizedFeed.create({
         data: {
-          ...feed,
+          name: feed.name,
+          userId: feed.userId,
+          dataSource: feed.dataSource,
+          filterConfig: feed.filterConfig,
+          deliveryConfig: feed.deliveryConfig,
+          deliveryFrequency: feed.deliveryFrequency,
+          isActive: feed.isActive,
           createdAt: now,
           updatedAt: now,
           // ID は自動生成 (prisma-client-manager で接頭辞付きID生成処理を実装済み)
@@ -561,6 +609,100 @@ export class PersonalizedFeedsRepository
   }
 
   /**
+   * いいね数フィルターを新規作成する
+   * @param params いいね数フィルター作成パラメータ
+   * @returns 作成されたいいね数フィルター
+   */
+  async createLikesCountFilter(
+    params: CreateLikesCountFilterParams,
+  ): Promise<LikesCountFilter> {
+    this.logger.debug(
+      'PersonalizedFeedsRepository.createLikesCountFilter called',
+      {
+        params,
+      },
+    );
+
+    try {
+      const client = this.prisma.getClient();
+
+      // 現在時刻を設定
+      const now = new Date();
+
+      const createdLikesCountFilter = await client.likesCountFilter.create({
+        data: {
+          groupId: params.groupId,
+          minLikes: params.minLikes,
+          createdAt: now,
+        },
+      });
+
+      this.logger.debug(
+        `いいね数フィルター [${createdLikesCountFilter.id}] を作成しました`,
+        {
+          id: createdLikesCountFilter.id,
+          groupId: createdLikesCountFilter.groupId,
+          minLikes: createdLikesCountFilter.minLikes,
+        },
+      );
+
+      return {
+        id: createdLikesCountFilter.id,
+        groupId: createdLikesCountFilter.groupId,
+        minLikes: createdLikesCountFilter.minLikes,
+        createdAt: createdLikesCountFilter.createdAt,
+      };
+    } catch (error) {
+      const errorMessage = `いいね数フィルターの作成に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        params,
+      });
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * 特定のフィルターグループに紐づくいいね数フィルターをすべて削除する
+   * @param groupId フィルターグループID
+   * @returns 削除されたいいね数フィルターの数
+   */
+  async deleteLikesCountFiltersByGroupId(groupId: string): Promise<number> {
+    this.logger.debug(
+      'PersonalizedFeedsRepository.deleteLikesCountFiltersByGroupId called',
+      {
+        groupId,
+      },
+    );
+
+    try {
+      const client = this.prisma.getClient();
+
+      // 特定グループのいいね数フィルターをすべて削除
+      const result = await client.likesCountFilter.deleteMany({
+        where: { groupId },
+      });
+
+      this.logger.debug(
+        `フィルターグループ [${groupId}] のいいね数フィルターを ${result.count} 件削除しました`,
+        {
+          groupId,
+          count: result.count,
+        },
+      );
+
+      return result.count;
+    } catch (error) {
+      const errorMessage = `いいね数フィルターの削除に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        groupId,
+      });
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
    * パーソナライズフィードとフィルターグループを同一トランザクションで作成する
    * @param params フィードとフィルターグループの作成パラメータ
    * @returns 作成されたフィードとフィルターグループ
@@ -573,6 +715,7 @@ export class PersonalizedFeedsRepository
       {
         feedData: params.feed,
         hasFilterGroup: !!params.filterGroup,
+        filterGroupData: params.filterGroup,
       },
     );
 
@@ -596,6 +739,7 @@ export class PersonalizedFeedsRepository
         const tagFilters = [];
         const authorFilters = [];
         const dateRangeFilters = [];
+        const likesCountFilters = [];
 
         if (params.filterGroup) {
           // フィルターグループを作成
@@ -674,6 +818,29 @@ export class PersonalizedFeedsRepository
               });
             }
           }
+
+          if (
+            params.filterGroup.likesCountFilters &&
+            params.filterGroup.likesCountFilters.length > 0
+          ) {
+            for (const likesCountFilter of params.filterGroup
+              .likesCountFilters) {
+              const createdLikesCountFilter =
+                await client.likesCountFilter.create({
+                  data: {
+                    groupId: createdGroup.id,
+                    minLikes: likesCountFilter.minLikes,
+                    createdAt: now,
+                  },
+                });
+              likesCountFilters.push({
+                id: createdLikesCountFilter.id,
+                groupId: createdLikesCountFilter.groupId,
+                minLikes: createdLikesCountFilter.minLikes,
+                createdAt: createdLikesCountFilter.createdAt,
+              });
+            }
+          }
         }
 
         const result = {
@@ -692,6 +859,8 @@ export class PersonalizedFeedsRepository
           authorFilters: authorFilters.length > 0 ? authorFilters : undefined,
           dateRangeFilters:
             dateRangeFilters.length > 0 ? dateRangeFilters : undefined,
+          likesCountFilters:
+            likesCountFilters.length > 0 ? likesCountFilters : undefined,
         };
 
         this.logger.debug(
@@ -717,18 +886,11 @@ export class PersonalizedFeedsRepository
 
   /**
    * パーソナライズフィードを更新する
-   * @param feed 更新するパーソナライズフィードの情報
+   * @param params 更新するパーソナライズフィードの情報
    * @returns 更新されたパーソナライズフィード
    */
-  async update(feed: {
-    id: string;
-    name?: string;
-    dataSource?: string;
-    filterConfig?: Record<string, any>;
-    deliveryConfig?: Record<string, any>;
-    isActive?: boolean;
-  }): Promise<PersonalizedFeed> {
-    this.logger.debug('PersonalizedFeedsRepository.update called', { feed });
+  async update(params: UpdateFeedParams): Promise<PersonalizedFeed> {
+    this.logger.debug('PersonalizedFeedsRepository.update called', { params });
 
     try {
       const client = this.prisma.getClient();
@@ -739,18 +901,20 @@ export class PersonalizedFeedsRepository
       };
 
       // 指定されたフィールドのみ更新対象に含める
-      if (feed.name !== undefined) updateData.name = feed.name;
-      if (feed.dataSource !== undefined)
-        updateData.dataSource = feed.dataSource;
-      if (feed.filterConfig !== undefined)
-        updateData.filterConfig = feed.filterConfig;
-      if (feed.deliveryConfig !== undefined)
-        updateData.deliveryConfig = feed.deliveryConfig;
-      if (feed.isActive !== undefined) updateData.isActive = feed.isActive;
+      if (params.name !== undefined) updateData.name = params.name;
+      if (params.dataSource !== undefined)
+        updateData.dataSource = params.dataSource;
+      if (params.filterConfig !== undefined)
+        updateData.filterConfig = params.filterConfig;
+      if (params.deliveryConfig !== undefined)
+        updateData.deliveryConfig = params.deliveryConfig;
+      if (params.deliveryFrequency !== undefined)
+        updateData.deliveryFrequency = params.deliveryFrequency;
+      if (params.isActive !== undefined) updateData.isActive = params.isActive;
 
       // パーソナライズフィードを更新
       const updatedFeed = await client.personalizedFeed.update({
-        where: { id: feed.id },
+        where: { id: params.id },
         data: updateData,
       });
 
@@ -770,7 +934,7 @@ export class PersonalizedFeedsRepository
       const errorMessage = `パーソナライズフィードの更新に失敗しました`;
       this.logger.error(errorMessage, {
         error,
-        feedId: feed.id,
+        feedId: params.id,
       });
       throw new Error(errorMessage);
     }
@@ -951,6 +1115,8 @@ export class PersonalizedFeedsRepository
           updateData.filterConfig = params.feed.filterConfig;
         if (params.feed.deliveryConfig !== undefined)
           updateData.deliveryConfig = params.feed.deliveryConfig;
+        if (params.feed.deliveryFrequency !== undefined)
+          updateData.deliveryFrequency = params.feed.deliveryFrequency;
         if (params.feed.isActive !== undefined)
           updateData.isActive = params.feed.isActive;
 
@@ -965,6 +1131,7 @@ export class PersonalizedFeedsRepository
         const tagFilters = [];
         const authorFilters = [];
         const dateRangeFilters = [];
+        const likesCountFilters = [];
 
         if (params.filterGroup) {
           // 既存のフィルターグループを取得
@@ -976,10 +1143,11 @@ export class PersonalizedFeedsRepository
           if (existingGroups.length > 0) {
             const groupId = existingGroups[0].id; // 最初のグループを使用
 
-            // 既存のタグフィルター、著者フィルター、公開日フィルターを削除
+            // 既存のタグフィルター、著者フィルター、公開日フィルター、いいね数フィルターを削除
             await this.deleteTagFiltersByGroupId(groupId);
             await this.deleteAuthorFiltersByGroupId(groupId);
             await this.deleteDateRangeFiltersByGroupId(groupId);
+            await this.deleteLikesCountFiltersByGroupId(groupId);
 
             // フィルターグループを更新
             updatedGroup = await client.feedFilterGroup.update({
@@ -1068,6 +1236,29 @@ export class PersonalizedFeedsRepository
               });
             }
           }
+
+          if (
+            params.filterGroup.likesCountFilters &&
+            params.filterGroup.likesCountFilters.length > 0
+          ) {
+            for (const likesCountFilter of params.filterGroup
+              .likesCountFilters) {
+              const createdLikesCountFilter =
+                await client.likesCountFilter.create({
+                  data: {
+                    groupId: updatedGroup.id,
+                    minLikes: likesCountFilter.minLikes,
+                    createdAt: now,
+                  },
+                });
+              likesCountFilters.push({
+                id: createdLikesCountFilter.id,
+                groupId: createdLikesCountFilter.groupId,
+                minLikes: createdLikesCountFilter.minLikes,
+                createdAt: createdLikesCountFilter.createdAt,
+              });
+            }
+          }
         }
 
         const result = {
@@ -1086,6 +1277,8 @@ export class PersonalizedFeedsRepository
           authorFilters: authorFilters.length > 0 ? authorFilters : undefined,
           dateRangeFilters:
             dateRangeFilters.length > 0 ? dateRangeFilters : undefined,
+          likesCountFilters:
+            likesCountFilters.length > 0 ? likesCountFilters : undefined,
         };
 
         this.logger.debug(

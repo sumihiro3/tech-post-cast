@@ -2,7 +2,9 @@ import { PersonalizedFeedsService } from '@/domains/personalized-feeds/personali
 import { UserNotFoundError } from '@/types/errors';
 import { CanActivate, HttpException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { SubscriptionInfo, SubscriptionStatus } from '@tech-post-cast/database';
 import { ClerkJwtGuard } from '../../auth/guards/clerk-jwt.guard';
+import { SubscriptionGuard } from '../../guards/subscription.guard';
 import { CreatePersonalizedFeedRequestDto } from './dto/create-personalized-feed.request.dto';
 import { UpdatePersonalizedFeedRequestDto } from './dto/update-personalized-feed.request.dto';
 import { PersonalizedFeedsController } from './personalized-feeds.controller';
@@ -78,6 +80,25 @@ describe('PersonalizedFeedsController', () => {
     ],
   };
 
+  const mockSubscription: SubscriptionInfo = {
+    id: 'subscription_test123',
+    userId,
+    planId: 'plan_test123',
+    status: SubscriptionStatus.ACTIVE,
+    startDate: currentDate,
+    endDate: new Date(currentDate.getTime() + 1000 * 60 * 60 * 24 * 30),
+    isActive: true,
+    plan: {
+      id: 'plan_test123',
+      name: 'テストプラン',
+      price: 1000,
+      description: 'テストプラン',
+      maxFeeds: 10,
+      maxAuthors: 10,
+      maxTags: 10,
+    },
+  };
+
   const mockFeedsResult = {
     feeds: [mockFeed],
     total: 1,
@@ -113,6 +134,8 @@ describe('PersonalizedFeedsController', () => {
     }) // Guard は Mock を使うように設定
       // @see https://github.com/nestjs/nest/issues/4717
       .overrideGuard(ClerkJwtGuard)
+      .useValue(mockGuard)
+      .overrideGuard(SubscriptionGuard)
       .useValue(mockGuard)
       .compile();
 
@@ -357,23 +380,38 @@ describe('PersonalizedFeedsController', () => {
             tagFilters: [],
             authorFilters: [],
             dateRangeFilters: [{ daysAgo: 30 }],
+            likesCountFilters: [{ minLikes: 5 }],
           },
         ],
         isActive: true,
       };
 
       // コントローラーメソッドを実行
-      const result = await controller.createPersonalizedFeed(createDto, userId);
+      const result = await controller.createPersonalizedFeed(
+        createDto,
+        userId,
+        mockSubscription,
+      );
 
       // 期待値の検証
       expect(personalizedFeedsService.create).toHaveBeenCalledWith(
         userId,
-        createDto.name,
-        createDto.dataSource,
-        createDto.filterConfig,
-        createDto.deliveryConfig,
-        createDto.isActive,
-        createDto.filterGroups,
+        expect.objectContaining({
+          name: createDto.name,
+          dataSource: createDto.dataSource,
+          filterConfig: createDto.filterConfig,
+          deliveryConfig: createDto.deliveryConfig,
+          isActive: createDto.isActive,
+          filterGroups: expect.arrayContaining([
+            expect.objectContaining({
+              name: 'テストグループ',
+              logicType: 'OR',
+              dateRangeFilters: expect.arrayContaining([{ daysAgo: 30 }]),
+              likesCountFilters: expect.arrayContaining([{ minLikes: 5 }]),
+            }),
+          ]),
+        }),
+        mockSubscription,
       );
       expect(result).toBeDefined();
       expect(result.feed).toBeDefined();
@@ -397,7 +435,7 @@ describe('PersonalizedFeedsController', () => {
 
       // コントローラーメソッドを実行して例外検証
       await expect(
-        controller.createPersonalizedFeed(createDto, 'user_nonexistent'),
+        controller.createPersonalizedFeed(createDto, userId, mockSubscription),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -433,6 +471,7 @@ describe('PersonalizedFeedsController', () => {
             name: '更新されたフィルターグループ',
             logicType: 'OR',
             dateRangeFilters: [{ daysAgo: 60 }],
+            likesCountFilters: [{ minLikes: 10 }],
           },
         ],
       };
@@ -446,10 +485,19 @@ describe('PersonalizedFeedsController', () => {
 
       // 期待値の検証
       expect(personalizedFeedsService.update).toHaveBeenCalledWith(
-        feedId,
         userId,
-        { name: '更新されたフィード名' },
-        updateDto.filterGroups,
+        expect.objectContaining({
+          id: feedId,
+          name: updateDto.name,
+          filterGroups: expect.arrayContaining([
+            expect.objectContaining({
+              name: '更新されたフィルターグループ',
+              logicType: 'OR',
+              dateRangeFilters: expect.arrayContaining([{ daysAgo: 60 }]),
+              likesCountFilters: expect.arrayContaining([{ minLikes: 10 }]),
+            }),
+          ]),
+        }),
       );
       expect(result).toBeDefined();
       expect(result.id).toBe(feedId);

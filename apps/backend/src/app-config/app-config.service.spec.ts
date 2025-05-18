@@ -44,6 +44,22 @@ describe('AppConfigService', () => {
                   'headline-topic-program-se-long-file-path',
                 HEADLINE_TOPIC_PROGRAM_PICTURE_FILE_PATH:
                   'headline-topic-program-picture-file-path',
+                PERSONALIZED_PROGRAM_TARGET_DIR:
+                  'personalized-program-target-dir',
+                PERSONALIZED_PROGRAM_BGM_FILE_PATH:
+                  'personalized-program-bgm-file-path',
+                PERSONALIZED_PROGRAM_OPENING_FILE_PATH:
+                  'personalized-program-opening-file-path',
+                PERSONALIZED_PROGRAM_ENDING_FILE_PATH:
+                  'personalized-program-ending-file-path',
+                PERSONALIZED_PROGRAM_SE_1_FILE_PATH:
+                  'personalized-program-se-1-file-path',
+                PERSONALIZED_PROGRAM_SE_2_FILE_PATH:
+                  'personalized-program-se-2-file-path',
+                PERSONALIZED_PROGRAM_SE_3_FILE_PATH:
+                  'personalized-program-se-3-file-path',
+                PERSONALIZED_PROGRAM_PICTURE_FILE_PATH:
+                  'personalized-program-picture-file-path',
                 PROGRAM_AUDIO_BUCKET_NAME: 'program-audio-bucket-name',
                 PROGRAM_AUDIO_FILE_URL_PREFIX: 'program-audio-file-url-prefix',
                 CLOUDFLARE_ACCESS_KEY_ID: 'cloudflare-access-key-id',
@@ -57,6 +73,7 @@ describe('AppConfigService', () => {
                 X_API_SECRET: 'x-api-secret',
                 X_API_ACCESS_TOKEN: 'x-api-access-token',
                 X_API_ACCESS_SECRET: 'x-api-access-secret',
+                SLACK_INCOMING_WEBHOOK_URL: 'slack-incoming-webhook-url',
               };
               return configKeys[key];
             }),
@@ -222,6 +239,94 @@ describe('AppConfigService', () => {
     );
   });
 
+  it('PERSONALIZED_PROGRAM_TARGET_DIR が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'PERSONALIZED_PROGRAM_TARGET_DIR') return null;
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
+  it('PERSONALIZED_PROGRAM_BGM_FILE_PATH が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'PERSONALIZED_PROGRAM_BGM_FILE_PATH') return null;
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
+  it('PERSONALIZED_PROGRAM_OPENING_FILE_PATH が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'PERSONALIZED_PROGRAM_OPENING_FILE_PATH') return null;
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
+  it('PERSONALIZED_PROGRAM_ENDING_FILE_PATH が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'PERSONALIZED_PROGRAM_ENDING_FILE_PATH') return null;
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
+  it('PERSONALIZED_PROGRAM_SE_1_FILE_PATH が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'PERSONALIZED_PROGRAM_SE_1_FILE_PATH') return null;
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
+  it('PERSONALIZED_PROGRAM_SE_2_FILE_PATH が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'PERSONALIZED_PROGRAM_SE_2_FILE_PATH') return null;
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
+  it('PERSONALIZED_PROGRAM_SE_3_FILE_PATH が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'PERSONALIZED_PROGRAM_SE_3_FILE_PATH') return null;
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
+  it('PERSONALIZED_PROGRAM_PICTURE_FILE_PATH が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'PERSONALIZED_PROGRAM_PICTURE_FILE_PATH') return null;
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
   it('PROGRAM_AUDIO_BUCKET_NAME が設定されていない場合、エラーをスローするべき', () => {
     jest.spyOn(configService, 'get').mockImplementation((key: string) => {
       if (key === 'PROGRAM_AUDIO_BUCKET_NAME') return null;
@@ -368,6 +473,17 @@ describe('AppConfigService', () => {
     );
   });
 
+  it('SLACK_INCOMING_WEBHOOK_URL が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'SLACK_INCOMING_WEBHOOK_URL') return null;
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
   it('ゲッターから正しい値を返すべき', () => {
     expect(service.DatabaseUrl).toBe('https://example-database.url');
     expect(service.ShowQueryLogs).toBe(true);
@@ -395,6 +511,30 @@ describe('AppConfigService', () => {
     );
     expect(service.HeadlineTopicProgramPictureFilePath).toBe(
       'headline-topic-program-picture-file-path',
+    );
+    expect(service.PersonalizedProgramTargetDir).toBe(
+      'personalized-program-target-dir',
+    );
+    expect(service.PersonalizedProgramBgmFilePath).toBe(
+      'personalized-program-bgm-file-path',
+    );
+    expect(service.PersonalizedProgramOpeningFilePath).toBe(
+      'personalized-program-opening-file-path',
+    );
+    expect(service.PersonalizedProgramEndingFilePath).toBe(
+      'personalized-program-ending-file-path',
+    );
+    expect(service.PersonalizedProgramSe1FilePath).toBe(
+      'personalized-program-se-1-file-path',
+    );
+    expect(service.PersonalizedProgramSe2FilePath).toBe(
+      'personalized-program-se-2-file-path',
+    );
+    expect(service.PersonalizedProgramSe3FilePath).toBe(
+      'personalized-program-se-3-file-path',
+    );
+    expect(service.PersonalizedProgramPictureFilePath).toBe(
+      'personalized-program-picture-file-path',
     );
     expect(service.ProgramAudioBucketName).toBe('program-audio-bucket-name');
     expect(service.ProgramAudioFileUrlPrefix).toBe(

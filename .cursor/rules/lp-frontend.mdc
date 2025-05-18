@@ -1,3 +1,9 @@
+---
+description: Nuxt 3 LPフロントエンド実装ルール
+globs: "apps/lp-frontend/**/*"
+alwaysApply: false
+---
+
 # Nuxt 3 LPフロントエンド実装ルール
 
 **適用対象**: apps/lp-frontend/**/*

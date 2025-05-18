@@ -6,14 +6,14 @@ POST {{baseUrl}}/sample/summary
 Content-Type: application/json
 Authorization: Bearer xxxxxxxxxxxffffffffffff
 
-### 
+###
 
 # @name GenerateScript
 POST {{baseUrl}}/sample/script
 Content-Type: application/json
 Authorization: Bearer xxxxxxxxxxxffffffffffff
 
-### 
+###
 
 # @name Uploader
 POST {{baseUrl}}/sample/upload
@@ -33,5 +33,11 @@ Authorization: Bearer xxxxxxxxxxxffffffffffff
 # @name FindSimilarPrograms
 @programId = cm68x5jnz0000l810nhpl19qt
 GET {{baseUrl}}/sample/find-similar-programs/{{programId}}
+Content-Type: application/json
+Authorization: Bearer xxxxxxxxxxxffffffffffff
+
+### @name getQiitaPostsByUserPersonalizedFeed
+@userId = sumihiro3
+GET {{baseUrl}}/sample/personalized-feed/{{userId}}
 Content-Type: application/json
 Authorization: Bearer xxxxxxxxxxxffffffffffff

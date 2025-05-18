@@ -12,7 +12,7 @@ v-container.max-width-container
   //- タイトル
   v-row(justify="center")
     v-col(cols="12")
-      .text-center.text-h4.font-weight-bold.mb-6 番組設定の新規作成
+      .text-center.text-h4.font-weight-bold.mb-6 パーソナルフィード設定の新規作成
 
   //- FeedEditorコンポーネントを使用
   FeedEditor(
@@ -51,6 +51,7 @@ v-container.max-width-container
 
 <script setup lang="ts">
 import { useNuxtApp } from '#app';
+import { PersonalizedFeedDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum } from '@/api';
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 import FeedEditor from '@/components/qiita/FeedEditor.vue';
 import { useCreatePersonalizedFeed } from '@/composables/feeds/useCreatePersonalizedFeed';
@@ -66,6 +67,12 @@ definePageMeta({
   layout: 'user-app',
 });
 
+/** 記事公開日の範囲のデフォルト値 */
+const DEFAULT_DATE_RANGE: number = 7;
+
+/** いいね数のデフォルト値 */
+const DEFAULT_LIKES_COUNT: number = 0;
+
 /**
  * フィードの初期データ
  * 新規作成ではデフォルト値を設定
@@ -75,10 +82,12 @@ const initialFeedData = reactive<InputPersonalizedFeedData>({
   filters: {
     tags: [],
     authors: [],
-    dateRange: -1,
+    dateRange: DEFAULT_DATE_RANGE,
+    likesCount: DEFAULT_LIKES_COUNT,
   },
   posts: [],
   totalCount: 0,
+  deliveryFrequency: DeliveryFrequencyEnum.Weekly,
 });
 
 /**
@@ -90,10 +99,12 @@ const currentFeedData = ref<InputPersonalizedFeedData>({
   filters: {
     tags: [],
     authors: [],
-    dateRange: -1,
+    dateRange: DEFAULT_DATE_RANGE,
+    likesCount: DEFAULT_LIKES_COUNT,
   },
   posts: [],
   totalCount: 0,
+  deliveryFrequency: DeliveryFrequencyEnum.Weekly,
 });
 
 /**
@@ -115,8 +126,17 @@ const hasFormChanges = computed(() => {
   const hasAuthorsSelected = (currentFeedData.value.filters.authors?.length || 0) > 0;
   // 日付範囲が初期値と異なるか
   const hasDateRangeChanged = currentFeedData.value.filters.dateRange !== -1;
+  // 配信間隔が初期値と異なるか
+  const hasDeliveryFrequencyChanged =
+    currentFeedData.value.deliveryFrequency !== DeliveryFrequencyEnum.Weekly;
 
-  return hasTitleChanged || hasTagsSelected || hasAuthorsSelected || hasDateRangeChanged;
+  return (
+    hasTitleChanged ||
+    hasTagsSelected ||
+    hasAuthorsSelected ||
+    hasDateRangeChanged ||
+    hasDeliveryFrequencyChanged
+  );
 });
 
 /**

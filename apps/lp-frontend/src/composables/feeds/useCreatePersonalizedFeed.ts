@@ -3,6 +3,7 @@ import type {
   CreatePersonalizedFeedRequestDto,
   CreatePersonalizedFeedWithFiltersResponseDto,
 } from '@/api';
+import { ApiErrorHandler } from '@/utils/error-handler';
 
 /**
  * パーソナライズフィードを作成する
@@ -23,9 +24,7 @@ export const useCreatePersonalizedFeed = async (
     return result;
   } catch (error) {
     console.error(`useCreatePersonalizedFeed error`, error);
-    if (error instanceof Error) {
-      console.error(error.message, error.stack);
-    }
-    throw error;
+    // エラーを適切なHTTPエラー型に変換して再スロー
+    throw ApiErrorHandler.handleApiError(error);
   }
 };

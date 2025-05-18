@@ -10,7 +10,8 @@
 
 ### 基本原則
 
-- すべてのコードとドキュメントは英語で記述します。
+- すべてのコードは英語で記述します。
+- すべてのコメント・ドキュメントは日本語で記述します。
 - 各変数と関数（パラメーターと戻り値）の型を必ず宣言します。
     - `any`型の使用を避けます。
     - 必要な型を作成します。
@@ -254,5 +255,145 @@
       // パスワードハッシュ化の実装
       return bcrypt.hash(password, 10);
     }
+  }
+  ```
+
+## API定義と自動生成コードに関するガイドライン
+
+NestJSバックエンドでは、OpenAPI仕様に基づいたAPI定義を自動生成するために`@nestjs/swagger`を使用します。これにより、フロントエンド開発者がAPIクライアントを生成したり、APIドキュメントを参照したりすることが容易になります。
+
+### ControllerとDTOのアノテーション
+
+- すべてのControllerクラスには`@ApiTags`デコレーターを使用してAPIグループを指定してください。
+
+  ```typescript
+  @ApiTags('users')
+  @Controller('users')
+  export class UserController {
+    // ...
+  }
+  ```
+
+- 各エンドポイント（Controller内のルートハンドラー）には、以下のSwaggerデコレーターを適用してください：
+    - `@ApiOperation` - 操作の説明を提供
+    - `@ApiResponse` - 予想されるレスポンスを定義
+    - `@ApiParam`、`@ApiQuery` - URLパラメーターやクエリパラメーターを記述
+
+  ```typescript
+  @Get(':id')
+  @ApiOperation({ summary: 'ユーザーの取得', description: 'IDに基づいてユーザー情報を取得します' })
+  @ApiParam({ name: 'id', description: 'ユーザーID', type: String })
+  @ApiResponse({ status: 200, description: 'ユーザーが正常に取得されました', type: UserResponseDto })
+  @ApiResponse({ status: 404, description: 'ユーザーが見つかりません' })
+  async findOne(@Param('id') id: string): Promise<UserResponseDto> {
+    // ...
+  }
+  ```
+
+- DTOクラスには、`@ApiProperty`デコレーターを使用して、各プロパティの説明、型、例、必須かどうかなどを定義してください。
+
+  ```typescript
+  export class CreateUserDto {
+    @ApiProperty({
+      description: 'ユーザーのメールアドレス',
+      example: 'user@example.com',
+      required: true,
+    })
+    @IsEmail()
+    @IsNotEmpty()
+    email: string;
+
+    @ApiProperty({
+      description: 'ユーザーの名前',
+      example: '山田太郎',
+      required: true,
+      minLength: 2,
+      maxLength: 100,
+    })
+    @IsString()
+    @IsNotEmpty()
+    @Length(2, 100)
+    name: string;
+
+    @ApiProperty({
+      description: 'ユーザーのパスワード',
+      example: 'P@ssw0rd',
+      required: true,
+      minLength: 8,
+      maxLength: 100,
+    })
+    @IsString()
+    @IsNotEmpty()
+    @Length(8, 100)
+    @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, {
+      message: 'パスワードは少なくとも1つの小文字、大文字、数字、特殊文字を含む必要があります',
+    })
+    password: string;
+  }
+  ```
+
+- ネストされたDTOやエンティティは`@ApiProperty`の`type`属性を使用して定義してください。
+
+  ```typescript
+  export class UserWithPostsDto {
+    @ApiProperty({
+      description: 'ユーザーID',
+      example: '123e4567-e89b-12d3-a456-426614174000',
+    })
+    id: string;
+
+    @ApiProperty({
+      description: 'ユーザーの名前',
+      example: '山田太郎',
+    })
+    name: string;
+
+    @ApiProperty({
+      description: 'ユーザーの投稿一覧',
+      type: [PostDto],
+    })
+    posts: PostDto[];
+  }
+  ```
+
+### OpenAPI仕様の更新と生成
+
+- APIの追加や変更を行った場合は、必ずSwaggerアノテーションを更新してください。
+- API仕様はビルドプロセスで自動的に生成され、`api-spec/api-backend-spec.json`に出力されます。
+- 手動で仕様を更新するには、以下のコマンドを実行してください：
+
+  ```bash
+  yarn workspace @tech-post-cast/api-backend swagger-spec
+  ```
+
+### フロントエンドでの利用
+
+- 生成されたOpenAPI仕様は、フロントエンドのAPIクライアント生成に使用されます。
+- API仕様を変更した場合は、フロントエンドのAPIクライアントも更新する必要があります。
+- フロントエンドチームと事前に変更内容を共有し、後方互換性を維持するよう注意してください。
+
+### OpenAPI関連のベストプラクティス
+
+- 複雑なリクエスト/レスポンス構造には、適切な名前を持つDTOクラスを作成してください。
+- エラーレスポンスも適切に定義し、APIユーザーがエラーハンドリングを実装できるようにしてください。
+- APIバージョニングを導入する場合は、Swaggerドキュメントにもバージョン情報を含めてください。
+- セキュリティスキームを定義し、認証が必要なエンドポイントには`@ApiBearerAuth`などを使用してください。
+
+  ```typescript
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  getProfile(@Request() req) {
+    return req.user;
+  }
+  ```
+
+- 廃止予定のAPIには`@ApiDeprecated`を使用して、APIユーザーに通知してください。
+
+  ```typescript
+  @Get('legacy-endpoint')
+  @ApiDeprecated({ description: 'このエンドポイントは将来のリリースで削除されます。新しいAPIを使用してください。' })
+  getLegacyData() {
+    // ...
   }
   ```

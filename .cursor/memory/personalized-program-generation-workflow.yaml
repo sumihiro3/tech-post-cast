@@ -1,0 +1,142 @@
+main:
+  params: [args]
+  steps:
+    - init:
+        assign:
+          # 番組生成バックエンドのURL
+          - apiBaseUrl: ${sys.get_env("API_BASE_URL")}
+          # APIトークン
+          - apiToken: ${"Bearer " + sys.get_env("API_TOKEN")}
+          # 並列処理の最大数
+          - concurrencyLimit: 3
+          # Qiita APIのレートリミットがこの値を下回ると停止する
+          - minQiitaRateRemaining: 100
+          # 番組生成に成功した件数
+          - successCount: 0
+          # 番組生成に失敗したフィードID
+          - failedFeedIds: []
+    - logApiBaseUrl:
+        call: sys.log
+        args:
+          text: ${"API Base URL is " + apiBaseUrl}
+          severity: DEBUG
+    # 番組生成対象のパーソナルフィード一覧を取得する
+    - getActiveFeeds1:
+        call: http.get
+        args:
+          url: ${apiBaseUrl + "/personalized-feeds/active-feeds"}
+          headers:
+            Authorization: ${apiToken}
+        result: feeds
+    # パーソナルフィードごとに番組生成を行う
+    - processFeeds:
+        parallel:
+          shared: [successCount, failedFeedIds]
+          # 並列処理の最大数
+          concurrency_limit: ${concurrencyLimit}
+          for:
+            value: feed
+            in: ${feeds.body}
+            steps:
+              - logFeed:
+                  call: sys.log
+                  args:
+                    text: ${"Start processing feed is " + feed.id}
+                    severity: INFO
+              # パーソナルフィードごとに番組生成を行う
+              - generateProgram:
+                  try:
+                    steps:
+                      - generateProgramRequest:
+                          call: http.post
+                          args:
+                            url: ${apiBaseUrl + "/personalized-feeds/generate-program/"}
+                            headers:
+                              Authorization: ${apiToken}
+                            body:
+                              feedId: ${feed.id}
+                          result: programResult
+                      # 番組生成結果をログに出力する
+                      - logProgramResult:
+                          call: sys.log
+                          args:
+                            text: ${"Generated program ID (" + programResult.body.programId + "); Qiita rate remaining (" + programResult.body.qiitaRateRemaining + ");"}
+                            severity: INFO
+                      # 番組生成に成功した場合は成功件数をインクリメントする
+                      - incrementSuccessCount:
+                          assign:
+                            - successCount: ${successCount + 1}
+                      # Qiita APIのレートリミットが下限を下回っていないかを確認する
+                      - checkRateLimit:
+                          switch:
+                            - condition: ${programResult.body.qiitaRateRemaining < minQiitaRateRemaining}
+                              steps:
+                                - calculateWaitTime:
+                                    assign:
+                                      - waitSeconds: ${programResult.body.qiitaRateReset - sys.now()}
+                                - logWaitTime:
+                                    call: sys.log
+                                    args:
+                                      text: ${"qiitaRateReset (" + programResult.body.qiitaRateReset + "); waitSeconds (" + waitSeconds + "); sys.now (" + sys.now() + ")"}
+                                      severity: DEBUG
+                                - logWaitUntilRateLimitReset:
+                                    call: sys.log
+                                    args:
+                                      text: ${"Wait until rate limit reset (" + waitSeconds + " seconds)"}
+                                      severity: INFO
+                                # Qiita APIのレートリミットが下限を下回っている場合はレートリミットがリセットされるまで待機する
+                                - waitUntilRateLimitReset:
+                                    call: sys.sleep
+                                    args:
+                                      seconds: ${waitSeconds}
+                                - logWaitedForRateLimitReset:
+                                    call: sys.log
+                                    args:
+                                      text: ${"Waited for rate limit reset!! Reset time is " + programResult.body.qiitaRateReset}
+                                      severity: INFO
+                  except:
+                    # エラーが発生した場合はエラーログを出力し、エラー通知を行う
+                    as: e
+                    steps:
+                      - logError:
+                          call: sys.log
+                          args:
+                            text: ${"Program generation failed at " + feed.id}
+                            severity: ERROR
+                      - notifyError:
+                          call: http.post
+                          args:
+                            url: ${apiBaseUrl + "/personalized-feeds/notify-error"}
+                            headers:
+                              Authorization: ${apiToken}
+                            body:
+                              feedId: ${feed.id}
+                              error: ${e}
+                      - addFailedFeedId:
+                          assign:
+                            - failedFeedIds: ${list.concat(failedFeedIds, feed.id)}
+    # 番組生成完了通知を行う
+    - finalize:
+        steps:
+          - notifyCompletion:
+              call: http.post
+              args:
+                url: ${apiBaseUrl + "/personalized-feeds/finalize"}
+                headers:
+                  Authorization: ${apiToken}
+                body:
+                  # 処理完了時間
+                  timestamp: ${sys.now()}
+                  # 処理対象のパーソナルフィード数
+                  totalFeeds: ${len(feeds.body)}
+                  # 番組生成に成功した件数
+                  successCount: ${successCount}
+                  # 番組生成に失敗したフィードID
+                  failedFeedIds: ${failedFeedIds}
+              result: finalizeResult
+          - logCompletion:
+              call: sys.log
+              args:
+                text: 'Program generation completed!!'
+          - returnResult:
+              return: 'Done!'

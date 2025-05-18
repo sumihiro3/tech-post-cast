@@ -49,6 +49,17 @@ export interface IQiitaPostsRepository {
    * @returns 本文を含むQiita記事リスト
    */
   findWithBodyByIds(ids: string[]): Promise<QiitaPost[]>;
+
+  /**
+   * 指定のQiita記事一覧から、指定のパーソナルフィードを基にしたパーソナルプログラムに紐づいていない Qiita 記事を取得する
+   * @param personalizedFeedId パーソナルフィード ID
+   * @param posts Qiita 記事一覧
+   * @returns 指定のパーソナルフィードを基にしたパーソナルプログラムに紐づいていない Qiita 記事一覧
+   */
+  findNotExistsPostsByPersonalizedFeedId(
+    personalizedFeedId: string,
+    posts: QiitaPostApiResponse[],
+  ): Promise<QiitaPostApiResponse[]>;
 }
 
 export const SYMBOL = Symbol('IQiitaPostsRepository');

@@ -1,0 +1,24 @@
+##################################################
+# パーソナルフィード番組生成APIの実行
+##################################################
+
+# ローカル環境
+@baseUrl = {{$dotenv BACKEND_BASE_URL_LOCAL}}
+@apiToken = {{$dotenv BACKEND_API_TOKEN_LOCAL}}
+
+# 開発環境
+# @baseUrl = {{$dotenv BACKEND_BASE_URL_DEV}}
+# @apiToken = {{$dotenv BACKEND_API_TOKEN_DEV}}
+
+# 本番環境
+# @baseUrl = {{$dotenv BACKEND_BASE_URL_PROD}}
+# @apiToken = {{$dotenv BACKEND_API_TOKEN_PROD}}
+
+POST {{baseUrl}}/personalized-feeds/generate-program
+Content-Type: application/json
+Authorization: Bearer {{apiToken}}
+
+{
+  "daysAgo": 10,
+  "updateLp": true
+}

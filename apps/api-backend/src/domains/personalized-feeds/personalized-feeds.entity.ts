@@ -1,4 +1,7 @@
-import { PersonalizedFeed as PrismaPersonalizedFeed } from '@prisma/client';
+import {
+  DeliveryFrequency,
+  PersonalizedFeed as PrismaPersonalizedFeed,
+} from '@prisma/client';
 import { PersonalizedFeedWithFilters as PrismaPersonalizedFeedWithFilters } from '@tech-post-cast/database';
 
 /**
@@ -11,6 +14,7 @@ export class PersonalizedFeed {
   readonly dataSource: string;
   readonly filterConfig: Record<string, any>;
   readonly deliveryConfig: Record<string, any>;
+  readonly deliveryFrequency: DeliveryFrequency;
   readonly isActive: boolean;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -22,6 +26,7 @@ export class PersonalizedFeed {
     this.dataSource = data.dataSource;
     this.filterConfig = data.filterConfig as Record<string, any>;
     this.deliveryConfig = data.deliveryConfig as Record<string, any>;
+    this.deliveryFrequency = data.deliveryFrequency;
     this.isActive = data.isActive;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
@@ -41,6 +46,7 @@ export class FilterGroup {
   readonly tagFilters?: TagFilter[];
   readonly authorFilters?: AuthorFilter[];
   readonly dateRangeFilters?: DateRangeFilter[];
+  readonly likesCountFilters?: LikesCountFilter[];
 
   constructor(data: any) {
     this.id = data.id;
@@ -55,6 +61,9 @@ export class FilterGroup {
     );
     this.dateRangeFilters = data.dateRangeFilters?.map(
       (dateRange: any) => new DateRangeFilter(dateRange),
+    );
+    this.likesCountFilters = data.likesCountFilters?.map(
+      (likesCount: any) => new LikesCountFilter(likesCount),
     );
   }
 }
@@ -106,6 +115,23 @@ export class DateRangeFilter {
     this.id = data.id;
     this.groupId = data.groupId;
     this.daysAgo = data.daysAgo;
+    this.createdAt = data.createdAt;
+  }
+}
+
+/**
+ * いいね数フィルターエンティティ
+ */
+export class LikesCountFilter {
+  readonly id: string;
+  readonly groupId: string;
+  readonly minLikes: number;
+  readonly createdAt: Date;
+
+  constructor(data: any) {
+    this.id = data.id;
+    this.groupId = data.groupId;
+    this.minLikes = data.minLikes;
     this.createdAt = data.createdAt;
   }
 }
