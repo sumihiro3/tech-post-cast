@@ -6,7 +6,6 @@ import {
 import { UserJSON, WebhookEvent } from '@clerk/backend';
 import { IAppUsersRepository } from '@domains/app-users/app-users.repository.interface';
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { PrismaClientManager } from '@tech-post-cast/database';
 
 @Injectable()
 export class ClerkWebhookService {
@@ -15,7 +14,6 @@ export class ClerkWebhookService {
   constructor(
     @Inject('AppUserRepository')
     private readonly appUserRepository: IAppUsersRepository,
-    private readonly prismaClientManager: PrismaClientManager,
   ) {}
 
   /**
