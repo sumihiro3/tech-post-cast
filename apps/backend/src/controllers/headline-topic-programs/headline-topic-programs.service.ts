@@ -228,4 +228,52 @@ export class HeadlineTopicProgramsService {
       `ヘッドライントピック番組 [${id}] 台本のベクトル化が完了しました！`,
     );
   }
+
+  /**
+   * ヘッドライントピック番組の生成完了を通知する
+   * @param program 番組
+   */
+  async notifyHeadlineTopicProgramGenerationComplete(
+    program: HeadlineTopicProgram,
+  ): Promise<void> {
+    this.logger.debug(
+      `HeadlineTopicProgramsService.notifyHeadlineTopicProgramGenerationComplete called`,
+      { id: program.id },
+    );
+    // ヘッドライントピック番組の生成完了を通知する
+    const slackIncomingWebhookUrl = this.appConfig.SlackIncomingWebhookUrl;
+    if (!slackIncomingWebhookUrl) {
+      this.logger.warn('Slack Incoming Webhook URL が設定されていません');
+      return;
+    }
+    // Slack に通知する
+    await fetch(slackIncomingWebhookUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        blocks: [
+          {
+            type: 'rich_text',
+            elements: [
+              {
+                type: 'rich_text_section',
+                elements: [
+                  {
+                    type: 'emoji',
+                    name: 'confetti_ball',
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `<!channel> ヘッドライントピック番組の生成が完了しました \n- ID: ${program.id} \n- タイトル: ${program.title}`,
+            },
+          },
+        ],
+      }),
+    });
+  }
 }

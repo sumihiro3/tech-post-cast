@@ -1,3 +1,4 @@
+import { AppConfigService } from '@/app-config/app-config.service';
 import { BackendBearerTokenGuard } from '@/guards/bearer-token.guard';
 import {
   AppUserNotFoundError,
@@ -32,6 +33,7 @@ export class PersonalizedFeedsController {
   );
 
   constructor(
+    private readonly appConfigService: AppConfigService,
     private readonly personalizedFeedsBuilder: PersonalizedFeedsBuilder,
   ) {}
 
@@ -181,6 +183,21 @@ export class PersonalizedFeedsController {
       feedId: body.feedId,
       error: body.error,
     });
+    const slackIncomingWebhookUrl =
+      this.appConfigService.SlackIncomingWebhookUrl;
+    if (!slackIncomingWebhookUrl) {
+      this.logger.warn('Slack Incoming Webhook URL が設定されていません');
+      return;
+    }
+    // Slack に通知する
+    await fetch(slackIncomingWebhookUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        username: 'パーソナルフィード生成エラー通知',
+        icon_emoji: ':ghost:',
+        text: `パーソナルフィード [${body.feedId}] に基づいた番組の生成に失敗しました`,
+      }),
+    });
   }
 
   @Post('/finalize')
@@ -213,6 +230,46 @@ export class PersonalizedFeedsController {
       timestamp: body.timestamp,
       successCount: body.successCount,
       failedFeedIds: body.failedFeedIds,
+    });
+    const slackIncomingWebhookUrl =
+      this.appConfigService.SlackIncomingWebhookUrl;
+    if (!slackIncomingWebhookUrl) {
+      this.logger.warn('Slack Incoming Webhook URL が設定されていません');
+      return;
+    }
+    const failedFeedIds =
+      body.failedFeedIds.length > 0
+        ? body.failedFeedIds.join('\n    - ')
+        : '（なし）';
+    // Slack に通知する
+    await fetch(slackIncomingWebhookUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        icon_emoji: ':microphone:',
+        blocks: [
+          {
+            type: 'rich_text',
+            elements: [
+              {
+                type: 'rich_text_section',
+                elements: [
+                  {
+                    type: 'emoji',
+                    name: 'tada',
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `<!channel> パーソナルプログラムの一括生成処理が完了しました \n- 成功: ${body.successCount} 件 \n - 失敗: ${body.failedFeedIds.length} 件 \n- 失敗したパーソナルフィードID: \n    - ${failedFeedIds}`,
+            },
+          },
+        ],
+      }),
     });
   }
 }

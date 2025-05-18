@@ -154,6 +154,12 @@ export class AppConfigService {
         'GCP_CREDENTIALS_FILE_PATH が設定されていません',
       );
     }
+    // Slack
+    if (!this.SlackIncomingWebhookUrl) {
+      throw new AppConfigValidationError(
+        'SLACK_INCOMING_WEBHOOK_URL が設定されていません',
+      );
+    }
     // X
     if (this.PostToX === true) {
       this.logger.log('新しい番組を X へポストする設定が有効です');
@@ -215,6 +221,7 @@ export class AppConfigService {
       LpDeployHookUrl: this.LpDeployHookUrl,
       LpBaseUrl: this.LpBaseUrl,
       GoogleCloudCredentialsFilePath: this.GoogleCloudCredentialsFilePath,
+      SlackIncomingWebhookUrl: this.SlackIncomingWebhookUrl,
       PostToX: this.PostToX,
       XApiKey: this.XApiKey,
       XApiSecret: this.XApiSecret,
@@ -457,6 +464,13 @@ export class AppConfigService {
    */
   get GoogleCloudCredentialsFilePath(): string {
     return this.config.get<string>('GCP_CREDENTIALS_FILE_PATH');
+  }
+
+  /**
+   * Slack Incoming Webhook URL
+   */
+  get SlackIncomingWebhookUrl(): string {
+    return this.config.get<string>('SLACK_INCOMING_WEBHOOK_URL');
   }
 
   /**

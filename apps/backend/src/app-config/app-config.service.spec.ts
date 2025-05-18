@@ -73,6 +73,7 @@ describe('AppConfigService', () => {
                 X_API_SECRET: 'x-api-secret',
                 X_API_ACCESS_TOKEN: 'x-api-access-token',
                 X_API_ACCESS_SECRET: 'x-api-access-secret',
+                SLACK_INCOMING_WEBHOOK_URL: 'slack-incoming-webhook-url',
               };
               return configKeys[key];
             }),
@@ -465,6 +466,17 @@ describe('AppConfigService', () => {
       if (key === 'X_API_ACCESS_SECRET') return null;
       if (key === 'POST_TO_X') return 'true'; // POST_TO_X が true の場合、X_API_ACCESS_SECRET が必要
       return;
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
+  it('SLACK_INCOMING_WEBHOOK_URL が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'SLACK_INCOMING_WEBHOOK_URL') return null;
+      return 'some-value';
     });
 
     expect(() => new AppConfigService(configService)).toThrow(
