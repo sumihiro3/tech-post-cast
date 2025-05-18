@@ -1,9 +1,5 @@
 @apiBaseUrl = http://localhost:3001
 
-### パーソナライズフィード一覧取得（フィルター情報なし）
-GET {{apiBaseUrl}}/personalized-feeds
-Content-Type: application/json
-
 ### パーソナライズフィード一覧取得（フィルター情報あり）
 GET {{apiBaseUrl}}/personalized-feeds?includeFilters=true
 Content-Type: application/json
@@ -17,31 +13,11 @@ GET {{apiBaseUrl}}/personalized-feeds?includeFilters=true&page=1&perPage=5
 Content-Type: application/json
 
 ### 個別パーソナライズフィード取得（フィルター情報なし）
-@feedId = feed_cmaah3rmt0000913jekklfk4o
-GET {{apiBaseUrl}}/personalized-feeds/{{feedId}}
-Content-Type: application/json
+@feedId = feed_cmaamvdxs00003x3j5ywgcll7
 
 ### 個別パーソナライズフィード取得（フィルター情報あり）
 GET {{apiBaseUrl}}/personalized-feeds/{{feedId}}?includeFilters=true
 Content-Type: application/json
-
-### パーソナライズフィード作成（シンプル）
-POST {{apiBaseUrl}}/personalized-feeds
-Content-Type: application/json
-
-{
-  "name": "技術トレンド最新情報",
-  "dataSource": "qiita",
-  "filterConfig": {
-    "tags": ["JavaScript", "TypeScript"],
-    "minLikes": 10
-  },
-  "deliveryConfig": {
-    "frequency": "daily",
-    "time": "08:00"
-  },
-  "isActive": true
-}
 
 ### パーソナライズフィード作成（フィルターグループあり）
 POST {{apiBaseUrl}}/personalized-feeds
@@ -66,6 +42,9 @@ Content-Type: application/json
       ],
       "authorFilters": [
         { "authorId": "sumihiro3" }
+      ],
+      "dateRangeFilters": [
+        { "daysAgo": 30 }
       ],
       "likesCountFilters": [
         { "minLikes": 30 }
@@ -96,61 +75,10 @@ Content-Type: application/json
         { "authorId": "takurinton" },
         { "authorId": "uhyo" }
       ]
-    }
-  ],
-  "isActive": true
-}
-
-### パーソナライズフィード作成（公開日フィルターあり）
-POST {{apiBaseUrl}}/personalized-feeds
-Content-Type: application/json
-
-{
-  "name": "最近の人気記事",
-  "dataSource": "qiita",
-  "filterConfig": {
-    "minLikes": 20
-  },
-  "deliveryConfig": {
-    "frequency": "daily",
-    "time": "08:00"
-  },
-  "filterGroups": [
-    {
-      "name": "最近のトレンド記事",
-      "logicType": "AND",
-      "tagFilters": [
-        { "tagName": "JavaScript" },
-        { "tagName": "TypeScript" }
-      ],
       "dateRangeFilters": [
         { "daysAgo": 30 }
-      ]
-    }
-  ],
-  "isActive": true
-}
-
-### パーソナライズフィード作成（公開日フィルターのみ）
-POST {{apiBaseUrl}}/personalized-feeds
-Content-Type: application/json
-
-{
-  "name": "直近のトレンド記事",
-  "dataSource": "qiita",
-  "filterConfig": {},
-  "deliveryConfig": {
-    "frequency": "daily",
-    "time": "08:00"
-  },
-  "filterGroups": [
-    {
-      "name": "10日以内の記事",
-      "logicType": "OR",
-      "dateRangeFilters": [
-        { "daysAgo": 10 }
-      ]
-    }
+      ],
+    },
   ],
   "isActive": true
 }
@@ -181,23 +109,6 @@ Content-Type: application/json
     }
   ],
   "isActive": true
-}
-
-### パーソナライズフィード更新
-PATCH {{apiBaseUrl}}/personalized-feeds/{{feedId}}
-Content-Type: application/json
-
-{
-  "name": "更新された技術トレンド情報",
-  "filterConfig": {
-    "tags": ["JavaScript", "TypeScript", "Node.js"],
-    "minLikes": 15
-  },
-  "deliveryConfig": {
-    "frequency": "weekly",
-    "time": "09:00",
-    "weekday": "monday"
-  }
 }
 
 ### パーソナライズフィード更新（フィルターグループあり）
@@ -246,14 +157,6 @@ Content-Type: application/json
       ]
     }
   ]
-}
-
-### パーソナライズフィード無効化（論理削除と同等）
-PATCH {{apiBaseUrl}}/personalized-feeds/{{feedId}}
-Content-Type: application/json
-
-{
-  "isActive": false
 }
 
 ### パーソナライズフィード論理削除
