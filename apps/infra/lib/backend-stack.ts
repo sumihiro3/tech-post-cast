@@ -97,6 +97,7 @@ export class TechPostCastBackendStack extends cdk.Stack {
         LP_BASE_URL: stage.lpBaseUrl,
         // Google Cloud
         GCP_CREDENTIALS_FILE_PATH: stage.gcpCredentialsFilePath,
+        GOOGLE_GENERATIVE_AI_API_KEY: stage.googleGenerativeAiApiKey,
         // X へのポスト設定
         POST_TO_X: stage.postToX,
         X_API_KEY: stage.xApiKey,

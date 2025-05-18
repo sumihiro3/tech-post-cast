@@ -88,6 +88,11 @@ export class StageConfig {
     return process.env.GCP_CREDENTIALS_FILE_PATH || '';
   }
 
+  /** Google Cloud の Generative AI API Key */
+  get googleGenerativeAiApiKey(): string {
+    return process.env.GOOGLE_GENERATIVE_AI_API_KEY || '';
+  }
+
   /** 新しい番組を配信した時に X（Twitter）へポストするかどうか */
   get postToX(): string {
     return process.env.POST_TO_X || '';
