@@ -2,11 +2,13 @@ import { BackendBearerTokenGuard } from '@/guards/bearer-token.guard';
 import {
   AppUserNotFoundError,
   PersonalizedFeedNotFoundError,
+  PersonalizedProgramAlreadyExistsError,
 } from '@/types/errors';
 import { PersonalizedFeedsBuilder } from '@domains/radio-program/personalized-feed/personalized-feeds-builder';
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Get,
   HttpException,
@@ -90,6 +92,18 @@ export class PersonalizedFeedsController {
     description: '番組生成結果を返す',
     type: GenerateProgramResponseDto,
   })
+  @ApiResponse({
+    status: 409,
+    description: '番組がすでに生成されている場合',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'パーソナルフィードが見つからない場合',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'パラメーターが不正な場合',
+  })
   @UseGuards(BackendBearerTokenGuard)
   async generateProgramByFeed(
     @Body() dto: PersonalizedFeedCreateRequestDto,
@@ -129,10 +143,16 @@ export class PersonalizedFeedsController {
       }
       if (error instanceof HttpException) throw error;
       if (error instanceof PersonalizedFeedNotFoundError) {
+        // パーソナルフィードが見つからない場合は、NotFound とする
         throw new NotFoundException(error.message);
       } else if (error instanceof AppUserNotFoundError) {
+        // ユーザーが見つからない場合は、BadRequest とする
         throw new BadRequestException(error.message);
+      } else if (error instanceof PersonalizedProgramAlreadyExistsError) {
+        // 番組がすでに生成されている場合は、Conflict とする
+        throw new ConflictException(error.message);
       } else {
+        // その他のエラーは、InternalServerError とする
         throw new InternalServerErrorException(errorMessage);
       }
     }
