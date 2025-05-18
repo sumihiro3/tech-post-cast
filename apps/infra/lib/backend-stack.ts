@@ -77,7 +77,7 @@ export class TechPostCastBackendStack extends cdk.Stack {
           'assets/audio/headline-topic-programs/se_long.mp3',
         HEADLINE_TOPIC_PROGRAM_PICTURE_FILE_PATH:
           'assets/audio/headline-topic-programs/preview.jpg',
-        PERSONALIZED_PROGRAM_TARGET_DIR: 'tmp/personalized-programs',
+        PERSONALIZED_PROGRAM_TARGET_DIR: '/tmp/personalized-programs',
         PERSONALIZED_PROGRAM_BGM_FILE_PATH: 'assets/audio/personalized-programs/bgm.mp3',
         PERSONALIZED_PROGRAM_OPENING_FILE_PATH: 'assets/audio/personalized-programs/opening.mp3',
         PERSONALIZED_PROGRAM_ENDING_FILE_PATH: 'assets/audio/personalized-programs/ending.mp3',
