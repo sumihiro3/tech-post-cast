@@ -121,6 +121,13 @@ export class StageConfig {
   }
 
   /**
+   * Slack の Incoming Webhook URL
+   */
+  get slackIncomingWebhookUrl(): string {
+    return process.env.SLACK_INCOMING_WEBHOOK_URL || '';
+  }
+
+  /**
    * エラー通知先の Slack チャンネルID
    */
   get slackChannelId(): string {
@@ -195,6 +202,7 @@ export class StageConfig {
       GCP_CREDENTIALS_FILE_PATH: this.gcpCredentialsFilePath,
       AWS_CHATBOT_SLACK_WORKSPACE_ID: this.awsChatbotSlackWorkspaceId,
       SLACK_CHANNEL_ID: this.slackChannelId,
+      SLACK_INCOMING_WEBHOOK_URL: this.slackIncomingWebhookUrl,
     });
   }
 }
