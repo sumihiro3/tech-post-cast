@@ -149,11 +149,6 @@ export class AppConfigService {
     if (!this.LpBaseUrl) {
       throw new AppConfigValidationError('LP_BASE_URL が設定されていません');
     }
-    if (!this.GoogleCloudCredentialsFilePath) {
-      throw new AppConfigValidationError(
-        'GCP_CREDENTIALS_FILE_PATH が設定されていません',
-      );
-    }
     // Slack
     if (!this.SlackIncomingWebhookUrl) {
       throw new AppConfigValidationError(

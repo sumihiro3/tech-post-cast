@@ -44,9 +44,14 @@ export class TextToSpeechClient implements ITextToSpeechClient {
     private readonly appConfig: AppConfigService,
     private readonly termsRepository: TermsRepository,
   ) {
-    this.ttsClient = new TTSClient({
-      keyFilename: this.appConfig.GoogleCloudCredentialsFilePath,
-    });
+    const path = this.appConfig.GoogleCloudCredentialsFilePath;
+    if (path) {
+      this.ttsClient = new TTSClient({
+        keyFilename: path,
+      });
+    } else {
+      this.ttsClient = new TTSClient();
+    }
   }
 
   /**

@@ -384,17 +384,6 @@ describe('AppConfigService', () => {
     );
   });
 
-  it('GCP_CREDENTIALS_FILE_PATH が設定されていない場合、エラーをスローするべき', () => {
-    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-      if (key === 'GCP_CREDENTIALS_FILE_PATH') return null;
-      return 'some-value';
-    });
-
-    expect(() => new AppConfigService(configService)).toThrow(
-      AppConfigValidationError,
-    );
-  });
-
   it('POST_TO_X が設定されていない場合、false を返すべき', () => {
     jest.spyOn(configService, 'get').mockImplementation((key: string) => {
       if (key === 'POST_TO_X') return null;
