@@ -173,7 +173,10 @@ export class QiitaPostsApiClient implements IQiitaPostsApiClient {
       rateReset = response.rateReset;
       page++;
     } while (page <= maxPage);
-    this.logger.debug(`Qiita API から取得した記事数: ${posts.length} 件`);
+    this.logger.debug(`Qiita API から取得した記事数: ${posts.length} 件`, {
+      rateRemaining,
+      rateReset,
+    });
     return {
       maxPage,
       rateRemaining,
@@ -253,10 +256,9 @@ export class QiitaPostsApiClient implements IQiitaPostsApiClient {
       per_page: perPage,
     };
 
-    this.logger.debug(
-      { params },
-      `Qiita API へ記事一覧取得のリクエストを送信します`,
-    );
+    this.logger.debug(`Qiita API へ記事一覧取得のリクエストを送信します`, {
+      params,
+    });
     try {
       const response = await this.getApiClient().get<IQiitaPostApiResponse[]>(
         '/items',
@@ -265,19 +267,18 @@ export class QiitaPostsApiClient implements IQiitaPostsApiClient {
         },
       );
       this.logger.debug(
+        `Qiita API から記事一覧取得のレスポンスを受信しました。`,
         {
           params,
           headers: response.headers,
-          // data: response.data,
         },
-        `Qiita API から記事一覧取得のレスポンスを受信しました。`,
       );
       const totalCount = response.headers['total-count'];
       return {
         currentPage: page,
         maxPage: Math.ceil(totalCount / perPage),
-        rateRemaining: parseInt(response.headers['Rate-Remaining'] || '0'),
-        rateReset: parseInt(response.headers['Rate-Reset'] || '0'),
+        rateRemaining: parseInt(response.headers['rate-remaining'] || '0'),
+        rateReset: parseInt(response.headers['rate-reset'] || '0'),
         posts: response.data,
       };
     } catch (error) {
