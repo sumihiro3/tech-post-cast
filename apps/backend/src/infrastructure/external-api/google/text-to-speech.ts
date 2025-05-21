@@ -2,17 +2,19 @@ import { AppConfigService } from '@/app-config/app-config.service';
 import { PersonalizedProgramScript } from '@/mastra/schemas';
 import { TextToSpeechError } from '@/types/errors';
 import { HeadlineTopicProgramScript } from '@domains/radio-program/headline-topic-program';
+import { IProgramFileMaker } from '@domains/radio-program/program-file-maker.interface';
 import {
   HeadlineTopicProgramAudioFilesGenerateCommand,
   HeadlineTopicProgramAudioFilesGenerateResult,
   ITextToSpeechClient,
   PersonalizedProgramAudioFilesGenerateCommand,
   PersonalizedProgramAudioFilesGenerateResult,
+  PersonalizedProgramPostExplanationAudioFilePath,
 } from '@domains/radio-program/text-to-speech.interface';
 import { TextToSpeechClient as TTSClient } from '@google-cloud/text-to-speech';
 import { google } from '@google-cloud/text-to-speech/build/protos/protos';
 import { TermsRepository } from '@infrastructure/database/terms/terms.repository';
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Term } from '@prisma/client';
 import * as fs from 'fs';
 import { setTimeout } from 'timers/promises';
@@ -24,6 +26,9 @@ import { setTimeout } from 'timers/promises';
 export class TextToSpeechClient implements ITextToSpeechClient {
   private readonly logger = new Logger(TextToSpeechClient.name);
 
+  private ttsClient: TTSClient;
+  private terms: Term[];
+
   /**
    * 絵文字を検出するための正規表現
    */
@@ -32,17 +37,11 @@ export class TextToSpeechClient implements ITextToSpeechClient {
     'g',
   );
 
-  /**
-   * Text to speech client
-   */
-  private ttsClient: TTSClient;
-
-  /** 用語と読み方のペア一覧 */
-  private terms: Term[];
-
   constructor(
     private readonly appConfig: AppConfigService,
     private readonly termsRepository: TermsRepository,
+    @Inject('ProgramFileMaker')
+    private readonly programFileMaker: IProgramFileMaker,
   ) {
     const path = this.appConfig.GoogleCloudCredentialsFilePath;
     if (path) {
@@ -112,6 +111,7 @@ export class TextToSpeechClient implements ITextToSpeechClient {
 
   /**
    * 番組の台本からパーソナルプログラムの音声ファイルを生成する
+   * SSMLをセグメント化して音声ファイルを生成し、マージします
    * @param command 生成要求コマンド
    * @returns パーソナルプログラム音声ファイルの生成結果
    */
@@ -123,6 +123,7 @@ export class TextToSpeechClient implements ITextToSpeechClient {
       { userId: command.user.id, feedId: command.feed.id },
     );
     try {
+      // 出力ディレクトリを作成
       this.createOutputDir(command.outputDir);
 
       // パーソナルプログラムの SSML 群を生成する
@@ -134,46 +135,127 @@ export class TextToSpeechClient implements ITextToSpeechClient {
       const outputDirPath = `${command.outputDir}/${command.feed.id}/${command.programDate.getTime()}`;
       this.createOutputDir(outputDirPath);
 
-      const feedId = command.feed.id;
+      const tempDir = `${outputDirPath}/temp`;
+      this.createOutputDir(tempDir);
 
       // イントロ部分の音声ファイルを生成する
-      const introRequest = this.generateTextToSpeechRequest(ssmlList.opening);
+      const introAudioFiles: string[] = [];
+      for (let i = 0; i < ssmlList.opening.length; i++) {
+        const introRequest = this.generateTextToSpeechRequest(
+          ssmlList.opening[i],
+        );
+        const introAudioFilePath = `${tempDir}/opening_${i}.mp3`;
+        await this.synthesizeSpeech(introRequest, introAudioFilePath);
+        introAudioFiles.push(introAudioFilePath);
+      }
+
+      // イントロの音声ファイルをマージ
       const openingAudioFilePath = `${outputDirPath}/opening.mp3`;
-      await this.synthesizeSpeech(introRequest, openingAudioFilePath);
+      await this.programFileMaker.mergeAudioFilesSegments(
+        introAudioFiles,
+        openingAudioFilePath,
+      );
 
       // 記事解説の音声ファイルを生成する
-      const postExplanationAudioFilePaths = await Promise.all(
-        ssmlList.postExplanations.map(async (ssml, index) => {
-          const postIndex = index + 1;
-          const introRequest = this.generateTextToSpeechRequest(ssml.intro);
-          const introAudioFilePath = `${outputDirPath}/$post-${postIndex}_intro.mp3`;
-          await this.synthesizeSpeech(introRequest, introAudioFilePath);
+      const postExplanationAudioFilePaths: PersonalizedProgramPostExplanationAudioFilePath[] =
+        [];
+      for (
+        let postIndex = 0;
+        postIndex < ssmlList.postExplanations.length;
+        postIndex++
+      ) {
+        const ssml = ssmlList.postExplanations[postIndex];
 
+        // イントロの音声を生成
+        const introAudioFiles: string[] = [];
+        for (let i = 0; i < ssml.intro.length; i++) {
+          const introRequest = this.generateTextToSpeechRequest(ssml.intro[i]);
+          const introAudioFilePath = `${tempDir}/post-${postIndex + 1}_intro_${i}.mp3`;
+          await this.synthesizeSpeech(introRequest, introAudioFilePath);
+          introAudioFiles.push(introAudioFilePath);
+        }
+
+        // イントロの音声ファイルをマージ
+        const introAudioFilePath = `${outputDirPath}/post-${postIndex + 1}_intro.mp3`;
+        await this.programFileMaker.mergeAudioFilesSegments(
+          introAudioFiles,
+          introAudioFilePath,
+        );
+
+        // 説明の音声を生成
+        const explanationAudioFiles: string[] = [];
+        for (let i = 0; i < ssml.explanation.length; i++) {
           const explanationRequest = this.generateTextToSpeechRequest(
-            ssml.explanation,
+            ssml.explanation[i],
           );
-          const explanationAudioFilePath = `${outputDirPath}/post-${postIndex}_explanation.mp3`;
+          const explanationAudioFilePath = `${tempDir}/post-${postIndex + 1}_explanation_${i}.mp3`;
           await this.synthesizeSpeech(
             explanationRequest,
             explanationAudioFilePath,
           );
+          explanationAudioFiles.push(explanationAudioFilePath);
+        }
 
-          const summaryRequest = this.generateTextToSpeechRequest(ssml.summary);
-          const summaryAudioFilePath = `${outputDirPath}/post-${postIndex}_summary.mp3`;
+        // 説明の音声ファイルをマージ
+        const explanationAudioFilePath = `${outputDirPath}/post-${postIndex + 1}_explanation.mp3`;
+        await this.programFileMaker.mergeAudioFilesSegments(
+          explanationAudioFiles,
+          explanationAudioFilePath,
+        );
+
+        // サマリーの音声を生成
+        const summaryAudioFiles: string[] = [];
+        for (let i = 0; i < ssml.summary.length; i++) {
+          const summaryRequest = this.generateTextToSpeechRequest(
+            ssml.summary[i],
+          );
+          const summaryAudioFilePath = `${tempDir}/post-${postIndex + 1}_summary_${i}.mp3`;
           await this.synthesizeSpeech(summaryRequest, summaryAudioFilePath);
+          summaryAudioFiles.push(summaryAudioFilePath);
+        }
 
-          return {
-            introAudioFilePath,
-            explanationAudioFilePath,
-            summaryAudioFilePath,
-          };
-        }),
-      );
+        // サマリーの音声ファイルをマージ
+        const summaryAudioFilePath = `${outputDirPath}/post-${postIndex + 1}_summary.mp3`;
+        await this.programFileMaker.mergeAudioFilesSegments(
+          summaryAudioFiles,
+          summaryAudioFilePath,
+        );
+
+        postExplanationAudioFilePaths.push({
+          introAudioFilePath,
+          explanationAudioFilePath,
+          summaryAudioFilePath,
+        });
+      }
 
       // エンディング部分の音声ファイルを生成する
-      const endingRequest = this.generateTextToSpeechRequest(ssmlList.ending);
+      const endingAudioFiles: string[] = [];
+      for (let i = 0; i < ssmlList.ending.length; i++) {
+        const endingRequest = this.generateTextToSpeechRequest(
+          ssmlList.ending[i],
+        );
+        const endingAudioFilePath = `${tempDir}/ending_${i}.mp3`;
+        await this.synthesizeSpeech(endingRequest, endingAudioFilePath);
+        endingAudioFiles.push(endingAudioFilePath);
+      }
+
+      // エンディングの音声ファイルをマージ
       const endingAudioFilePath = `${outputDirPath}/ending.mp3`;
-      await this.synthesizeSpeech(endingRequest, endingAudioFilePath);
+      await this.programFileMaker.mergeAudioFilesSegments(
+        endingAudioFiles,
+        endingAudioFilePath,
+      );
+
+      // 一時ファイルを削除
+      this.logger.debug(`一時ファイルを削除します: ${tempDir}`);
+      // 再帰的に一時ディレクトリを削除する
+      if (fs.existsSync(tempDir)) {
+        const tempFiles = fs.readdirSync(tempDir);
+        for (const file of tempFiles) {
+          fs.unlinkSync(`${tempDir}/${file}`);
+        }
+        fs.rmdirSync(tempDir);
+      }
 
       // 生成結果を返す
       const result: PersonalizedProgramAudioFilesGenerateResult = {
@@ -207,7 +289,7 @@ export class TextToSpeechClient implements ITextToSpeechClient {
    * 出力先ディレクトリを作成する
    * @param path 出力先ディレクトリパス
    */
-  createOutputDir(path: string) {
+  private createOutputDir(path: string) {
     if (!fs.existsSync(path)) {
       // 出力先ディレクトリが存在しない場合は作成する
       fs.mkdirSync(path, { recursive: true });
@@ -322,35 +404,96 @@ export class TextToSpeechClient implements ITextToSpeechClient {
       { scriptTitle: script.title },
     );
 
-    // SSML を生成する
-    const opening = `<speak>${await this.formatAudioText(script.opening)}<break time="1000ms"/></speak>`;
+    try {
+      // イントロのSSMLを生成
+      // 先にテキストをセグメント分割
+      const openingSegments = script.opening
+        ? this.splitJapaneseTextBySentence(script.opening)
+        : [];
+      // 分割された各セグメントにSSMLを適用
+      const opening = await Promise.all(
+        openingSegments.map(async (segment) => {
+          const formattedText = await this.formatAudioText(segment);
+          return `<speak>${formattedText}<break time="1000ms"/></speak>`;
+        }),
+      );
 
-    const postExplanations: PersonalizedProgramPostExplanationSsml[] = [];
-    for (const post of script.posts) {
-      const introSsml = `<speak>${await this.formatAudioText(post.intro)}<break time="1000ms"/></speak>`;
-      const explanationSsml = `<speak>${await this.formatAudioText(post.explanation)}<break time="1000ms"/></speak>`;
-      const summarySsml = `<speak>${await this.formatAudioText(post.summary)}<break time="1000ms"/></speak>`;
+      // ポスト説明のSSMLを生成
+      const postExplanations: PersonalizedProgramPostExplanationSsml[] = [];
+      for (const post of script.posts) {
+        // イントロのセグメント分割とSSML適用
+        const introSegments = post.intro
+          ? this.splitJapaneseTextBySentence(post.intro)
+          : [];
+        const intro = await Promise.all(
+          introSegments.map(async (segment) => {
+            const formattedText = await this.formatAudioText(segment);
+            return `<speak>${formattedText}<break time="1000ms"/></speak>`;
+          }),
+        );
 
-      postExplanations.push({
-        intro: introSsml,
-        explanation: explanationSsml,
-        summary: summarySsml,
+        // 説明のセグメント分割とSSML適用
+        const explanationSegments = post.explanation
+          ? this.splitJapaneseTextBySentence(post.explanation)
+          : [];
+        const explanation = await Promise.all(
+          explanationSegments.map(async (segment) => {
+            const formattedText = await this.formatAudioText(segment);
+            return `<speak>${formattedText}<break time="1000ms"/></speak>`;
+          }),
+        );
+
+        // サマリーのセグメント分割とSSML適用
+        const summarySegments = post.summary
+          ? this.splitJapaneseTextBySentence(post.summary)
+          : [];
+        const summary = await Promise.all(
+          summarySegments.map(async (segment) => {
+            const formattedText = await this.formatAudioText(segment);
+            return `<speak>${formattedText}<break time="1000ms"/></speak>`;
+          }),
+        );
+
+        postExplanations.push({
+          intro,
+          explanation,
+          summary,
+        });
+      }
+
+      // エンディングのセグメント分割とSSML適用
+      const endingSegments = script.ending
+        ? this.splitJapaneseTextBySentence(script.ending)
+        : [];
+      const ending = await Promise.all(
+        endingSegments.map(async (segment) => {
+          const formattedText = await this.formatAudioText(segment);
+          return `<speak>${formattedText}<break time="200ms"/></speak>`;
+        }),
+      );
+
+      const result: PersonalizedProgramSsml = {
+        opening,
+        postExplanations,
+        ending,
+      };
+
+      this.logger.log(`パーソナルプログラムの SSML を生成しました`, {
+        postCount: script.posts.length,
       });
+
+      return result;
+    } catch (error) {
+      const errorMessage = `パーソナルプログラムのSSMLの生成に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        scriptTitle: script.title,
+      });
+      if (!(error instanceof TextToSpeechError)) {
+        error = new TextToSpeechError(errorMessage, { cause: error });
+      }
+      throw error;
     }
-
-    const ending = `<speak>${await this.formatAudioText(script.ending)}<break time="200ms"/></speak>`;
-
-    const result: PersonalizedProgramSsml = {
-      opening,
-      postExplanations,
-      ending,
-    };
-
-    this.logger.log(`パーソナルプログラムの SSML を生成しました`, {
-      postCount: script.posts.length,
-    });
-
-    return result;
   }
 
   /**
@@ -429,6 +572,57 @@ export class TextToSpeechClient implements ITextToSpeechClient {
     }
     return this.terms;
   }
+
+  /**
+   * 日本語テキストを文単位で分割する
+   * @param text 分割するテキスト
+   * @param maxLength 最大長
+   * @returns 分割されたテキストの配列
+   */
+  private splitJapaneseTextBySentence(
+    text: string,
+    maxLength: number = 1000,
+  ): string[] {
+    // 文単位で分割
+    const sentences = text.split(/(?<=。)/);
+
+    // セグメントを生成
+    const segments: string[] = [];
+    let currentSegment = '';
+    let currentLength = 0;
+
+    for (const sentence of sentences) {
+      const sentenceLength = sentence.length;
+
+      // 現在のセグメントに文を追加できる場合
+      if (currentLength + sentenceLength <= maxLength) {
+        currentSegment += sentence;
+        currentLength += sentenceLength;
+      } else {
+        // 現在のセグメントを保存
+        if (currentSegment) {
+          segments.push(currentSegment);
+        }
+
+        // 新しいセグメントを開始
+        currentSegment = sentence;
+        currentLength = sentenceLength;
+      }
+    }
+
+    // 最後のセグメントを保存
+    if (currentSegment) {
+      segments.push(currentSegment);
+    }
+
+    if (segments.length > 0) {
+      this.logger.debug(`${segments.length} にセグメント分割しました。`, {
+        segments,
+      });
+    }
+
+    return segments;
+  }
 }
 
 /**
@@ -450,21 +644,21 @@ export interface HeadlineTopicProgramSsml {
 }
 
 /**
- * パーソナルプログラムの記事解説のSSSMLを表す型
+ * パーソナルプログラムの記事解説の SSML を表す型
  */
 interface PersonalizedProgramPostExplanationSsml {
   /**
    * 導入部分のSSML
    */
-  intro: string;
+  intro: string[];
   /**
    * 解説部分のSSML
    */
-  explanation: string;
+  explanation: string[];
   /**
    * まとめ部分のSSML
    */
-  summary: string;
+  summary: string[];
 }
 
 /**
@@ -474,7 +668,7 @@ interface PersonalizedProgramSsml {
   /**
    * オープニング部の SSML
    */
-  opening: string;
+  opening: string[];
   /**
    * 記事解説の SSML 一覧
    */
@@ -482,5 +676,5 @@ interface PersonalizedProgramSsml {
   /**
    * エンディング部の SSML
    */
-  ending: string;
+  ending: string[];
 }

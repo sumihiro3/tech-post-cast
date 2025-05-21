@@ -158,4 +158,16 @@ export interface IProgramFileMaker {
   generateProgramVideoFile(
     command: GenerateProgramVideoFileCommand,
   ): Promise<void>;
+
+  /**
+   * 複数の音声ファイルをシーケンシャルに結合する（セグメント結合）
+   * このメソッドは特にSSMLセグメントから生成された音声ファイルの結合に適しています
+   * @param inputFiles 入力音声ファイルのパスの配列
+   * @param outputFile 出力音声ファイルのパス
+   * @returns 結合された音声ファイルのパス
+   */
+  mergeAudioFilesSegments(
+    inputFiles: string[],
+    outputFile: string,
+  ): Promise<string>;
 }
