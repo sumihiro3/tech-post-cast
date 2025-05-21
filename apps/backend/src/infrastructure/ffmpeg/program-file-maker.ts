@@ -460,4 +460,91 @@ title=${chapter.title}
         .run();
     });
   }
+
+  /**
+   * 複数の音声ファイルをシーケンシャルに結合する（セグメント結合）
+   * このメソッドは特にSSMLセグメントから生成された音声ファイルの結合に適しています
+   * @param inputFiles 入力音声ファイルのパスの配列
+   * @param outputFile 出力音声ファイルのパス
+   * @returns 結合された音声ファイルのパス
+   */
+  async mergeAudioFilesSegments(
+    inputFiles: string[],
+    outputFile: string,
+  ): Promise<string> {
+    this.logger.debug(`FfmpegProgramFileMaker.mergeAudioFilesSegments called`, {
+      inputFiles,
+      outputFile,
+    });
+
+    try {
+      if (inputFiles.length === 0) {
+        throw new Error('入力ファイルがありません');
+      }
+
+      if (inputFiles.length === 1) {
+        // 入力ファイルが1つの場合はコピーするだけ
+        fs.copyFileSync(inputFiles[0], outputFile);
+        return outputFile;
+      }
+
+      // 結合する音声ファイルのリストを作成
+      const now = Date.now();
+      const listFilePath = `${this.outputDir}/segment-list_${now}.txt`;
+      await rm(listFilePath, { force: true }); // 残っている場合は削除
+      const fileListContent = inputFiles
+        .map((file) => `file '${path.resolve(file)}'`)
+        .join('\n');
+      fs.writeFileSync(listFilePath, fileListContent);
+
+      // FFmpegを使用して音声ファイルをマージ（シーケンシャル結合）
+      return new Promise<string>((resolve, reject) => {
+        ffmpeg()
+          .input(listFilePath)
+          .inputOptions(['-f concat', '-safe 0']) // ファイルリストから結合
+          .outputOptions([
+            '-c copy', // コーデックはコピー（再エンコードしない）
+            '-acodec libmp3lame', // MP3エンコーダー
+            '-y', // 出力ファイルが存在する場合は上書き
+          ])
+          .save(outputFile)
+          .on('start', (commandLine) => {
+            this.logger.log(`音声ファイルのセグメント結合処理を開始します`);
+            this.logger.debug(
+              `音声ファイルのセグメント結合コマンド: ${commandLine}`,
+            );
+          })
+          .on('end', async () => {
+            this.logger.log(
+              `音声ファイルのセグメント結合処理が完了しました: ${outputFile}`,
+            );
+            await rm(listFilePath, { force: true }); // 一時ファイル削除
+            resolve(outputFile);
+          })
+          .on('error', (error) => {
+            this.logger.error(
+              `音声ファイルのセグメント結合処理中にエラーが発生しました`,
+              {
+                error,
+              },
+            );
+            reject(
+              new ProgramAudioFileGenerationError(
+                '音声ファイルのセグメント結合に失敗しました',
+                {
+                  cause: error,
+                },
+              ),
+            );
+          })
+          .run();
+      });
+    } catch (error) {
+      const errorMessage = `音声ファイルのセグメント結合に失敗しました`;
+      this.logger.error(errorMessage, error, error.stack);
+      throw new ProgramAudioFileGenerationError(errorMessage, {
+        cause: error,
+      });
+    }
+  }
 }

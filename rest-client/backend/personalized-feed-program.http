@@ -20,5 +20,5 @@ Authorization: Bearer {{apiToken}}
 
 {
   "daysAgo": 10,
-  "updateLp": true
+  "feedId": "feed_cmamcgw9900018p3j62n1293n"
 }
