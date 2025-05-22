@@ -60,7 +60,7 @@ main:
                       - logProgramResult:
                           call: sys.log
                           args:
-                            text: ${"Generated program ID (" + programResult.body.programId + "); Qiita rate remaining (" + programResult.body.qiitaRateRemaining + ");"}
+                            text: ${"Generated program ID (" + programResult.body.programId + "); Qiita API rate remaining (" + programResult.body.qiitaApiRateRemaining + ");"}
                             severity: INFO
                       # 番組生成に成功した場合は成功件数をインクリメントする
                       - incrementSuccessCount:
@@ -69,15 +69,15 @@ main:
                       # Qiita APIのレートリミットが下限を下回っていないかを確認する
                       - checkRateLimit:
                           switch:
-                            - condition: ${programResult.body.qiitaRateRemaining < minQiitaRateRemaining}
+                            - condition: ${programResult.body.qiitaApiRateRemaining < minQiitaRateRemaining}
                               steps:
                                 - calculateWaitTime:
                                     assign:
-                                      - waitSeconds: ${programResult.body.qiitaRateReset - sys.now()}
+                                      - waitSeconds: ${programResult.body.qiitaApiRateReset - sys.now()}
                                 - logWaitTime:
                                     call: sys.log
                                     args:
-                                      text: ${"qiitaRateReset (" + programResult.body.qiitaRateReset + "); waitSeconds (" + waitSeconds + "); sys.now (" + sys.now() + ")"}
+                                      text: ${"qiitaApiRateReset (" + programResult.body.qiitaApiRateReset + "); waitSeconds (" + waitSeconds + "); sys.now (" + sys.now() + ")"}
                                       severity: DEBUG
                                 - logWaitUntilRateLimitReset:
                                     call: sys.log
@@ -92,7 +92,7 @@ main:
                                 - logWaitedForRateLimitReset:
                                     call: sys.log
                                     args:
-                                      text: ${"Waited for rate limit reset!! Reset time is " + programResult.body.qiitaRateReset}
+                                      text: ${"Waited for rate limit reset!! Reset time is " + programResult.body.qiitaApiRateReset}
                                       severity: INFO
                   except:
                     # エラーが発生した場合はエラーログを出力し、エラー通知を行う
