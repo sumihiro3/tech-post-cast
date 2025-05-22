@@ -18,6 +18,9 @@ import { mkdir, rm } from 'fs/promises';
 import * as path from 'path';
 import { setTimeout } from 'timers/promises';
 
+/** ファイル出力完了までの待ち時間 */
+const FILE_OUTPUT_WAIT_TIME = 3 * 1000;
+
 /**
  * ffmpeg を利用して番組ファイルを作成するクラス
  */
@@ -277,7 +280,8 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
         .map((file) => `file '${path.resolve(file)}'`)
         .join('\n');
       fs.writeFileSync(listFilePath, fileListContent);
-      await setTimeout(3 * 1000); // 3秒待機
+      // ファイルが正常に結合されるまで待機する
+      await setTimeout(FILE_OUTPUT_WAIT_TIME);
       // メタデータファイルを生成する
       const metadataFilePath = await this.generateProgramMetadataFile(metadata);
       // 音声ファイルを結合する
@@ -296,16 +300,6 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
           '-ac 2', // ステレオ
           '-y', // 上書き許可
         ])
-        // TODO メタデータの指定をファイルで行うようにする
-        // メタデータの埋め込み
-        // .outputOptions('-metadata', `artist=${metadata.artist}`)
-        // .outputOptions('-metadata', `album=${metadata.album}`)
-        // .outputOptions('-metadata', `album_artist=${metadata.albumArtist}`)
-        // .outputOptions('-metadata', `title=${metadata.title}`)
-        // .outputOptions('-metadata', `date=${metadata.date}`)
-        // .outputOptions('-metadata', `genre=${metadata.genre}`)
-        // .outputOptions('-metadata', `language=${metadata.language}`)
-        // .outputOptions('-metadata', `filename=${metadata.filename}`)
         .save(outputPath)
         .on('start', (commandLine) => {
           this.logger.log(`音声ファイルの結合処理を開始します`);
@@ -320,7 +314,6 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
           this.logger.log(
             `音声ファイルの結合処理が完了しました: ${outputPath}`,
           );
-          // await rm(listFilePath, { force: true }); // 一時ファイル削除
           resolve();
         })
         .on('error', (error) => {
@@ -379,8 +372,8 @@ title=${chapter.title}
     }
     this.logger.debug(`メタデータファイルの内容: ${metadataString}`);
     fs.writeFileSync(metadataFilePath, metadataString);
-    // 3秒待機
-    await setTimeout(3 * 1000);
+    // ファイルが正常に結合されるまで待機する
+    await setTimeout(FILE_OUTPUT_WAIT_TIME);
     this.logger.log(
       `番組のメタデータファイルを生成しました: ${metadataFilePath}`,
     );
@@ -496,6 +489,8 @@ title=${chapter.title}
         .map((file) => `file '${path.resolve(file)}'`)
         .join('\n');
       fs.writeFileSync(listFilePath, fileListContent);
+      // ファイルが正常に結合されるまで待機する
+      await setTimeout(FILE_OUTPUT_WAIT_TIME);
 
       // FFmpegを使用して音声ファイルをマージ（シーケンシャル結合）
       return new Promise<string>((resolve, reject) => {
