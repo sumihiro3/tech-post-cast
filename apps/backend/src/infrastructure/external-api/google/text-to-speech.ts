@@ -16,6 +16,7 @@ import { google } from '@google-cloud/text-to-speech/build/protos/protos';
 import { TermsRepository } from '@infrastructure/database/terms/terms.repository';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Term } from '@prisma/client';
+import { createDir } from '@tech-post-cast/commons';
 import * as fs from 'fs';
 import { setTimeout } from 'timers/promises';
 
@@ -66,7 +67,7 @@ export class TextToSpeechClient implements ITextToSpeechClient {
       { command },
     );
     try {
-      this.createOutputDir(command.outputDir);
+      createDir(command.outputDir);
       // ヘッドライントピック番組の SSML 群を生成する
       const ssmlList = await this.generateHeadlineTopicProgramSsml(
         command.script,
@@ -124,7 +125,7 @@ export class TextToSpeechClient implements ITextToSpeechClient {
     );
     try {
       // 出力ディレクトリを作成
-      this.createOutputDir(command.outputDir);
+      createDir(command.outputDir);
 
       // パーソナルプログラムの SSML 群を生成する
       const ssmlList = await this.generatePersonalizedProgramSsml(
@@ -133,10 +134,10 @@ export class TextToSpeechClient implements ITextToSpeechClient {
 
       // 出力ディレクトリパス
       const outputDirPath = `${command.outputDir}/${command.feed.id}/${command.programDate.getTime()}`;
-      this.createOutputDir(outputDirPath);
+      createDir(outputDirPath);
 
-      const tempDir = `${outputDirPath}/temp`;
-      this.createOutputDir(tempDir);
+      const tmpDir = `${outputDirPath}/tmp`;
+      createDir(tmpDir);
 
       // イントロ部分の音声ファイルを生成する
       const introAudioFiles: string[] = [];
@@ -144,7 +145,7 @@ export class TextToSpeechClient implements ITextToSpeechClient {
         const introRequest = this.generateTextToSpeechRequest(
           ssmlList.opening[i],
         );
-        const introAudioFilePath = `${tempDir}/opening_${i}.mp3`;
+        const introAudioFilePath = `${tmpDir}/opening_${i}.mp3`;
         await this.synthesizeSpeech(introRequest, introAudioFilePath);
         introAudioFiles.push(introAudioFilePath);
       }
@@ -170,7 +171,7 @@ export class TextToSpeechClient implements ITextToSpeechClient {
         const introAudioFiles: string[] = [];
         for (let i = 0; i < ssml.intro.length; i++) {
           const introRequest = this.generateTextToSpeechRequest(ssml.intro[i]);
-          const introAudioFilePath = `${tempDir}/post-${postIndex + 1}_intro_${i}.mp3`;
+          const introAudioFilePath = `${tmpDir}/post-${postIndex + 1}_intro_${i}.mp3`;
           await this.synthesizeSpeech(introRequest, introAudioFilePath);
           introAudioFiles.push(introAudioFilePath);
         }
@@ -188,7 +189,7 @@ export class TextToSpeechClient implements ITextToSpeechClient {
           const explanationRequest = this.generateTextToSpeechRequest(
             ssml.explanation[i],
           );
-          const explanationAudioFilePath = `${tempDir}/post-${postIndex + 1}_explanation_${i}.mp3`;
+          const explanationAudioFilePath = `${tmpDir}/post-${postIndex + 1}_explanation_${i}.mp3`;
           await this.synthesizeSpeech(
             explanationRequest,
             explanationAudioFilePath,
@@ -209,7 +210,7 @@ export class TextToSpeechClient implements ITextToSpeechClient {
           const summaryRequest = this.generateTextToSpeechRequest(
             ssml.summary[i],
           );
-          const summaryAudioFilePath = `${tempDir}/post-${postIndex + 1}_summary_${i}.mp3`;
+          const summaryAudioFilePath = `${tmpDir}/post-${postIndex + 1}_summary_${i}.mp3`;
           await this.synthesizeSpeech(summaryRequest, summaryAudioFilePath);
           summaryAudioFiles.push(summaryAudioFilePath);
         }
@@ -234,7 +235,7 @@ export class TextToSpeechClient implements ITextToSpeechClient {
         const endingRequest = this.generateTextToSpeechRequest(
           ssmlList.ending[i],
         );
-        const endingAudioFilePath = `${tempDir}/ending_${i}.mp3`;
+        const endingAudioFilePath = `${tmpDir}/ending_${i}.mp3`;
         await this.synthesizeSpeech(endingRequest, endingAudioFilePath);
         endingAudioFiles.push(endingAudioFilePath);
       }
@@ -245,17 +246,6 @@ export class TextToSpeechClient implements ITextToSpeechClient {
         endingAudioFiles,
         endingAudioFilePath,
       );
-
-      // 一時ファイルを削除
-      this.logger.debug(`一時ファイルを削除します: ${tempDir}`);
-      // 再帰的に一時ディレクトリを削除する
-      if (fs.existsSync(tempDir)) {
-        const tempFiles = fs.readdirSync(tempDir);
-        for (const file of tempFiles) {
-          fs.unlinkSync(`${tempDir}/${file}`);
-        }
-        fs.rmdirSync(tempDir);
-      }
 
       // 生成結果を返す
       const result: PersonalizedProgramAudioFilesGenerateResult = {
@@ -282,17 +272,6 @@ export class TextToSpeechClient implements ITextToSpeechClient {
         error = new TextToSpeechError(errorMessage, { cause: error });
       }
       throw error;
-    }
-  }
-
-  /**
-   * 出力先ディレクトリを作成する
-   * @param path 出力先ディレクトリパス
-   */
-  private createOutputDir(path: string) {
-    if (!fs.existsSync(path)) {
-      // 出力先ディレクトリが存在しない場合は作成する
-      fs.mkdirSync(path, { recursive: true });
     }
   }
 
