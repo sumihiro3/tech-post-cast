@@ -11,7 +11,7 @@ async function main() {
     data: [
       // Free Plan
       {
-        id: 'plan_free',
+        id: 'free-plan',
         name: 'Free Plan',
         price: 0,
         description: 'Free plan',
@@ -19,10 +19,11 @@ async function main() {
         maxFeeds: 1,
         maxAuthors: 1,
         maxTags: 1,
+        programDuration: 7,
       },
       // Pro Plan
       {
-        id: 'plan_pro',
+        id: 'pro-plan',
         name: 'Pro Plan',
         price: 500,
         description: 'Pro plan',
@@ -30,6 +31,7 @@ async function main() {
         maxFeeds: 3,
         maxAuthors: 5,
         maxTags: 5,
+        programDuration: 30,
       },
     ],
   });

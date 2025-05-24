@@ -260,16 +260,17 @@ model AppUser {
 
 // 料金プラン
 model Plan {
-  id          String   @id @default(cuid()) @db.VarChar(50)
-  name        String   @db.VarChar(100)
-  price       Int // 月額金額（円）
-  description String   @db.VarChar(255)
-  isActive    Boolean  @default(true) @map("is_active")
-  maxFeeds    Int      @default(1) @map("max_feeds")
-  maxAuthors  Int      @default(1) @map("max_authors")
-  maxTags     Int      @default(1) @map("max_tags")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(cuid()) @db.VarChar(50)
+  name            String   @db.VarChar(100)
+  price           Int // 月額金額（円）
+  description     String   @db.VarChar(255)
+  isActive        Boolean  @default(true) @map("is_active")
+  maxFeeds        Int      @default(1) @map("max_feeds")
+  maxAuthors      Int      @default(1) @map("max_authors")
+  maxTags         Int      @default(1) @map("max_tags")
+  programDuration Int      @default(1) @map("program_duration") // 番組の有効期限（日数）
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   // Stripe関連フィールド
   // Stripeの価格ID
@@ -457,22 +458,27 @@ model LikesCountFilter {
 
 // パーソナライズフィードを元に生成された番組
 model PersonalizedFeedProgram {
-  id            String   @id @default(cuid()) @db.VarChar(100)
-  userId        String   @map("user_id") @db.VarChar(50)
-  feedId        String   @map("feed_id") @db.VarChar(50)
-  title         String   @db.VarChar(255)
+  id            String    @id @default(cuid()) @db.VarChar(100)
+  userId        String    @map("user_id") @db.VarChar(50)
+  feedId        String    @map("feed_id") @db.VarChar(50)
+  title         String    @db.VarChar(255)
   // 台本
-  script        Json     @db.Json
+  script        Json      @db.Json
   // 番組の音声ファイルURL
-  audioUrl      String   @default("") @map("audio_url") @db.VarChar(255)
+  audioUrl      String    @default("") @map("audio_url") @db.VarChar(255)
   // 音声ファイルの長さ（ミリ秒）
-  audioDuration Int      @default(0) @map("audio_duration")
+  audioDuration Int       @default(0) @map("audio_duration")
   // チャプター情報
-  chapters      Json     @default("[]") @db.Json
+  chapters      Json      @default("[]") @db.Json
   // 画像URL
-  imageUrl      String?  @map("image_url") @db.VarChar(255)
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  imageUrl      String?   @map("image_url") @db.VarChar(255)
+  // 番組の有効期限
+  expiresAt     DateTime? @map("expires_at")
+  // 番組の有効期限切れフラグ
+  isExpired     Boolean   @default(false) @map("is_expired")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   user     AppUser                      @relation(fields: [userId], references: [id])
   // フィード設定
