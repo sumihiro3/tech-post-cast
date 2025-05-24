@@ -246,6 +246,7 @@ describe('QiitaPostsApiClient', () => {
           from: new Date('2024-03-20'),
           to: new Date('2024-03-21'),
         },
+        targetDate: new Date('2024-05-04'),
       });
 
       // Assert - 結果の検証
@@ -282,6 +283,7 @@ describe('QiitaPostsApiClient', () => {
         dateRangeFilter: {
           daysAgo: 7,
         },
+        targetDate: mockDate,
       });
 
       // Dateをリセット
@@ -291,7 +293,7 @@ describe('QiitaPostsApiClient', () => {
       expect(result.posts).toHaveLength(1);
       expect(apiClient.get).toHaveBeenCalledWith('/items', {
         params: {
-          query: 'created:>=2024-04-27',
+          query: 'created:>=2024-04-27 created:<=2024-05-04',
           page: 1,
           per_page: 100,
         },

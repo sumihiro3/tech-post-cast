@@ -66,6 +66,10 @@ export interface QiitaFeedFilterOptions {
    */
   dateRangeFilter?: DateRangeFilterCondition;
   /**
+   * 対象の日付
+   */
+  targetDate?: Date;
+  /**
    * 1ページあたりの記事数
    */
   perPage?: number;

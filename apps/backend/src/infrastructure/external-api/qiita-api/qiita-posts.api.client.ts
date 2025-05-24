@@ -110,7 +110,11 @@ export class QiitaPostsApiClient implements IQiitaPostsApiClient {
 
     // 日付範囲フィルターを追加
     if (options.dateRangeFilter) {
-      const dateQuery = this.buildDateRangeQuery(options.dateRangeFilter);
+      const targetDate = options.targetDate || new Date();
+      const dateQuery = this.buildDateRangeQuery(
+        options.dateRangeFilter,
+        targetDate,
+      );
       if (dateQuery) {
         queryParts.push(dateQuery);
       }
@@ -298,19 +302,25 @@ export class QiitaPostsApiClient implements IQiitaPostsApiClient {
   /**
    * 日付範囲フィルター条件からクエリを構築する
    * @param dateRange 日付範囲フィルター条件
+   * @param programDate 番組日
    * @returns 検索クエリ文字列
    * @private
    */
-  private buildDateRangeQuery(dateRange: DateRangeFilterCondition): string {
+  private buildDateRangeQuery(
+    dateRange: DateRangeFilterCondition,
+    programDate: Date,
+  ): string {
+    // 日付範囲
+    const conditions: string[] = [];
+
     // daysAgoが指定されている場合
     if (dateRange.daysAgo) {
-      const today = dayjs();
-      const fromDate = today.subtract(dateRange.daysAgo, 'day');
-      return `created:>=${fromDate.format(DATE_FORMAT)}`;
+      const targetDate = dayjs(programDate);
+      const fromDate = targetDate.subtract(dateRange.daysAgo, 'day');
+      conditions.push(`created:>=${fromDate.format(DATE_FORMAT)}`);
+      conditions.push(`created:<=${targetDate.format(DATE_FORMAT)}`);
+      return conditions.join(' ');
     }
-
-    // from/toが指定されている場合
-    const conditions: string[] = [];
 
     if (dateRange.from) {
       const fromText = dayjs(dateRange.from).format(DATE_FORMAT);
