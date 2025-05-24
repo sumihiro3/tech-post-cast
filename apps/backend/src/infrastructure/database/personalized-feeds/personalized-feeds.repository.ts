@@ -16,7 +16,7 @@ import {
   Prisma,
   QiitaPost,
 } from '@prisma/client';
-import { addDays } from '@tech-post-cast/commons';
+import { addDays, getStartOfDay, TIME_ZONE_JST } from '@tech-post-cast/commons';
 import {
   PersonalizedFeedWithFilters,
   PersonalizedProgramAttemptFailureReason,
@@ -216,7 +216,10 @@ export class PersonalizedFeedsRepository
     try {
       // 番組の有効期限をプランに応じて設定する
       const programDuration = user.subscriptions[0].plan.programDuration;
-      const expiresAt = addDays(new Date(), programDuration);
+      const expiresAt = getStartOfDay(
+        addDays(new Date(), programDuration + 1),
+        TIME_ZONE_JST,
+      );
       // パーソナライズプログラムを作成する
       const client = this.prisma.getClient();
       const program = await client.personalizedFeedProgram.create({
