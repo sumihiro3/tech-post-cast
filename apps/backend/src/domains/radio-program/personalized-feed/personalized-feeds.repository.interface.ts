@@ -8,6 +8,7 @@ import {
 import {
   PersonalizedFeedWithFilters,
   PersonalizedProgramAttemptFailureReason,
+  UserWithSubscription,
 } from '@tech-post-cast/database';
 import {
   PersonalizedProgramAudioGenerateResult,
@@ -63,7 +64,7 @@ export interface IPersonalizedFeedsRepository {
    * @returns 作成されたパーソナライズプログラム
    */
   createPersonalizedProgram(
-    user: AppUser,
+    user: UserWithSubscription,
     feed: PersonalizedFeedWithFilters,
     programDate: Date,
     posts: QiitaPost[],

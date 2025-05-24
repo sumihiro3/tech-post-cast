@@ -175,6 +175,12 @@ export class AppConfigService {
         );
       }
     }
+    if (!this.FreePlanId) {
+      throw new AppConfigValidationError('FREE_PLAN_ID が設定されていません');
+    }
+    if (!this.ProPlanId) {
+      throw new AppConfigValidationError('PRO_PLAN_ID が設定されていません');
+    }
     // 設定値のログ出力
     this.logger.log('AppConfigService initialized', {
       V1ApiToken: this.V1ApiToken,
@@ -222,6 +228,8 @@ export class AppConfigService {
       XApiSecret: this.XApiSecret,
       XApiAccessToken: this.XApiAccessToken,
       XApiAccessSecret: this.XApiAccessSecret,
+      FreePlanId: this.FreePlanId,
+      ProPlanId: this.ProPlanId,
     });
   }
 
@@ -506,5 +514,19 @@ export class AppConfigService {
    */
   get XApiAccessSecret(): string {
     return this.config.get<string>('X_API_ACCESS_SECRET');
+  }
+
+  /**
+   * Free Plan ID
+   */
+  get FreePlanId(): string {
+    return this.config.get<string>('FREE_PLAN_ID');
+  }
+
+  /**
+   * Pro Plan ID
+   */
+  get ProPlanId(): string {
+    return this.config.get<string>('PRO_PLAN_ID');
   }
 }
