@@ -25,25 +25,28 @@ export function dateFromISOString(dateString: string): Date {
  * @see https://day.js.org/docs/en/display/format
  * @returns フォーマットされた日付文字列
  */
-export function formatDate(
-  date: Date,
-  format: string,
-  timezone: string = TIME_ZONE_JST,
-): string {
+export function formatDate(date: Date, format: string, timezone: string = TIME_ZONE_JST): string {
   if (!date) return '';
   return dayjs(date).tz(timezone).format(format);
 }
 
 /**
- * 指定の日数を減産した日付を返す
+ * 指定の日数を加算した日付を返す
+ * @param date 対象日付
+ * @param days 加算する日数
+ * @param timezone タイムゾーン
+ * @returns 加算後の日付
+ */
+export function addDays(date: Date, days: number, timezone: string = TIME_ZONE_UTC): Date {
+  return dayjs(date).tz(timezone).add(days, 'day').toDate();
+}
+
+/**
+ * 指定の日数を減算した日付を返す
  * @param date 対象日付
  * @param days 減算する日数
  */
-export function subtractDays(
-  date: Date,
-  days: number,
-  timezone: string = TIME_ZONE_UTC,
-): Date {
+export function subtractDays(date: Date, days: number, timezone: string = TIME_ZONE_UTC): Date {
   return dayjs(date).tz(timezone).subtract(days, 'day').toDate();
 }
 
@@ -53,10 +56,7 @@ export function subtractDays(
  * @param timezone タイムゾーン
  * @returns 前日の日付
  */
-export function getYesterday(
-  date: Date = new Date(),
-  timezone: string = TIME_ZONE_UTC,
-): Date {
+export function getYesterday(date: Date = new Date(), timezone: string = TIME_ZONE_UTC): Date {
   return subtractDays(date, 1, timezone);
 }
 
@@ -67,11 +67,7 @@ export function getYesterday(
  * @param timezone タイムゾーン
  * @returns 加算後の日時
  */
-export function addMinutes(
-  date: Date,
-  minutes: number,
-  timezone: string = TIME_ZONE_UTC,
-): Date {
+export function addMinutes(date: Date, minutes: number, timezone: string = TIME_ZONE_UTC): Date {
   return dayjs(date).tz(timezone).add(minutes, 'minute').toDate();
 }
 
@@ -104,10 +100,7 @@ export function getStartOfDay(date: Date, timezone: string = TIME_ZONE_UTC): Dat
  * @param timezone タイムゾーン
  * @returns 前月の月初日
  */
-export function getFirstDayOfPreviousMonth(
-  date: Date,
-  timezone: string = TIME_ZONE_UTC,
-): Date {
+export function getFirstDayOfPreviousMonth(date: Date, timezone: string = TIME_ZONE_UTC): Date {
   return dayjs(date).tz(timezone).subtract(1, 'month').startOf('month').toDate();
 }
 
@@ -117,10 +110,7 @@ export function getFirstDayOfPreviousMonth(
  * @param timezone タイムゾーン
  * @returns 前月の月末日
  */
-export function getLastDayOfPreviousMonth(
-  date: Date,
-  timezone: string = TIME_ZONE_UTC,
-): Date {
+export function getLastDayOfPreviousMonth(date: Date, timezone: string = TIME_ZONE_UTC): Date {
   return dayjs(date).tz(timezone).subtract(1, 'month').endOf('month').toDate();
 }
 
