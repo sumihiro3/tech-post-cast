@@ -31,6 +31,7 @@ import { QiitaPostApiResponse, formatDate } from '@tech-post-cast/commons';
 import {
   PersonalizedProgramAttemptFailureReason as FailureReason,
   PersonalizedFeedWithFilters,
+  UserWithSubscription,
 } from '@tech-post-cast/database';
 import { setTimeout } from 'timers/promises';
 import { z } from 'zod';
@@ -125,6 +126,16 @@ export class PersonalizedFeedsBuilder {
     this.logger.debug(`PersonalizedFeedsBuilder.getActiveFeeds called`);
     const feeds = await this.personalizedFeedsRepository.findActive();
     return feeds;
+  }
+
+  /**
+   * 有効期限が過ぎたパーソナルプログラムを無効化する
+   */
+  async invalidateExpiredPrograms(): Promise<void> {
+    this.logger.debug(
+      `PersonalizedFeedsBuilder.invalidateExpiredPrograms called`,
+    );
+    await this.personalizedFeedsRepository.invalidateExpiredPrograms();
   }
 
   /**
@@ -248,6 +259,15 @@ export class PersonalizedFeedsBuilder {
       programDate,
     });
     try {
+      const userWithSubscription =
+        await this.appUsersRepository.findOneWithSubscription(user.id);
+      const subscription = userWithSubscription.subscriptions[0];
+      if (!subscription) {
+        throw new PersonalizedProgramUploadError(
+          `ユーザー [${user.id}] のサブスクリプションが見つかりません`,
+        );
+      }
+
       // 番組台本の生成
       const scriptGenerationResult =
         await this.generatePersonalizedProgramScript(user, feed, programDate);
@@ -289,7 +309,7 @@ export class PersonalizedFeedsBuilder {
       // 1. 番組音声ファイルをS3にアップロード
       const uploadResult = await this.uploadProgramFiles(
         generateResult.audioFilePath,
-        user,
+        userWithSubscription,
         feed,
         programDate,
       );
@@ -305,7 +325,7 @@ export class PersonalizedFeedsBuilder {
       // 3. DB にパーソナルプログラムを登録
       const program =
         await this.personalizedFeedsRepository.createPersonalizedProgram(
-          user,
+          userWithSubscription,
           feed,
           programDate,
           registeredPosts,
@@ -752,6 +772,7 @@ export class PersonalizedFeedsBuilder {
     );
     // パーソナルフィードの設定に合致した Qiita 記事を取得する
     const filter = this.filterMapper.buildQiitaFilterOptions(feed);
+    filter.targetDate = programDate;
     const response =
       await this.qiitaPostsApiClient.findQiitaPostsByPersonalizedFeed(filter);
     const posts = response.posts;
@@ -935,29 +956,31 @@ export class PersonalizedFeedsBuilder {
   /**
    * 番組音声ファイルを S3 にアップロードする
    * @param audioFilePath 番組音声ファイルのパス
-   * @param user ユーザー
+   * @param userWithSubscription ユーザー
    * @param feed パーソナルフィード
    * @param programDate 番組日
    * @returns アップロード結果
    */
   async uploadProgramFiles(
     audioFilePath: string,
-    user: AppUser,
+    userWithSubscription: UserWithSubscription,
     feed: PersonalizedFeedWithFilters,
     programDate: Date,
   ): Promise<ProgramUploadResult> {
     this.logger.debug(`PersonalizedFeedsBuilder.uploadProgramFiles called`, {
       audioFilePath,
-      userId: user.id,
+      userId: userWithSubscription.id,
       feedId: feed.id,
       programDate,
     });
 
     try {
+      const subscription = userWithSubscription.subscriptions[0];
+      const plan = subscription.plan;
       const bucketName = this.appConfig.ProgramAudioBucketName;
       const dt = formatDate(programDate, 'YYYYMMDD');
       const programId = `personalized-program`;
-      const objectKeyPrefix = `${programId}/${feed.id}/${dt}/${programId}_${Date.now()}`;
+      const objectKeyPrefix = `${programId}/${plan.id}/${feed.id}/${dt}/${programId}_${Date.now()}`;
 
       // 番組音声ファイルをアップロード
       const audioFileUploadCommand: ProgramFileUploadCommand = {
@@ -985,7 +1008,7 @@ export class PersonalizedFeedsBuilder {
       const errorMessage = `番組音声ファイルのアップロード中にエラーが発生しました`;
       this.logger.error(
         errorMessage,
-        { error, userId: user.id, feedId: feed.id },
+        { error, userId: userWithSubscription.id, feedId: feed.id },
         error.stack,
       );
       throw new PersonalizedProgramUploadError(errorMessage, { cause: error });

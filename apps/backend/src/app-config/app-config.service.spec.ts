@@ -74,6 +74,8 @@ describe('AppConfigService', () => {
                 X_API_ACCESS_TOKEN: 'x-api-access-token',
                 X_API_ACCESS_SECRET: 'x-api-access-secret',
                 SLACK_INCOMING_WEBHOOK_URL: 'slack-incoming-webhook-url',
+                FREE_PLAN_ID: 'free-plan',
+                PRO_PLAN_ID: 'pro-plan',
               };
               return configKeys[key];
             }),
@@ -473,6 +475,28 @@ describe('AppConfigService', () => {
     );
   });
 
+  it('FREE_PLAN_ID が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'FREE_PLAN_ID') return null;
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
+  it('PRO_PLAN_ID が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'PRO_PLAN_ID') return null;
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
   it('ゲッターから正しい値を返すべき', () => {
     expect(service.DatabaseUrl).toBe('https://example-database.url');
     expect(service.ShowQueryLogs).toBe(true);
@@ -544,5 +568,7 @@ describe('AppConfigService', () => {
     expect(service.XApiSecret).toBe('x-api-secret');
     expect(service.XApiAccessToken).toBe('x-api-access-token');
     expect(service.XApiAccessSecret).toBe('x-api-access-secret');
+    expect(service.FreePlanId).toBe('free-plan');
+    expect(service.ProPlanId).toBe('pro-plan');
   });
 });

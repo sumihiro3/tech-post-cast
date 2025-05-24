@@ -16,11 +16,13 @@ import {
   Prisma,
   QiitaPost,
 } from '@prisma/client';
+import { addDays, getStartOfDay, TIME_ZONE_JST } from '@tech-post-cast/commons';
 import {
   PersonalizedFeedWithFilters,
   PersonalizedProgramAttemptFailureReason,
   PersonalizedProgramAttemptStatus,
   PrismaClientManager,
+  UserWithSubscription,
 } from '@tech-post-cast/database';
 
 /**
@@ -194,7 +196,7 @@ export class PersonalizedFeedsRepository
    * @returns 作成されたパーソナライズプログラム
    */
   async createPersonalizedProgram(
-    user: AppUser,
+    user: UserWithSubscription,
     feed: PersonalizedFeedWithFilters,
     programDate: Date,
     posts: QiitaPost[],
@@ -212,8 +214,14 @@ export class PersonalizedFeedsRepository
     );
 
     try {
+      // 番組の有効期限をプランに応じて設定する
+      const programDuration = user.subscriptions[0].plan.programDuration;
+      const expiresAt = getStartOfDay(
+        addDays(new Date(), programDuration + 1),
+        TIME_ZONE_JST,
+      );
+      // パーソナライズプログラムを作成する
       const client = this.prisma.getClient();
-      // パーソナライズドプログラムを作成
       const program = await client.personalizedFeedProgram.create({
         data: {
           userId: user.id,
@@ -224,6 +232,8 @@ export class PersonalizedFeedsRepository
           imageUrl: uploadResult.imageUrl || null,
           audioDuration: generateResult.audioDuration,
           chapters: generateResult.chapters as unknown as Prisma.JsonValue,
+          isExpired: false,
+          expiresAt,
           createdAt: programDate,
           updatedAt: programDate,
           // 記事との関連付け
@@ -297,6 +307,33 @@ export class PersonalizedFeedsRepository
       });
     }
     return result;
+  }
+
+  /**
+   * 有効期限が過ぎたパーソナルプログラムを無効化する
+   */
+  async invalidateExpiredPrograms(): Promise<void> {
+    this.logger.debug(
+      `PersonalizedFeedsRepository.invalidateExpiredPrograms called`,
+    );
+    try {
+      const client = this.prisma.getClient();
+      const result = await client.personalizedFeedProgram.updateMany({
+        where: { expiresAt: { lt: new Date() } },
+        data: { isExpired: true },
+      });
+      this.logger.log(
+        `[${result.count}] 件の有効期限が過ぎたパーソナルプログラムを無効化しました`,
+      );
+    } catch (error) {
+      const errorMessage = `有効期限が過ぎたパーソナルプログラムの無効化に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+      });
+      throw new PersonalizedProgramPersistenceError(errorMessage, {
+        cause: error,
+      });
+    }
   }
 
   /**

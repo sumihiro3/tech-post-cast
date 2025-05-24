@@ -11,10 +11,10 @@ import {
   ProgramFileMetadata,
 } from '@domains/radio-program/program-file-maker.interface';
 import { Injectable, Logger } from '@nestjs/common';
-import { formatDate } from '@tech-post-cast/commons';
+import { createDir, formatDate } from '@tech-post-cast/commons';
 import * as ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
-import { mkdir, rm } from 'fs/promises';
+import { rm } from 'fs/promises';
 import * as path from 'path';
 import { setTimeout } from 'timers/promises';
 
@@ -33,6 +33,7 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
 
   constructor(private readonly appConfig: AppConfigService) {
     this.outputDir = this.appConfig.ProgramFileGenerationTempDir;
+    createDir(this.outputDir);
   }
 
   /**
@@ -80,7 +81,6 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
       },
     );
     try {
-      await mkdir(this.outputDir, { recursive: true });
       // 1. メイン音声と BGM をマージする
       this.logger.log('1. メイン音声と BGM のマージを開始...');
       const mergedMainWithBgmPath = await this.mergeMainAudioAndBgm(
@@ -393,7 +393,6 @@ title=${chapter.title}
         command,
       },
     );
-    await mkdir(this.outputDir, { recursive: true });
     const metadata = command.metadata;
     const videoFilePath = command.outputFilePath;
     // 動画ファイルを生成する
@@ -456,7 +455,6 @@ title=${chapter.title}
 
   /**
    * 複数の音声ファイルをシーケンシャルに結合する（セグメント結合）
-   * このメソッドは特にSSMLセグメントから生成された音声ファイルの結合に適しています
    * @param inputFiles 入力音声ファイルのパスの配列
    * @param outputFile 出力音声ファイルのパス
    * @returns 結合された音声ファイルのパス
@@ -513,7 +511,6 @@ title=${chapter.title}
             this.logger.log(
               `音声ファイルのセグメント結合処理が完了しました: ${outputFile}`,
             );
-            await rm(listFilePath, { force: true }); // 一時ファイル削除
             resolve(outputFile);
           })
           .on('error', (error) => {

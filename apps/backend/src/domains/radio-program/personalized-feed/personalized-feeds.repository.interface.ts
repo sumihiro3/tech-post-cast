@@ -8,6 +8,7 @@ import {
 import {
   PersonalizedFeedWithFilters,
   PersonalizedProgramAttemptFailureReason,
+  UserWithSubscription,
 } from '@tech-post-cast/database';
 import {
   PersonalizedProgramAudioGenerateResult,
@@ -63,7 +64,7 @@ export interface IPersonalizedFeedsRepository {
    * @returns 作成されたパーソナライズプログラム
    */
   createPersonalizedProgram(
-    user: AppUser,
+    user: UserWithSubscription,
     feed: PersonalizedFeedWithFilters,
     programDate: Date,
     posts: QiitaPost[],
@@ -81,6 +82,11 @@ export interface IPersonalizedFeedsRepository {
     feed: PersonalizedFeed,
     programDate: Date,
   ): Promise<boolean>;
+
+  /**
+   * 有効期限が過ぎたパーソナルプログラムを無効化する
+   */
+  invalidateExpiredPrograms(): Promise<void>;
 
   /**
    * パーソナライズフィードを元に生成された番組の成功の試行履歴を作成する
