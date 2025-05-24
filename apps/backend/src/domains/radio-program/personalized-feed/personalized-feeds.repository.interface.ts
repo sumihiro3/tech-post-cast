@@ -84,6 +84,11 @@ export interface IPersonalizedFeedsRepository {
   ): Promise<boolean>;
 
   /**
+   * 有効期限が過ぎたパーソナルプログラムを無効化する
+   */
+  invalidateExpiredPrograms(): Promise<void>;
+
+  /**
    * パーソナライズフィードを元に生成された番組の成功の試行履歴を作成する
    * @param user ユーザー
    * @param feed パーソナルフィード

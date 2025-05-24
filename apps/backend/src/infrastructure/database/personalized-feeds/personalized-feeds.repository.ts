@@ -310,6 +310,33 @@ export class PersonalizedFeedsRepository
   }
 
   /**
+   * 有効期限が過ぎたパーソナルプログラムを無効化する
+   */
+  async invalidateExpiredPrograms(): Promise<void> {
+    this.logger.debug(
+      `PersonalizedFeedsRepository.invalidateExpiredPrograms called`,
+    );
+    try {
+      const client = this.prisma.getClient();
+      const result = await client.personalizedFeedProgram.updateMany({
+        where: { expiresAt: { lt: new Date() } },
+        data: { isExpired: true },
+      });
+      this.logger.log(
+        `[${result.count}] 件の有効期限が過ぎたパーソナルプログラムを無効化しました`,
+      );
+    } catch (error) {
+      const errorMessage = `有効期限が過ぎたパーソナルプログラムの無効化に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+      });
+      throw new PersonalizedProgramPersistenceError(errorMessage, {
+        cause: error,
+      });
+    }
+  }
+
+  /**
    * パーソナライズフィードを元に生成された番組の成功の試行履歴を作成する
    * @param user ユーザー
    * @param feed パーソナルフィード

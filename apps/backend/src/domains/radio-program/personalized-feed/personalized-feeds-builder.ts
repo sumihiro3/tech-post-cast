@@ -129,6 +129,16 @@ export class PersonalizedFeedsBuilder {
   }
 
   /**
+   * 有効期限が過ぎたパーソナルプログラムを無効化する
+   */
+  async invalidateExpiredPrograms(): Promise<void> {
+    this.logger.debug(
+      `PersonalizedFeedsBuilder.invalidateExpiredPrograms called`,
+    );
+    await this.personalizedFeedsRepository.invalidateExpiredPrograms();
+  }
+
+  /**
    * 指定パーソナルフィードに基づいた番組を生成する
    * @param feedId パーソナルフィードID
    * @param programDate 番組日
