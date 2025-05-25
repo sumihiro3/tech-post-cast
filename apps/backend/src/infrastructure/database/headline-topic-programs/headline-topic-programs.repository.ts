@@ -1,4 +1,9 @@
 import {
+  HeadlineTopicProgramFindError,
+  HeadlineTopicProgramGenerateError,
+  HeadlineTopicProgramVectorizeError,
+} from '@/types/errors';
+import {
   HeadlineTopicProgramGenerateResult,
   HeadlineTopicProgramWithSimilarAndNeighbors,
   ProgramUploadResult,
@@ -35,35 +40,50 @@ export class HeadlineTopicProgramsRepository
    */
   async findOne(id: string): Promise<HeadlineTopicProgramWithQiitaPosts> {
     this.logger.debug(`HeadlineTopicProgramsRepository.findOne called`, { id });
-    const result = await this.prisma.headlineTopicProgram.findUnique({
-      where: { id },
-      include: {
-        posts: {
-          select: {
-            id: true,
-            title: true,
-            url: true,
-            likesCount: true,
-            stocksCount: true,
-            createdAt: true,
-            updatedAt: true,
-            authorId: true,
-            authorName: true,
-            private: true,
-            refreshedAt: true,
-            summary: true,
-            headlineTopicProgramId: true,
-            tags: true,
-            // body フィールドのみ除外して egress を削減
+    try {
+      const result = await this.prisma.headlineTopicProgram.findUnique({
+        where: { id },
+        include: {
+          posts: {
+            select: {
+              id: true,
+              title: true,
+              url: true,
+              likesCount: true,
+              stocksCount: true,
+              createdAt: true,
+              updatedAt: true,
+              authorId: true,
+              authorName: true,
+              private: true,
+              refreshedAt: true,
+              summary: true,
+              headlineTopicProgramId: true,
+              tags: true,
+              // body フィールドのみ除外して egress を削減
+            },
+            orderBy: { likesCount: 'desc' },
           },
-          orderBy: { likesCount: 'desc' },
         },
-      },
-    });
-    this.logger.debug(`指定のヘッドライントピック番組 [${id}] を取得しました`, {
-      result,
-    });
-    return result;
+      });
+      this.logger.debug(
+        `指定のヘッドライントピック番組 [${id}] を取得しました`,
+        {
+          result,
+        },
+      );
+      return result;
+    } catch (error) {
+      const errorMessage = `指定のヘッドライントピック番組 [${id}] の取得に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        id,
+      });
+      this.logger.error(error.message, error.stack);
+      throw new HeadlineTopicProgramFindError(errorMessage, {
+        cause: error,
+      });
+    }
   }
 
   /**
@@ -72,11 +92,22 @@ export class HeadlineTopicProgramsRepository
    */
   async count(): Promise<number> {
     this.logger.debug(`HeadlineTopicProgramsRepository.count called`);
-    const result = await this.prisma.headlineTopicProgram.count();
-    this.logger.debug(`ヘッドライントピック番組の件数を取得しました`, {
-      result,
-    });
-    return result;
+    try {
+      const result = await this.prisma.headlineTopicProgram.count();
+      this.logger.debug(`ヘッドライントピック番組の件数を取得しました`, {
+        result,
+      });
+      return result;
+    } catch (error) {
+      const errorMessage = `ヘッドライントピック番組の件数の取得に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+      });
+      this.logger.error(error.message, error.stack);
+      throw new HeadlineTopicProgramFindError(errorMessage, {
+        cause: error,
+      });
+    }
   }
 
   /**
@@ -93,39 +124,52 @@ export class HeadlineTopicProgramsRepository
       page,
       limit,
     });
-    // limit <= 0 の場合は全件を取得する
-    if (limit <= 0) {
-      limit = await this.count();
-    }
-    const result = await this.prisma.headlineTopicProgram.findMany({
-      take: limit,
-      skip: (page - 1) * limit,
-      include: {
-        posts: {
-          select: {
-            id: true,
-            title: true,
-            url: true,
-            likesCount: true,
-            stocksCount: true,
-            createdAt: true,
-            updatedAt: true,
-            authorId: true,
-            authorName: true,
-            private: true,
-            refreshedAt: true,
-            summary: true,
-            headlineTopicProgramId: true,
-            tags: true,
-            // body フィールドのみ除外して egress を削減
+    try {
+      // limit <= 0 の場合は全件を取得する
+      if (limit <= 0) {
+        limit = await this.count();
+      }
+      const result = await this.prisma.headlineTopicProgram.findMany({
+        take: limit,
+        skip: (page - 1) * limit,
+        include: {
+          posts: {
+            select: {
+              id: true,
+              title: true,
+              url: true,
+              likesCount: true,
+              stocksCount: true,
+              createdAt: true,
+              updatedAt: true,
+              authorId: true,
+              authorName: true,
+              private: true,
+              refreshedAt: true,
+              summary: true,
+              headlineTopicProgramId: true,
+              tags: true,
+              // body フィールドのみ除外して egress を削減
+            },
+            orderBy: { likesCount: 'desc' },
           },
-          orderBy: { likesCount: 'desc' },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    this.logger.debug(`ヘッドライントピック番組を取得しました`, { result });
-    return result;
+        orderBy: { createdAt: 'desc' },
+      });
+      this.logger.debug(`ヘッドライントピック番組を取得しました`, { result });
+      return result;
+    } catch (error) {
+      const errorMessage = `ヘッドライントピック番組の取得に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        page,
+        limit,
+      });
+      this.logger.error(error.message, error.stack);
+      throw new HeadlineTopicProgramFindError(errorMessage, {
+        cause: error,
+      });
+    }
   }
 
   /**
@@ -134,13 +178,24 @@ export class HeadlineTopicProgramsRepository
    */
   async findIds(): Promise<string[]> {
     this.logger.debug(`HeadlineTopicProgramsRepository.findIds called`);
-    const result = await this.prisma.headlineTopicProgram.findMany({
-      select: { id: true },
-    });
-    this.logger.debug(`ヘッドライントピック番組のID一覧を取得しました`, {
-      result,
-    });
-    return result.map((r) => r.id);
+    try {
+      const result = await this.prisma.headlineTopicProgram.findMany({
+        select: { id: true },
+      });
+      this.logger.debug(`ヘッドライントピック番組のID一覧を取得しました`, {
+        result,
+      });
+      return result.map((r) => r.id);
+    } catch (error) {
+      const errorMessage = `ヘッドライントピック番組のID一覧の取得に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+      });
+      this.logger.error(error.message, error.stack);
+      throw new HeadlineTopicProgramFindError(errorMessage, {
+        cause: error,
+      });
+    }
   }
 
   /**
@@ -155,91 +210,107 @@ export class HeadlineTopicProgramsRepository
       `HeadlineTopicProgramsRepository.findWithSimilarAndNeighbors called`,
       { id },
     );
-    // 基準となる番組を取得
-    const target = await this.findOne(id);
-    // 前日と翌日の番組を取得
-    const [similar, previous, next] = await Promise.all([
-      // 類似番組を取得
-      this.findSimilarPrograms(id),
-      // 前日の番組を取得
-      this.prisma.headlineTopicProgram.findFirst({
-        where: {
-          createdAt: { lt: target.createdAt },
-        },
-        orderBy: [{ createdAt: 'desc' }, { updatedAt: 'desc' }],
-        include: {
-          posts: {
-            select: {
-              id: true,
-              title: true,
-              url: true,
-              likesCount: true,
-              stocksCount: true,
-              createdAt: true,
-              updatedAt: true,
-              authorId: true,
-              authorName: true,
-              private: true,
-              refreshedAt: true,
-              summary: true,
-              headlineTopicProgramId: true,
-              tags: true,
-              // body フィールドのみ除外して egress を削減
-            },
-            orderBy: { likesCount: 'desc' },
+    try {
+      // 基準となる番組を取得
+      const target = await this.findOne(id);
+      // 前日と翌日の番組を取得
+      const [similar, previous, next] = await Promise.all([
+        // 類似番組を取得
+        this.findSimilarPrograms(id),
+        // 前日の番組を取得
+        this.prisma.headlineTopicProgram.findFirst({
+          where: {
+            createdAt: { lt: target.createdAt },
           },
-        },
-      }),
-      // 翌日の番組を取得
-      this.prisma.headlineTopicProgram.findFirst({
-        where: {
-          createdAt: { gt: target.createdAt },
-        },
-        orderBy: [{ createdAt: 'asc' }, { updatedAt: 'desc' }],
-        include: {
-          posts: {
-            select: {
-              id: true,
-              title: true,
-              url: true,
-              likesCount: true,
-              stocksCount: true,
-              createdAt: true,
-              updatedAt: true,
-              authorId: true,
-              authorName: true,
-              private: true,
-              refreshedAt: true,
-              summary: true,
-              headlineTopicProgramId: true,
-              tags: true,
-              // body フィールドのみ除外して egress を削減
+          orderBy: [{ createdAt: 'desc' }, { updatedAt: 'desc' }],
+          include: {
+            posts: {
+              select: {
+                id: true,
+                title: true,
+                url: true,
+                likesCount: true,
+                stocksCount: true,
+                createdAt: true,
+                updatedAt: true,
+                authorId: true,
+                authorName: true,
+                private: true,
+                refreshedAt: true,
+                summary: true,
+                headlineTopicProgramId: true,
+                tags: true,
+                // body フィールドのみ除外して egress を削減
+              },
+              orderBy: { likesCount: 'desc' },
             },
-            orderBy: { likesCount: 'desc' },
           },
-        },
-      }),
-    ]);
-    this.logger.debug(
-      `指定の番組と、その類似番組および、前日と翌日の番組を取得しました`,
-      {
-        similar: similar.map((p) => {
-          return { id: p.id, title: p.title };
         }),
-        previous: {
-          id: previous?.id,
-          title: previous?.title,
-          createdAt: previous?.createdAt,
+        // 翌日の番組を取得
+        this.prisma.headlineTopicProgram.findFirst({
+          where: {
+            createdAt: { gt: target.createdAt },
+          },
+          orderBy: [{ createdAt: 'asc' }, { updatedAt: 'desc' }],
+          include: {
+            posts: {
+              select: {
+                id: true,
+                title: true,
+                url: true,
+                likesCount: true,
+                stocksCount: true,
+                createdAt: true,
+                updatedAt: true,
+                authorId: true,
+                authorName: true,
+                private: true,
+                refreshedAt: true,
+                summary: true,
+                headlineTopicProgramId: true,
+                tags: true,
+                // body フィールドのみ除外して egress を削減
+              },
+              orderBy: { likesCount: 'desc' },
+            },
+          },
+        }),
+      ]);
+      this.logger.debug(
+        `指定の番組と、その類似番組および、前日と翌日の番組を取得しました`,
+        {
+          similar: similar.map((p) => {
+            return { id: p.id, title: p.title };
+          }),
+          previous: {
+            id: previous?.id,
+            title: previous?.title,
+            createdAt: previous?.createdAt,
+          },
+          target: {
+            id: target.id,
+            title: target.title,
+            createdAt: target.createdAt,
+          },
+          next: {
+            id: next?.id,
+            title: next?.title,
+            createdAt: next?.createdAt,
+          },
         },
-        target: {
-          id: target.id,
-          title: target.title,
-          createdAt: target.createdAt,
-        },
-        next: { id: next?.id, title: next?.title, createdAt: next?.createdAt },
-      },
-    );
-    return { similar, previous, target, next };
+      );
+      return { similar, previous, target, next };
+    } catch (error) {
+      const errorMessage = `指定の番組と、その類似番組および、前後の日付の番組の取得に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        id,
+      });
+      this.logger.error(error.message, error.stack);
+      throw new HeadlineTopicProgramFindError(errorMessage, {
+        cause: error,
+      });
+    }
   }
 
   /**
@@ -262,19 +333,34 @@ export class HeadlineTopicProgramsRepository
         programUploadResult,
       },
     );
-    const result: HeadlineTopicProgram =
-      await this.prisma.headlineTopicProgram.create({
-        data: this.createInsertQuery(
-          programDate,
-          posts,
-          programGenerateResult,
-          programUploadResult,
-        ),
+    try {
+      const result: HeadlineTopicProgram =
+        await this.prisma.headlineTopicProgram.create({
+          data: this.createInsertQuery(
+            programDate,
+            posts,
+            programGenerateResult,
+            programUploadResult,
+          ),
+        });
+      this.logger.debug(`ヘッドライントピック番組を新規登録しました`, {
+        result,
       });
-    this.logger.debug(`ヘッドライントピック番組を新規登録しました`, {
-      result,
-    });
-    return result;
+      return result;
+    } catch (error) {
+      const errorMessage = `ヘッドライントピック番組の新規登録に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        programDate,
+        posts,
+        programGenerateResult,
+        programUploadResult,
+      });
+      this.logger.error(error.message, error.stack);
+      throw new HeadlineTopicProgramGenerateError(errorMessage, {
+        cause: error,
+      });
+    }
   }
 
   /**
@@ -360,32 +446,47 @@ export class HeadlineTopicProgramsRepository
       `HeadlineTopicProgramsRepository.setHeadlineTopicProgramScriptVector called`,
       { id, model: vectorizeResult.model, tokens: vectorizeResult.totalTokens },
     );
-    // Transaction で更新する
-    const result = await this.prisma.$transaction(async (prisma) => {
-      // HeadlineTopicProgramScriptVector に指定の番組IDのデータが有れば削除する
-      const record = await prisma.headlineTopicProgramScriptVector.findUnique({
-        where: { id },
-      });
-      if (record) {
-        await prisma.headlineTopicProgramScriptVector.delete({
+    try {
+      // Transaction で更新する
+      const result = await this.prisma.$transaction(async (prisma) => {
+        // HeadlineTopicProgramScriptVector に指定の番組IDのデータが有れば削除する
+        const record = await prisma.headlineTopicProgramScriptVector.findUnique(
+          {
+            where: { id },
+          },
+        );
+        if (record) {
+          await prisma.headlineTopicProgramScriptVector.delete({
+            where: { id },
+          });
+        }
+        // ベクトルデータを文字列化する
+        const vectorData = JSON.stringify(vectorizeResult.vector);
+        // HeadlineTopicProgramScriptVector に新しいベクトルデータを登録する
+        await prisma.$executeRaw`INSERT INTO headline_topic_program_vectors (id, vector, model, total_tokens) VALUES (${id}, ${vectorData}::vector, ${vectorizeResult.model}, ${vectorizeResult.totalTokens});`;
+        // ベクトル化結果を取得する
+        return prisma.headlineTopicProgramScriptVector.findUnique({
           where: { id },
         });
-      }
-      // ベクトルデータを文字列化する
-      const vectorData = JSON.stringify(vectorizeResult.vector);
-      // HeadlineTopicProgramScriptVector に新しいベクトルデータを登録する
-      await prisma.$executeRaw`INSERT INTO headline_topic_program_vectors (id, vector, model, total_tokens) VALUES (${id}, ${vectorData}::vector, ${vectorizeResult.model}, ${vectorizeResult.totalTokens});`;
-      // ベクトル化結果を取得する
-      return prisma.headlineTopicProgramScriptVector.findUnique({
-        where: { id },
       });
-    });
-    this.logger.log(`番組台本のベクトルデータを更新しました`, {
-      id: result.id,
-      model: result.model,
-      totalTokens: result.totalTokens,
-    });
-    return result;
+      this.logger.log(`番組台本のベクトルデータを更新しました`, {
+        id: result.id,
+        model: result.model,
+        totalTokens: result.totalTokens,
+      });
+      return result;
+    } catch (error) {
+      const errorMessage = `番組台本のベクトルデータの更新に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        id,
+        vectorizeResult,
+      });
+      this.logger.error(error.message, error.stack);
+      throw new HeadlineTopicProgramVectorizeError(errorMessage, {
+        cause: error,
+      });
+    }
   }
 
   /**
@@ -400,54 +501,66 @@ export class HeadlineTopicProgramsRepository
       `HeadlineTopicProgramsRepository.findSimilarPrograms called`,
       { id },
     );
-    // 類似番組を台本のベクトルデータを使って検索する
-    const findSimilarResult = await this.prisma.$queryRaw<
-      FindSimilarProgramsResult[]
-    >`SELECT id, vector::text, 1 - (vector <-> (SELECT vector FROM headline_topic_program_vectors WHERE id = ${id})) AS similarity FROM headline_topic_program_vectors ORDER BY vector <-> (SELECT vector FROM headline_topic_program_vectors WHERE id = ${id}) LIMIT 4`;
-    // 類似番組の ID 一覧を取得する
-    const ids = findSimilarResult.map((r) => r.id);
-    // 指定された番組は除外する
-    const similarProgramIds = ids.filter((r) => r !== id);
-    this.logger.debug(`類似番組の ID 一覧を取得しました`, {
-      similarProgramIds,
-    });
-    // 類似番組を取得する
-    const similarPrograms = await this.prisma.headlineTopicProgram.findMany({
-      where: { id: { in: similarProgramIds } },
-      include: {
-        posts: {
-          select: {
-            id: true,
-            title: true,
-            url: true,
-            likesCount: true,
-            stocksCount: true,
-            createdAt: true,
-            updatedAt: true,
-            authorId: true,
-            authorName: true,
-            private: true,
-            refreshedAt: true,
-            summary: true,
-            headlineTopicProgramId: true,
-            tags: true,
-            // body フィールドのみ除外して egress を削減
+    try {
+      // 類似番組を台本のベクトルデータを使って検索する
+      const findSimilarResult = await this.prisma.$queryRaw<
+        FindSimilarProgramsResult[]
+      >`SELECT id, vector::text, 1 - (vector <-> (SELECT vector FROM headline_topic_program_vectors WHERE id = ${id})) AS similarity FROM headline_topic_program_vectors ORDER BY vector <-> (SELECT vector FROM headline_topic_program_vectors WHERE id = ${id}) LIMIT 4`;
+      // 類似番組の ID 一覧を取得する
+      const ids = findSimilarResult.map((r) => r.id);
+      // 指定された番組は除外する
+      const similarProgramIds = ids.filter((r) => r !== id);
+      this.logger.debug(`類似番組の ID 一覧を取得しました`, {
+        similarProgramIds,
+      });
+      // 類似番組を取得する
+      const similarPrograms = await this.prisma.headlineTopicProgram.findMany({
+        where: { id: { in: similarProgramIds } },
+        include: {
+          posts: {
+            select: {
+              id: true,
+              title: true,
+              url: true,
+              likesCount: true,
+              stocksCount: true,
+              createdAt: true,
+              updatedAt: true,
+              authorId: true,
+              authorName: true,
+              private: true,
+              refreshedAt: true,
+              summary: true,
+              headlineTopicProgramId: true,
+              tags: true,
+              // body フィールドのみ除外して egress を削減
+            },
+            orderBy: { likesCount: 'desc' },
           },
-          orderBy: { likesCount: 'desc' },
         },
-      },
-    });
-    // 類似度で並び替え
-    similarPrograms.sort((a, b) => {
-      const aSimilarity = findSimilarResult.find(
-        (r) => r.id === a.id,
-      )?.similarity;
-      const bSimilarity = findSimilarResult.find(
-        (r) => r.id === b.id,
-      )?.similarity;
-      return aSimilarity && bSimilarity ? bSimilarity - aSimilarity : 0;
-    });
-    return similarPrograms;
+      });
+      // 類似度で並び替え
+      similarPrograms.sort((a, b) => {
+        const aSimilarity = findSimilarResult.find(
+          (r) => r.id === a.id,
+        )?.similarity;
+        const bSimilarity = findSimilarResult.find(
+          (r) => r.id === b.id,
+        )?.similarity;
+        return aSimilarity && bSimilarity ? bSimilarity - aSimilarity : 0;
+      });
+      return similarPrograms;
+    } catch (error) {
+      const errorMessage = `指定の番組と似た番組の取得に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        id,
+      });
+      this.logger.error(error.message, error.stack);
+      throw new HeadlineTopicProgramFindError(errorMessage, {
+        cause: error,
+      });
+    }
   }
 }
 

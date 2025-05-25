@@ -5,10 +5,11 @@ import {
 } from '@domains/radio-program/personalized-feed';
 import { Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { AppUser, QiitaPost } from '@prisma/client';
+import { AppUser, Plan, QiitaPost, Subscription } from '@prisma/client';
 import {
   PersonalizedFeedWithFilters,
   PrismaClientManager,
+  UserWithSubscription,
 } from '@tech-post-cast/database';
 import { PersonalizedFeedsRepository } from './personalized-feeds.repository';
 
@@ -26,6 +27,53 @@ const mockAppUser: AppUser = {
   lastSignInAt: new Date('2025-01-01'),
   stripeCustomerId: 'stripe_customer_id',
   defaultPaymentMethodId: 'default_payment_method_id',
+};
+
+const mockSubscription: Subscription = {
+  id: 'subscription1',
+  userId: 'user1',
+  planId: 'plan1',
+  startDate: new Date('2025-01-01'),
+  isActive: true,
+  status: 'ACTIVE',
+  endDate: new Date('2025-01-01'),
+  cancelAt: new Date('2025-01-01'),
+  canceledAt: new Date('2025-01-01'),
+  trialStart: new Date('2025-01-01'),
+  trialEnd: new Date('2025-01-01'),
+  currentPeriodEnd: new Date('2025-01-01'),
+  createdAt: new Date('2025-01-01'),
+  updatedAt: new Date('2025-01-01'),
+  stripeSubscriptionId: 'stripe_subscription_id',
+  stripePriceId: 'stripe_price_id',
+  currentPeriodStart: new Date('2025-01-01'),
+};
+
+const mockPlan: Plan = {
+  id: 'plan1',
+  name: 'Free',
+  price: 0,
+  description: 'Free plan',
+  maxFeeds: 10,
+  maxAuthors: 10,
+  maxTags: 10,
+  programDuration: 30,
+  stripePriceId: 'stripe_price_id',
+  stripePriceType: 'stripe_price_type',
+  billingInterval: 'billing_interval',
+  isActive: true,
+  createdAt: new Date('2025-01-01'),
+  updatedAt: new Date('2025-01-01'),
+};
+
+const mockUserWithSubscription: UserWithSubscription = {
+  ...mockAppUser,
+  subscriptions: [
+    {
+      ...mockSubscription,
+      plan: mockPlan,
+    },
+  ],
 };
 
 // PersonalizedFeedWithFiltersの型に合わせてモックデータを修正
@@ -187,7 +235,7 @@ describe('PersonalizedFeedsRepository', () => {
 
       // テスト対象のメソッドを呼び出し
       const result = await repository.createPersonalizedProgram(
-        mockAppUser,
+        mockUserWithSubscription,
         mockPersonalizedFeed,
         new Date(),
         mockQiitaPosts,
@@ -211,6 +259,8 @@ describe('PersonalizedFeedsRepository', () => {
           chapters: expect.any(Object),
           createdAt: expect.any(Date),
           updatedAt: expect.any(Date),
+          expiresAt: expect.any(Date),
+          isExpired: expect.any(Boolean),
           posts: {
             connect: mockQiitaPosts.map((post) => ({ id: post.id })),
           },
@@ -232,7 +282,7 @@ describe('PersonalizedFeedsRepository', () => {
       // テスト対象のメソッドを呼び出し、エラーをキャッチ
       await expect(
         repository.createPersonalizedProgram(
-          mockAppUser,
+          mockUserWithSubscription,
           mockPersonalizedFeed,
           new Date(),
           mockQiitaPosts,

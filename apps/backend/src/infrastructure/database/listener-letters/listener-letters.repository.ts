@@ -1,3 +1,7 @@
+import {
+  ListenerLetterFindError,
+  ListenerLetterUpdateError,
+} from '@/types/errors';
 import { IListenerLettersRepository } from '@domains/listener-letters/listener-letters.repository.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { HeadlineTopicProgram, ListenerLetter } from '@prisma/client';
@@ -19,15 +23,29 @@ export class ListenerLettersRepository implements IListenerLettersRepository {
    */
   async findUnintroduced(): Promise<ListenerLetter> {
     this.logger.debug('ListenerLettersRepository.findUnintroduced called');
-    const letter = await this.prisma.listenerLetter.findFirst({
-      where: {
-        programId: null,
-      },
-      orderBy: {
-        sentAt: 'asc',
-      },
-    });
-    return letter;
+    try {
+      const letter = await this.prisma.listenerLetter.findFirst({
+        where: {
+          programId: null,
+        },
+        orderBy: {
+          sentAt: 'asc',
+        },
+      });
+      this.logger.debug(`番組で未紹介のお便りを取得しました`, {
+        letter,
+      });
+      return letter;
+    } catch (error) {
+      const errorMessage = `番組で未紹介のお便りの取得に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+      });
+      this.logger.error(error.message, error.stack);
+      throw new ListenerLetterFindError(errorMessage, {
+        cause: error,
+      });
+    }
   }
 
   /**
@@ -42,21 +60,34 @@ export class ListenerLettersRepository implements IListenerLettersRepository {
       id: program.id,
       title: program.title,
     });
-    const letter = this.prisma.listenerLetter.findFirst({
-      where: {
-        programId: program.id,
-      },
-    });
-    if (!letter) {
-      return null;
+    try {
+      const letter = this.prisma.listenerLetter.findFirst({
+        where: {
+          programId: program.id,
+        },
+      });
+      if (!letter) {
+        return null;
+      }
+      this.logger.debug(
+        `番組 [${program.title}] で紹介されたお便りを取得しました`,
+        {
+          letter,
+        },
+      );
+      return letter;
+    } catch (error) {
+      const errorMessage = `番組 [${program.title}] で紹介されたお便りの取得に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        id: program.id,
+        title: program.title,
+      });
+      this.logger.error(error.message, error.stack);
+      throw new ListenerLetterFindError(errorMessage, {
+        cause: error,
+      });
     }
-    this.logger.debug(
-      `番組 [${program.title}] で紹介されたお便りを取得しました`,
-      {
-        letter,
-      },
-    );
-    return letter;
   }
 
   /**
@@ -72,19 +103,32 @@ export class ListenerLettersRepository implements IListenerLettersRepository {
       programId: program.id,
       letter,
     });
-    const updatedLetter = await this.prisma.listenerLetter.update({
-      where: {
+    try {
+      const updatedLetter = await this.prisma.listenerLetter.update({
+        where: {
+          id: letter.id,
+        },
+        data: {
+          programId: program.id,
+        },
+      });
+      this.logger.log(
+        `お便り [${letter.id}] を番組 [${program.id}] で紹介済みにしました`,
+        {
+          updatedLetter,
+        },
+      );
+    } catch (error) {
+      const errorMessage = `お便り [${letter.id}] を番組 [${program.id}] で紹介済みにする更新に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
         id: letter.id,
-      },
-      data: {
         programId: program.id,
-      },
-    });
-    this.logger.log(
-      `お便り [${letter.id}] を番組 [${program.id}] で紹介済みにしました`,
-      {
-        updatedLetter,
-      },
-    );
+      });
+      this.logger.error(error.message, error.stack);
+      throw new ListenerLetterUpdateError(errorMessage, {
+        cause: error,
+      });
+    }
   }
 }

@@ -36,6 +36,7 @@ export class AppUsersRepository implements IAppUsersRepository {
         error,
         userId,
       });
+      this.logger.error(error.message, error.stack);
       throw new AppUserFindError(errorMessage, {
         cause: error,
       });
