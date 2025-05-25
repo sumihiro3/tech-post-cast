@@ -32,10 +32,50 @@ export class HeadlineTopicProgramGenerateScriptError extends HeadlineTopicProgra
 }
 
 /**
+ * ヘッドライントピック番組の生成に失敗したことを表すエラー
+ */
+export class HeadlineTopicProgramGenerateError extends HeadlineTopicProgramError {
+  override name = 'HeadlineTopicProgramGenerateError';
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}
+
+/**
  * ヘッドライントピック番組の再生成に失敗したことを表すエラー
  */
 export class HeadlineTopicProgramRegenerateError extends HeadlineTopicProgramError {
   override name = 'HeadlineTopicProgramRegenerateError';
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}
+
+/**
+ * ヘッドライントピック番組の台本ベクトル化に失敗したことを表すエラー
+ */
+export class HeadlineTopicProgramVectorizeError extends HeadlineTopicProgramError {
+  override name = 'HeadlineTopicProgramVectorizeError';
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}
+
+/**
+ * 番組で紹介するお便りの取得に失敗したことを表すエラー
+ */
+export class ListenerLetterFindError extends HeadlineTopicProgramError {
+  override name = 'ListenerLetterFindError';
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}
+
+/**
+ * 番組で紹介するお便りの更新に失敗したことを表すエラー
+ */
+export class ListenerLetterUpdateError extends HeadlineTopicProgramError {
+  override name = 'ListenerLetterUpdateError';
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);
   }

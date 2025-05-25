@@ -302,6 +302,7 @@ export class PersonalizedFeedsRepository
         feedId: feed.id,
         programDate,
       });
+      this.logger.error(error.message, error.stack);
       throw new PersonalizedProgramPersistenceError(errorMessage, {
         cause: error,
       });
@@ -330,6 +331,7 @@ export class PersonalizedFeedsRepository
       this.logger.error(errorMessage, {
         error,
       });
+      this.logger.error(error.message, error.stack);
       throw new PersonalizedProgramPersistenceError(errorMessage, {
         cause: error,
       });
@@ -390,6 +392,7 @@ export class PersonalizedFeedsRepository
         postCount,
         programId,
       });
+      this.logger.error(error.message, error.stack);
       throw new PersonalizedProgramAttemptPersistenceError(errorMessage, {
         cause: error,
       });
@@ -449,6 +452,7 @@ export class PersonalizedFeedsRepository
         programDate,
         reason,
       });
+      this.logger.error(error.message, error.stack);
       throw new PersonalizedProgramAttemptPersistenceError(errorMessage, {
         cause: error,
       });
