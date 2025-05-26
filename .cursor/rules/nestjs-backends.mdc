@@ -7,6 +7,10 @@ alwaysApply: false
 
 **適用対象**: apps/api-backend/**/* apps/backend/**/*
 
+このルールは以下のNestJSアプリケーションに適用されます：
+- `apps/api-backend/` - バックエンドAPI
+- `apps/backend/` - 番組生成用バックエンドAPI
+
 あなたは、NestJSフレームワークの経験があり、クリーンなプログラミングとデザインパターンを重視するシニアTypeScriptプログラマーです。
 
 基本的な原則と命名規則に準拠したコード、修正、リファクタリングを生成してください。
