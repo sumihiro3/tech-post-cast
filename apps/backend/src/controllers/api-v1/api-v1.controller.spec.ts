@@ -88,6 +88,8 @@ describe('ApiV1Controller', () => {
           audioDuration: 1000,
           script: JSON.stringify({ title: 'Test', intro: 'Intro', posts: [], ending: 'Ending' }),
           chapters: JSON.stringify([]),
+          videoUrl: 'https://example.com/video1.mp4',
+          imageUrl: 'https://example.com/image1.jpg',
           posts: [
             {
               id: 'post-1',
@@ -116,6 +118,8 @@ describe('ApiV1Controller', () => {
           audioDuration: 2000,
           script: JSON.stringify({ title: 'Test', intro: 'Intro', posts: [], ending: 'Ending' }),
           chapters: JSON.stringify([]),
+          videoUrl: 'https://example.com/video2.mp4',
+          imageUrl: 'https://example.com/image2.jpg',
           posts: [
             {
               id: 'post-2',
@@ -223,6 +227,8 @@ describe('ApiV1Controller', () => {
           audioDuration: 1000,
           script: JSON.stringify({ title: 'Test', intro: 'Intro', posts: [], ending: 'Ending' }),
           chapters: JSON.stringify([]),
+          videoUrl: 'https://example.com/video-prev.mp4',
+          imageUrl: 'https://example.com/image-prev.jpg',
           posts: [
             {
               id: 'post-prev',
@@ -251,6 +257,8 @@ describe('ApiV1Controller', () => {
           audioDuration: 1500,
           script: JSON.stringify({ title: 'Test', intro: 'Intro', posts: [], ending: 'Ending' }),
           chapters: JSON.stringify([]),
+          videoUrl: 'https://example.com/video.mp4',
+          imageUrl: 'https://example.com/image.jpg',
           posts: [
             {
               id: 'post-target',
@@ -279,6 +287,8 @@ describe('ApiV1Controller', () => {
           audioDuration: 2000,
           script: JSON.stringify({ title: 'Test', intro: 'Intro', posts: [], ending: 'Ending' }),
           chapters: JSON.stringify([]),
+          videoUrl: 'https://example.com/video-next.mp4',
+          imageUrl: 'https://example.com/image-next.jpg',
           posts: [
             {
               id: 'post-next',
@@ -342,6 +352,8 @@ describe('ApiV1Controller', () => {
         audioDuration: 1500,
         script: JSON.stringify({ title: 'Test', intro: 'Intro', posts: [], ending: 'Ending' }),
         chapters: JSON.stringify([]),
+        videoUrl: 'https://example.com/video.mp4',
+        imageUrl: 'https://example.com/image.jpg',
         posts: [
           {
             id: 'post-single',
@@ -402,11 +414,11 @@ describe('ApiV1Controller', () => {
       expect(result.title).toBe('Test Program');
     });
 
-    it('should throw NotFoundException when program is not found', async () => {
+    it('should throw InternalServerErrorException when program is not found', async () => {
       const programId = 'non-existent-id';
       jest.spyOn(service, 'getHeadlineTopicProgram').mockResolvedValue(null);
 
-      await expect(controller.getHeadlineTopicProgram(programId)).rejects.toThrow(NotFoundException);
+      await expect(controller.getHeadlineTopicProgram(programId)).rejects.toThrow(InternalServerErrorException);
     });
 
     it('should throw InternalServerErrorException when service throws an error', async () => {

@@ -11,7 +11,7 @@ import {
   AppUserNotFoundError,
   PersonalizedFeedNotFoundError,
   PersonalizedProgramAlreadyExistsError,
-} from '../../types/errors';
+} from '@/types/errors';
 import { PersonalizedFeedsBuilder } from '../../domains/radio-program/personalized-feed/personalized-feeds-builder';
 import {
   ActiveFeedDto,
@@ -19,6 +19,8 @@ import {
   PersonalizedFeedCreateRequestDto,
 } from './dto/personalized-feed.dto';
 import { PersonalizedFeedsController } from './personalized-feeds.controller';
+import { JsonValue } from '@prisma/client/runtime/library';
+import { PersonalizedFeedWithFilters } from '@tech-post-cast/database';
 
 const moduleMocker = new ModuleMocker(global);
 
@@ -71,45 +73,27 @@ describe('PersonalizedFeedsController', () => {
   describe('getActiveFeeds', () => {
     it('should return active feeds', async () => {
       const mockActiveFeeds = [
-        { 
+        {
           id: 'feed-1',
           name: 'Feed 1',
           description: 'Test feed 1',
-          filterGroups: [
-            {
-              id: 'group-1',
-              name: 'Group 1',
-              tagFilters: [],
-              authorFilters: [],
-              dateRangeFilters: [],
-              likesCountFilters: [],
-            }
-          ],
+          filterGroups: [],
           createdAt: new Date(),
           updatedAt: new Date(),
           userId: 'user-1',
           isActive: true,
         },
-        { 
+        {
           id: 'feed-2',
           name: 'Feed 2',
           description: 'Test feed 2',
-          filterGroups: [
-            {
-              id: 'group-2',
-              name: 'Group 2',
-              tagFilters: [],
-              authorFilters: [],
-              dateRangeFilters: [],
-              likesCountFilters: [],
-            }
-          ],
+          filterGroups: [],
           createdAt: new Date(),
           updatedAt: new Date(),
           userId: 'user-1',
           isActive: true,
         },
-      ];
+      ] as unknown as PersonalizedFeedWithFilters[];
       
       jest
         .spyOn(personalizedFeedsBuilder, 'getActiveFeeds')
@@ -155,9 +139,11 @@ describe('PersonalizedFeedsController', () => {
           programDate: new Date(),
           audioUrl: 'https://example.com/audio.mp3',
           audioDuration: 1000,
-          script: '{}',
-          chapters: '[]',
+          script: {} as JsonValue,
+          chapters: [] as JsonValue,
+          imageUrl: 'https://example.com/image.jpg',
           expiresAt: new Date(),
+          isExpired: false,
         },
         qiitaApiRateRemaining: 50,
         qiitaApiRateReset: 1234567890,
@@ -185,7 +171,7 @@ describe('PersonalizedFeedsController', () => {
 
       jest
         .spyOn(personalizedFeedsBuilder, 'buildProgramByFeed')
-        .mockRejectedValue(new PersonalizedFeedNotFoundError('Feed not found', 'feed-id'));
+        .mockRejectedValue(new PersonalizedFeedNotFoundError('Feed not found'));
 
       await expect(controller.generateProgramByFeed(dto)).rejects.toThrow(
         NotFoundException,
@@ -199,7 +185,7 @@ describe('PersonalizedFeedsController', () => {
 
       jest
         .spyOn(personalizedFeedsBuilder, 'buildProgramByFeed')
-        .mockRejectedValue(new AppUserNotFoundError('User not found', 'user-id'));
+        .mockRejectedValue(new AppUserNotFoundError('User not found'));
 
       await expect(controller.generateProgramByFeed(dto)).rejects.toThrow(
         BadRequestException,
@@ -211,10 +197,11 @@ describe('PersonalizedFeedsController', () => {
       dto.feedId = 'feed-1';
       dto.daysAgo = 0;
 
+      const programDate = new Date();
       jest
         .spyOn(personalizedFeedsBuilder, 'buildProgramByFeed')
         .mockRejectedValue(
-          new PersonalizedProgramAlreadyExistsError('Program already exists', 'feed-id', new Date()),
+          new PersonalizedProgramAlreadyExistsError('Program already exists', programDate),
         );
 
       await expect(controller.generateProgramByFeed(dto)).rejects.toThrow(
@@ -265,7 +252,7 @@ describe('PersonalizedFeedsController', () => {
         error: { message: 'Test error' },
       };
 
-      jest.spyOn(appConfigService, 'SlackIncomingWebhookUrl', 'get').mockReturnValue('');
+      Object.defineProperty(appConfigService, 'SlackIncomingWebhookUrl', { value: '' });
       global.fetch = jest.fn();
 
       await controller.notifyError(body);
@@ -306,7 +293,7 @@ describe('PersonalizedFeedsController', () => {
         failedFeedIds: ['feed-5'],
       };
 
-      jest.spyOn(appConfigService, 'SlackIncomingWebhookUrl', 'get').mockReturnValue('');
+      Object.defineProperty(appConfigService, 'SlackIncomingWebhookUrl', { value: '' });
       global.fetch = jest.fn();
 
       await controller.finalize(body);
