@@ -52,3 +52,163 @@
 
 - 記事データ保存プロセス実装 (P1)
 - 記事永続化テスト (P1)
+
+## ファクトリクラスによるテストデータ管理戦略 (2025-01-26)
+
+### 背景と課題
+
+ダッシュボード表示用API実装のテスト作成において、当初テストファイル内で直接モックデータを作成していた。これにより以下の問題が発生：
+
+- テストデータの重複定義
+- データ構造変更時の修正箇所の分散
+- テストデータの一貫性の欠如
+- 複雑なオブジェクト構造の可読性低下
+
+### 検討したアプローチ
+
+1. **テスト内直接定義**: 各テストファイルでモックデータを直接作成
+   - 利点: 実装が簡単、テスト固有のカスタマイズが容易
+   - 欠点: 重複コード、メンテナンス性低下、一貫性の問題
+
+2. **ファクトリクラスパターン**: 共通のファクトリクラスでテストデータを管理
+   - 利点: 再利用性、一貫性、メンテナンス性向上
+   - 欠点: 初期実装コスト、抽象化レベルの調整が必要
+
+### 決定事項と理由
+
+**ファクトリクラスパターンを採用**し、以下の設計原則を確立：
+
+#### ファクトリクラス設計原則
+
+```typescript
+// src/test/factories/personalized-program.factory.ts
+export class PersonalizedProgramFactory {
+  // 基本的なデータ作成メソッド
+  static createPersonalizedProgram(overrides: Partial<PersonalizedFeedProgramWithDetails> = {}): PersonalizedFeedProgramWithDetails {
+    return {
+      id: 'test-program-id',
+      title: 'テストプログラム',
+      // ... デフォルト値
+      ...overrides, // 上書き可能
+    };
+  }
+
+  // 複数データ作成メソッド
+  static createPersonalizedPrograms(count: number, overrides = {}): PersonalizedFeedProgramWithDetails[] {
+    return Array.from({ length: count }, (_, index) =>
+      this.createPersonalizedProgram({
+        id: `test-program-id-${index + 1}`,
+        ...overrides,
+      }),
+    );
+  }
+
+  // 特定用途向けメソッド
+  static createExpiredPersonalizedProgram(overrides = {}): PersonalizedFeedProgramWithDetails {
+    return this.createPersonalizedProgram({
+      expiresAt: new Date('2023-01-01'), // 過去の日付
+      isExpired: true,
+      ...overrides,
+    });
+  }
+}
+```
+
+#### インデックスファイルでの統一管理
+
+```typescript
+// src/test/factories/index.ts
+export * from './personalized-program.factory';
+export * from './personalized-feed.factory';
+export * from './headline-topic-program.factory';
+```
+
+### 実装詳細と成果
+
+1. **PersonalizedProgramFactory**: 5つのメソッドでさまざまなテストシナリオに対応
+2. **PersonalizedFeedFactory**: 4つのメソッドでフィード関連テストをサポート
+3. **既存テストの移行**: 全テストファイルをファクトリクラス使用に更新
+4. **テスト成功率**: 全18テストスイート、147テストが成功
+
+### 学んだ教訓
+
+- **KEY INSIGHT**: ファクトリクラスは必須の実装パターンとして位置づけるべき
+- `overrides`パラメーターにより、デフォルト値と個別カスタマイズの両立が可能
+- 特定用途向けメソッド（expired、inactive等）により、テストシナリオの表現力が向上
+- インデックスファイルによる統一管理で、import文の簡潔化が実現
+
+### ベストプラクティス
+
+1. **命名規則**: `{DomainName}Factory`
+2. **メソッド命名**: `create{EntityName}`, `create{EntityName}s`, `create{SpecificCase}{EntityName}`
+3. **overridesパターン**: 必ず`Partial<T>`型のoverridesパラメーターを提供
+4. **デフォルト値**: 実際のビジネスロジックに近い、意味のあるデフォルト値を設定
+5. **型安全性**: 元の型定義と完全に一致する型を返却
+
+### 関連タスク
+
+- PersonalizedProgramsRepository テスト実装
+- DashboardService テスト実装
+- ファクトリクラス統合作業
+
+---
+
+## エラーハンドリングのテスト戦略 (2025-01-26)
+
+### 背景と課題
+
+Repository層でのエラーハンドリング実装において、適切なテストカバレッジを確保する必要があった。とくに、Prismaエラーを適切にカスタムエラーに変換する処理のテストが重要であった。
+
+### 検討したアプローチ
+
+1. **正常系のみテスト**: 成功ケースのみをテスト対象とする
+   - 利点: 実装が簡単、テスト実行時間短縮
+   - 欠点: エラーハンドリングの品質保証不足
+
+2. **包括的エラーテスト**: 正常系・異常系の両方を網羅的にテスト
+   - 利点: 高い品質保証、エラー処理の信頼性向上
+   - 欠点: テスト実装コスト増大、メンテナンス負荷
+
+### 決定事項と理由
+
+**包括的エラーテスト**を採用し、以下のテストパターンを確立：
+
+#### エラーハンドリングテストパターン
+
+```typescript
+describe('findByUserIdWithPagination', () => {
+  it('正常ケース: データ取得成功', async () => {
+    // 正常系テスト
+  });
+
+  it('エラーケース: PersonalizedProgramRetrievalErrorをスロー', async () => {
+    // Prismaエラーをモック
+    mockPrismaService.personalizedFeedProgram.findMany.mockRejectedValue(
+      new Error('Database connection failed'),
+    );
+
+    // カスタムエラーがスローされることを確認
+    await expect(
+      repository.findByUserIdWithPagination('user-1', options),
+    ).rejects.toThrow(PersonalizedProgramRetrievalError);
+  });
+
+  it('空結果ケース: 空配列を返却', async () => {
+    // 空結果のテスト
+  });
+});
+```
+
+### 学んだ教訓
+
+- **KEY INSIGHT**: Repository層では必ず正常系・異常系・境界値の3パターンをテストする
+- Prismaエラーのモック化により、データベース接続エラーなどの再現が可能
+- カスタムエラークラスの使用により、エラーの種類を明確に分類できる
+- ログ出力もテスト対象に含めることで、デバッグ時の情報提供を保証
+
+### 関連タスク
+
+- PersonalizedProgramsRepository エラーハンドリング実装
+- カスタムエラークラス定義
+
+---
