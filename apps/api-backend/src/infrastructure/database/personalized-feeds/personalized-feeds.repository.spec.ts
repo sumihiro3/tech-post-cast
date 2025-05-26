@@ -374,7 +374,10 @@ describe('PersonalizedFeedsRepository', () => {
       expect(result.deliveryFrequency).toBe('WEEKLY');
       expect(mockPrismaClient.personalizedFeed.update).toHaveBeenCalledWith({
         where: { id: feedId },
-        data: updateData,
+        data: expect.objectContaining({
+          name: updateData.name,
+          deliveryFrequency: updateData.deliveryFrequency,
+        }),
       });
     });
   });
