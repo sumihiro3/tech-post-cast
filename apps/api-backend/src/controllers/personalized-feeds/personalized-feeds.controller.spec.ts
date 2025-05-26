@@ -499,6 +499,7 @@ describe('PersonalizedFeedsController', () => {
             }),
           ]),
         }),
+        mockSubscription,
       );
       expect(result).toBeDefined();
       expect(result.id).toBe(feedId);
