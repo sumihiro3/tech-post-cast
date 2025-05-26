@@ -1,4 +1,4 @@
-import { QiitaPostApiResponse, QiitaPostsSearchResult } from '@/domains/qiita-posts/qiita-posts.entity';
+import { QiitaPostApiResponse, QiitaPostsSearchResult } from '@domains/qiita-posts/qiita-posts.entity';
 
 /**
  * Qiita記事のモックデータを作成するファクトリークラス
