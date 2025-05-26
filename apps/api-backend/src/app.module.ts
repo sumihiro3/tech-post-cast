@@ -1,6 +1,7 @@
 import { AppConfigModule } from '@/app-config/app-config.module';
 import { AuthModule } from '@/auth/auth.module';
 import { ApiV1Module } from '@/controllers/api-v1/api-v1.module';
+import { DashboardModule } from '@/controllers/dashboard/dashboard.module';
 import { PersonalizedFeedsModule } from '@/controllers/personalized-feeds/personalized-feeds.module';
 import { ProgramContentApiModule } from '@/controllers/program-content-api/program-content-api.module';
 import { QiitaPostsModule } from '@/controllers/qiita-posts/qiita-posts.module';
@@ -29,6 +30,7 @@ import { AppService } from './app.service';
     ClerkWebhookModule,
     QiitaPostsModule,
     PersonalizedFeedsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
