@@ -31,29 +31,31 @@
 
 テスト実行時のログ出力を制御するには、以下の方法があります。
 
-1. 環境変数を使用する方法:
-   ```
-   TEST_LOG_ENABLED=true yarn test
-   ```
+### 1. 環境変数を使用する方法
 
-2. テストファイル内で明示的に制御する方法:
-   ```typescript
-   import { suppressLogOutput, restoreLogOutput } from '../helpers/logger.helper';
+```txt
+TEST_LOG_ENABLED=true yarn test
+```
 
-   describe('テストスイート', () => {
-     let logSpies: jest.SpyInstance[];
+### 2. テストファイル内で明示的に制御する方法
 
-     beforeEach(() => {
-       logSpies = suppressLogOutput();
-     });
+```typescript
+import { suppressLogOutput, restoreLogOutput } from '../helpers/logger.helper';
 
-     afterEach(() => {
-       restoreLogOutput(logSpies);
-     });
+describe('テストスイート', () => {
+  let logSpies: jest.SpyInstance[];
 
-     // テストケース
-   });
-   ```
+  beforeEach(() => {
+    logSpies = suppressLogOutput();
+  });
+
+  afterEach(() => {
+    restoreLogOutput(logSpies);
+  });
+
+  // テストケース
+});
+```
 
 ## テストモジュールの作成
 
