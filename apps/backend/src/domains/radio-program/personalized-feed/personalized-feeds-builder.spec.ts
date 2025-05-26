@@ -10,6 +10,7 @@ import { QiitaPostFactory } from '../../../test/factories/qiita-post.factory';
 import { AppUserNotFoundError } from '../../../types/errors/app-user.error';
 import { PersonalizedFeedNotFoundError } from '../../../types/errors/personalized-feed.error';
 import { PersonalizedFeedError } from '../../../types/errors/personalized-feed.error';
+import { PersonalizedProgramAlreadyExistsError, InsufficientPostsError } from '../../../types/errors/personalized-program.error';
 
 describe('PersonalizedFeedsBuilder', () => {
   let builder: PersonalizedFeedsBuilder;

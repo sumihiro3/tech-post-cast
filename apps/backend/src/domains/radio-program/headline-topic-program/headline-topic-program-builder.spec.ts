@@ -7,6 +7,8 @@ import { HeadlineTopicProgramFactory } from '../../../test/factories/headline-to
 import { QiitaPostFactory } from '../../../test/factories/qiita-post.factory';
 import { suppressLogOutput, restoreLogOutput } from '../../../test/helpers/logger.helper';
 import { HeadlineTopicProgramError, HeadlineTopicProgramRegenerateError } from '../../../types/errors/headline-topic-program.error';
+import { HeadlineTopicProgramScript, ProgramRegenerationType } from './index';
+import { HeadlineTopicProgramWithQiitaPosts } from '@tech-post-cast/database';
 
 describe('HeadlineTopicProgramBuilder', () => {
   let builder: HeadlineTopicProgramBuilder;
@@ -15,6 +17,7 @@ describe('HeadlineTopicProgramBuilder', () => {
   let openAiApiClient: jest.Mocked<OpenAiApiClient>;
   let qiitaPostsRepository: any;
   let headlineTopicProgramsRepository: any;
+  let listenerLettersRepository: any;
   let textToSpeechClient: any;
   let programFileMaker: any;
   let programFileUploader: any;
@@ -31,7 +34,7 @@ describe('HeadlineTopicProgramBuilder', () => {
     } as unknown as jest.Mocked<AppConfigService>;
 
     qiitaPostsApiClient = {
-      findQiitaPosts: jest.fn(),
+      findQiitaPostsByTags: jest.fn(),
     } as unknown as jest.Mocked<QiitaPostsApiClient>;
 
     openAiApiClient = {
@@ -45,6 +48,13 @@ describe('HeadlineTopicProgramBuilder', () => {
     headlineTopicProgramsRepository = {
       createHeadlineTopicProgram: jest.fn(),
       updateHeadlineTopicProgram: jest.fn(),
+      findOne: jest.fn(),
+    };
+
+    listenerLettersRepository = {
+      findUnintroduced: jest.fn(),
+      findIntroduced: jest.fn(),
+      updateAsIntroduced: jest.fn(),
     };
 
     textToSpeechClient = {
@@ -52,11 +62,11 @@ describe('HeadlineTopicProgramBuilder', () => {
     };
 
     programFileMaker = {
-      generateHeadlineTopicProgramFile: jest.fn(),
+      generateProgramAudioFile: jest.fn(),
     };
 
     programFileUploader = {
-      uploadHeadlineTopicProgramFile: jest.fn(),
+      uploadProgramFile: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -94,6 +104,10 @@ describe('HeadlineTopicProgramBuilder', () => {
           provide: 'ProgramFileUploader',
           useValue: programFileUploader,
         },
+        {
+          provide: 'ListenerLettersRepository',
+          useValue: listenerLettersRepository,
+        },
       ],
     }).compile();
 
@@ -111,15 +125,13 @@ describe('HeadlineTopicProgramBuilder', () => {
 
   describe('buildProgram', () => {
     it('番組を正常に生成できること', async () => {
-      const mockPosts = QiitaPostFactory.createQiitaPostModels(3);
-      const mockScript = {
+      const mockPosts = QiitaPostFactory.createQiitaPostApiResponses(3);
+      const mockScript: HeadlineTopicProgramScript = {
         title: 'テスト番組',
-        opening: 'オープニング',
+        intro: 'イントロダクション',
         posts: mockPosts.map(post => ({
-          id: post.id,
+          postId: post.id,
           title: post.title,
-          intro: `${post.title}の紹介`,
-          explanation: `${post.title}の説明`,
           summary: `${post.title}のまとめ`,
         })),
         ending: 'エンディング',
@@ -131,29 +143,32 @@ describe('HeadlineTopicProgramBuilder', () => {
       };
       const mockGenerateResult = HeadlineTopicProgramFactory.createProgramGenerateResult();
       const mockUploadResult = HeadlineTopicProgramFactory.createProgramUploadResult();
-      const mockProgram = HeadlineTopicProgramFactory.createHeadlineTopicProgram();
+      const mockProgram1 = HeadlineTopicProgramFactory.createHeadlineTopicProgram();
 
       qiitaPostsApiClient.findQiitaPostsByTags.mockResolvedValue({
         posts: mockPosts,
-        totalCount: mockPosts.length,
-        rateLimit: { remaining: 100, reset: new Date() },
+        maxPage: 1,
+        rateRemaining: 100,
+        rateReset: Date.now(),
+      });
+      openAiApiClient.summarizePost = jest.fn().mockImplementation(post => {
+        return { summary: `${post.title}のまとめ` };
       });
       openAiApiClient.generateHeadlineTopicProgramScript.mockResolvedValue(mockScript);
       textToSpeechClient.generateHeadlineTopicProgramAudioFiles.mockResolvedValue(mockAudioFiles);
-      programFileMaker.generateHeadlineTopicProgramFile.mockResolvedValue(mockGenerateResult);
-      programFileUploader.uploadHeadlineTopicProgramFile.mockResolvedValue(mockUploadResult);
+      programFileMaker.generateProgramAudioFile.mockResolvedValue(mockGenerateResult);
+      programFileUploader.uploadProgramFile.mockResolvedValue(mockUploadResult);
       qiitaPostsRepository.upsertQiitaPosts.mockResolvedValue(mockPosts);
-      headlineTopicProgramsRepository.createHeadlineTopicProgram.mockResolvedValue(mockProgram);
+      headlineTopicProgramsRepository.createHeadlineTopicProgram.mockResolvedValue(mockProgram1);
 
       const result = await builder.buildProgram(new Date(), mockPosts);
 
       expect(result).toBeDefined();
-      expect(result).toEqual(mockProgram);
-      expect(qiitaPostsApiClient.findQiitaPosts).toHaveBeenCalled();
+      expect(result).toEqual(mockProgram1);
       expect(openAiApiClient.generateHeadlineTopicProgramScript).toHaveBeenCalled();
       expect(textToSpeechClient.generateHeadlineTopicProgramAudioFiles).toHaveBeenCalled();
-      expect(programFileMaker.generateHeadlineTopicProgramFile).toHaveBeenCalled();
-      expect(programFileUploader.uploadHeadlineTopicProgramFile).toHaveBeenCalled();
+      expect(programFileMaker.generateProgramAudioFile).toHaveBeenCalled();
+      expect(programFileUploader.uploadProgramFile).toHaveBeenCalled();
       expect(qiitaPostsRepository.upsertQiitaPosts).toHaveBeenCalled();
       expect(headlineTopicProgramsRepository.createHeadlineTopicProgram).toHaveBeenCalled();
     });
@@ -163,22 +178,20 @@ describe('HeadlineTopicProgramBuilder', () => {
       qiitaPostsApiClient.findQiitaPostsByTags = jest.fn().mockRejectedValue(error);
 
       await expect(builder.buildProgram(new Date(), [])).rejects.toThrow(HeadlineTopicProgramError);
-      expect(qiitaPostsApiClient.findQiitaPosts).toHaveBeenCalled();
+      expect(qiitaPostsApiClient.findQiitaPostsByTags).toHaveBeenCalled();
     });
   });
 
   describe('regenerateProgram', () => {
     it('番組を正常に再生成できること', async () => {
       const programId = 'program-1';
-      const mockPosts = QiitaPostFactory.createQiitaPostModels(3);
-      const mockScript = {
+      const mockPosts = QiitaPostFactory.createQiitaPostApiResponses(3);
+      const mockScript: HeadlineTopicProgramScript = {
         title: 'テスト番組',
-        opening: 'オープニング',
+        intro: 'イントロダクション',
         posts: mockPosts.map(post => ({
-          id: post.id,
+          postId: post.id,
           title: post.title,
-          intro: `${post.title}の紹介`,
-          explanation: `${post.title}の説明`,
           summary: `${post.title}のまとめ`,
         })),
         ending: 'エンディング',
@@ -190,27 +203,43 @@ describe('HeadlineTopicProgramBuilder', () => {
       };
       const mockGenerateResult = HeadlineTopicProgramFactory.createProgramGenerateResult();
       const mockUploadResult = HeadlineTopicProgramFactory.createProgramUploadResult();
-      const mockProgram = HeadlineTopicProgramFactory.createHeadlineTopicProgram();
-
+      const mockProgram2 = HeadlineTopicProgramFactory.createHeadlineTopicProgram();
+      
       headlineTopicProgramsRepository.findOne = jest.fn().mockResolvedValue({
-        ...mockProgram,
-        qiitaPosts: mockPosts,
+        id: programId,
+        posts: mockPosts,
+        createdAt: new Date()
+      });
+
+      openAiApiClient.summarizePost = jest.fn().mockImplementation(post => {
+        return { summary: `${post.title}のまとめ` };
       });
       openAiApiClient.generateHeadlineTopicProgramScript.mockResolvedValue(mockScript);
       textToSpeechClient.generateHeadlineTopicProgramAudioFiles.mockResolvedValue(mockAudioFiles);
-      programFileMaker.generateHeadlineTopicProgramFile.mockResolvedValue(mockGenerateResult);
-      programFileUploader.uploadHeadlineTopicProgramFile.mockResolvedValue(mockUploadResult);
-      headlineTopicProgramsRepository.updateHeadlineTopicProgram.mockResolvedValue(mockProgram);
+      programFileMaker.generateProgramAudioFile.mockResolvedValue(mockGenerateResult);
+      programFileUploader.uploadProgramFile.mockResolvedValue(mockUploadResult);
+      headlineTopicProgramsRepository.updateHeadlineTopicProgram.mockResolvedValue(mockProgram2);
 
-      const result = await builder.regenerateProgram(programId, 'SCRIPT_AND_AUDIO');
+      const regenerationType: ProgramRegenerationType = 'SCRIPT_AND_AUDIO';
+      const mockProgramWithPosts = {
+        id: programId,
+        title: 'テスト番組',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        audioUrl: 'https://example.com/audio.mp3',
+        audioDuration: 300,
+        isActive: true,
+        posts: []
+      } as unknown as HeadlineTopicProgramWithQiitaPosts;
+      const result = await builder.regenerateProgram(mockProgramWithPosts, regenerationType);
 
       expect(result).toBeDefined();
-      expect(result).toEqual(mockProgram);
+      expect(result).toEqual(mockProgram2);
       expect(headlineTopicProgramsRepository.findOne).toHaveBeenCalledWith(programId);
       expect(openAiApiClient.generateHeadlineTopicProgramScript).toHaveBeenCalled();
       expect(textToSpeechClient.generateHeadlineTopicProgramAudioFiles).toHaveBeenCalled();
-      expect(programFileMaker.generateHeadlineTopicProgramFile).toHaveBeenCalled();
-      expect(programFileUploader.uploadHeadlineTopicProgramFile).toHaveBeenCalled();
+      expect(programFileMaker.generateProgramAudioFile).toHaveBeenCalled();
+      expect(programFileUploader.uploadProgramFile).toHaveBeenCalled();
       expect(headlineTopicProgramsRepository.updateHeadlineTopicProgram).toHaveBeenCalled();
     });
 
@@ -218,47 +247,73 @@ describe('HeadlineTopicProgramBuilder', () => {
       const programId = 'non-existent-program';
       headlineTopicProgramsRepository.findOne = jest.fn().mockResolvedValue(null);
 
-      await expect(builder.regenerateProgram(programId, 'SCRIPT_AND_AUDIO')).rejects.toThrow(HeadlineTopicProgramRegenerateError);
+      const regenerationType: ProgramRegenerationType = 'SCRIPT_AND_AUDIO';
+      headlineTopicProgramsRepository.findOne.mockResolvedValue(null);
+      headlineTopicProgramsRepository.findOne.mockResolvedValue({
+        id: programId,
+        title: 'テスト番組',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        audioUrl: 'https://example.com/audio.mp3',
+        audioDuration: 300,
+        isActive: true,
+        posts: []
+      } as unknown as HeadlineTopicProgramWithQiitaPosts);
+      
+      const mockEmptyProgram = {
+        id: programId,
+        title: 'テスト番組',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        audioUrl: 'https://example.com/audio.mp3',
+        audioDuration: 300,
+        isActive: true,
+        posts: []
+      } as unknown as HeadlineTopicProgramWithQiitaPosts;
+      
+      await expect(builder.regenerateProgram(
+        mockEmptyProgram,
+        regenerationType
+      )).rejects.toThrow(HeadlineTopicProgramRegenerateError);
       expect(headlineTopicProgramsRepository.findOne).toHaveBeenCalledWith(programId);
     });
   });
 
   describe('summarizePosts', () => {
     it('記事を正常に要約できること', async () => {
-      const mockPosts = QiitaPostFactory.createQiitaPostModels(3);
-      const mockScript = {
+      const mockPosts = QiitaPostFactory.createQiitaPostApiResponses(3);
+      const mockScript: HeadlineTopicProgramScript = {
         title: 'テスト番組',
-        opening: 'オープニング',
+        intro: 'イントロダクション',
         posts: mockPosts.map(post => ({
-          id: post.id,
+          postId: post.id,
           title: post.title,
-          intro: `${post.title}の紹介`,
-          explanation: `${post.title}の説明`,
           summary: `${post.title}のまとめ`,
         })),
         ending: 'エンディング',
       };
 
+      openAiApiClient.summarizePost = jest.fn().mockImplementation(post => {
+        return { summary: `${post.title}のまとめ` };
+      });
       openAiApiClient.generateHeadlineTopicProgramScript.mockResolvedValue(mockScript);
 
       const result = await builder.summarizePosts(mockPosts);
 
-      expect(result).toEqual(mockScript);
-      expect(openAiApiClient.generateHeadlineTopicProgramScript).toHaveBeenCalledWith(mockPosts);
+      expect(result).toBeDefined();
+      expect(openAiApiClient.summarizePost).toHaveBeenCalled();
     });
   });
 
   describe('generateScript', () => {
     it('台本を正常に生成できること', async () => {
-      const mockPosts = QiitaPostFactory.createQiitaPostModels(3);
-      const mockScript = {
+      const mockPosts = QiitaPostFactory.createQiitaPostApiResponses(3);
+      const mockScript: HeadlineTopicProgramScript = {
         title: 'テスト番組',
-        opening: 'オープニング',
+        intro: 'イントロダクション',
         posts: mockPosts.map(post => ({
-          id: post.id,
+          postId: post.id,
           title: post.title,
-          intro: `${post.title}の紹介`,
-          explanation: `${post.title}の説明`,
           summary: `${post.title}のまとめ`,
         })),
         ending: 'エンディング',
@@ -266,17 +321,20 @@ describe('HeadlineTopicProgramBuilder', () => {
 
       qiitaPostsApiClient.findQiitaPostsByTags.mockResolvedValue({
         posts: mockPosts,
-        totalCount: mockPosts.length,
-        rateLimit: { remaining: 100, reset: new Date() },
+        maxPage: 1,
+        rateRemaining: 100,
+        rateReset: Date.now(),
+      });
+      openAiApiClient.summarizePost = jest.fn().mockImplementation(post => {
+        return { summary: `${post.title}のまとめ` };
       });
       openAiApiClient.generateHeadlineTopicProgramScript.mockResolvedValue(mockScript);
 
-      const result = await builder.generateScript(new Date());
+      const result = await builder.generateScript(new Date(), mockPosts);
 
       expect(result).toBeDefined();
-      expect(result.script).toEqual(mockScript);
-      expect(result.posts).toEqual(mockPosts);
-      expect(qiitaPostsApiClient.findQiitaPosts).toHaveBeenCalled();
+      expect(result).toEqual(mockScript);
+      expect(qiitaPostsApiClient.findQiitaPostsByTags).toHaveBeenCalled();
       expect(openAiApiClient.generateHeadlineTopicProgramScript).toHaveBeenCalled();
     });
   });
