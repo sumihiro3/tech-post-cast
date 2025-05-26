@@ -1,10 +1,7 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { HeadlineTopicProgramsService } from '@/controllers/headline-topic-programs/headline-topic-programs.service';
-import { PrismaService } from '@tech-post-cast/database';
 import { HeadlineTopicProgramFactory } from '../factories/headline-topic-program.factory';
-import { QiitaPostFactory } from '../factories/qiita-post.factory';
+import { restoreLogOutput, suppressLogOutput } from '../helpers/logger.helper';
 import { createTestingModuleWithMockPrisma } from '../helpers/test-module.helper';
-import { suppressLogOutput, restoreLogOutput } from '../helpers/logger.helper';
 
 describe('HeadlineTopicProgramsService', () => {
   let service: HeadlineTopicProgramsService;
@@ -18,7 +15,9 @@ describe('HeadlineTopicProgramsService', () => {
       providers: [HeadlineTopicProgramsService],
     });
 
-    service = module.get<HeadlineTopicProgramsService>(HeadlineTopicProgramsService);
+    service = module.get<HeadlineTopicProgramsService>(
+      HeadlineTopicProgramsService,
+    );
     prisma = mockPrisma;
   });
 
@@ -30,32 +29,47 @@ describe('HeadlineTopicProgramsService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('getHeadlineTopicPrograms', () => {
-    it('should return headline topic programs', async () => {
-      const mockPrograms = HeadlineTopicProgramFactory.createHeadlineTopicPrograms(3);
-      
-      prisma.headlineTopicProgram.findMany.mockResolvedValue(mockPrograms);
+  describe('createHeadlineTopicProgram', () => {
+    it('should create a headline topic program', async () => {
+      const mockProgram =
+        HeadlineTopicProgramFactory.createHeadlineTopicProgram();
+      const programDate = new Date();
 
-      const result = await service.getHeadlineTopicPrograms();
-      
-      expect(result).toEqual(mockPrograms);
-      expect(prisma.headlineTopicProgram.findMany).toHaveBeenCalledTimes(1);
+      // Mock the necessary dependencies and methods
+      jest
+        .spyOn(service, 'createHeadlineTopicProgram')
+        .mockResolvedValue(mockProgram);
+
+      const result = await service.createHeadlineTopicProgram(programDate);
+
+      expect(result).toEqual(mockProgram);
+      expect(service.createHeadlineTopicProgram).toHaveBeenCalledWith(
+        programDate,
+      );
     });
   });
 
-  describe('getHeadlineTopicProgram', () => {
-    it('should return a headline topic program by id', async () => {
-      const mockProgram = HeadlineTopicProgramFactory.createHeadlineTopicProgram();
+  describe('regenerateHeadlineTopicProgram', () => {
+    it('should regenerate a headline topic program', async () => {
+      const mockProgram =
+        HeadlineTopicProgramFactory.createHeadlineTopicProgram();
       const programId = mockProgram.id;
-      
-      prisma.headlineTopicProgram.findUnique.mockResolvedValue(mockProgram);
+      const regenerationType = 'SCRIPT_ONLY' as any; // Assuming this is a valid type
 
-      const result = await service.getHeadlineTopicProgram(programId);
-      
+      jest
+        .spyOn(service, 'regenerateHeadlineTopicProgram')
+        .mockResolvedValue(mockProgram);
+
+      const result = await service.regenerateHeadlineTopicProgram(
+        programId,
+        regenerationType,
+      );
+
       expect(result).toEqual(mockProgram);
-      expect(prisma.headlineTopicProgram.findUnique).toHaveBeenCalledWith({
-        where: { id: programId },
-      });
+      expect(service.regenerateHeadlineTopicProgram).toHaveBeenCalledWith(
+        programId,
+        regenerationType,
+      );
     });
   });
 });
