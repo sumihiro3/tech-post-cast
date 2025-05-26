@@ -1,16 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PersonalizedFeedsBuilder } from './personalized-feeds-builder';
 import { AppConfigService } from '../../../app-config/app-config.service';
-import { PersonalizedFeedFilterMapper } from './personalized-feed-filter.mapper';
 import { QiitaPostsApiClient } from '../../../infrastructure/external-api/qiita-api/qiita-posts.api.client';
-import { suppressLogOutput, restoreLogOutput } from '../../../test/helpers/logger.helper';
 import { AppUserFactory } from '../../../test/factories/app-user.factory';
 import { PersonalizedFeedFactory } from '../../../test/factories/personalized-feed.factory';
 import { QiitaPostFactory } from '../../../test/factories/qiita-post.factory';
-import { AppUserNotFoundError } from '../../../types/errors/app-user.error';
-import { PersonalizedFeedNotFoundError } from '../../../types/errors/personalized-feed.error';
-import { PersonalizedFeedError } from '../../../types/errors/personalized-feed.error';
-import { PersonalizedProgramAlreadyExistsError, InsufficientPostsError } from '../../../types/errors/personalized-program.error';
+import {
+  restoreLogOutput,
+  suppressLogOutput,
+} from '../../../test/helpers/logger.helper';
+import {
+  InsufficientPostsError,
+  PersonalizedProgramAlreadyExistsError,
+  PersonalizeProgramError,
+} from '../../../types/errors/personalized-program.error';
+import { PersonalizedFeedFilterMapper } from './personalized-feed-filter.mapper';
+import { PersonalizedFeedsBuilder } from './personalized-feeds-builder';
 
 describe('PersonalizedFeedsBuilder', () => {
   let builder: PersonalizedFeedsBuilder;
@@ -142,11 +146,15 @@ describe('PersonalizedFeedsBuilder', () => {
 
   describe('invalidateExpiredPrograms', () => {
     it('有効期限が過ぎたパーソナルプログラムを無効化できること', async () => {
-      personalizedFeedsRepository.invalidateExpiredPrograms.mockResolvedValue(undefined);
+      personalizedFeedsRepository.invalidateExpiredPrograms.mockResolvedValue(
+        undefined,
+      );
 
       await builder.invalidateExpiredPrograms();
 
-      expect(personalizedFeedsRepository.invalidateExpiredPrograms).toHaveBeenCalled();
+      expect(
+        personalizedFeedsRepository.invalidateExpiredPrograms,
+      ).toHaveBeenCalled();
     });
   });
 
@@ -157,12 +165,15 @@ describe('PersonalizedFeedsBuilder', () => {
       const mockFeed = PersonalizedFeedFactory.createPersonalizedFeed();
       const mockUser = AppUserFactory.createAppUser();
       const mockPosts = QiitaPostFactory.createQiitaPostModels(3);
-      const mockProgram = PersonalizedFeedFactory.createPersonalizedFeedProgram();
+      const mockProgram =
+        PersonalizedFeedFactory.createPersonalizedFeedProgram();
 
       personalizedFeedsRepository.findOne.mockResolvedValue(mockFeed);
       appUsersRepository.findOne.mockResolvedValue(mockUser);
-      personalizedFeedsRepository.findProgramByFeedIdAndDate.mockResolvedValue(null);
-      
+      personalizedFeedsRepository.findProgramByFeedIdAndDate.mockResolvedValue(
+        null,
+      );
+
       jest.spyOn(builder, 'buildProgram').mockResolvedValue({
         program: mockProgram,
         qiitaApiRateRemaining: 100,
@@ -175,25 +186,28 @@ describe('PersonalizedFeedsBuilder', () => {
       expect(result.program).toEqual(mockProgram);
       expect(personalizedFeedsRepository.findOne).toHaveBeenCalledWith(feedId);
       expect(appUsersRepository.findOne).toHaveBeenCalledWith(mockFeed.userId);
-      expect(personalizedFeedsRepository.findProgramByFeedIdAndDate).toHaveBeenCalledWith(
+      expect(
+        personalizedFeedsRepository.findProgramByFeedIdAndDate,
+      ).toHaveBeenCalledWith(mockFeed, programDate);
+      expect(builder.buildProgram).toHaveBeenCalledWith(
+        mockUser,
         mockFeed,
         programDate,
       );
-      expect(builder.buildProgram).toHaveBeenCalledWith(mockUser, mockFeed, programDate);
     });
 
-    it('パーソナルフィードが見つからない場合、PersonalizedFeedNotFoundErrorがスローされること', async () => {
+    it('パーソナルフィードが見つからない場合、PersonalizeProgramErrorがスローされること', async () => {
       const feedId = 'non-existent-feed';
       const programDate = new Date();
       personalizedFeedsRepository.findOne.mockResolvedValue(null);
 
-      await expect(builder.buildProgramByFeed(feedId, programDate)).rejects.toThrow(
-        PersonalizedFeedNotFoundError,
-      );
+      await expect(
+        builder.buildProgramByFeed(feedId, programDate),
+      ).rejects.toThrow(PersonalizeProgramError);
       expect(personalizedFeedsRepository.findOne).toHaveBeenCalledWith(feedId);
     });
 
-    it('ユーザーが見つからない場合、AppUserNotFoundErrorがスローされること', async () => {
+    it('ユーザーが見つからない場合、PersonalizeProgramErrorがスローされること', async () => {
       const feedId = 'feed-1';
       const programDate = new Date();
       const mockFeed = PersonalizedFeedFactory.createPersonalizedFeed();
@@ -201,9 +215,9 @@ describe('PersonalizedFeedsBuilder', () => {
       personalizedFeedsRepository.findOne.mockResolvedValue(mockFeed);
       appUsersRepository.findOne.mockResolvedValue(null);
 
-      await expect(builder.buildProgramByFeed(feedId, programDate)).rejects.toThrow(
-        AppUserNotFoundError,
-      );
+      await expect(
+        builder.buildProgramByFeed(feedId, programDate),
+      ).rejects.toThrow(PersonalizeProgramError);
       expect(personalizedFeedsRepository.findOne).toHaveBeenCalledWith(feedId);
       expect(appUsersRepository.findOne).toHaveBeenCalledWith(mockFeed.userId);
     });
@@ -213,21 +227,23 @@ describe('PersonalizedFeedsBuilder', () => {
       const programDate = new Date();
       const mockFeed = PersonalizedFeedFactory.createPersonalizedFeed();
       const mockUser = AppUserFactory.createAppUser();
-      const mockProgram = PersonalizedFeedFactory.createPersonalizedFeedProgram();
+      const mockProgram =
+        PersonalizedFeedFactory.createPersonalizedFeedProgram();
 
       personalizedFeedsRepository.findOne.mockResolvedValue(mockFeed);
       appUsersRepository.findOne.mockResolvedValue(mockUser);
-      personalizedFeedsRepository.findProgramByFeedIdAndDate.mockResolvedValue(mockProgram);
-
-      await expect(builder.buildProgramByFeed(feedId, programDate)).rejects.toThrow(
-        PersonalizedProgramAlreadyExistsError,
+      personalizedFeedsRepository.findProgramByFeedIdAndDate.mockResolvedValue(
+        mockProgram,
       );
+
+      await expect(
+        builder.buildProgramByFeed(feedId, programDate),
+      ).rejects.toThrow(PersonalizedProgramAlreadyExistsError);
       expect(personalizedFeedsRepository.findOne).toHaveBeenCalledWith(feedId);
       expect(appUsersRepository.findOne).toHaveBeenCalledWith(mockFeed.userId);
-      expect(personalizedFeedsRepository.findProgramByFeedIdAndDate).toHaveBeenCalledWith(
-        mockFeed,
-        programDate,
-      );
+      expect(
+        personalizedFeedsRepository.findProgramByFeedIdAndDate,
+      ).toHaveBeenCalledWith(mockFeed, programDate);
     });
   });
 
@@ -238,7 +254,7 @@ describe('PersonalizedFeedsBuilder', () => {
       const mockFeeds = PersonalizedFeedFactory.createPersonalizedFeeds(1);
 
       personalizedFeedsRepository.findActiveByUser.mockResolvedValue(mockFeeds);
-      
+
       jest.spyOn(builder, 'buildProgram').mockResolvedValue({
         program: PersonalizedFeedFactory.createPersonalizedFeedProgram(),
         qiitaApiRateRemaining: 100,
@@ -247,8 +263,14 @@ describe('PersonalizedFeedsBuilder', () => {
 
       await builder.buildProgramByUser(mockUser, programDate);
 
-      expect(personalizedFeedsRepository.findActiveByUser).toHaveBeenCalledWith(mockUser);
-      expect(builder.buildProgram).toHaveBeenCalledWith(mockUser, mockFeeds[0], programDate);
+      expect(personalizedFeedsRepository.findActiveByUser).toHaveBeenCalledWith(
+        mockUser,
+      );
+      expect(builder.buildProgram).toHaveBeenCalledWith(
+        mockUser,
+        mockFeeds[0],
+        programDate,
+      );
     });
 
     it('アクティブなパーソナルフィードが見つからない場合、処理を終了すること', async () => {
@@ -256,12 +278,14 @@ describe('PersonalizedFeedsBuilder', () => {
       const programDate = new Date();
 
       personalizedFeedsRepository.findActiveByUser.mockResolvedValue([]);
-      
+
       const buildProgramSpy = jest.spyOn(builder, 'buildProgram');
 
       await builder.buildProgramByUser(mockUser, programDate);
 
-      expect(personalizedFeedsRepository.findActiveByUser).toHaveBeenCalledWith(mockUser);
+      expect(personalizedFeedsRepository.findActiveByUser).toHaveBeenCalledWith(
+        mockUser,
+      );
       expect(buildProgramSpy).not.toHaveBeenCalled();
     });
   });
@@ -276,28 +300,36 @@ describe('PersonalizedFeedsBuilder', () => {
         subscriptions: [{ id: 'sub-1', status: 'ACTIVE', planId: 'plan-1' }],
       };
 
-      appUsersRepository.findOneWithSubscription.mockResolvedValue(mockUserWithSubscription);
-      
-      jest.spyOn(builder, 'generatePersonalizedProgramScript').mockRejectedValue(
-        new InsufficientPostsError('記事が不足しています'),
+      appUsersRepository.findOneWithSubscription.mockResolvedValue(
+        mockUserWithSubscription,
       );
-      
-      personalizedFeedsRepository.addPersonalizedProgramFailureAttempt.mockResolvedValue({
-        id: 'attempt-1',
-        feedId: mockFeed.id,
-        userId: mockUser.id,
-        programDate,
-        postsCount: 0,
-        reason: 'NOT_ENOUGH_POSTS',
-        createdAt: new Date(),
-      });
 
-      await expect(builder.buildProgram(mockUser, mockFeed, programDate)).rejects.toThrow(
-        InsufficientPostsError,
+      jest
+        .spyOn(builder, 'generatePersonalizedProgramScript')
+        .mockRejectedValue(new InsufficientPostsError('記事が不足しています'));
+
+      personalizedFeedsRepository.addPersonalizedProgramFailureAttempt.mockResolvedValue(
+        {
+          id: 'attempt-1',
+          feedId: mockFeed.id,
+          userId: mockUser.id,
+          programDate,
+          postsCount: 0,
+          reason: 'NOT_ENOUGH_POSTS',
+          createdAt: new Date(),
+        },
       );
-      expect(appUsersRepository.findOneWithSubscription).toHaveBeenCalledWith(mockUser.id);
+
+      await expect(
+        builder.buildProgram(mockUser, mockFeed, programDate),
+      ).rejects.toThrow(InsufficientPostsError);
+      expect(appUsersRepository.findOneWithSubscription).toHaveBeenCalledWith(
+        mockUser.id,
+      );
       expect(builder.generatePersonalizedProgramScript).toHaveBeenCalled();
-      expect(personalizedFeedsRepository.addPersonalizedProgramFailureAttempt).toHaveBeenCalled();
+      expect(
+        personalizedFeedsRepository.addPersonalizedProgramFailureAttempt,
+      ).toHaveBeenCalled();
     });
   });
 });
