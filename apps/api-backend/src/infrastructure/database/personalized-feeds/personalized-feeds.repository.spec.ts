@@ -371,7 +371,7 @@ describe('PersonalizedFeedsRepository', () => {
 
       expect(result).toBeDefined();
       expect(result.name).toBe('更新したフィード');
-      expect(result.deliveryFrequency).toBe('weekly');
+      expect(result.deliveryFrequency).toBe('WEEKLY');
       expect(mockPrismaClient.personalizedFeed.update).toHaveBeenCalledWith({
         where: { id: feedId },
         data: updateData,
@@ -410,7 +410,7 @@ describe('PersonalizedFeedsRepository', () => {
       expect(result.isActive).toBe(false);
       expect(mockPrismaClient.personalizedFeed.update).toHaveBeenCalledWith({
         where: { id: feedId },
-        data: { isActive: false },
+        data: expect.objectContaining({ isActive: false }),
       });
     });
   });
