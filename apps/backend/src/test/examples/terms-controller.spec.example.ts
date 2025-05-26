@@ -1,10 +1,8 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { TermsController } from '@/controllers/terms/terms.controller';
 import { TermsService } from '@/controllers/terms/terms.service';
-import { PrismaService } from '@tech-post-cast/database';
 import { TermFactory } from '../factories/term.factory';
+import { restoreLogOutput, suppressLogOutput } from '../helpers/logger.helper';
 import { createTestingModuleWithMockPrisma } from '../helpers/test-module.helper';
-import { suppressLogOutput, restoreLogOutput } from '../helpers/logger.helper';
 
 describe('TermsController', () => {
   let controller: TermsController;
@@ -16,7 +14,6 @@ describe('TermsController', () => {
     logSpies = suppressLogOutput();
 
     const mockTermsService = {
-      getTerms: jest.fn(),
       createTerm: jest.fn(),
     };
 
@@ -43,19 +40,6 @@ describe('TermsController', () => {
     expect(controller).toBeDefined();
   });
 
-  describe('getTerms', () => {
-    it('should return terms', async () => {
-      const mockTerms = TermFactory.createTerms(3);
-      
-      jest.spyOn(service, 'getTerms').mockResolvedValue(mockTerms);
-
-      const result = await controller.getTerms();
-      
-      expect(result).toEqual(mockTerms);
-      expect(service.getTerms).toHaveBeenCalledTimes(1);
-    });
-  });
-
   describe('createTerm', () => {
     it('should create a term', async () => {
       const mockTerm = TermFactory.createTerm();
@@ -63,11 +47,11 @@ describe('TermsController', () => {
         term: mockTerm.term,
         reading: mockTerm.reading,
       };
-      
+
       jest.spyOn(service, 'createTerm').mockResolvedValue(mockTerm);
 
       const result = await controller.createTerm(createTermDto);
-      
+
       expect(result).toEqual(mockTerm);
       expect(service.createTerm).toHaveBeenCalledWith(createTermDto);
     });

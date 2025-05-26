@@ -481,6 +481,7 @@ describe('PersonalizedFeedsController', () => {
         feedId,
         updateDto,
         userId,
+        mockSubscription,
       );
 
       // 期待値の検証
@@ -498,6 +499,7 @@ describe('PersonalizedFeedsController', () => {
             }),
           ]),
         }),
+        mockSubscription,
       );
       expect(result).toBeDefined();
       expect(result.id).toBe(feedId);
@@ -524,6 +526,7 @@ describe('PersonalizedFeedsController', () => {
           'nonexistent_feed',
           updateDto,
           userId,
+          mockSubscription,
         ),
       ).rejects.toThrow(NotFoundException);
     });
