@@ -871,8 +871,22 @@ export class PersonalizedFeedsBuilder {
         feedName: feed.name,
       },
     );
-    const minLikesCount =
-      feed.filterGroups[0].likesCountFilters[0].minLikes ?? 0;
+
+    // フィルターグループが存在しない場合は全ての記事を返す
+    if (!feed.filterGroups || feed.filterGroups.length === 0) {
+      return posts;
+    }
+
+    // いいね数フィルターが存在しない場合は全ての記事を返す
+    const firstGroup = feed.filterGroups[0];
+    if (
+      !firstGroup.likesCountFilters ||
+      firstGroup.likesCountFilters.length === 0
+    ) {
+      return posts;
+    }
+
+    const minLikesCount = firstGroup.likesCountFilters[0].minLikes ?? 0;
     if (minLikesCount <= 0) return posts;
     return posts.filter((post) => post.likes_count >= minLikesCount);
   }
