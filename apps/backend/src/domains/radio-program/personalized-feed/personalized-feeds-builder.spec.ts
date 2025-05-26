@@ -34,6 +34,7 @@ describe('PersonalizedFeedsBuilder', () => {
 
     appConfigService = {
       PersonalizedProgramTargetDir: '/tmp/test',
+      ProgramAudioBucketName: 'test-bucket',
       get: jest.fn(),
     } as unknown as jest.Mocked<AppConfigService>;
 
@@ -71,10 +72,11 @@ describe('PersonalizedFeedsBuilder', () => {
 
     programFileMaker = {
       generatePersonalizedProgramFile: jest.fn(),
+      getAudioDuration: jest.fn().mockResolvedValue(1000),
     };
 
     programFileUploader = {
-      uploadPersonalizedProgramFile: jest.fn(),
+      upload: jest.fn().mockResolvedValue('https://example.com/audio.mp3'),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -297,7 +299,14 @@ describe('PersonalizedFeedsBuilder', () => {
       const programDate = new Date();
       const mockUserWithSubscription = {
         ...mockUser,
-        subscriptions: [{ id: 'sub-1', status: 'ACTIVE', planId: 'plan-1' }],
+        subscriptions: [
+          {
+            id: 'sub-1',
+            status: 'ACTIVE',
+            planId: 'plan-1',
+            plan: { id: 'plan-1', name: 'Basic Plan' },
+          },
+        ],
       };
 
       appUsersRepository.findOneWithSubscription.mockResolvedValue(
@@ -329,6 +338,110 @@ describe('PersonalizedFeedsBuilder', () => {
       expect(builder.generatePersonalizedProgramScript).toHaveBeenCalled();
       expect(
         personalizedFeedsRepository.addPersonalizedProgramFailureAttempt,
+      ).toHaveBeenCalled();
+    });
+
+    it('正常に番組を生成できること', async () => {
+      const mockUser = AppUserFactory.createAppUser();
+      const mockFeed = PersonalizedFeedFactory.createPersonalizedFeed();
+      const programDate = new Date();
+      const mockUserWithSubscription = {
+        ...mockUser,
+        subscriptions: [
+          {
+            id: 'sub-1',
+            status: 'ACTIVE',
+            planId: 'plan-1',
+            plan: { id: 'plan-1', name: 'Basic Plan' },
+          },
+        ],
+      };
+      const mockPosts = QiitaPostFactory.createQiitaPostApiResponses(3);
+      const mockProgram =
+        PersonalizedFeedFactory.createPersonalizedFeedProgram();
+
+      appUsersRepository.findOneWithSubscription.mockResolvedValue(
+        mockUserWithSubscription,
+      );
+
+      jest
+        .spyOn(builder, 'generatePersonalizedProgramScript')
+        .mockResolvedValue({
+          script: {
+            title: 'Test Program',
+            opening: 'Test opening',
+            posts: [],
+            ending: 'Test ending',
+          },
+          posts: mockPosts,
+          qiitaApiRateRemaining: 100,
+          qiitaApiRateReset: Date.now(),
+        });
+
+      jest
+        .spyOn(builder, 'generatePersonalizedProgramAudioFiles')
+        .mockResolvedValue({
+          openingAudioFilePath: '/tmp/opening.mp3',
+          postExplanationAudioFilePaths: [
+            {
+              introAudioFilePath: '/tmp/intro1.mp3',
+              explanationAudioFilePath: '/tmp/explanation1.mp3',
+              summaryAudioFilePath: '/tmp/summary1.mp3',
+            },
+          ],
+          endingAudioFilePath: '/tmp/ending.mp3',
+        });
+
+      jest.spyOn(builder, 'generateProgramFiles').mockResolvedValue({
+        audioFileName: 'program.mp3',
+        audioFilePath: '/tmp/program.mp3',
+        audioDuration: 300,
+        script: {
+          title: 'Test Program',
+          opening: 'Test opening',
+          posts: [],
+          ending: 'Test ending',
+        },
+        chapters: [],
+      });
+
+      qiitaPostsRepository.upsertQiitaPosts.mockResolvedValue(mockPosts);
+      personalizedFeedsRepository.createPersonalizedProgram.mockResolvedValue(
+        mockProgram,
+      );
+      personalizedFeedsRepository.addPersonalizedProgramSuccessAttempt.mockResolvedValue(
+        {
+          id: 'attempt-1',
+          feedId: mockFeed.id,
+          userId: mockUser.id,
+          programDate,
+          postsCount: 3,
+          programId: mockProgram.id,
+          createdAt: new Date(),
+        },
+      );
+
+      const result = await builder.buildProgram(
+        mockUser,
+        mockFeed,
+        programDate,
+      );
+
+      expect(result).toBeDefined();
+      expect(result.program).toEqual(mockProgram);
+      expect(appUsersRepository.findOneWithSubscription).toHaveBeenCalledWith(
+        mockUser.id,
+      );
+      expect(builder.generatePersonalizedProgramScript).toHaveBeenCalled();
+      expect(builder.generatePersonalizedProgramAudioFiles).toHaveBeenCalled();
+      expect(builder.generateProgramFiles).toHaveBeenCalled();
+      expect(programFileUploader.upload).toHaveBeenCalled();
+      expect(qiitaPostsRepository.upsertQiitaPosts).toHaveBeenCalled();
+      expect(
+        personalizedFeedsRepository.createPersonalizedProgram,
+      ).toHaveBeenCalled();
+      expect(
+        personalizedFeedsRepository.addPersonalizedProgramSuccessAttempt,
       ).toHaveBeenCalled();
     });
   });
