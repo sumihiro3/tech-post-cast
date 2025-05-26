@@ -330,7 +330,7 @@ describe('HeadlineTopicProgramBuilder', () => {
       });
       openAiApiClient.generateHeadlineTopicProgramScript.mockResolvedValue(mockScript);
 
-      const result = await builder.generateScript(new Date(), mockPosts);
+      const result = await builder.generateScript(new Date(), mockPosts, undefined);
 
       expect(result).toBeDefined();
       expect(result).toEqual(mockScript);
