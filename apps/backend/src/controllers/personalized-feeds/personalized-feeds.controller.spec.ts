@@ -252,12 +252,16 @@ describe('PersonalizedFeedsController', () => {
         error: { message: 'Test error' },
       };
 
+      const originalWebhookUrl = appConfigService.SlackIncomingWebhookUrl;
       Object.defineProperty(appConfigService, 'SlackIncomingWebhookUrl', { value: '' });
       global.fetch = jest.fn();
-
-      await controller.notifyError(body);
-
-      expect(fetch).not.toHaveBeenCalled();
+      
+      try {
+        await controller.notifyError(body);
+        expect(fetch).not.toHaveBeenCalled();
+      } finally {
+        Object.defineProperty(appConfigService, 'SlackIncomingWebhookUrl', { value: originalWebhookUrl });
+      }
     });
   });
 
