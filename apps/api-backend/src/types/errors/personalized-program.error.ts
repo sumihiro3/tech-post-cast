@@ -40,3 +40,23 @@ export class PersonalizedProgramRetrievalError extends PersonalizedProgramError 
     super(message, options);
   }
 }
+
+/**
+ * パーソナルプログラム試行履歴のデータベース操作エラー
+ */
+export class PersonalizedProgramAttemptDatabaseError extends PersonalizedProgramError {
+  override name = 'PersonalizedProgramAttemptDatabaseError';
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}
+
+/**
+ * パーソナルプログラム試行履歴の取得エラー
+ */
+export class PersonalizedProgramAttemptRetrievalError extends PersonalizedProgramError {
+  override name = 'PersonalizedProgramAttemptRetrievalError';
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}
