@@ -3,6 +3,7 @@ import { AuthModule } from '@/auth/auth.module';
 import { ApiV1Module } from '@/controllers/api-v1/api-v1.module';
 import { DashboardModule } from '@/controllers/dashboard/dashboard.module';
 import { PersonalizedFeedsModule } from '@/controllers/personalized-feeds/personalized-feeds.module';
+import { PersonalizedProgramAttemptsModule } from '@/controllers/personalized-program-attempts/personalized-program-attempts.module';
 import { ProgramContentApiModule } from '@/controllers/program-content-api/program-content-api.module';
 import { QiitaPostsModule } from '@/controllers/qiita-posts/qiita-posts.module';
 import { UserSettingsModule } from '@/controllers/user-settings/user-settings.module';
@@ -31,6 +32,7 @@ import { AppService } from './app.service';
     ClerkWebhookModule,
     QiitaPostsModule,
     PersonalizedFeedsModule,
+    PersonalizedProgramAttemptsModule,
     DashboardModule,
     UserSettingsModule,
   ],
