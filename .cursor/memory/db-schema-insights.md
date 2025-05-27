@@ -155,3 +155,197 @@
 
 - 新機能追加時は、既存のデータベース構造を最大限活用することを優先すべき
 - 不要なテーブル追加は避け、既存の関連を活用することで、システムの複雑性を抑制できる
+
+## AppUserテーブル拡張によるユーザー設定管理 (2025-05-27)
+
+### 背景と課題
+
+TPC-101でユーザー設定機能を実装するため、既存のAppUserテーブルの拡張を検討。主な課題：
+
+- 既存データとの整合性維持
+- 将来的な設定項目拡張への対応
+- モノレポ環境での影響範囲管理
+- パフォーマンスへの影響最小化
+
+### 検討したアプローチ
+
+#### 1. データモデル設計
+
+**選択肢A**: 新しいUserSettingsテーブル作成
+
+```sql
+CREATE TABLE UserSettings (
+  id UUID PRIMARY KEY,
+  userId VARCHAR(255) REFERENCES AppUser(id),
+  slackWebhookUrl VARCHAR(500),
+  notificationEnabled BOOLEAN DEFAULT false,
+  createdAt TIMESTAMP DEFAULT NOW(),
+  updatedAt TIMESTAMP DEFAULT NOW()
+);
+```
+
+- 利点: 関心の分離、正規化、拡張性
+- 欠点: JOIN処理、複雑性増加、パフォーマンス影響
+
+**選択肢B**: AppUserテーブル拡張
+
+```sql
+ALTER TABLE AppUser
+ADD COLUMN slackWebhookUrl VARCHAR(500),
+ADD COLUMN notificationEnabled BOOLEAN DEFAULT false;
+```
+
+- 利点: シンプル、パフォーマンス、既存コードとの親和性
+- 欠点: テーブル肥大化、関心の混在
+
+#### 2. フィールド設計
+
+**slackWebhookUrl**:
+
+- 型: VARCHAR(500) - Slack URLの最大長を考慮
+- NULL許可: 設定が任意のため
+- バリデーション: アプリケーション層で実装
+
+**notificationEnabled**:
+
+- 型: BOOLEAN
+- デフォルト: false - セキュリティ重視（オプトイン）
+- NOT NULL: 明確な状態管理
+
+### 決定事項と理由
+
+#### 1. AppUserテーブル拡張を採用
+
+- **理由**: ユーザー設定は基本的なユーザー属性
+- **パフォーマンス**: 頻繁なアクセスでJOIN回避
+- **シンプル性**: 既存のユーザー管理ロジックとの統合
+
+#### 2. マイグレーション戦略
+
+```sql
+-- Migration: 20250527025712_add_user_settings
+ALTER TABLE "AppUser"
+ADD COLUMN "slackWebhookUrl" VARCHAR(500),
+ADD COLUMN "notificationEnabled" BOOLEAN NOT NULL DEFAULT false;
+```
+
+#### 3. インデックス戦略
+
+- 現時点では追加インデックス不要
+- 将来的な検索要件に応じて検討
+
+### 学んだ教訓
+
+#### KEY INSIGHT: モノレポでのスキーマ変更影響管理
+
+- **影響範囲**: 複数アプリケーションのモデル定義
+- **対策**: 段階的なマイグレーション、テスト確認
+- **チェックポイント**:
+    - `packages/database/prisma/schema.prisma`
+    - `apps/api-backend/src/test/factories/`
+    - `apps/backend/src/test/factories/`
+
+#### KEY INSIGHT: デフォルト値の重要性
+
+- **notificationEnabled**: デフォルトfalse
+- **理由**: プライバシー保護、GDPR準拠
+- **効果**: ユーザーの明示的な同意が必要
+
+#### KEY INSIGHT: フィールド長の設計
+
+- **slackWebhookUrl**: VARCHAR(500)
+- **根拠**: Slack Webhook URLの実際の長さ調査
+- **余裕**: 将来的なURL形式変更への対応
+
+#### GLOBAL LEARNING: 段階的マイグレーション戦略
+
+1. **スキーマ定義更新**
+2. **マイグレーション生成**
+3. **マイグレーション適用**
+4. **アプリケーションコード更新**
+5. **テスト修正**
+6. **統合確認**
+
+### 技術的発見
+
+#### 1. Prismaスキーマ設計パターン
+
+```prisma
+model AppUser {
+  id                     String   @id
+  // ... 既存フィールド
+  slackWebhookUrl        String?  @db.VarChar(500)
+  notificationEnabled    Boolean  @default(false)
+  // ... 他のフィールド
+}
+```
+
+#### 2. マイグレーション命名規則
+
+- フォーマット: `YYYYMMDDHHMMSS_description`
+- 例: `20250527025712_add_user_settings`
+- 利点: 時系列順序、内容の明確化
+
+#### 3. NULL vs デフォルト値の使い分け
+
+- **NULL許可**: 任意設定（slackWebhookUrl）
+- **デフォルト値**: 必須だが初期値がある（notificationEnabled）
+
+### パフォーマンス考慮
+
+#### 1. クエリパフォーマンス
+
+- **SELECT**: 追加フィールドによる影響は軽微
+- **UPDATE**: 部分更新で最適化
+- **インデックス**: 現時点では不要
+
+#### 2. ストレージ効率
+
+- **VARCHAR(500)**: 実際の使用量に応じて可変長
+- **BOOLEAN**: 1バイト、効率的
+
+### 将来の拡張性
+
+#### 1. 設定項目の追加
+
+- **アプローチ**: 個別フィールド vs JSON型
+- **推奨**: 構造化された設定はフィールド、柔軟な設定はJSON
+
+#### 2. 設定履歴の管理
+
+- **課題**: 設定変更の監査ログ
+- **提案**: 別テーブルでの履歴管理
+
+#### 3. 設定のカテゴリ化
+
+- **課題**: 設定項目の増加
+- **提案**: 設定グループの概念導入
+
+### 残された課題と改善点
+
+#### 1. 設定値のバリデーション
+
+- **課題**: データベースレベルでのバリデーション不足
+- **提案**: CHECK制約の追加検討
+
+#### 2. 設定の暗号化
+
+- **課題**: 機密性の高い設定値の保護
+- **提案**: アプリケーション層での暗号化
+
+#### 3. 設定のバックアップ
+
+- **課題**: ユーザー設定の復旧機能
+- **提案**: 定期的なバックアップ戦略
+
+### 関連タスク
+
+- TPC-101: ユーザー設定取得/更新API実装
+- 将来タスク: 設定履歴管理、設定暗号化、バックアップ機能
+
+### メタデータ
+
+- **データベース**: PostgreSQL
+- **ORM**: Prisma
+- **マイグレーション**: Prisma Migrate
+- **テーブル**: AppUser拡張

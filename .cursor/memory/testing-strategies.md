@@ -212,3 +212,202 @@ describe('findByUserIdWithPagination', () => {
 - カスタムエラークラス定義
 
 ---
+
+## ユーザー設定API テスト戦略 (2025-05-27)
+
+### 背景と課題
+
+TPC-101でユーザー設定APIの包括的なテスト実装を行った。主な課題：
+
+- 外部API（Slack Webhook）のモック化
+- 複数層（Service, Repository, Controller）の統合テスト
+- モノレポ環境での既存テストへの影響最小化
+- 型安全性を保ったテストファクトリの設計
+
+### 検討したアプローチ
+
+#### 1. 外部API通信のテスト手法
+
+**選択肢A**: 実際のSlack APIを使用
+
+- 利点: 実環境に近いテスト
+- 欠点: テストの不安定性、外部依存
+
+**選択肢B**: HTTP通信ライブラリのモック
+
+- 利点: 安定したテスト、高速実行
+- 欠点: 実装の複雑化
+
+**選択肢C**: global.fetchのモック化
+
+- 利点: シンプルな実装、Node.js標準API使用
+- 欠点: モック設定の詳細管理が必要
+
+#### 2. テストファクトリの設計
+
+**選択肢A**: 各テストファイルで個別にモックデータ作成
+
+- 利点: テスト固有の調整が容易
+- 欠点: 重複コード、メンテナンス性低下
+
+**選択肢B**: 共通ファクトリクラスの活用
+
+- 利点: 一貫性、再利用性、メンテナンス性
+- 欠点: 初期設計の複雑化
+
+### 決定事項と理由
+
+#### 1. global.fetchモック化を採用
+
+- **理由**: Node.js 18+の標準fetch APIを活用、シンプルな実装
+- **実装パターン**:
+
+```typescript
+global.fetch = jest.fn();
+const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+```
+
+#### 2. 共通テストファクトリパターンの採用
+
+- **AppUserFactory**: アプリユーザーのモックデータ生成
+- **UserSettingsFactory**: ユーザー設定のモックデータ生成
+- **利点**: データ一貫性、型安全性、再利用性
+
+#### 3. 3層テスト戦略
+
+- **Service層**: ビジネスロジックの単体テスト（26テスト）
+- **Repository層**: データアクセスの単体テスト（8テスト）
+- **Controller層**: APIエンドポイントの統合テスト（8テスト）
+
+### 学んだ教訓
+
+#### KEY INSIGHT: fetchモック化のベストプラクティス
+
+```typescript
+// 成功レスポンスのモック
+mockFetch.mockResolvedValueOnce({
+  ok: true,
+  status: 200,
+  text: async () => 'ok',
+} as Response);
+
+// エラーレスポンスのモック
+mockFetch.mockResolvedValueOnce({
+  ok: false,
+  status: 404,
+  statusText: 'Not Found',
+  text: async () => 'Not Found',
+} as Response);
+```
+
+#### KEY INSIGHT: PrismaClientのモック化パターン
+
+```typescript
+const mockPrismaClient = {
+  appUser: {
+    findUnique: jest.fn(),
+    update: jest.fn(),
+  },
+};
+
+prismaClientManager = {
+  getClient: jest.fn().mockReturnValue(mockPrismaClient),
+} as unknown as jest.Mocked<PrismaClientManager>;
+```
+
+#### KEY INSIGHT: ClerkJwtGuardのテストオーバーライド
+
+```typescript
+.overrideGuard(ClerkJwtGuard)
+.useValue({
+  canActivate: jest.fn(() => true),
+})
+```
+
+#### GLOBAL LEARNING: テストファクトリの型安全性確保
+
+```typescript
+export class UserSettingsFactory {
+  static createUserSettings(overrides?: Partial<UserSettings>): UserSettings {
+    return {
+      userId: 'user_test123',
+      displayName: 'テストユーザー',
+      slackWebhookUrl: null,
+      notificationEnabled: false,
+      updatedAt: new Date(),
+      ...overrides,
+    };
+  }
+}
+```
+
+### 技術的発見
+
+#### 1. モノレポでのテスト影響範囲管理
+
+- **問題**: スキーマ変更時の既存テストエラー
+- **解決**: 全アプリケーションのテストファクトリ一括更新
+- **チェックポイント**: `apps/api-backend`, `apps/backend`
+
+#### 2. 非同期処理のテスト
+
+```typescript
+// レスポンス時間の検証
+expect(result.responseTime).toBeGreaterThanOrEqual(0);
+```
+
+#### 3. エラーハンドリングのテストパターン
+
+```typescript
+// Prisma P2025エラーのモック
+mockPrismaClient.appUser.update.mockRejectedValue(
+  new Error('Record not found') as any
+);
+```
+
+### テストカバレッジ結果
+
+#### 最終テスト数
+
+- **UserSettingsService**: 26テスト
+- **UserSettingsRepository**: 8テスト
+- **UserSettingsController**: 8テスト
+- **合計**: 42テスト（全成功）
+
+#### カバレッジ観点
+
+- **正常系**: 基本機能の動作確認
+- **異常系**: エラーハンドリングの検証
+- **境界値**: バリデーション限界値のテスト
+- **セキュリティ**: 認証・認可の確認
+
+### 残された課題と改善点
+
+#### 1. E2Eテストの追加
+
+- **課題**: API全体の統合テスト不足
+- **提案**: Supertest活用のE2Eテスト実装
+
+#### 2. パフォーマンステスト
+
+- **課題**: 大量データでの性能検証不足
+- **提案**: 負荷テストシナリオの作成
+
+#### 3. テストデータ管理
+
+- **課題**: テスト間でのデータ独立性確保
+- **提案**: テストデータベースの分離
+
+### 関連タスク
+
+- TPC-101: ユーザー設定取得/更新API実装
+- 将来タスク: E2Eテスト基盤構築、パフォーマンステスト導入
+
+### メタデータ
+
+- **テストフレームワーク**: Jest
+- **モック**: jest.fn(), global.fetch
+- **テスト種別**: 単体テスト、統合テスト
+- **カバレッジ**: Service, Repository, Controller層
+
+---
