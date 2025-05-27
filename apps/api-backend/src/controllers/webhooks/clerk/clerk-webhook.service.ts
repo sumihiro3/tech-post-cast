@@ -71,6 +71,8 @@ export class ClerkWebhookService {
         lastSignInAt: new Date(userJson.last_sign_in_at),
         stripeCustomerId: undefined,
         defaultPaymentMethodId: undefined,
+        slackWebhookUrl: undefined,
+        notificationEnabled: false,
         createdAt: new Date(userJson.created_at),
         updatedAt: new Date(userJson.updated_at),
       });
@@ -113,6 +115,8 @@ export class ClerkWebhookService {
         lastSignInAt: new Date(userJson.last_sign_in_at),
         stripeCustomerId: appUser.stripeCustomerId,
         defaultPaymentMethodId: appUser.defaultPaymentMethodId,
+        slackWebhookUrl: appUser.slackWebhookUrl,
+        notificationEnabled: appUser.notificationEnabled,
         createdAt: new Date(userJson.created_at),
         updatedAt: new Date(userJson.updated_at),
       });
