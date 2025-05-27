@@ -1,104 +1,108 @@
-# Backlogチケット自動登録システム
+# Tech Post Cast 有料機能追加 - 課題管理
 
 ## 概要
 
-このディレクトリには、Tech Post Castの有料機能追加に関するタスクがMarkdownファイルで定義されています。
-また、これらのタスクをBacklogのチケット（課題）として一括登録するためのシェルスクリプトが用意されています。
+Tech Post Cast の有料機能追加プロジェクトにおける課題（Issue）の管理ディレクトリです。
 
-## ファイル構成
+## 実装フェーズ
 
-- `*.md`: 各タスクを定義したMarkdownファイル
-- `../create_backlog_issues.sh`: Backlog APIを使ってチケットを登録するシェルスクリプト
-- `../task_metadata.csv`: タスク固有の設定（課題タイプ、優先度、カテゴリ）を定義したCSVファイル
+### フェーズ1: 基本機能（ローンチ対象）
 
-## 使い方
+基本的なフィルタリング機能と決済機能を最低限の機能としてローンチします。
 
-### 1. 設定
+#### 認証・決済基盤
 
-`create_backlog_issues.sh`を編集して、以下の項目を設定してください：
+- [01-clerk-auth-integration.md](./01-clerk-auth-integration.md) - Clerk認証統合
+- [02-stripe-payment-integration.md](./02-stripe-payment-integration.md) - Stripe決済統合
+- [03-cloud-run-setup.md](./03-cloud-run-setup.md) - Cloud Run環境構築
 
-```bash
-BACKLOG_SPACE="your-space"       # BacklogのスペースID
-BACKLOG_PROJECT_ID="12345"       # プロジェクトID
-```
+#### データ基盤
 
-また、デフォルト値も必要に応じて変更してください：
+- [04-prisma-data-model.md](./04-prisma-data-model.md) - Prismaデータモデル設計
+- [05-openapi-spec.md](./05-openapi-spec.md) - OpenAPI仕様定義
 
-```bash
-DEFAULT_ISSUE_TYPE_ID="123456"   # デフォルトの課題タイプID
-DEFAULT_PRIORITY_ID="3"          # デフォルトの優先度ID
-DEFAULT_CATEGORY_ID="9876"       # デフォルトのカテゴリID
-```
+#### API実装
 
-実際のBacklogプロジェクトの設定に合わせて変更してください。
+- [06-feed-api.md](./06-feed-api.md) - フィードAPI実装
+- [07-filter-api.md](./07-filter-api.md) - フィルターAPI実装
+- [08-subscription-api.md](./08-subscription-api.md) - サブスクリプションAPI実装
+- [09-rss-fetcher.md](./09-rss-fetcher.md) - RSS取得機能実装
 
-### 2. タスク固有の設定 (オプション)
+#### フロントエンド基本機能
 
-`task_metadata.csv`を編集して、タスクごとに異なる課題タイプ、優先度、カテゴリを設定できます。
-このファイルが存在しない場合、すべてのタスクにデフォルト設定が適用されます。
+- [10-feed-management-ui.md](./10-feed-management-ui.md) - フィード管理UI
+- [11-filter-management-ui.md](./11-filter-management-ui.md) - フィルター管理UI
+- [12-subscription-management-ui.md](./12-subscription-management-ui.md) - サブスクリプション管理UI
 
-CSVの形式は以下の通りです：
+#### バックエンド処理
 
-```
-タスク番号,課題タイプID,優先度ID,カテゴリID
-01,123456,3,9876
-02,123456,2,9876
-...
-```
+- [13-filtering-logic.md](./13-filtering-logic.md) - フィルタリングロジック実装
+- [14-scheduler-setup.md](./14-scheduler-setup.md) - スケジューラー設定
+- [15-delivery-service.md](./15-delivery-service.md) - 配信サービス実装
 
-- 各行は1つのタスクに対応しています
-- タスク番号は「01」のように2桁の数字で指定してください
-- 特定のタスクのみ設定したい場合は、そのタスクの行だけを追加すれば、他のタスクにはデフォルト設定が適用されます
+#### 管理・分析機能
 
-### 3. 実行
+- [16-delivery-history-ui.md](./16-delivery-history-ui.md) - 配信履歴管理UI
+- [17-custom-template-editor.md](./17-custom-template-editor.md) - カスタムテンプレートエディター
+- [18-analytics-dashboard.md](./18-analytics-dashboard.md) - 分析ダッシュボード
+- [19-ai-deep-dive.md](./19-ai-deep-dive.md) - AI深掘り機能
 
-```bash
-cd /path/to/tech-post-cast
-./docs/有料機能の追加/create_backlog_issues.sh YOUR_API_KEY
-```
+### フェーズ2: 機能拡張（ローンチ後の検討）
 
-APIキーはセキュリティ上の理由からコマンドライン引数として渡す必要があります。このAPIキーはURLのクエリパラメーターとして使用されます（例: `https://xx.backlog.jp/api/v2/issues?apiKey=XXXX`）。
+基本機能のローンチ後に実装を検討する機能拡張チケットです。
 
-スクリプトを実行すると、確認メッセージが表示されます。「yes」と入力すると、すべてのタスクがBacklogに登録されます。
+#### 高度なフィルタリング機能
 
-#### 使用例
+- [20-advanced-filter-groups-ui.md](./20-advanced-filter-groups-ui.md) - 高度なフィルターグループ管理UI
+    - **優先度**: 中
+    - **工数**: 5-7日
+    - **概要**: AND/OR条件を組み合わせた複雑なフィルター設定UI
 
-```bash
-# APIキーを直接指定する場合
-./docs/有料機能の追加/create_backlog_issues.sh abcdef1234567890
+#### 配信カスタマイズ機能
 
-# 環境変数から読み込む場合
-./docs/有料機能の追加/create_backlog_issues.sh $BACKLOG_API_KEY
-```
+- [21-delivery-options-customization.md](./21-delivery-options-customization.md) - 配信オプションのカスタマイズ
+    - **優先度**: 中
+    - **工数**: 4-6日
+    - **概要**: 配信タイミング、頻度、優先度の詳細設定
 
-### 4. 新しいタスクの追加
+#### ユーザビリティ向上
 
-新しいタスクを追加する場合は、このディレクトリに新しいMarkdownファイルを作成してください。
-ファイル名は `XX-descriptive-name.md` の形式にしてください（XXは連番）。
+- [22-filter-visualization-enhancement.md](./22-filter-visualization-enhancement.md) - フィルター条件の視覚的表現強化
+    - **優先度**: 低
+    - **工数**: 3-5日
+    - **概要**: 複雑な条件の直感的な表示とプレビュー機能
 
-各Markdownファイルは以下の形式で記述してください：
+- [24-mobile-ux-optimization.md](./24-mobile-ux-optimization.md) - モバイルUX最適化
+    - **優先度**: 低
+    - **工数**: 4-6日
+    - **概要**: モバイルデバイス対応とタッチ操作の最適化
 
-```markdown
-# タスクのタイトル
+#### 品質向上
 
-## 概要
-タスクの概要説明
+- [23-advanced-validation-error-handling.md](./23-advanced-validation-error-handling.md) - バリデーションとエラーハンドリングの強化
+    - **優先度**: 中
+    - **工数**: 3-4日
+    - **概要**: 複雑な条件に対応した高度なバリデーション
 
-## 詳細
-- 詳細項目1
-- 詳細項目2
-- ...
+- [25-performance-optimization.md](./25-performance-optimization.md) - パフォーマンス最適化
+    - **優先度**: 中
+    - **工数**: 5-7日
+    - **概要**: 大量データと複雑な条件での処理最適化
 
-## 受け入れ基準
-- 基準1
-- 基準2
-- ...
-```
+## 実装順序の推奨
 
-また、新しいタスクの設定を`task_metadata.csv`に追加することを忘れないでください。
+### フェーズ2の実装順序
+
+1. **20-advanced-filter-groups-ui.md** - データベースは準備済みのため実装しやすい
+2. **21-delivery-options-customization.md** - ユーザー価値の高い機能
+3. **23-advanced-validation-error-handling.md** - 品質向上のため早期実装推奨
+4. **25-performance-optimization.md** - ユーザー数増加に備えた対応
+5. **22-filter-visualization-enhancement.md** - UX向上
+6. **24-mobile-ux-optimization.md** - 最終的なUX改善
 
 ## 注意事項
 
-- APIキーは公開リポジトリにコミットしないでください
-- BacklogのAPIにはレート制限があるため、大量のタスクを一度に登録する場合は注意してください
-- すでに登録済みのタスクを再度登録すると、重複して登録されてしまいます
+- フェーズ1の完了後にフェーズ2の実装を開始してください
+- 各チケットの依存関係を確認してから実装を開始してください
+- 工数は目安であり、実際の実装時に調整が必要な場合があります
+- 優先度は市場の反応やユーザーフィードバックに応じて変更される可能性があります
