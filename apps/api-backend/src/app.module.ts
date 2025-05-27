@@ -5,6 +5,7 @@ import { DashboardModule } from '@/controllers/dashboard/dashboard.module';
 import { PersonalizedFeedsModule } from '@/controllers/personalized-feeds/personalized-feeds.module';
 import { ProgramContentApiModule } from '@/controllers/program-content-api/program-content-api.module';
 import { QiitaPostsModule } from '@/controllers/qiita-posts/qiita-posts.module';
+import { UserSettingsModule } from '@/controllers/user-settings/user-settings.module';
 import { ClerkWebhookModule } from '@/controllers/webhooks/clerk/clerk-webhook.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -31,6 +32,7 @@ import { AppService } from './app.service';
     QiitaPostsModule,
     PersonalizedFeedsModule,
     DashboardModule,
+    UserSettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
