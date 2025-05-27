@@ -44,6 +44,7 @@ const menuItems = [
   { title: 'ダッシュボード', icon: 'mdi-view-dashboard', to: '/app/dashboard' },
   // { title: 'パーソナライズ番組の配信一覧', icon: 'mdi-television-play', to: '/app/broadcasts' },
   { title: 'パーソナライズ番組設定', icon: 'mdi-cog', to: '/app/feeds' },
+  { title: 'ユーザー設定', icon: 'mdi-account-cog', to: '/app/settings' },
   // { title: 'サブスクリプション一覧', icon: 'mdi-credit-card-outline', to: '/app/subscriptions' },
   // { title: 'ユーザー情報', icon: 'mdi-account', to: '/app/profile' },
 ];

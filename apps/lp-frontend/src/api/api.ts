@@ -203,6 +203,74 @@ export interface FilterGroupDto {
 /**
  * 
  * @export
+ * @interface GetDashboardPersonalizedFeedsSummaryResponseDto
+ */
+export interface GetDashboardPersonalizedFeedsSummaryResponseDto {
+    /**
+     * アクティブなフィード数
+     * @type {number}
+     * @memberof GetDashboardPersonalizedFeedsSummaryResponseDto
+     */
+    'activeFeedsCount': number;
+    /**
+     * 総フィード数
+     * @type {number}
+     * @memberof GetDashboardPersonalizedFeedsSummaryResponseDto
+     */
+    'totalFeedsCount': number;
+    /**
+     * 最近作成されたフィード（最新5件）
+     * @type {Array<PersonalizedFeedSummaryDto>}
+     * @memberof GetDashboardPersonalizedFeedsSummaryResponseDto
+     */
+    'recentFeeds': Array<PersonalizedFeedSummaryDto>;
+    /**
+     * 総フィルター条件数
+     * @type {number}
+     * @memberof GetDashboardPersonalizedFeedsSummaryResponseDto
+     */
+    'totalFiltersCount': number;
+}
+/**
+ * 
+ * @export
+ * @interface GetDashboardPersonalizedProgramsResponseDto
+ */
+export interface GetDashboardPersonalizedProgramsResponseDto {
+    /**
+     * パーソナルプログラム一覧
+     * @type {Array<PersonalizedProgramSummaryDto>}
+     * @memberof GetDashboardPersonalizedProgramsResponseDto
+     */
+    'programs': Array<PersonalizedProgramSummaryDto>;
+    /**
+     * 総件数
+     * @type {number}
+     * @memberof GetDashboardPersonalizedProgramsResponseDto
+     */
+    'totalCount': number;
+    /**
+     * 取得件数
+     * @type {number}
+     * @memberof GetDashboardPersonalizedProgramsResponseDto
+     */
+    'limit': number;
+    /**
+     * オフセット
+     * @type {number}
+     * @memberof GetDashboardPersonalizedProgramsResponseDto
+     */
+    'offset': number;
+    /**
+     * 次のページが存在するか
+     * @type {boolean}
+     * @memberof GetDashboardPersonalizedProgramsResponseDto
+     */
+    'hasNext': boolean;
+}
+/**
+ * 
+ * @export
  * @interface GetPersonalizedFeedWithFiltersResponseDto
  */
 export interface GetPersonalizedFeedWithFiltersResponseDto {
@@ -231,6 +299,148 @@ export interface GetPersonalizedFeedsResponseDto {
      * @memberof GetPersonalizedFeedsResponseDto
      */
     'total': number;
+}
+/**
+ * 
+ * @export
+ * @interface GetProgramAttemptsCountResponseDto
+ */
+export interface GetProgramAttemptsCountResponseDto {
+    /**
+     * 試行履歴件数
+     * @type {number}
+     * @memberof GetProgramAttemptsCountResponseDto
+     */
+    'count': number;
+}
+/**
+ * 
+ * @export
+ * @interface GetProgramAttemptsResponseDto
+ */
+export interface GetProgramAttemptsResponseDto {
+    /**
+     * 番組生成試行履歴一覧
+     * @type {Array<PersonalizedProgramAttemptDto>}
+     * @memberof GetProgramAttemptsResponseDto
+     */
+    'attempts': Array<PersonalizedProgramAttemptDto>;
+    /**
+     * 総件数
+     * @type {number}
+     * @memberof GetProgramAttemptsResponseDto
+     */
+    'totalCount': number;
+    /**
+     * 現在のページ番号
+     * @type {number}
+     * @memberof GetProgramAttemptsResponseDto
+     */
+    'currentPage': number;
+    /**
+     * 総ページ数
+     * @type {number}
+     * @memberof GetProgramAttemptsResponseDto
+     */
+    'totalPages': number;
+    /**
+     * 次のページが存在するか
+     * @type {boolean}
+     * @memberof GetProgramAttemptsResponseDto
+     */
+    'hasNextPage': boolean;
+    /**
+     * 前のページが存在するか
+     * @type {boolean}
+     * @memberof GetProgramAttemptsResponseDto
+     */
+    'hasPreviousPage': boolean;
+}
+/**
+ * 
+ * @export
+ * @interface GetProgramAttemptsStatisticsResponseDto
+ */
+export interface GetProgramAttemptsStatisticsResponseDto {
+    /**
+     * 総試行回数
+     * @type {number}
+     * @memberof GetProgramAttemptsStatisticsResponseDto
+     */
+    'totalAttempts': number;
+    /**
+     * 成功回数
+     * @type {number}
+     * @memberof GetProgramAttemptsStatisticsResponseDto
+     */
+    'successCount': number;
+    /**
+     * スキップ回数
+     * @type {number}
+     * @memberof GetProgramAttemptsStatisticsResponseDto
+     */
+    'skippedCount': number;
+    /**
+     * 失敗回数
+     * @type {number}
+     * @memberof GetProgramAttemptsStatisticsResponseDto
+     */
+    'failedCount': number;
+    /**
+     * 成功率（%）
+     * @type {number}
+     * @memberof GetProgramAttemptsStatisticsResponseDto
+     */
+    'successRate': number;
+    /**
+     * 最新試行日時
+     * @type {string}
+     * @memberof GetProgramAttemptsStatisticsResponseDto
+     */
+    'lastAttemptDate'?: string;
+    /**
+     * 最新成功日時
+     * @type {string}
+     * @memberof GetProgramAttemptsStatisticsResponseDto
+     */
+    'lastSuccessDate'?: string;
+}
+/**
+ * 
+ * @export
+ * @interface GetUserSettingsResponseDto
+ */
+export interface GetUserSettingsResponseDto {
+    /**
+     * ユーザーID
+     * @type {string}
+     * @memberof GetUserSettingsResponseDto
+     */
+    'userId': string;
+    /**
+     * パーソナルプログラム内で使用される表示名
+     * @type {string}
+     * @memberof GetUserSettingsResponseDto
+     */
+    'displayName': string;
+    /**
+     * 個別のSlack Webhook URL（番組生成完了時の通知用）
+     * @type {string}
+     * @memberof GetUserSettingsResponseDto
+     */
+    'slackWebhookUrl'?: string;
+    /**
+     * 通知が有効かどうかを表すフラグ
+     * @type {boolean}
+     * @memberof GetUserSettingsResponseDto
+     */
+    'notificationEnabled': boolean;
+    /**
+     * 設定の最終更新日時
+     * @type {string}
+     * @memberof GetUserSettingsResponseDto
+     */
+    'updatedAt': string;
 }
 /**
  * 
@@ -491,6 +701,67 @@ export type PersonalizedFeedDtoDeliveryFrequencyEnum = typeof PersonalizedFeedDt
 /**
  * 
  * @export
+ * @interface PersonalizedFeedSummaryDto
+ */
+export interface PersonalizedFeedSummaryDto {
+    /**
+     * フィードID
+     * @type {string}
+     * @memberof PersonalizedFeedSummaryDto
+     */
+    'id': string;
+    /**
+     * フィード名
+     * @type {string}
+     * @memberof PersonalizedFeedSummaryDto
+     */
+    'name': string;
+    /**
+     * フィード説明
+     * @type {string}
+     * @memberof PersonalizedFeedSummaryDto
+     */
+    'description': string;
+    /**
+     * アクティブ状態
+     * @type {boolean}
+     * @memberof PersonalizedFeedSummaryDto
+     */
+    'isActive': boolean;
+    /**
+     * タグフィルター数
+     * @type {number}
+     * @memberof PersonalizedFeedSummaryDto
+     */
+    'tagFiltersCount': number;
+    /**
+     * 著者フィルター数
+     * @type {number}
+     * @memberof PersonalizedFeedSummaryDto
+     */
+    'authorFiltersCount': number;
+    /**
+     * フィルター条件総数
+     * @type {number}
+     * @memberof PersonalizedFeedSummaryDto
+     */
+    'totalFiltersCount': number;
+    /**
+     * 作成日時
+     * @type {string}
+     * @memberof PersonalizedFeedSummaryDto
+     */
+    'createdAt': string;
+    /**
+     * 最終更新日時
+     * @type {string}
+     * @memberof PersonalizedFeedSummaryDto
+     */
+    'updatedAt': string;
+}
+/**
+ * 
+ * @export
  * @interface PersonalizedFeedWithFiltersDto
  */
 export interface PersonalizedFeedWithFiltersDto {
@@ -564,6 +835,149 @@ export const PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum = {
 
 export type PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum = typeof PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum[keyof typeof PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum];
 
+/**
+ * 
+ * @export
+ * @interface PersonalizedProgramAttemptDto
+ */
+export interface PersonalizedProgramAttemptDto {
+    /**
+     * 試行履歴ID
+     * @type {string}
+     * @memberof PersonalizedProgramAttemptDto
+     */
+    'id': string;
+    /**
+     * ユーザーID
+     * @type {string}
+     * @memberof PersonalizedProgramAttemptDto
+     */
+    'userId': string;
+    /**
+     * フィードID
+     * @type {string}
+     * @memberof PersonalizedProgramAttemptDto
+     */
+    'feedId': string;
+    /**
+     * 生成された番組ID（成功時のみ）
+     * @type {string}
+     * @memberof PersonalizedProgramAttemptDto
+     */
+    'programId'?: string;
+    /**
+     * 試行ステータス
+     * @type {string}
+     * @memberof PersonalizedProgramAttemptDto
+     */
+    'status': PersonalizedProgramAttemptDtoStatusEnum;
+    /**
+     * 失敗理由（失敗・スキップ時のみ）
+     * @type {string}
+     * @memberof PersonalizedProgramAttemptDto
+     */
+    'reason'?: string;
+    /**
+     * 記事数
+     * @type {number}
+     * @memberof PersonalizedProgramAttemptDto
+     */
+    'postCount': number;
+    /**
+     * 試行日時
+     * @type {string}
+     * @memberof PersonalizedProgramAttemptDto
+     */
+    'createdAt': string;
+}
+
+export const PersonalizedProgramAttemptDtoStatusEnum = {
+    Success: 'SUCCESS',
+    Skipped: 'SKIPPED',
+    Failed: 'FAILED'
+} as const;
+
+export type PersonalizedProgramAttemptDtoStatusEnum = typeof PersonalizedProgramAttemptDtoStatusEnum[keyof typeof PersonalizedProgramAttemptDtoStatusEnum];
+
+/**
+ * 
+ * @export
+ * @interface PersonalizedProgramSummaryDto
+ */
+export interface PersonalizedProgramSummaryDto {
+    /**
+     * プログラムID
+     * @type {string}
+     * @memberof PersonalizedProgramSummaryDto
+     */
+    'id': string;
+    /**
+     * プログラムタイトル
+     * @type {string}
+     * @memberof PersonalizedProgramSummaryDto
+     */
+    'title': string;
+    /**
+     * フィードID
+     * @type {string}
+     * @memberof PersonalizedProgramSummaryDto
+     */
+    'feedId': string;
+    /**
+     * フィード名
+     * @type {string}
+     * @memberof PersonalizedProgramSummaryDto
+     */
+    'feedName': string;
+    /**
+     * 音声ファイルURL
+     * @type {string}
+     * @memberof PersonalizedProgramSummaryDto
+     */
+    'audioUrl': string;
+    /**
+     * 音声ファイルの長さ（ミリ秒）
+     * @type {number}
+     * @memberof PersonalizedProgramSummaryDto
+     */
+    'audioDuration': number;
+    /**
+     * 画像URL
+     * @type {string}
+     * @memberof PersonalizedProgramSummaryDto
+     */
+    'imageUrl': string | null;
+    /**
+     * 紹介記事数
+     * @type {number}
+     * @memberof PersonalizedProgramSummaryDto
+     */
+    'postsCount': number;
+    /**
+     * 有効期限
+     * @type {string}
+     * @memberof PersonalizedProgramSummaryDto
+     */
+    'expiresAt': string | null;
+    /**
+     * 有効期限切れフラグ
+     * @type {boolean}
+     * @memberof PersonalizedProgramSummaryDto
+     */
+    'isExpired': boolean;
+    /**
+     * 作成日時
+     * @type {string}
+     * @memberof PersonalizedProgramSummaryDto
+     */
+    'createdAt': string;
+    /**
+     * 最終更新日時
+     * @type {string}
+     * @memberof PersonalizedProgramSummaryDto
+     */
+    'updatedAt': string;
+}
 /**
  * 
  * @export
@@ -1033,6 +1447,44 @@ export interface TagFilterDto {
 /**
  * 
  * @export
+ * @interface TestSlackWebhookRequestDto
+ */
+export interface TestSlackWebhookRequestDto {
+    /**
+     * テストするSlack Webhook URL
+     * @type {string}
+     * @memberof TestSlackWebhookRequestDto
+     */
+    'webhookUrl': string;
+}
+/**
+ * 
+ * @export
+ * @interface TestSlackWebhookResponseDto
+ */
+export interface TestSlackWebhookResponseDto {
+    /**
+     * テストが成功したかどうか
+     * @type {boolean}
+     * @memberof TestSlackWebhookResponseDto
+     */
+    'success': boolean;
+    /**
+     * エラーメッセージ（失敗時）
+     * @type {string}
+     * @memberof TestSlackWebhookResponseDto
+     */
+    'errorMessage'?: string;
+    /**
+     * レスポンス時間（ミリ秒）
+     * @type {number}
+     * @memberof TestSlackWebhookResponseDto
+     */
+    'responseTime': number;
+}
+/**
+ * 
+ * @export
  * @interface UpdatePersonalizedFeedRequestDto
  */
 export interface UpdatePersonalizedFeedRequestDto {
@@ -1154,6 +1606,31 @@ export interface UpdatePersonalizedFeedWithFiltersResponseDto {
      * @memberof UpdatePersonalizedFeedWithFiltersResponseDto
      */
     'filterGroups': Array<FilterGroupDto>;
+}
+/**
+ * 
+ * @export
+ * @interface UpdateUserSettingsRequestDto
+ */
+export interface UpdateUserSettingsRequestDto {
+    /**
+     * パーソナルプログラム内で使用される表示名
+     * @type {string}
+     * @memberof UpdateUserSettingsRequestDto
+     */
+    'displayName'?: string;
+    /**
+     * 個別のSlack Webhook URL（番組生成完了時の通知用）
+     * @type {string}
+     * @memberof UpdateUserSettingsRequestDto
+     */
+    'slackWebhookUrl'?: string;
+    /**
+     * 通知が有効かどうかを表すフラグ
+     * @type {boolean}
+     * @memberof UpdateUserSettingsRequestDto
+     */
+    'notificationEnabled'?: boolean;
 }
 
 /**
@@ -1802,6 +2279,185 @@ export class CompatibilityApiApi extends BaseAPI {
 
 
 /**
+ * DashboardApi - axios parameter creator
+ * @export
+ */
+export const DashboardApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * ダッシュボード表示用のパーソナルフィード概要情報を取得します
+         * @summary ダッシュボード用パーソナルフィード概要取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDashboardPersonalizedFeedsSummary: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/dashboard/personalized-feeds/summary`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * ダッシュボードトップ画面表示用の最新パーソナルプログラム一覧を取得します
+         * @summary ダッシュボード用パーソナルプログラム一覧取得
+         * @param {number} [limit] 取得件数（デフォルト: 10, 最大: 50）
+         * @param {number} [offset] オフセット（デフォルト: 0）
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDashboardPersonalizedPrograms: async (limit?: number, offset?: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/dashboard/personalized-programs`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            if (limit !== undefined) {
+                localVarQueryParameter['limit'] = limit;
+            }
+
+            if (offset !== undefined) {
+                localVarQueryParameter['offset'] = offset;
+            }
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * DashboardApi - functional programming interface
+ * @export
+ */
+export const DashboardApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = DashboardApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * ダッシュボード表示用のパーソナルフィード概要情報を取得します
+         * @summary ダッシュボード用パーソナルフィード概要取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getDashboardPersonalizedFeedsSummary(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetDashboardPersonalizedFeedsSummaryResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getDashboardPersonalizedFeedsSummary(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['DashboardApi.getDashboardPersonalizedFeedsSummary']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * ダッシュボードトップ画面表示用の最新パーソナルプログラム一覧を取得します
+         * @summary ダッシュボード用パーソナルプログラム一覧取得
+         * @param {number} [limit] 取得件数（デフォルト: 10, 最大: 50）
+         * @param {number} [offset] オフセット（デフォルト: 0）
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getDashboardPersonalizedPrograms(limit?: number, offset?: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetDashboardPersonalizedProgramsResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getDashboardPersonalizedPrograms(limit, offset, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['DashboardApi.getDashboardPersonalizedPrograms']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+    }
+};
+
+/**
+ * DashboardApi - factory interface
+ * @export
+ */
+export const DashboardApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = DashboardApiFp(configuration)
+    return {
+        /**
+         * ダッシュボード表示用のパーソナルフィード概要情報を取得します
+         * @summary ダッシュボード用パーソナルフィード概要取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDashboardPersonalizedFeedsSummary(options?: RawAxiosRequestConfig): AxiosPromise<GetDashboardPersonalizedFeedsSummaryResponseDto> {
+            return localVarFp.getDashboardPersonalizedFeedsSummary(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * ダッシュボードトップ画面表示用の最新パーソナルプログラム一覧を取得します
+         * @summary ダッシュボード用パーソナルプログラム一覧取得
+         * @param {number} [limit] 取得件数（デフォルト: 10, 最大: 50）
+         * @param {number} [offset] オフセット（デフォルト: 0）
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDashboardPersonalizedPrograms(limit?: number, offset?: number, options?: RawAxiosRequestConfig): AxiosPromise<GetDashboardPersonalizedProgramsResponseDto> {
+            return localVarFp.getDashboardPersonalizedPrograms(limit, offset, options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * DashboardApi - object-oriented interface
+ * @export
+ * @class DashboardApi
+ * @extends {BaseAPI}
+ */
+export class DashboardApi extends BaseAPI {
+    /**
+     * ダッシュボード表示用のパーソナルフィード概要情報を取得します
+     * @summary ダッシュボード用パーソナルフィード概要取得
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DashboardApi
+     */
+    public getDashboardPersonalizedFeedsSummary(options?: RawAxiosRequestConfig) {
+        return DashboardApiFp(this.configuration).getDashboardPersonalizedFeedsSummary(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * ダッシュボードトップ画面表示用の最新パーソナルプログラム一覧を取得します
+     * @summary ダッシュボード用パーソナルプログラム一覧取得
+     * @param {number} [limit] 取得件数（デフォルト: 10, 最大: 50）
+     * @param {number} [offset] オフセット（デフォルト: 0）
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DashboardApi
+     */
+    public getDashboardPersonalizedPrograms(limit?: number, offset?: number, options?: RawAxiosRequestConfig) {
+        return DashboardApiFp(this.configuration).getDashboardPersonalizedPrograms(limit, offset, options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+
+/**
  * PersonalizedFeedsApi - axios parameter creator
  * @export
  */
@@ -2208,6 +2864,268 @@ export class PersonalizedFeedsApi extends BaseAPI {
      */
     public updatePersonalizedFeed(id: string, updatePersonalizedFeedRequestDto: UpdatePersonalizedFeedRequestDto, options?: RawAxiosRequestConfig) {
         return PersonalizedFeedsApiFp(this.configuration).updatePersonalizedFeed(id, updatePersonalizedFeedRequestDto, options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+
+/**
+ * PersonalizedProgramAttemptsApi - axios parameter creator
+ * @export
+ */
+export const PersonalizedProgramAttemptsApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * 指定されたフィードの番組生成試行履歴一覧をページネーション付きで取得します
+         * @summary フィード別番組生成履歴一覧取得
+         * @param {string} feedId フィードID
+         * @param {number} [page] ページ番号（1から始まる）
+         * @param {number} [limit] 1ページあたりの件数
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getProgramAttempts: async (feedId: string, page?: number, limit?: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'feedId' is not null or undefined
+            assertParamExists('getProgramAttempts', 'feedId', feedId)
+            const localVarPath = `/personalized-program-attempts/feeds/{feedId}`
+                .replace(`{${"feedId"}}`, encodeURIComponent(String(feedId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            if (page !== undefined) {
+                localVarQueryParameter['page'] = page;
+            }
+
+            if (limit !== undefined) {
+                localVarQueryParameter['limit'] = limit;
+            }
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 指定されたフィードの番組生成試行履歴の総件数を取得します
+         * @summary フィード別番組生成履歴件数取得
+         * @param {string} feedId フィードID
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getProgramAttemptsCount: async (feedId: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'feedId' is not null or undefined
+            assertParamExists('getProgramAttemptsCount', 'feedId', feedId)
+            const localVarPath = `/personalized-program-attempts/feeds/{feedId}/count`
+                .replace(`{${"feedId"}}`, encodeURIComponent(String(feedId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 指定されたフィードの番組生成試行履歴の統計情報（成功率、各ステータス別件数など）を取得します
+         * @summary フィード別番組生成履歴統計情報取得
+         * @param {string} feedId フィードID
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getProgramAttemptsStatistics: async (feedId: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'feedId' is not null or undefined
+            assertParamExists('getProgramAttemptsStatistics', 'feedId', feedId)
+            const localVarPath = `/personalized-program-attempts/feeds/{feedId}/statistics`
+                .replace(`{${"feedId"}}`, encodeURIComponent(String(feedId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * PersonalizedProgramAttemptsApi - functional programming interface
+ * @export
+ */
+export const PersonalizedProgramAttemptsApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = PersonalizedProgramAttemptsApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * 指定されたフィードの番組生成試行履歴一覧をページネーション付きで取得します
+         * @summary フィード別番組生成履歴一覧取得
+         * @param {string} feedId フィードID
+         * @param {number} [page] ページ番号（1から始まる）
+         * @param {number} [limit] 1ページあたりの件数
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getProgramAttempts(feedId: string, page?: number, limit?: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetProgramAttemptsResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getProgramAttempts(feedId, page, limit, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['PersonalizedProgramAttemptsApi.getProgramAttempts']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * 指定されたフィードの番組生成試行履歴の総件数を取得します
+         * @summary フィード別番組生成履歴件数取得
+         * @param {string} feedId フィードID
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getProgramAttemptsCount(feedId: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetProgramAttemptsCountResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getProgramAttemptsCount(feedId, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['PersonalizedProgramAttemptsApi.getProgramAttemptsCount']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * 指定されたフィードの番組生成試行履歴の統計情報（成功率、各ステータス別件数など）を取得します
+         * @summary フィード別番組生成履歴統計情報取得
+         * @param {string} feedId フィードID
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getProgramAttemptsStatistics(feedId: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetProgramAttemptsStatisticsResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getProgramAttemptsStatistics(feedId, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['PersonalizedProgramAttemptsApi.getProgramAttemptsStatistics']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+    }
+};
+
+/**
+ * PersonalizedProgramAttemptsApi - factory interface
+ * @export
+ */
+export const PersonalizedProgramAttemptsApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = PersonalizedProgramAttemptsApiFp(configuration)
+    return {
+        /**
+         * 指定されたフィードの番組生成試行履歴一覧をページネーション付きで取得します
+         * @summary フィード別番組生成履歴一覧取得
+         * @param {string} feedId フィードID
+         * @param {number} [page] ページ番号（1から始まる）
+         * @param {number} [limit] 1ページあたりの件数
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getProgramAttempts(feedId: string, page?: number, limit?: number, options?: RawAxiosRequestConfig): AxiosPromise<GetProgramAttemptsResponseDto> {
+            return localVarFp.getProgramAttempts(feedId, page, limit, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 指定されたフィードの番組生成試行履歴の総件数を取得します
+         * @summary フィード別番組生成履歴件数取得
+         * @param {string} feedId フィードID
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getProgramAttemptsCount(feedId: string, options?: RawAxiosRequestConfig): AxiosPromise<GetProgramAttemptsCountResponseDto> {
+            return localVarFp.getProgramAttemptsCount(feedId, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 指定されたフィードの番組生成試行履歴の統計情報（成功率、各ステータス別件数など）を取得します
+         * @summary フィード別番組生成履歴統計情報取得
+         * @param {string} feedId フィードID
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getProgramAttemptsStatistics(feedId: string, options?: RawAxiosRequestConfig): AxiosPromise<GetProgramAttemptsStatisticsResponseDto> {
+            return localVarFp.getProgramAttemptsStatistics(feedId, options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * PersonalizedProgramAttemptsApi - object-oriented interface
+ * @export
+ * @class PersonalizedProgramAttemptsApi
+ * @extends {BaseAPI}
+ */
+export class PersonalizedProgramAttemptsApi extends BaseAPI {
+    /**
+     * 指定されたフィードの番組生成試行履歴一覧をページネーション付きで取得します
+     * @summary フィード別番組生成履歴一覧取得
+     * @param {string} feedId フィードID
+     * @param {number} [page] ページ番号（1から始まる）
+     * @param {number} [limit] 1ページあたりの件数
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof PersonalizedProgramAttemptsApi
+     */
+    public getProgramAttempts(feedId: string, page?: number, limit?: number, options?: RawAxiosRequestConfig) {
+        return PersonalizedProgramAttemptsApiFp(this.configuration).getProgramAttempts(feedId, page, limit, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 指定されたフィードの番組生成試行履歴の総件数を取得します
+     * @summary フィード別番組生成履歴件数取得
+     * @param {string} feedId フィードID
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof PersonalizedProgramAttemptsApi
+     */
+    public getProgramAttemptsCount(feedId: string, options?: RawAxiosRequestConfig) {
+        return PersonalizedProgramAttemptsApiFp(this.configuration).getProgramAttemptsCount(feedId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 指定されたフィードの番組生成試行履歴の統計情報（成功率、各ステータス別件数など）を取得します
+     * @summary フィード別番組生成履歴統計情報取得
+     * @param {string} feedId フィードID
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof PersonalizedProgramAttemptsApi
+     */
+    public getProgramAttemptsStatistics(feedId: string, options?: RawAxiosRequestConfig) {
+        return PersonalizedProgramAttemptsApiFp(this.configuration).getProgramAttemptsStatistics(feedId, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
@@ -2782,6 +3700,249 @@ export class QiitaPostsApi extends BaseAPI {
      */
     public searchQiitaPosts(authors?: Array<string>, tags?: Array<string>, minPublishedAt?: string, page?: number, perPage?: number, options?: RawAxiosRequestConfig) {
         return QiitaPostsApiFp(this.configuration).searchQiitaPosts(authors, tags, minPublishedAt, page, perPage, options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+
+/**
+ * UserSettingsApi - axios parameter creator
+ * @export
+ */
+export const UserSettingsApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * 認証ユーザーのユーザー設定（表示名、Slack通知設定など）を取得します。
+         * @summary ユーザー設定取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        userSettingsControllerGetUserSettings: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/user-settings`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 指定されたSlack Webhook URLに対してテスト通知を送信し、接続を確認します。
+         * @summary Slack Webhook URLテスト
+         * @param {TestSlackWebhookRequestDto} testSlackWebhookRequestDto 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        userSettingsControllerTestSlackWebhook: async (testSlackWebhookRequestDto: TestSlackWebhookRequestDto, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'testSlackWebhookRequestDto' is not null or undefined
+            assertParamExists('userSettingsControllerTestSlackWebhook', 'testSlackWebhookRequestDto', testSlackWebhookRequestDto)
+            const localVarPath = `/user-settings/test-slack-webhook`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(testSlackWebhookRequestDto, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 認証ユーザーのユーザー設定（表示名、Slack通知設定など）を更新します。
+         * @summary ユーザー設定更新
+         * @param {UpdateUserSettingsRequestDto} updateUserSettingsRequestDto 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        userSettingsControllerUpdateUserSettings: async (updateUserSettingsRequestDto: UpdateUserSettingsRequestDto, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'updateUserSettingsRequestDto' is not null or undefined
+            assertParamExists('userSettingsControllerUpdateUserSettings', 'updateUserSettingsRequestDto', updateUserSettingsRequestDto)
+            const localVarPath = `/user-settings`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'PATCH', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(updateUserSettingsRequestDto, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * UserSettingsApi - functional programming interface
+ * @export
+ */
+export const UserSettingsApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = UserSettingsApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * 認証ユーザーのユーザー設定（表示名、Slack通知設定など）を取得します。
+         * @summary ユーザー設定取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async userSettingsControllerGetUserSettings(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetUserSettingsResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.userSettingsControllerGetUserSettings(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UserSettingsApi.userSettingsControllerGetUserSettings']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * 指定されたSlack Webhook URLに対してテスト通知を送信し、接続を確認します。
+         * @summary Slack Webhook URLテスト
+         * @param {TestSlackWebhookRequestDto} testSlackWebhookRequestDto 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async userSettingsControllerTestSlackWebhook(testSlackWebhookRequestDto: TestSlackWebhookRequestDto, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<TestSlackWebhookResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.userSettingsControllerTestSlackWebhook(testSlackWebhookRequestDto, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UserSettingsApi.userSettingsControllerTestSlackWebhook']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * 認証ユーザーのユーザー設定（表示名、Slack通知設定など）を更新します。
+         * @summary ユーザー設定更新
+         * @param {UpdateUserSettingsRequestDto} updateUserSettingsRequestDto 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async userSettingsControllerUpdateUserSettings(updateUserSettingsRequestDto: UpdateUserSettingsRequestDto, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetUserSettingsResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.userSettingsControllerUpdateUserSettings(updateUserSettingsRequestDto, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UserSettingsApi.userSettingsControllerUpdateUserSettings']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+    }
+};
+
+/**
+ * UserSettingsApi - factory interface
+ * @export
+ */
+export const UserSettingsApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = UserSettingsApiFp(configuration)
+    return {
+        /**
+         * 認証ユーザーのユーザー設定（表示名、Slack通知設定など）を取得します。
+         * @summary ユーザー設定取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        userSettingsControllerGetUserSettings(options?: RawAxiosRequestConfig): AxiosPromise<GetUserSettingsResponseDto> {
+            return localVarFp.userSettingsControllerGetUserSettings(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 指定されたSlack Webhook URLに対してテスト通知を送信し、接続を確認します。
+         * @summary Slack Webhook URLテスト
+         * @param {TestSlackWebhookRequestDto} testSlackWebhookRequestDto 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        userSettingsControllerTestSlackWebhook(testSlackWebhookRequestDto: TestSlackWebhookRequestDto, options?: RawAxiosRequestConfig): AxiosPromise<TestSlackWebhookResponseDto> {
+            return localVarFp.userSettingsControllerTestSlackWebhook(testSlackWebhookRequestDto, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 認証ユーザーのユーザー設定（表示名、Slack通知設定など）を更新します。
+         * @summary ユーザー設定更新
+         * @param {UpdateUserSettingsRequestDto} updateUserSettingsRequestDto 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        userSettingsControllerUpdateUserSettings(updateUserSettingsRequestDto: UpdateUserSettingsRequestDto, options?: RawAxiosRequestConfig): AxiosPromise<GetUserSettingsResponseDto> {
+            return localVarFp.userSettingsControllerUpdateUserSettings(updateUserSettingsRequestDto, options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * UserSettingsApi - object-oriented interface
+ * @export
+ * @class UserSettingsApi
+ * @extends {BaseAPI}
+ */
+export class UserSettingsApi extends BaseAPI {
+    /**
+     * 認証ユーザーのユーザー設定（表示名、Slack通知設定など）を取得します。
+     * @summary ユーザー設定取得
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UserSettingsApi
+     */
+    public userSettingsControllerGetUserSettings(options?: RawAxiosRequestConfig) {
+        return UserSettingsApiFp(this.configuration).userSettingsControllerGetUserSettings(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 指定されたSlack Webhook URLに対してテスト通知を送信し、接続を確認します。
+     * @summary Slack Webhook URLテスト
+     * @param {TestSlackWebhookRequestDto} testSlackWebhookRequestDto 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UserSettingsApi
+     */
+    public userSettingsControllerTestSlackWebhook(testSlackWebhookRequestDto: TestSlackWebhookRequestDto, options?: RawAxiosRequestConfig) {
+        return UserSettingsApiFp(this.configuration).userSettingsControllerTestSlackWebhook(testSlackWebhookRequestDto, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 認証ユーザーのユーザー設定（表示名、Slack通知設定など）を更新します。
+     * @summary ユーザー設定更新
+     * @param {UpdateUserSettingsRequestDto} updateUserSettingsRequestDto 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UserSettingsApi
+     */
+    public userSettingsControllerUpdateUserSettings(updateUserSettingsRequestDto: UpdateUserSettingsRequestDto, options?: RawAxiosRequestConfig) {
+        return UserSettingsApiFp(this.configuration).userSettingsControllerUpdateUserSettings(updateUserSettingsRequestDto, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
