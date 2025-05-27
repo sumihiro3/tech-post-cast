@@ -502,7 +502,7 @@ model PersonalizedProgramAttempt {
   id        String   @id @default(cuid()) @db.VarChar(100)
   userId    String   @map("user_id") @db.VarChar(50)
   feedId    String   @map("feed_id") @db.VarChar(50)
-  status    String   @db.VarChar(20) // "SUCCESS" or "FAILED"
+  status    String   @db.VarChar(20) // "SUCCESS", "SKIPPED", or "FAILED"
   reason    String?  @db.VarChar(255) // 失敗理由（例: "NOT_ENOUGH_POSTS"）
   postCount Int      @default(0)
   createdAt DateTime @default(now()) @map("created_at")

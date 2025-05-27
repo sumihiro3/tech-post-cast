@@ -120,6 +120,7 @@ describe('PersonalizedFeedsBuilder', () => {
       createPersonalizedProgram: jest.fn(),
       addPersonalizedProgramSuccessAttempt: jest.fn(),
       addPersonalizedProgramFailureAttempt: jest.fn(),
+      addPersonalizedProgramSkippedAttempt: jest.fn(),
     };
 
     qiitaPostsRepository = {
@@ -462,7 +463,7 @@ describe('PersonalizedFeedsBuilder', () => {
     const mockFeed = PersonalizedFeedFactory.createPersonalizedFeed();
     const programDate = new Date('2024-01-01');
 
-    it('記事が不足している場合、InsufficientPostsErrorがスローされること', async () => {
+    it('記事数が不足している場合、InsufficientPostsErrorがスローされ、SKIPPEDステータスで記録されること', async () => {
       const mockUserWithSubscription =
         TestDataHelper.createMockUserWithSubscription(mockUser);
 
@@ -472,9 +473,11 @@ describe('PersonalizedFeedsBuilder', () => {
 
       jest
         .spyOn(builder, 'generatePersonalizedProgramScript')
-        .mockRejectedValue(new InsufficientPostsError('記事が不足しています'));
+        .mockRejectedValue(
+          new InsufficientPostsError('記事数が不足しています'),
+        );
 
-      personalizedFeedsRepository.addPersonalizedProgramFailureAttempt.mockResolvedValue(
+      personalizedFeedsRepository.addPersonalizedProgramSkippedAttempt.mockResolvedValue(
         {
           id: 'attempt-1',
           feedId: mockFeed.id,
@@ -494,7 +497,7 @@ describe('PersonalizedFeedsBuilder', () => {
       );
       expect(builder.generatePersonalizedProgramScript).toHaveBeenCalled();
       expect(
-        personalizedFeedsRepository.addPersonalizedProgramFailureAttempt,
+        personalizedFeedsRepository.addPersonalizedProgramSkippedAttempt,
       ).toHaveBeenCalled();
     });
 

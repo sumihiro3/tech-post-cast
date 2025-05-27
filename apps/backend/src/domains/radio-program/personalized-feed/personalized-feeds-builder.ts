@@ -368,8 +368,24 @@ export class PersonalizedFeedsBuilder {
         // 永続化エラー
         reason = FailureReason.PERSISTENCE_ERROR;
       } else if (error instanceof InsufficientPostsError) {
-        // 記事不足エラー
+        // 記事不足エラー - SKIPPEDステータスで記録
         reason = FailureReason.NOT_ENOUGH_POSTS;
+        const attempt =
+          await this.personalizedFeedsRepository.addPersonalizedProgramSkippedAttempt(
+            user,
+            feed,
+            programDate,
+            0,
+            reason,
+          );
+        this.logger.log(
+          `パーソナルフィード [${feed.id}] に基づいた番組の生成をスキップしました（記事不足）`,
+          {
+            attempt,
+          },
+        );
+        // エラーをスローする
+        throw error;
       } else {
         // 不明なエラー
         reason = FailureReason.OTHER;
