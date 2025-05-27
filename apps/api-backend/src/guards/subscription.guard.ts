@@ -8,7 +8,6 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { SubscriptionStatus } from '@tech-post-cast/database';
-import { Request } from 'express';
 
 @Injectable()
 export class SubscriptionGuard implements CanActivate {
@@ -21,7 +20,7 @@ export class SubscriptionGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
-    const userId = request.user?.id;
+    const userId = (request as any).user?.id;
 
     if (!userId) {
       return true; // 認証されていないユーザーは別のガードで処理
@@ -37,7 +36,7 @@ export class SubscriptionGuard implements CanActivate {
       const status = subscriptionInfo?.status ?? SubscriptionStatus.NONE;
 
       // リクエストにサブスクリプション情報を追加
-      request.subscription = subscriptionInfo;
+      (request as any).subscription = subscriptionInfo;
 
       // プレミアム機能へのアクセスチェック
       if (status !== SubscriptionStatus.ACTIVE) {
