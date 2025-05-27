@@ -771,6 +771,175 @@
         ]
       }
     },
+    "/personalized-program-attempts/feeds/{feedId}": {
+      "get": {
+        "description": "指定されたフィードの番組生成試行履歴一覧をページネーション付きで取得します",
+        "operationId": "getProgramAttempts",
+        "parameters": [
+          {
+            "name": "feedId",
+            "required": true,
+            "in": "path",
+            "description": "フィードID",
+            "schema": {
+              "example": "feed_1234567890",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "ページ番号（1から始まる）",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "1ページあたりの件数",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "番組生成履歴一覧の取得に成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetProgramAttemptsResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "認証が必要"
+          },
+          "404": {
+            "description": "フィードが見つからない、またはアクセス権限がない"
+          },
+          "500": {
+            "description": "サーバー内部エラー"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "フィード別番組生成履歴一覧取得",
+        "tags": [
+          "personalized-program-attempts"
+        ]
+      }
+    },
+    "/personalized-program-attempts/feeds/{feedId}/statistics": {
+      "get": {
+        "description": "指定されたフィードの番組生成試行履歴の統計情報（成功率、各ステータス別件数など）を取得します",
+        "operationId": "getProgramAttemptsStatistics",
+        "parameters": [
+          {
+            "name": "feedId",
+            "required": true,
+            "in": "path",
+            "description": "フィードID",
+            "schema": {
+              "example": "feed_1234567890",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "番組生成履歴統計情報の取得に成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetProgramAttemptsStatisticsResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "認証が必要"
+          },
+          "404": {
+            "description": "フィードが見つからない、またはアクセス権限がない"
+          },
+          "500": {
+            "description": "サーバー内部エラー"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "フィード別番組生成履歴統計情報取得",
+        "tags": [
+          "personalized-program-attempts"
+        ]
+      }
+    },
+    "/personalized-program-attempts/feeds/{feedId}/count": {
+      "get": {
+        "description": "指定されたフィードの番組生成試行履歴の総件数を取得します",
+        "operationId": "getProgramAttemptsCount",
+        "parameters": [
+          {
+            "name": "feedId",
+            "required": true,
+            "in": "path",
+            "description": "フィードID",
+            "schema": {
+              "example": "feed_1234567890",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "番組生成履歴件数の取得に成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetProgramAttemptsCountResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "認証が必要"
+          },
+          "404": {
+            "description": "フィードが見つからない、またはアクセス権限がない"
+          },
+          "500": {
+            "description": "サーバー内部エラー"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "フィード別番組生成履歴件数取得",
+        "tags": [
+          "personalized-program-attempts"
+        ]
+      }
+    },
     "/dashboard/personalized-feeds/summary": {
       "get": {
         "description": "ダッシュボード表示用のパーソナルフィード概要情報を取得します",
@@ -2094,6 +2263,183 @@
           "name",
           "isActive",
           "updatedAt"
+        ]
+      },
+      "PersonalizedProgramAttemptDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "試行履歴ID",
+            "example": "attempt_1234567890"
+          },
+          "userId": {
+            "type": "string",
+            "description": "ユーザーID",
+            "example": "user_1234567890"
+          },
+          "feedId": {
+            "type": "string",
+            "description": "フィードID",
+            "example": "feed_1234567890"
+          },
+          "programId": {
+            "type": "string",
+            "description": "生成された番組ID（成功時のみ）",
+            "example": "program_1234567890"
+          },
+          "status": {
+            "type": "string",
+            "description": "試行ステータス",
+            "enum": [
+              "SUCCESS",
+              "SKIPPED",
+              "FAILED"
+            ],
+            "example": "SUCCESS"
+          },
+          "reason": {
+            "type": "string",
+            "description": "失敗理由（失敗・スキップ時のみ）",
+            "example": "NOT_ENOUGH_POSTS"
+          },
+          "postCount": {
+            "type": "number",
+            "description": "記事数",
+            "example": 5,
+            "minimum": 0
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "試行日時",
+            "example": "2024-01-01T10:00:00.000Z",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "feedId",
+          "status",
+          "postCount",
+          "createdAt"
+        ]
+      },
+      "GetProgramAttemptsResponseDto": {
+        "type": "object",
+        "properties": {
+          "attempts": {
+            "description": "番組生成試行履歴一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalizedProgramAttemptDto"
+            }
+          },
+          "totalCount": {
+            "type": "number",
+            "description": "総件数",
+            "example": 42,
+            "minimum": 0
+          },
+          "currentPage": {
+            "type": "number",
+            "description": "現在のページ番号",
+            "example": 1,
+            "minimum": 1
+          },
+          "totalPages": {
+            "type": "number",
+            "description": "総ページ数",
+            "example": 3,
+            "minimum": 0
+          },
+          "hasNextPage": {
+            "type": "boolean",
+            "description": "次のページが存在するか",
+            "example": true
+          },
+          "hasPreviousPage": {
+            "type": "boolean",
+            "description": "前のページが存在するか",
+            "example": false
+          }
+        },
+        "required": [
+          "attempts",
+          "totalCount",
+          "currentPage",
+          "totalPages",
+          "hasNextPage",
+          "hasPreviousPage"
+        ]
+      },
+      "GetProgramAttemptsStatisticsResponseDto": {
+        "type": "object",
+        "properties": {
+          "totalAttempts": {
+            "type": "number",
+            "description": "総試行回数",
+            "example": 10,
+            "minimum": 0
+          },
+          "successCount": {
+            "type": "number",
+            "description": "成功回数",
+            "example": 7,
+            "minimum": 0
+          },
+          "skippedCount": {
+            "type": "number",
+            "description": "スキップ回数",
+            "example": 2,
+            "minimum": 0
+          },
+          "failedCount": {
+            "type": "number",
+            "description": "失敗回数",
+            "example": 1,
+            "minimum": 0
+          },
+          "successRate": {
+            "type": "number",
+            "description": "成功率（%）",
+            "example": 70,
+            "minimum": 0,
+            "maximum": 100
+          },
+          "lastAttemptDate": {
+            "type": "string",
+            "description": "最新試行日時",
+            "example": "2024-01-03T10:00:00.000Z",
+            "format": "date-time"
+          },
+          "lastSuccessDate": {
+            "type": "string",
+            "description": "最新成功日時",
+            "example": "2024-01-03T10:00:00.000Z",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "totalAttempts",
+          "successCount",
+          "skippedCount",
+          "failedCount",
+          "successRate"
+        ]
+      },
+      "GetProgramAttemptsCountResponseDto": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "number",
+            "description": "試行履歴件数",
+            "example": 42,
+            "minimum": 0
+          }
+        },
+        "required": [
+          "count"
         ]
       },
       "PersonalizedFeedSummaryDto": {

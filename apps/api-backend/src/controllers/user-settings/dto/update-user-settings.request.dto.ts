@@ -3,7 +3,7 @@ import {
   IsBoolean,
   IsOptional,
   IsString,
-  IsUrl,
+  Matches,
   MaxLength,
 } from 'class-validator';
 
@@ -31,7 +31,9 @@ export class UpdateUserSettingsRequestDto {
   })
   @IsOptional()
   @IsString()
-  @IsUrl({}, { message: '有効なURL形式で入力してください' })
+  @Matches(/^$|^https:\/\/hooks\.slack\.com\/services\/.*/, {
+    message: '有効なSlack Webhook URLを入力してください（空文字も可）',
+  })
   @MaxLength(500, {
     message: 'Slack Webhook URLは500文字以内で入力してください',
   })
