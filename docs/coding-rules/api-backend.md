@@ -145,6 +145,37 @@ describe('UserService', () => {
 });
 ```
 
+#### ファクトリクラス設計のベストプラクティス
+
+- **基本メソッドの提供**: 各ドメインに対して以下のメソッドを必ず実装する
+
+  ```typescript
+  // 基本作成メソッド
+  static create{DomainName}(overrides?: Partial<{DomainName}>): {DomainName}
+
+  // 複数作成メソッド
+  static create{DomainName}s(count: number, overrides?: Partial<{DomainName}>): {DomainName}[]
+
+  // 特化メソッド（必要に応じて）
+  static create{SpecificCase}{DomainName}s(): {DomainName}[]
+  ```
+
+- **特化ファクトリメソッドの命名規則**:
+    - ステータス別: `createActiveUsers()`, `createInactiveUsers()`
+    - 時系列データ: `createTimeSeriesData()`
+    - 複合データ: `createMixedStatusData()`
+
+- **ファクトリメソッドの責任範囲**:
+    - テストに必要な最小限のデータ作成
+    - リアルなデータ構造の模倣
+    - テスト間の独立性確保
+
+#### ファクトリクラス使用の強制
+
+- **必須使用**: すべてのテストでファクトリクラスからテストデータを取得する
+- **直接記載禁止**: テストコード内でのオブジェクトリテラル直接記載を禁止
+- **例外**: プリミティブ型の単純な値（文字列、数値）は直接記載可能
+
 #### Repositoryテストの実装
 
 - Repositoryクラスのテストでは、PrismaServiceをモック化する
