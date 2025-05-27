@@ -771,6 +771,208 @@
         ]
       }
     },
+    "/dashboard/personalized-feeds/summary": {
+      "get": {
+        "description": "ダッシュボード表示用のパーソナルフィード概要情報を取得します",
+        "operationId": "getDashboardPersonalizedFeedsSummary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "パーソナルフィード概要情報",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetDashboardPersonalizedFeedsSummaryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "ダッシュボード用パーソナルフィード概要取得",
+        "tags": [
+          "Dashboard"
+        ]
+      }
+    },
+    "/dashboard/personalized-programs": {
+      "get": {
+        "description": "ダッシュボードトップ画面表示用の最新パーソナルプログラム一覧を取得します",
+        "operationId": "getDashboardPersonalizedPrograms",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "取得件数（デフォルト: 10, 最大: 50）",
+            "schema": {
+              "minimum": 1,
+              "maximum": 50,
+              "example": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "description": "オフセット（デフォルト: 0）",
+            "schema": {
+              "minimum": 0,
+              "example": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "パーソナルプログラム一覧",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetDashboardPersonalizedProgramsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "ダッシュボード用パーソナルプログラム一覧取得",
+        "tags": [
+          "Dashboard"
+        ]
+      }
+    },
+    "/user-settings": {
+      "get": {
+        "description": "認証ユーザーのユーザー設定（表示名、Slack通知設定など）を取得します。",
+        "operationId": "UserSettingsController_getUserSettings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "ユーザー設定の取得に成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetUserSettingsResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "認証が必要です"
+          },
+          "404": {
+            "description": "ユーザーが見つかりません"
+          },
+          "500": {
+            "description": "サーバー内部エラー"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "ユーザー設定取得",
+        "tags": [
+          "user-settings"
+        ]
+      },
+      "patch": {
+        "description": "認証ユーザーのユーザー設定（表示名、Slack通知設定など）を更新します。",
+        "operationId": "UserSettingsController_updateUserSettings",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserSettingsRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ユーザー設定の更新に成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetUserSettingsResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "リクエストパラメータが不正です"
+          },
+          "401": {
+            "description": "認証が必要です"
+          },
+          "404": {
+            "description": "ユーザーが見つかりません"
+          },
+          "500": {
+            "description": "サーバー内部エラー"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "ユーザー設定更新",
+        "tags": [
+          "user-settings"
+        ]
+      }
+    },
+    "/user-settings/test-slack-webhook": {
+      "post": {
+        "description": "指定されたSlack Webhook URLに対してテスト通知を送信し、接続を確認します。",
+        "operationId": "UserSettingsController_testSlackWebhook",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestSlackWebhookRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Slack Webhook URLテストの実行に成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestSlackWebhookResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "リクエストパラメータが不正です"
+          },
+          "401": {
+            "description": "認証が必要です"
+          },
+          "500": {
+            "description": "サーバー内部エラー"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Slack Webhook URLテスト",
+        "tags": [
+          "user-settings"
+        ]
+      }
+    },
     "/": {
       "get": {
         "operationId": "AppController_getHello",
@@ -1892,6 +2094,322 @@
           "name",
           "isActive",
           "updatedAt"
+        ]
+      },
+      "PersonalizedFeedSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "フィードID",
+            "example": "feed_123"
+          },
+          "name": {
+            "type": "string",
+            "description": "フィード名",
+            "example": "React関連記事フィード"
+          },
+          "description": {
+            "type": "string",
+            "description": "フィード説明",
+            "example": "React.jsに関する最新記事を収集するフィード"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "アクティブ状態",
+            "example": true
+          },
+          "tagFiltersCount": {
+            "type": "number",
+            "description": "タグフィルター数",
+            "example": 3
+          },
+          "authorFiltersCount": {
+            "type": "number",
+            "description": "著者フィルター数",
+            "example": 2
+          },
+          "totalFiltersCount": {
+            "type": "number",
+            "description": "フィルター条件総数",
+            "example": 5
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "作成日時",
+            "example": "2025-03-25T10:00:00Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "最終更新日時",
+            "example": "2025-03-25T15:30:00Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "isActive",
+          "tagFiltersCount",
+          "authorFiltersCount",
+          "totalFiltersCount",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "GetDashboardPersonalizedFeedsSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "activeFeedsCount": {
+            "type": "number",
+            "description": "アクティブなフィード数",
+            "example": 5
+          },
+          "totalFeedsCount": {
+            "type": "number",
+            "description": "総フィード数",
+            "example": 8
+          },
+          "recentFeeds": {
+            "description": "最近作成されたフィード（最新5件）",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalizedFeedSummaryDto"
+            }
+          },
+          "totalFiltersCount": {
+            "type": "number",
+            "description": "総フィルター条件数",
+            "example": 25
+          }
+        },
+        "required": [
+          "activeFeedsCount",
+          "totalFeedsCount",
+          "recentFeeds",
+          "totalFiltersCount"
+        ]
+      },
+      "PersonalizedProgramSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "プログラムID",
+            "example": "program_123"
+          },
+          "title": {
+            "type": "string",
+            "description": "プログラムタイトル",
+            "example": "React最新情報 - 2025年3月25日"
+          },
+          "feedId": {
+            "type": "string",
+            "description": "フィードID",
+            "example": "feed_123"
+          },
+          "feedName": {
+            "type": "string",
+            "description": "フィード名",
+            "example": "React関連記事フィード"
+          },
+          "audioUrl": {
+            "type": "string",
+            "description": "音声ファイルURL",
+            "example": "https://example.com/audio/program_123.mp3"
+          },
+          "audioDuration": {
+            "type": "number",
+            "description": "音声ファイルの長さ（ミリ秒）",
+            "example": 180000
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "画像URL",
+            "example": "https://example.com/images/program_123.jpg",
+            "nullable": true
+          },
+          "postsCount": {
+            "type": "number",
+            "description": "紹介記事数",
+            "example": 5
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "有効期限",
+            "example": "2025-04-25T10:00:00Z",
+            "nullable": true
+          },
+          "isExpired": {
+            "type": "boolean",
+            "description": "有効期限切れフラグ",
+            "example": false
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "作成日時",
+            "example": "2025-03-25T10:00:00Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "最終更新日時",
+            "example": "2025-03-25T15:30:00Z"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "feedId",
+          "feedName",
+          "audioUrl",
+          "audioDuration",
+          "imageUrl",
+          "postsCount",
+          "expiresAt",
+          "isExpired",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "GetDashboardPersonalizedProgramsResponseDto": {
+        "type": "object",
+        "properties": {
+          "programs": {
+            "description": "パーソナルプログラム一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalizedProgramSummaryDto"
+            }
+          },
+          "totalCount": {
+            "type": "number",
+            "description": "総件数",
+            "example": 25
+          },
+          "limit": {
+            "type": "number",
+            "description": "取得件数",
+            "example": 10
+          },
+          "offset": {
+            "type": "number",
+            "description": "オフセット",
+            "example": 0
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "次のページが存在するか",
+            "example": true
+          }
+        },
+        "required": [
+          "programs",
+          "totalCount",
+          "limit",
+          "offset",
+          "hasNext"
+        ]
+      },
+      "GetUserSettingsResponseDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "ユーザーID",
+            "example": "user_01234567890abcdef"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "パーソナルプログラム内で使用される表示名",
+            "example": "田中 太郎"
+          },
+          "slackWebhookUrl": {
+            "type": "string",
+            "description": "個別のSlack Webhook URL（番組生成完了時の通知用）",
+            "example": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+          },
+          "notificationEnabled": {
+            "type": "boolean",
+            "description": "通知が有効かどうかを表すフラグ",
+            "example": true
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "設定の最終更新日時",
+            "example": "2024-01-15T10:30:00.000Z"
+          }
+        },
+        "required": [
+          "userId",
+          "displayName",
+          "notificationEnabled",
+          "updatedAt"
+        ]
+      },
+      "UpdateUserSettingsRequestDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "description": "パーソナルプログラム内で使用される表示名",
+            "example": "田中 太郎",
+            "maxLength": 100
+          },
+          "slackWebhookUrl": {
+            "type": "string",
+            "description": "個別のSlack Webhook URL（番組生成完了時の通知用）",
+            "example": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX",
+            "maxLength": 500
+          },
+          "notificationEnabled": {
+            "type": "boolean",
+            "description": "通知が有効かどうかを表すフラグ",
+            "example": true
+          }
+        }
+      },
+      "TestSlackWebhookRequestDto": {
+        "type": "object",
+        "properties": {
+          "webhookUrl": {
+            "type": "string",
+            "description": "テストするSlack Webhook URL",
+            "example": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "webhookUrl"
+        ]
+      },
+      "TestSlackWebhookResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "テストが成功したかどうか",
+            "example": true
+          },
+          "errorMessage": {
+            "type": "string",
+            "description": "エラーメッセージ（失敗時）",
+            "example": "Slack API エラー: 404 Not Found"
+          },
+          "responseTime": {
+            "type": "number",
+            "description": "レスポンス時間（ミリ秒）",
+            "example": 1250
+          }
+        },
+        "required": [
+          "success",
+          "responseTime"
         ]
       },
       "QiitaUserDto": {

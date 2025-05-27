@@ -13,5 +13,16 @@
   "eslint.validate": ["javascript", "typescript"],
   "eslint.workingDirectories": [{ "mode": "auto" }],
   "files.trimTrailingWhitespace": true,
-  "files.insertFinalNewline": true
+  "files.insertFinalNewline": true,
+  // API仕様生成ツールでは自動インポート整理を無効化
+  "files.exclude": {
+    "**/tools/generate-api-spec.ts": false
+  },
+  // 特定のファイルパターンで自動インポート整理を無効化
+  "[**/tools/generate-api-spec.ts]": {
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit",
+      "source.fixAll": "explicit"
+    }
+  }
 }
