@@ -1,0 +1,110 @@
+# フィード別番組生成履歴API - Rest Client テストファイル
+
+# 環境変数の設定（.envファイルから読み込み）
+@baseUrl = {{$dotenv BASE_URL}}
+@jwtToken = {{$dotenv JWT_TOKEN}}
+@feedId = {{$dotenv FEED_ID}}
+
+### 1. フィード別番組生成履歴一覧取得（デフォルトページネーション）
+GET {{baseUrl}}/personalized-program-attempts/feeds/{{feedId}}
+Authorization: Bearer {{jwtToken}}
+Content-Type: application/json
+
+### 2. フィード別番組生成履歴一覧取得（ページネーション指定）
+GET {{baseUrl}}/personalized-program-attempts/feeds/{{feedId}}?page=1&limit=10
+Authorization: Bearer {{jwtToken}}
+Content-Type: application/json
+
+### 3. フィード別番組生成履歴一覧取得（2ページ目）
+GET {{baseUrl}}/personalized-program-attempts/feeds/{{feedId}}?page=2&limit=5
+Authorization: Bearer {{jwtToken}}
+Content-Type: application/json
+
+### 4. フィード別番組生成履歴統計情報取得
+GET {{baseUrl}}/personalized-program-attempts/feeds/{{feedId}}/statistics
+Authorization: Bearer {{jwtToken}}
+Content-Type: application/json
+
+### 5. フィード別番組生成履歴件数取得
+GET {{baseUrl}}/personalized-program-attempts/feeds/{{feedId}}/count
+Authorization: Bearer {{jwtToken}}
+Content-Type: application/json
+
+### 6. 存在しないフィードIDでのテスト（404エラー確認）
+GET {{baseUrl}}/personalized-program-attempts/feeds/non_existent_feed_id
+Authorization: Bearer {{jwtToken}}
+Content-Type: application/json
+
+### 7. 認証なしでのテスト（401エラー確認）
+GET {{baseUrl}}/personalized-program-attempts/feeds/{{feedId}}
+Content-Type: application/json
+
+### 8. 不正なJWTトークンでのテスト（401エラー確認）
+GET {{baseUrl}}/personalized-program-attempts/feeds/{{feedId}}
+Authorization: Bearer invalid_jwt_token
+Content-Type: application/json
+
+### 9. 不正なページネーションパラメーター（バリデーションエラー確認）
+GET {{baseUrl}}/personalized-program-attempts/feeds/{{feedId}}?page=0&limit=101
+Authorization: Bearer {{jwtToken}}
+Content-Type: application/json
+
+### 10. 負の値でのページネーション（バリデーションエラー確認）
+GET {{baseUrl}}/personalized-program-attempts/feeds/{{feedId}}?page=-1&limit=-5
+Authorization: Bearer {{jwtToken}}
+Content-Type: application/json
+
+###
+# 使用方法:
+# 1. .envファイルに以下の環境変数を設定してください:
+#    BASE_URL=http://localhost:3000
+#    JWT_TOKEN=YOUR_ACTUAL_JWT_TOKEN
+#    FEED_ID=YOUR_ACTUAL_FEED_ID
+# 2. VS Code の Rest Client 拡張機能を使用して各リクエストを実行してください
+
+###
+# 期待されるレスポンス例:
+
+# 1. 履歴一覧取得の成功レスポンス:
+# {
+#   "attempts": [
+#     {
+#       "id": "attempt_1234567890",
+#       "userId": "user_1234567890",
+#       "feedId": "feed_1234567890",
+#       "programId": "program_1234567890",
+#       "status": "SUCCESS",
+#       "reason": null,
+#       "postCount": 5,
+#       "createdAt": "2024-01-03T10:00:00.000Z"
+#     }
+#   ],
+#   "totalCount": 25,
+#   "currentPage": 1,
+#   "totalPages": 3,
+#   "hasNextPage": true,
+#   "hasPreviousPage": false
+# }
+
+# 2. 統計情報取得の成功レスポンス:
+# {
+#   "totalAttempts": 10,
+#   "successCount": 7,
+#   "skippedCount": 2,
+#   "failedCount": 1,
+#   "successRate": 70.0,
+#   "lastAttemptDate": "2024-01-03T10:00:00.000Z",
+#   "lastSuccessDate": "2024-01-03T10:00:00.000Z"
+# }
+
+# 3. 件数取得の成功レスポンス:
+# {
+#   "count": 42
+# }
+
+# 4. エラーレスポンス例:
+# {
+#   "statusCode": 404,
+#   "message": "フィードが見つからない、またはアクセス権限がありません",
+#   "error": "Not Found"
+# }

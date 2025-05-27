@@ -1,26 +1,26 @@
-@apiBaseUrl = http://localhost:3001
+@baseUrl = {{$dotenv BASE_URL}}
 
 ### パーソナライズフィード一覧取得（フィルター情報あり）
-GET {{apiBaseUrl}}/personalized-feeds?includeFilters=true
+GET {{baseUrl}}/personalized-feeds?includeFilters=true
 Content-Type: application/json
 
 ### パーソナライズフィード一覧取得（ページネーション）
-GET {{apiBaseUrl}}/personalized-feeds?page=1&perPage=10
+GET {{baseUrl}}/personalized-feeds?page=1&perPage=10
 Content-Type: application/json
 
 ### パーソナライズフィード一覧取得（フィルター情報あり＋ページネーション）
-GET {{apiBaseUrl}}/personalized-feeds?includeFilters=true&page=1&perPage=5
+GET {{baseUrl}}/personalized-feeds?includeFilters=true&page=1&perPage=5
 Content-Type: application/json
 
 ### 個別パーソナライズフィード取得（フィルター情報なし）
 @feedId = feed_cmaamvdxs00003x3j5ywgcll7
 
 ### 個別パーソナライズフィード取得（フィルター情報あり）
-GET {{apiBaseUrl}}/personalized-feeds/{{feedId}}?includeFilters=true
+GET {{baseUrl}}/personalized-feeds/{{feedId}}?includeFilters=true
 Content-Type: application/json
 
 ### パーソナライズフィード作成（フィルターグループあり）
-POST {{apiBaseUrl}}/personalized-feeds
+POST {{baseUrl}}/personalized-feeds
 Content-Type: application/json
 
 {
@@ -55,7 +55,7 @@ Content-Type: application/json
 }
 
 ### パーソナライズフィード作成（著者フィルターのみ）
-POST {{apiBaseUrl}}/personalized-feeds
+POST {{baseUrl}}/personalized-feeds
 Content-Type: application/json
 
 {
@@ -84,7 +84,7 @@ Content-Type: application/json
 }
 
 ### パーソナライズフィード作成
-POST {{apiBaseUrl}}/personalized-feeds
+POST {{baseUrl}}/personalized-feeds
 Content-Type: application/json
 
 {
@@ -112,7 +112,7 @@ Content-Type: application/json
 }
 
 ### パーソナライズフィード更新（フィルターグループあり）
-PATCH {{apiBaseUrl}}/personalized-feeds/{{feedId}}
+PATCH {{baseUrl}}/personalized-feeds/{{feedId}}
 Content-Type: application/json
 
 {
@@ -139,7 +139,7 @@ Content-Type: application/json
 }
 
 ### パーソナライズフィード更新（公開日フィルターあり）
-PATCH {{apiBaseUrl}}/personalized-feeds/{{feedId}}
+PATCH {{baseUrl}}/personalized-feeds/{{feedId}}
 Content-Type: application/json
 
 {
@@ -160,5 +160,5 @@ Content-Type: application/json
 }
 
 ### パーソナライズフィード論理削除
-DELETE {{apiBaseUrl}}/personalized-feeds/{{feedId}}
+DELETE {{baseUrl}}/personalized-feeds/{{feedId}}
 Content-Type: application/json

@@ -2,8 +2,8 @@
 # Dashboard API - ダッシュボード用API
 ##################################################
 
-@apiBaseUrl = http://localhost:3001
-@authToken = your_clerk_jwt_token_here
+@baseUrl = {{$dotenv BASE_URL}}
+@jwtToken = {{$dotenv JWT_TOKEN}}
 
 ##################################################
 # パーソナルフィード概要情報取得
@@ -11,9 +11,9 @@
 
 ### ダッシュボード用パーソナルフィード概要取得
 # アクティブなフィード数、総フィード数、最近作成されたフィード（最新5件）、総フィルター条件数を取得
-GET {{apiBaseUrl}}/dashboard/personalized-feeds/summary
+GET {{baseUrl}}/dashboard/personalized-feeds/summary
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{jwtToken}}
 
 ##################################################
 # パーソナルプログラム一覧取得
@@ -21,67 +21,67 @@ Authorization: Bearer {{authToken}}
 
 ### ダッシュボード用パーソナルプログラム一覧取得（デフォルト）
 # デフォルト: limit=10, offset=0
-GET {{apiBaseUrl}}/dashboard/personalized-programs
+GET {{baseUrl}}/dashboard/personalized-programs
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{jwtToken}}
 
 ### ダッシュボード用パーソナルプログラム一覧取得（ページネーション指定）
 # 1ページ目、5件取得
-GET {{apiBaseUrl}}/dashboard/personalized-programs?limit=5&offset=0
+GET {{baseUrl}}/dashboard/personalized-programs?limit=5&offset=0
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{jwtToken}}
 
 ### ダッシュボード用パーソナルプログラム一覧取得（2ページ目）
 # 2ページ目、10件取得
-GET {{apiBaseUrl}}/dashboard/personalized-programs?limit=10&offset=10
+GET {{baseUrl}}/dashboard/personalized-programs?limit=10&offset=10
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{jwtToken}}
 
 ### ダッシュボード用パーソナルプログラム一覧取得（最大件数）
 # 最大件数（50件）を取得
-GET {{apiBaseUrl}}/dashboard/personalized-programs?limit=50&offset=0
+GET {{baseUrl}}/dashboard/personalized-programs?limit=50&offset=0
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{jwtToken}}
 
 ### ダッシュボード用パーソナルプログラム一覧取得（3ページ目、少ない件数）
 # 3ページ目、3件取得
-GET {{apiBaseUrl}}/dashboard/personalized-programs?limit=3&offset=6
+GET {{baseUrl}}/dashboard/personalized-programs?limit=3&offset=6
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{jwtToken}}
 
 ### ダッシュボード用パーソナルプログラム一覧取得（最小件数）
 # 最小件数（1件）を取得
-GET {{apiBaseUrl}}/dashboard/personalized-programs?limit=1&offset=0
+GET {{baseUrl}}/dashboard/personalized-programs?limit=1&offset=0
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{jwtToken}}
 
 ##################################################
 # エラーケースのテスト
 ##################################################
 
 ### 認証なしでアクセス（401エラーが期待される）
-GET {{apiBaseUrl}}/dashboard/personalized-feeds/summary
+GET {{baseUrl}}/dashboard/personalized-feeds/summary
 Content-Type: application/json
 
 ### 無効な認証トークンでアクセス（401エラーが期待される）
-GET {{apiBaseUrl}}/dashboard/personalized-feeds/summary
+GET {{baseUrl}}/dashboard/personalized-feeds/summary
 Content-Type: application/json
 Authorization: Bearer invalid_token
 
 ### 無効なlimitパラメータ（400エラーが期待される）
-GET {{apiBaseUrl}}/dashboard/personalized-programs?limit=0&offset=0
+GET {{baseUrl}}/dashboard/personalized-programs?limit=0&offset=0
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{jwtToken}}
 
 ### 無効なlimitパラメータ（上限超過、400エラーが期待される）
-GET {{apiBaseUrl}}/dashboard/personalized-programs?limit=100&offset=0
+GET {{baseUrl}}/dashboard/personalized-programs?limit=100&offset=0
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{jwtToken}}
 
 ### 無効なoffsetパラメータ（400エラーが期待される）
-GET {{apiBaseUrl}}/dashboard/personalized-programs?limit=10&offset=-1
+GET {{baseUrl}}/dashboard/personalized-programs?limit=10&offset=-1
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
+Authorization: Bearer {{jwtToken}}
 
 ##################################################
 # 認証トークンの取得方法
@@ -90,7 +90,7 @@ Authorization: Bearer {{authToken}}
 # 1. フロントエンドアプリケーション（http://localhost:3000）にログイン
 # 2. ブラウザの開発者ツールでネットワークタブを開く
 # 3. APIリクエストのAuthorizationヘッダーからトークンをコピー
-# 4. 上記の @authToken 変数に設定
+# 4. 上記の @jwtToken 変数に設定
 #
 # レスポンス例:
 # パーソナルフィード概要:
