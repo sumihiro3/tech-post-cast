@@ -24,6 +24,8 @@ export class AppUserFactory {
       lastSignInAt: new Date('2023-01-01'),
       stripeCustomerId: 'stripe_customer_id',
       defaultPaymentMethodId: 'default_payment_method_id',
+      slackWebhookUrl: null,
+      notificationEnabled: false,
       ...overrides,
     };
   }
@@ -120,7 +122,11 @@ export class AppUserFactory {
   ): UserWithSubscription {
     const user = this.createAppUser(userOverrides);
     const plan = this.createPlan(planOverrides);
-    const subscription = this.createSubscription(user.id, plan.id, subscriptionOverrides);
+    const subscription = this.createSubscription(
+      user.id,
+      plan.id,
+      subscriptionOverrides,
+    );
 
     return {
       ...user,
