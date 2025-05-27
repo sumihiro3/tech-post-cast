@@ -476,3 +476,254 @@ Content-Type: application/json
 
 - `.env` ファイルで環境依存の値を管理
 - 機密情報（JWT トークン等）は `.env.example` に記載せず、個別設定
+
+## フロントエンド・バックエンド連携ガイドライン
+
+### API定義とクライアント生成
+
+#### OpenAPI定義の管理
+
+- バックエンドでOpenAPI仕様を自動生成し、フロントエンドで利用する
+- API定義の変更時は以下の手順を実行：
+  1. バックエンドでAPI実装・テスト完了
+  2. OpenAPI仕様の生成・確認
+  3. フロントエンドでAPIクライアント再生成
+  4. フロントエンドの型定義・実装更新
+
+#### APIクライアント生成手順
+
+```bash
+# フロントエンドでAPIクライアントを生成
+cd apps/lp-frontend
+yarn generate:api-client
+```
+
+- 生成されたAPIクライアントは直接編集せず、ラッパーを作成
+- プラグインファイル（`plugins/api-client.ts`）に新しいAPIクラスを追加
+- Composablesで生成されたAPIクライアントを使用
+
+### バリデーション仕様の統一
+
+#### フロントエンド・バックエンド間の整合性
+
+- **バリデーションルール**: フロントエンドとバックエンドで同一のルールを適用
+- **エラーメッセージ**: 一貫性のあるエラーメッセージ形式を使用
+- **空文字・null処理**: 明確な仕様定義と両端での統一実装
+
+#### 実装例：Webhook URLバリデーション
+
+```typescript
+// フロントエンド（Composable）
+const validateSlackWebhookUrl = (url: string): string | null => {
+  if (!url.trim()) return null; // 空文字は許可
+  if (!url.startsWith('https://')) return 'HTTPS形式で入力してください';
+  if (!url.includes('hooks.slack.com')) return 'Slack Webhook URLを入力してください';
+  return null;
+};
+```
+
+```typescript
+// バックエンド（DTO）
+@Matches(/^$|^https:\/\/hooks\.slack\.com\/.*$/, {
+  message: 'Slack Webhook URLはHTTPS形式で、hooks.slack.comドメインである必要があります',
+})
+slackWebhookUrl?: string;
+```
+
+### エラーハンドリングの統一
+
+#### エラーレスポンス形式
+
+バックエンドは以下の形式でエラーを返す：
+
+```json
+{
+  "statusCode": 400,
+  "message": "Validation failed",
+  "error": "Bad Request",
+  "details": {
+    "field": "slackWebhookUrl",
+    "constraint": "matches",
+    "value": "invalid-url"
+  }
+}
+```
+
+#### フロントエンドでのエラー処理
+
+```typescript
+// Composableでのエラーハンドリング例
+const handleApiError = (error: any): string => {
+  if (error.response?.data?.message) {
+    return `${error.response.data.message} (${error.response.status})`;
+  }
+  return `リクエストに失敗しました: ${error.message}`;
+};
+```
+
+### 状態管理パターン
+
+#### Composablesでの標準的な状態管理
+
+```typescript
+export const useApiResource = () => {
+  const data = ref<ResourceType | null>(null);
+  const originalData = ref<ResourceType | null>(null);
+  const loading = ref(false);
+  const error = ref<string | null>(null);
+
+  const hasChanges = computed(() =>
+    JSON.stringify(data.value) !== JSON.stringify(originalData.value)
+  );
+
+  const fetchData = async () => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await apiClient.getData();
+      data.value = response.data;
+      originalData.value = { ...response.data };
+    } catch (err) {
+      error.value = handleApiError(err);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const saveData = async () => {
+    if (!data.value) return;
+    loading.value = true;
+    error.value = null;
+    try {
+      await apiClient.updateData(data.value);
+      originalData.value = { ...data.value };
+      // 成功メッセージの表示
+    } catch (err) {
+      error.value = handleApiError(err);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const resetData = () => {
+    if (originalData.value) {
+      data.value = { ...originalData.value };
+    }
+    error.value = null;
+  };
+
+  return {
+    data,
+    loading,
+    error,
+    hasChanges,
+    fetchData,
+    saveData,
+    resetData,
+  };
+};
+```
+
+### テスト機能の実装
+
+#### API接続テスト機能
+
+- 設定保存前にAPI接続をテストする機能を提供
+- テスト結果を明確にユーザーに表示
+- テスト失敗時の詳細なエラー情報提供
+
+```typescript
+// テスト機能の実装例
+export const useApiConnectionTest = () => {
+  const testResult = ref<'success' | 'error' | null>(null);
+  const testMessage = ref<string>('');
+  const testing = ref(false);
+
+  const testConnection = async (config: ConfigType) => {
+    testing.value = true;
+    testResult.value = null;
+    testMessage.value = '';
+
+    try {
+      await apiClient.testConnection(config);
+      testResult.value = 'success';
+      testMessage.value = '接続テストが成功しました';
+    } catch (error) {
+      testResult.value = 'error';
+      testMessage.value = handleApiError(error);
+    } finally {
+      testing.value = false;
+    }
+  };
+
+  return {
+    testResult,
+    testMessage,
+    testing,
+    testConnection,
+  };
+};
+```
+
+### UI/UX連携パターン
+
+#### フォーム状態とAPI連携
+
+- **変更検知**: リアルタイムでの変更検知と保存ボタンの制御
+- **バリデーション**: フロントエンドでのリアルタイムバリデーション
+- **エラー表示**: API エラーの適切な表示とクリア
+- **成功フィードバック**: 操作成功時の明確なフィードバック
+
+#### レスポンシブ対応
+
+- API通信中のローディング状態表示
+- エラー状態での適切なUI表示
+- モバイル・デスクトップでの一貫したUX
+
+### デバッグ・トラブルシューティング
+
+#### よくある連携問題と解決方法
+
+1. **型定義の不整合**
+   - APIクライアント再生成で解決
+   - バックエンドのDTO定義確認
+
+2. **バリデーションエラー**
+   - フロントエンド・バックエンドの仕様統一
+   - 空文字・null・undefinedの扱い明確化
+
+3. **CORS エラー**
+   - バックエンドのCORS設定確認
+   - 開発環境でのプロキシ設定確認
+
+4. **認証エラー**
+   - JWTトークンの有効性確認
+   - APIクライアントの認証ヘッダー設定確認
+
+### 実装チェックリスト
+
+新しいAPI連携機能を実装する際のチェックリスト：
+
+#### バックエンド側
+
+- [ ] OpenAPI仕様の自動生成設定
+- [ ] DTOクラスでのバリデーション定義
+- [ ] エラーレスポンスの統一形式
+- [ ] テスト用エンドポイントの実装（必要に応じて）
+
+#### フロントエンド側
+
+- [ ] APIクライアントの再生成
+- [ ] プラグインへのAPIクラス追加
+- [ ] Composableでの状態管理実装
+- [ ] エラーハンドリングの実装
+- [ ] バリデーション機能の実装
+- [ ] UI/UXの実装（ローディング、エラー表示等）
+
+#### 連携テスト
+
+- [ ] 正常系のAPI通信確認
+- [ ] エラーケースの動作確認
+- [ ] バリデーションエラーの表示確認
+- [ ] レスポンシブ対応の確認
+- [ ] アクセシビリティの確認
