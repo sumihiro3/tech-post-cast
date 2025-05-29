@@ -1,3 +1,4 @@
+import type { Ref } from 'vue';
 import { ref } from 'vue';
 
 /**
@@ -9,6 +10,20 @@ export interface ProgressOptions {
   size?: number;
   indeterminate?: boolean;
   overlay?: boolean;
+}
+
+/**
+ * useProgressの戻り値型
+ */
+interface ProgressReturn {
+  isVisible: Ref<boolean>;
+  text: Ref<string | undefined>;
+  color: Ref<string | undefined>;
+  size: Ref<number | undefined>;
+  indeterminate: Ref<boolean | undefined>;
+  overlay: Ref<boolean | undefined>;
+  show: (options?: ProgressOptions) => void;
+  hide: () => void;
 }
 
 // デフォルト設定
@@ -26,7 +41,7 @@ const isClient = typeof window !== 'undefined';
 /**
  * グローバルプログレスサークルを管理するcomposable
  */
-export const useProgress = () => {
+export const useProgress = (): ProgressReturn => {
   // SSRとSSGでは空のオブジェクトを返す
   if (!isClient) {
     return {
@@ -36,8 +51,8 @@ export const useProgress = () => {
       size: ref(DEFAULT_OPTIONS.size),
       indeterminate: ref(DEFAULT_OPTIONS.indeterminate),
       overlay: ref(DEFAULT_OPTIONS.overlay),
-      show: () => {},
-      hide: () => {},
+      show: (): void => {},
+      hide: (): void => {},
     };
   }
 
@@ -58,7 +73,7 @@ export const useProgress = () => {
    * プログレスサークルを表示する
    * @param options プログレスサークルのオプション
    */
-  const show = (options: ProgressOptions = {}) => {
+  const show = (options: ProgressOptions = {}): void => {
     text.value = options.text ?? DEFAULT_OPTIONS.text;
     color.value = options.color ?? DEFAULT_OPTIONS.color;
     size.value = options.size ?? DEFAULT_OPTIONS.size;
@@ -70,7 +85,7 @@ export const useProgress = () => {
   /**
    * プログレスサークルを非表示にする
    */
-  const hide = () => {
+  const hide = (): void => {
     isVisible.value = false;
   };
 
