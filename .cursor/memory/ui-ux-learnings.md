@@ -108,3 +108,93 @@ Slack Webhook URLの詳細なバリデーションが必要。単純なURL形式
 ### 関連タスク
 
 TPC-101 ユーザーダッシュボードの実装
+
+## 共通UIコンポーネントの統一化 (2024-12-19)
+
+### 背景と課題
+
+複数の異なるUI状態管理方法（`useSnackbar`、`useProgress`、個別コンポーネント）が混在し、以下の課題があった：
+
+- 開発者の学習コストが高い
+- 一貫性のないUI表示
+- 保守性の低下
+- コードの重複
+
+### 検討したアプローチ
+
+1. **完全置き換えアプローチ**: 既存composableを削除し、新しい統一composableを作成
+   - 利点: 完全に統一されたAPI
+   - 欠点: 既存の動作するコードを無駄にする、リスクが高い
+
+2. **段階的統一アプローチ**: 既存composableを活用し、上位レイヤーで統一インターフェースを提供
+   - 利点: 既存資産の活用、段階的移行、リスク最小化
+   - 欠点: 一時的な複雑性
+
+3. **別パッケージ化アプローチ**: 共通UIコンポーネントを独立したパッケージとして作成
+   - 利点: 完全な分離、再利用性
+   - 欠点: 依存関係の複雑化、ビルド設定の複雑化
+
+### 決定事項と理由
+
+段階的統一アプローチを採用し、以下の実装を行った：
+
+```typescript
+// useUIState: 統一インターフェース
+export const useUIState = (): UIStateReturn => {
+  const snackbar = useSnackbar(); // 既存composableを活用
+  const progress = useProgress();  // 既存composableを活用
+
+  return {
+    // 統一されたAPI
+    showLoading: (options) => progress.show(options),
+    showSuccess: (message, options) => snackbar.showSuccess(message, options),
+    // ...
+  };
+};
+```
+
+**選択理由:**
+
+- 既存の動作するコード（SSR対応、Vuetify連携）を活用
+- 段階的な移行により、リスクを最小化
+- 開発者にとって使いやすい統一API
+
+### 学んだ教訓
+
+#### KEY INSIGHT: 段階的統一化パターンの有効性
+
+- **既存資産の価値**: 動作している既存コードは貴重な資産として活用すべき
+- **上位レイヤーでの統一**: 下位の実装を変更せずに、使いやすいAPIを提供可能
+- **段階的アプローチ**: 一度にすべてを変更するよりも安全で効率的
+
+#### UI状態管理のベストプラクティス
+
+1. **グローバル状態の一元管理**: アプリケーション全体で一貫したUI状態管理
+2. **共通コンポーネントの活用**: `AppSnackbar`、`AppProgress`をレイアウトに配置
+3. **型安全性の確保**: 明示的な戻り値型定義とlinterエラーの完全解消
+
+#### 開発者体験の向上
+
+```typescript
+// 統一前: 複数のcomposableを覚える必要
+const snackbar = useSnackbar();
+const progress = useProgress();
+snackbar.showSuccess('成功');
+progress.show({ text: '処理中...' });
+
+// 統一後: 一つのAPIで完結
+const ui = useUIState();
+ui.showSuccess('成功');
+ui.showLoading({ message: '処理中...' });
+```
+
+### 関連タスク
+
+- TPC-101: ユーザーダッシュボードの実装
+- 共通UIコンポーネントの実装と統一化
+
+### 今後の適用可能性
+
+- 他のUI状態（モーダル、サイドバー、トースト通知など）への拡張
+- 他のアプリケーション（api-backend、line-bot）での類似パターンの適用
+- アニメーションやテーマの統一化

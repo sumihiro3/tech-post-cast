@@ -129,3 +129,148 @@ export type PersonalizedFeedProgramWithDetails = Prisma.PersonalizedFeedProgramG
 - データベース型の共有パッケージ化
 
 ---
+
+## 共通UIコンポーネントアーキテクチャの決定 (2024-12-19)
+
+### 背景と課題
+
+lp-frontendアプリケーションにおいて、UI状態管理が分散し、以下の問題が発生していた：
+
+- `useSnackbar`、`useProgress`、個別UIコンポーネントが混在
+- 開発者が複数のAPIを覚える必要がある
+- UI表示の一貫性が保たれない
+- コードの重複とメンテナンス性の低下
+
+### 検討したアーキテクチャオプション
+
+#### オプション1: モノリシック統一アプローチ
+
+```
+useUIState (新規)
+├── 独自のSnackbar実装
+├── 独自のProgress実装
+└── 独自の状態管理
+```
+
+- **利点**: 完全に統一されたAPI、シンプルな依存関係
+- **欠点**: 既存の動作するコードを破棄、開発コストが高い、リスクが大きい
+
+#### オプション2: レイヤード統一アーキテクチャ（採用）
+
+```
+useUIState (統一インターフェース)
+├── useSnackbar (既存活用)
+├── useProgress (既存活用)
+└── 統一されたAPI提供
+
+AppSnackbar ←→ useUIState ←→ AppProgress
+    ↓              ↓              ↓
+useSnackbar   統一API      useProgress
+```
+
+- **利点**: 既存資産活用、段階的移行、リスク最小化
+- **欠点**: 一時的な複雑性、間接的な依存関係
+
+#### オプション3: マイクロパッケージアーキテクチャ
+
+```
+packages/ui-components/
+├── useUIState
+├── LoadingSpinner
+├── ErrorMessage
+└── SuccessMessage
+```
+
+- **利点**: 完全な分離、再利用性、独立したバージョニング
+- **欠点**: 依存関係の複雑化、ビルド設定の複雑化、モノレポでの管理コスト
+
+### 決定事項と理由
+
+**採用アーキテクチャ**: レイヤード統一アーキテクチャ
+
+**決定理由:**
+
+1. **既存資産の最大活用**: `useSnackbar`と`useProgress`は十分に機能し、SSR対応やVuetify連携も完了
+2. **段階的移行**: 既存コードを破壊せずに、新しいAPIを段階的に導入可能
+3. **開発効率**: 新規開発コストを最小化し、短期間で統一化を実現
+4. **リスク管理**: 既存の動作するコードを保持することで、回帰リスクを最小化
+
+### 実装詳細
+
+#### コンポーネント配置戦略
+
+```
+src/components/
+├── common/              # 共通コンポーネント（採用）
+│   ├── AppSnackbar.vue # グローバルSnackbar
+│   ├── AppProgress.vue # グローバルProgress
+│   └── README.md       # 使用方法ドキュメント
+└── ui/                 # 個別UIコンポーネント（廃止）
+```
+
+#### Composable階層設計
+
+```typescript
+// 上位レイヤー: 統一インターフェース
+export const useUIState = (): UIStateReturn => {
+  const snackbar = useSnackbar(); // 下位レイヤー活用
+  const progress = useProgress();  // 下位レイヤー活用
+
+  return {
+    // 統一されたAPI
+    showLoading: (options: LoadingOptions) => progress.show(options),
+    showSuccess: (message: string, options?: MessageOptions) =>
+      snackbar.showSuccess(message, options),
+    // ...
+  };
+};
+
+// 下位レイヤー: 既存実装（保持）
+export const useSnackbar = () => { /* 既存実装 */ };
+export const useProgress = () => { /* 既存実装 */ };
+```
+
+### 学んだ教訓
+
+#### GLOBAL LEARNING: レイヤードアーキテクチャの有効性
+
+- **段階的移行**: 既存システムを段階的に改善する際の有効なパターン
+- **既存資産活用**: 動作するコードは貴重な資産として最大限活用すべき
+- **抽象化レイヤー**: 上位レイヤーでの統一により、下位実装の詳細を隠蔽可能
+
+#### 設計原則の確立
+
+1. **後方互換性**: 既存のAPIを破壊せずに新しいAPIを提供
+2. **段階的移行**: 一度にすべてを変更せず、段階的に移行
+3. **文書化**: READMEによる明確な使用方法の提示
+
+### 今後の拡張計画
+
+#### Phase 1: 基本統一化（完了）
+
+- `useUIState`の実装
+- `AppSnackbar`、`AppProgress`の統合
+- 基本的なメッセージ表示とローディング機能
+
+#### Phase 2: 機能拡張（計画中）
+
+- モーダル管理の統合
+- サイドバー状態管理の統合
+- トースト通知の統合
+
+#### Phase 3: 高度な機能（将来）
+
+- アニメーション統一
+- テーマ対応
+- アクセシビリティ強化
+
+### 関連タスク
+
+- TPC-101: ユーザーダッシュボードの実装
+- 共通UIコンポーネントの統一化
+
+### 影響範囲
+
+- **直接影響**: lp-frontendアプリケーション全体
+- **間接影響**: 他のフロントエンドアプリケーション（liff-frontend）での類似パターン適用可能性
+- **将来影響**: モノレポ全体での共通コンポーネント戦略
