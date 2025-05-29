@@ -83,14 +83,14 @@ import FeedEditor from '@/components/qiita/FeedEditor.vue';
 import { useDeletePersonalizedFeed } from '@/composables/feeds/useDeletePersonalizedFeed';
 import { useGetPersonalizedFeedById } from '@/composables/feeds/useGetPersonalizedFeedById';
 import { useUpdatePersonalizedFeed } from '@/composables/feeds/useUpdatePersonalizedFeed';
-import { progress } from '@/composables/useProgress';
-import { snackbar } from '@/composables/useSnackbar';
+import { useUIState } from '@/composables/useUIState';
 import type { InputPersonalizedFeedData } from '@/types';
 import { HttpError, ValidationError } from '@/types/http-errors';
 import {
   convertApiResponseToInputData,
   convertInputDataToUpdateDto,
 } from '@/types/personalized-feed';
+import { useUser } from '@clerk/vue';
 import { computed, onMounted, reactive, ref } from 'vue';
 
 // レイアウトをuser-appにする
@@ -98,6 +98,10 @@ definePageMeta({
   layout: 'user-app',
 });
 
+// UI状態管理
+const ui = useUIState();
+
+// ユーザー情報
 const { user } = useUser();
 
 /** 記事公開日の範囲のデフォルト値 */
@@ -306,7 +310,7 @@ const saveFeed = async (): Promise<void> => {
     // エラーメッセージをリセット
     resetErrors();
     // プログレスサークルを表示
-    progress.show({ text: 'パーソナライズフィードを更新中...' });
+    ui.showLoading({ message: 'パーソナライズフィードを更新中...' });
 
     // フロントエンドでのバリデーション
     if (!currentFeedData.value.programTitle) {
@@ -330,8 +334,8 @@ const saveFeed = async (): Promise<void> => {
     const app = useNuxtApp();
     await useUpdatePersonalizedFeed(app, feedId.value, requestData);
 
-    // 成功時にSnackbarで通知
-    snackbar.showSuccess('パーソナライズフィードを更新しました');
+    // 成功時にAppSnackbarで通知
+    ui.showSuccess('パーソナライズフィードを更新しました');
 
     // 保存成功の場合、フィード一覧画面に遷移
     navigateTo('/app/feeds');
@@ -353,11 +357,11 @@ const saveFeed = async (): Promise<void> => {
       error.value = 'パーソナライズフィードの更新に失敗しました';
     }
 
-    // エラー時にSnackbarで通知
-    snackbar.showError(error.value || 'パーソナライズフィードの更新に失敗しました');
+    // エラー時にAppSnackbarで通知
+    ui.showError(error.value || 'パーソナライズフィードの更新に失敗しました');
   } finally {
     // プログレスサークルを非表示
-    progress.hide();
+    ui.hideLoading();
     // 保存中フラグをOFF
     isSaving.value = false;
   }
@@ -375,14 +379,14 @@ const deleteFeed = async (): Promise<void> => {
     // エラーメッセージをリセット
     resetErrors();
     // プログレスサークルを表示
-    progress.show({ text: 'パーソナライズフィードを削除中...' });
+    ui.showLoading({ message: 'パーソナライズフィードを削除中...' });
 
     // 作成したcomposableを使用してAPIを呼び出す
     const app = useNuxtApp();
     await useDeletePersonalizedFeed(app, feedId.value);
 
-    // 成功時にSnackbarで通知
-    snackbar.showSuccess('パーソナライズフィードを削除しました');
+    // 成功時にAppSnackbarで通知
+    ui.showSuccess('パーソナライズフィードを削除しました');
 
     // 削除成功の場合、フィード一覧画面に遷移
     navigateTo('/app/feeds');
@@ -401,11 +405,11 @@ const deleteFeed = async (): Promise<void> => {
       error.value = 'パーソナライズフィードの削除に失敗しました';
     }
 
-    // エラー時にSnackbarで通知
-    snackbar.showError(error.value || 'パーソナライズフィードの削除に失敗しました');
+    // エラー時にAppSnackbarで通知
+    ui.showError(error.value || 'パーソナライズフィードの削除に失敗しました');
   } finally {
     // プログレスサークルを非表示
-    progress.hide();
+    ui.hideLoading();
     // 削除中フラグをOFF
     isDeleting.value = false;
   }
@@ -423,7 +427,7 @@ const fetchPersonalizedFeed = async (id: string): Promise<void> => {
     // エラーをリセット
     resetErrors();
     // プログレスサークルを表示
-    progress.show({ text: 'パーソナライズフィードを読み込み中...' });
+    ui.showLoading({ message: 'パーソナライズフィードを読み込み中...' });
 
     const app = useNuxtApp();
     // 作成したcomposableを使用してフィードを取得
@@ -479,12 +483,12 @@ const fetchPersonalizedFeed = async (id: string): Promise<void> => {
       error.value = 'パーソナライズフィードの読み込みに失敗しました';
     }
 
-    // エラー時にSnackbarで通知
-    snackbar.showError(error.value || 'パーソナライズフィードの読み込みに失敗しました');
+    // エラー時にAppSnackbarで通知
+    ui.showError(error.value || 'パーソナライズフィードの読み込みに失敗しました');
   } finally {
     isLoading.value = false;
     // プログレスサークルを非表示
-    progress.hide();
+    ui.hideLoading();
   }
 };
 

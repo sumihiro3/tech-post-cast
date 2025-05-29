@@ -6,30 +6,6 @@ div
     p.text-body-1.text-medium-emphasis
       | アカウント情報と通知設定を管理できます
 
-  // エラー表示
-  v-alert.mb-6(
-    v-if="error"
-    type="error"
-    variant="tonal"
-    closable
-    @click:close="clearError"
-  )
-    template(#prepend)
-      v-icon mdi-alert-circle
-    | {{ error }}
-
-  // 成功メッセージ
-  v-alert.mb-6(
-    v-if="successMessage"
-    type="success"
-    variant="tonal"
-    closable
-    @click:close="clearSuccessMessage"
-  )
-    template(#prepend)
-      v-icon mdi-check-circle
-    | {{ successMessage }}
-
   // 設定セクション
   .settings-container
     // ユーザー名設定セクション
@@ -73,12 +49,16 @@ div
 <script setup lang="ts">
 import type { TestSlackWebhookResponseDto } from '@/api';
 import { useUserSettings } from '@/composables/dashboard/useUserSettings';
+import { useUIState } from '@/composables/useUIState';
 
 // SEO設定
 definePageMeta({
   layout: 'user-app',
   title: 'ユーザー設定',
 });
+
+// UI状態管理
+const ui = useUIState();
 
 // Composables
 const {
@@ -95,8 +75,6 @@ const {
 } = useUserSettings();
 
 // ローカル状態
-/** 成功メッセージ - 設定保存成功時に表示されるメッセージ */
-const successMessage = ref<string | null>(null);
 /** 表示名エラー - 表示名のバリデーションエラーメッセージ */
 const displayNameError = ref<string | null>(null);
 /** Slack Webhook URLエラー - Webhook URLのバリデーションエラーメッセージ */
@@ -107,9 +85,20 @@ const slackWebhookError = ref<string | null>(null);
  */
 onMounted(async () => {
   try {
+    ui.showLoading({ message: '設定を読み込み中...' });
     await fetchSettings();
   } catch (err) {
     console.error('設定の取得に失敗しました:', err);
+    ui.showError('設定の取得に失敗しました');
+  } finally {
+    ui.hideLoading();
+  }
+});
+
+// エラー状態の監視
+watch(error, (newError) => {
+  if (newError) {
+    ui.showError(newError);
   }
 });
 
@@ -121,7 +110,7 @@ onMounted(async () => {
  * 1. 通知有効時のWebhook URL必須チェック
  * 2. 表示名とWebhook URLのバリデーション実行
  * 3. バリデーション通過後、APIを呼び出して設定を保存
- * 4. 成功時は成功メッセージを表示し、3秒後に自動消去
+ * 4. 成功時は成功メッセージを表示
  */
 const handleSave = async (): Promise<void> => {
   // 通知が有効な場合はWebhook URLが必須
@@ -147,10 +136,9 @@ const handleSave = async (): Promise<void> => {
     return;
   }
 
-  // エラーメッセージをクリア
-  clearError();
-
   try {
+    ui.showLoading({ message: '設定を保存中...' });
+
     // 通知が無効の場合は強制的にWebhook URLを空文字にする
     const webhookUrl = settings.value.notificationEnabled ? settings.value.slackWebhookUrl : '';
 
@@ -161,17 +149,14 @@ const handleSave = async (): Promise<void> => {
     });
 
     if (success) {
-      successMessage.value = '設定を保存しました';
+      ui.showSuccess('設定を保存しました');
       clearValidationErrors();
-
-      // 成功メッセージを3秒後に自動で消す
-      setTimeout(() => {
-        successMessage.value = null;
-      }, 3000);
     }
   } catch (err) {
     console.error('設定の保存に失敗しました:', err);
-    // エラーはuseUserSettings内で設定されるため、ここでは追加処理不要
+    // エラーはuseUserSettings内で設定され、watchで監視されるため、ここでは追加処理不要
+  } finally {
+    ui.hideLoading();
   }
 };
 
@@ -181,12 +166,11 @@ const handleSave = async (): Promise<void> => {
  * 実行タイミング: ユーザーが「リセット」ボタンをクリックした際
  * 処理内容:
  * 1. 設定値を元の状態（サーバーから取得した初期値）に戻す
- * 2. 全てのバリデーションエラーとメッセージをクリア
+ * 2. 全てのバリデーションエラーをクリア
  */
 const handleReset = (): void => {
   resetSettings();
   clearValidationErrors();
-  clearMessages();
 };
 
 /**
@@ -254,34 +238,11 @@ const handleTestWebhook = async (
 };
 
 /**
- * エラーメッセージをクリア
- */
-const clearError = (): void => {
-  error.value = null;
-};
-
-/**
- * 成功メッセージをクリア
- */
-const clearSuccessMessage = (): void => {
-  successMessage.value = null;
-};
-
-/**
  * バリデーションエラーをクリア
  */
 const clearValidationErrors = (): void => {
   displayNameError.value = null;
   slackWebhookError.value = null;
-};
-
-/**
- * 全てのメッセージをクリア
- */
-const clearMessages = (): void => {
-  clearError();
-  clearSuccessMessage();
-  clearValidationErrors();
 };
 </script>
 

@@ -55,8 +55,7 @@ import { PersonalizedFeedDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum } fro
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 import FeedEditor from '@/components/qiita/FeedEditor.vue';
 import { useCreatePersonalizedFeed } from '@/composables/feeds/useCreatePersonalizedFeed';
-import { progress } from '@/composables/useProgress';
-import { snackbar } from '@/composables/useSnackbar';
+import { useUIState } from '@/composables/useUIState';
 import type { InputPersonalizedFeedData } from '@/types';
 import { HttpError, ValidationError } from '@/types/http-errors';
 import { convertInputDataToCreateDto } from '@/types/personalized-feed';
@@ -66,6 +65,9 @@ import { computed, reactive, ref } from 'vue';
 definePageMeta({
   layout: 'user-app',
 });
+
+// UI状態管理
+const ui = useUIState();
 
 /** 記事公開日の範囲のデフォルト値 */
 const DEFAULT_DATE_RANGE: number = 7;
@@ -241,7 +243,7 @@ const saveFeed = async (): Promise<void> => {
     // エラーメッセージをリセット
     resetErrors();
     // プログレスサークルを表示
-    progress.show({ text: 'パーソナライズフィードを作成中...' });
+    ui.showLoading({ message: 'パーソナライズフィードを作成中...' });
 
     // フロントエンドでのバリデーション
     if (!currentFeedData.value.programTitle) {
@@ -266,7 +268,7 @@ const saveFeed = async (): Promise<void> => {
     await useCreatePersonalizedFeed(app, requestData);
 
     // 成功時にSnackbarで通知
-    snackbar.showSuccess('パーソナライズフィードを作成しました');
+    ui.showSuccess('パーソナライズフィードを作成しました');
 
     // 保存成功の場合、フィード一覧画面に遷移
     navigateTo('/app/feeds');
@@ -289,10 +291,10 @@ const saveFeed = async (): Promise<void> => {
     }
 
     // エラー時にSnackbarで通知
-    snackbar.showError(error.value || 'パーソナライズフィードの作成に失敗しました');
+    ui.showError(error.value || 'パーソナライズフィードの作成に失敗しました');
   } finally {
     // プログレスサークルを非表示
-    progress.hide();
+    ui.hideLoading();
     // 保存中フラグをOFF
     isSaving.value = false;
   }

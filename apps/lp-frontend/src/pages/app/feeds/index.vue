@@ -9,6 +9,7 @@
 import type { PersonalizedFeedDto } from '@/api';
 import FeedList from '@/components/feeds/FeedList.vue';
 import { useGetPersonalizedFeeds } from '@/composables/feeds/useGetPersonalizedFeeds';
+import { useUIState } from '@/composables/useUIState';
 import { useUser } from '@clerk/vue';
 
 const { user } = useUser();
@@ -17,6 +18,9 @@ const { user } = useUser();
 definePageMeta({
   layout: 'user-app',
 });
+
+// UI状態管理
+const ui = useUIState();
 
 const app = useNuxtApp();
 
@@ -49,15 +53,16 @@ const fetchUserFeeds = async (): Promise<void> => {
 useAsyncData(async () => {
   try {
     // プログレスサークルを表示
-    progress.show({ text: 'パーソナライズフィードを取得中...' });
+    ui.showLoading({ message: 'パーソナライズフィードを取得中...' });
     // ユーザーのフィード設定一覧を取得
     await fetchUserFeeds();
   } catch (error) {
     // エラーハンドリング
     console.error('Error fetching user feeds:', error);
+    ui.showError('フィードの取得に失敗しました');
   } finally {
     // プログレスサークルを非表示
-    progress.hide();
+    ui.hideLoading();
   }
 });
 </script>

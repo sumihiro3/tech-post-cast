@@ -103,11 +103,17 @@
 </template>
 
 <script setup lang="ts">
+import { useUIState } from '@/composables/useUIState';
 import { onMounted, ref } from 'vue';
+
 // レイアウトをuser-appにする
 definePageMeta({
   layout: 'user-app',
 });
+
+// UI状態管理
+const _ui = useUIState();
+
 // import { useRouter } from 'vue-router';
 
 // const router = useRouter();
@@ -125,8 +131,20 @@ const selectedPeriod = ref('week');
 const periods = ['日', '週', '月', '年'];
 
 const recentBroadcasts = ref([
-  { id: 1, title: '週間ニュースダイジェスト', category: 'ニュース', date: '2025-03-28', views: 1254 },
-  { id: 2, title: 'テクノロジートレンド2025', category: 'テクノロジー', date: '2025-03-27', views: 986 },
+  {
+    id: 1,
+    title: '週間ニュースダイジェスト',
+    category: 'ニュース',
+    date: '2025-03-28',
+    views: 1254,
+  },
+  {
+    id: 2,
+    title: 'テクノロジートレンド2025',
+    category: 'テクノロジー',
+    date: '2025-03-27',
+    views: 986,
+  },
   { id: 3, title: '健康レシピ特集', category: '料理', date: '2025-03-26', views: 765 },
   { id: 4, title: '週末おすすめスポット', category: '旅行', date: '2025-03-25', views: 543 },
 ]);
@@ -134,15 +152,25 @@ const recentBroadcasts = ref([
 onMounted(() => {
   // Chart.jsなどを使用してグラフを描画する処理をここに書く
   // 実際の実装では、Chart.jsのインポートとグラフ描画コードが必要
+  // 将来的にダッシュボードデータをAPIから取得する場合の例：
+  // try {
+  //   ui.showLoading({ message: 'ダッシュボードデータを読み込み中...' });
+  //   // await fetchDashboardData();
+  //   ui.showSuccess('ダッシュボードを更新しました');
+  // } catch (error) {
+  //   ui.showError('ダッシュボードデータの取得に失敗しました');
+  // } finally {
+  //   ui.hideLoading();
+  // }
 });
 </script>
 
-  <style scoped>
-  .period-selector {
-    max-width: 150px;
-  }
+<style scoped>
+.period-selector {
+  max-width: 150px;
+}
 
-  .v-card {
-    border-radius: 12px;
-  }
-  </style>
+.v-card {
+  border-radius: 12px;
+}
+</style>
