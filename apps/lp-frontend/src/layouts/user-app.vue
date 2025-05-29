@@ -1,22 +1,29 @@
 <template lang="pug">
   v-app
     Header(:show-drawer-toggle="true" @toggle-drawer="toggleDrawer")
-    v-navigation-drawer(
-      v-model="drawer"
-      color="white"
-      :width="240"
-      :mini-variant="!drawer"
-      mini-variant-width="56"
-    )
-      v-list(nav dense)
-        v-list-item(
-          v-for="(item, i) in menuItems"
-          :key="i"
-          :to="item.to"
-          :prepend-icon="item.icon"
-          :title="item.title"
-          color="primary"
-        )
+    ClientOnly
+      v-navigation-drawer(
+        v-model="drawer"
+        app
+        color="white"
+        :width="240"
+        :mini-variant="!drawer"
+        mini-variant-width="56"
+        :temporary="false"
+        :permanent="true"
+      )
+        v-list(nav dense)
+          v-list-item(
+            v-for="(item, i) in menuItems"
+            :key="i"
+            :to="item.to"
+            :prepend-icon="item.icon"
+            :title="item.title"
+            color="primary"
+          )
+      template(#fallback)
+        // サーバーサイドレンダリング時のフォールバック
+        div
     v-main
       v-container(fluid :class="{'pl-0 pr-0': $vuetify.display.mdAndUp && drawer}")
         slot.ma-0.pa-0
