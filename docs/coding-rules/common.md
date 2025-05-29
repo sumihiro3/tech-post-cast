@@ -13,28 +13,11 @@
 - エラーハンドリングは適切に行い、エラーメッセージは具体的に記述してください。
 - マジックナンバーや文字列リテラルを避け、定数として定義してください。
 - 循環的依存関係を避けてください。
-
-### 命名規則の統一原則
-
-- **データベーステーブル名とドメインモデル名の一致**: 新機能実装時は、データベーステーブル名とドメインモデル名を一致させる
-    - 例: テーブル名が `personalized_program_attempts` の場合、ドメインモデルも `PersonalizedProgramAttempts` とする
-    - ビジネス用語とテクニカル用語が異なる場合は、プロジェクト開始時に統一ルールを決定する
-- **実装前の命名規則確認**: 新機能実装開始前に、既存の類似機能の命名パターンを調査し、一貫性を保つ
-- **途中での命名変更コスト**: 命名の不整合が発見された場合は、早期に統一することでリファクタリングコストを最小化する
-
-### プロジェクト一貫性の確保
-
-- **既存パターン調査の義務化**: 新機能実装前に、類似機能の実装パターンを必ず調査する
-    - インターフェイス使用の有無
-    - エラーハンドリングパターン
-    - テストデータ管理方法
-    - ディレクトリ構造
-- **設計判断の記録**: 既存パターンと異なる実装を行う場合は、その理由を明確に記録する
-- **一貫性レビュー**: コードレビュー時に、プロジェクト全体の一貫性を確認する項目を含める
+- 各アプリケーション種別ごとのコーディングガイドラインは `/docs/coding-rules/` ディレクトリを参照してください。
 
 ## ディレクトリ構造
 
-```txt
+```
 tech-post-cast/
 ├── apps/                # アプリケーション
 │   ├── api-backend/     # バックエンドAPI (NestJS)
@@ -45,8 +28,12 @@ tech-post-cast/
 │   └── infra/           # インフラストラクチャコード (AWS CDK)
 ├── packages/            # 共有パッケージ
 │   ├── database/        # データベース関連コード・スキーマ
-│   └── commons/         # 共通ユーティリティと機能
+│   ├── commons/         # 共通ユーティリティと機能
+│   ├── eslint-config/   # ESLint設定
+│   ├── tsconfig/        # TypeScript設定
+│   └── ui-components/   # 共有UIコンポーネント
 └── docs/                # プロジェクトドキュメント
+    └── coding-rules/    # 詳細なコーディングルール
 ```
 
 ## Git管理
@@ -59,155 +46,10 @@ tech-post-cast/
 ## テスト
 
 - 新しい機能を追加する場合は、対応するテストも追加してください。
+- **テストデータは必ずファクトリクラスから取得してください**（NestJSアプリケーション）
 - テストカバレッジを維持するように努めてください。
 - テストは自動化され、CI/CDパイプラインに組み込まれています。
-
-## 統一テスト戦略
-
-すべてのアプリケーションに適用される共通のテスト戦略を以下に定義します。各アプリケーション種別固有のテスト実装の詳細は、それぞれのガイドラインドキュメントを参照してください。
-
-### テストの種類と目的
-
-1. **単体テスト (Unit Tests)**
-   - 個々の関数、メソッド、コンポーネントを分離してテスト
-   - 外部依存性はモック/スタブする
-   - 開発者が機能を実装する際に作成
-   - 目標カバレッジ: 80%以上（ロジックを含むコード）
-
-2. **統合テスト (Integration Tests)**
-   - 複数のコンポーネントやサービスの連携をテスト
-   - 実際の依存関係を使用するが、外部システム（データベース、APIなど）はモック化
-   - 機能単位で実装
-   - 目標カバレッジ: 重要な統合ポイントを網羅
-
-3. **E2Eテスト (End-to-End Tests)**
-   - ユーザーフロー全体をシミュレート
-   - 実際の環境に近い状態でテスト
-   - 主要なユーザーストーリーに対して実装
-   - 目標: 主要なユーザーフローをカバー
-
-### テスト命名規則
-
-- テストファイル名は対象ファイル名に `.spec.ts` または `.test.ts` を付加
-    - 例: `user.service.ts` → `user.service.spec.ts`
-- テストケース名は機能と期待される結果を明確に表現
-    - 形式: `should [期待される結果] when [条件]`
-    - 例: `should return user object when valid ID is provided`
-
-### テスト構造
-
-- **単体テスト・統合テスト**: Arrange-Act-Assert パターンを使用
-
-  ```typescript
-  it('should calculate correct tax amount when given a price', () => {
-    // Arrange
-    const price = 100;
-    const taxRate = 0.1;
-    const expectedTax = 10;
-
-    // Act
-    const actualTax = calculateTax(price, taxRate);
-
-    // Assert
-    expect(actualTax).toBe(expectedTax);
-  });
-  ```
-
-- **E2Eテスト**: Given-When-Then パターンを使用
-
-  ```typescript
-  describe('User login', () => {
-    it('should allow access to dashboard when credentials are valid', async () => {
-      // Given
-      const validCredentials = { email: 'user@example.com', password: 'password123' };
-
-      // When
-      await loginPage.navigate();
-      await loginPage.login(validCredentials);
-
-      // Then
-      expect(await dashboardPage.isVisible()).toBe(true);
-    });
-  });
-  ```
-
-### テストデータ管理
-
-- テストデータは各テストケース内でセットアップ
-- 共通のテストデータはファクトリ関数またはフィクスチャとして実装
-- 機密データをテストに含めない
-- テスト間の独立性を確保するため、各テスト前に状態をリセット
-
-### モック・スタブの使用
-
-- 外部依存性は必ずモック化またはスタブ化
-- テスト対象の隣接コンポーネントもモック化することを推奨
-- 一貫性のあるモックを作成するために、モックファクトリを使用
-
-  ```typescript
-  // モックファクトリの例
-  export const createUserServiceMock = () => ({
-    findById: jest.fn().mockResolvedValue({ id: '1', name: 'Test User' }),
-    create: jest.fn().mockImplementation((data) => ({ id: '1', ...data })),
-    update: jest.fn().mockResolvedValue(true),
-    delete: jest.fn().mockResolvedValue(true),
-  });
-  ```
-
-### テストカバレッジ
-
-- CI/CDパイプラインでテストカバレッジレポートを生成
-- 以下のカバレッジ目標を設定：
-    - ステートメントカバレッジ: 80%以上
-    - ブランチカバレッジ: 75%以上
-    - 関数カバレッジ: 90%以上
-- 新機能の追加や既存機能の変更時にはカバレッジを維持または向上させる
-- 重要なビジネスロジックは100%のカバレッジを目指す
-
-### テスト環境の設定
-
-- `.env.test` ファイルを使用してテスト環境変数を管理
-- テスト環境ではモックサーバーを使用して外部依存性をシミュレート
-- インメモリデータベースを使用してデータベーステストを高速化
-- CI環境では並列テスト実行を活用して実行時間を短縮
-
-### テスト実行
-
-- 開発中: 変更に関連するテストのみ実行
-
-  ```bash
-  # 特定のファイルのテストを実行
-  yarn test:watch -- user.service
-  ```
-
-- コミット前: 影響範囲のテストを実行
-- CI/CD: すべてのテストを実行
-
-  ```bash
-  # すべてのテストを実行
-  yarn test
-  ```
-
-### バグ修正と回帰テスト
-
-- バグ修正時は必ず回帰テストを追加
-- バグ再現のテストケースを先に作成し、修正後にテストが通ることを確認
-- 類似のバグが他の場所で発生していないか確認するためのテストも検討
-
-### パフォーマンステスト
-
-- 重要なAPIエンドポイントに対してはパフォーマンステストを実施
-- レスポンスタイムの閾値を設定し、CI/CDパイプラインで検証
-- 大量データ処理時の挙動をテスト
-
-### アプリケーション種別ごとのテスト戦略
-
-各アプリケーション種別に対する具体的なテスト実装方法は、以下のドキュメントを参照してください：
-
-- [NestJSバックエンドテスト戦略](/docs/coding-rules/api-backend.md#テスト)
-- [Nuxt 3フロントエンドテスト戦略](/docs/coding-rules/lp-frontend.md#テスト)
-- [LINE Botテスト戦略](/docs/coding-rules/line-bot.md#テスト)
-- [インフラストラクチャテスト戦略](/docs/coding-rules/infra.md#テスト)
+- 詳細なテスト戦略については `/docs/coding-rules/common.md#統一テスト戦略` を参照してください。
 
 ## パッケージ管理
 
@@ -229,501 +71,102 @@ tech-post-cast/
 
 ## 共有コードとパッケージの使用ガイドライン
 
-### packages/commons パッケージ
+- 共有パッケージ（commons, database等）の詳細な利用ガイドラインは `/docs/coding-rules/common.md#共有コードとパッケージの使用ガイドライン` を参照してください。
 
-`commons`パッケージは、複数のアプリケーション間で共有されるユーティリティ関数やミドルウェアなどの基本的な機能を提供します。
+## 統一インターフェース設計原則
 
-#### 利用方法
+### 段階的統一化パターン
 
-- アプリケーションの`package.json`で`commons`パッケージを依存関係として追加してください。
-
-  ```json
-  "dependencies": {
-    "@tech-post-cast/commons": "*"
-  }
-  ```
-
-- 特定の機能のみをインポートし、不要な依存関係を避けてください。
-
-  ```typescript
-  // 良い例: 必要な機能だけをインポート
-  import { formatDate } from '@tech-post-cast/commons';
-
-  // 避けるべき例: 全体をインポート
-  import * as commons from '@tech-post-cast/commons';
-  ```
-
-#### 拡張方法
-
-- `commons`パッケージに新機能を追加する際は、以下の基準を考慮してください：
-  1. 複数のアプリケーションで必要となる汎用的な機能であること
-  2. アプリケーション固有のロジックを含まないこと
-  3. 単一責任の原則にしたがっていること
-- 新しいユーティリティ関数を追加する場合、適切なテストを作成してください。
-- バックワードコンパティビリティを維持し、破壊的変更は避けてください。
-
-### packages/database パッケージ
-
-`database`パッケージは、Prismaスキーマ定義とデータベースアクセスのための共通機能を提供します。
-
-#### 利用方法
-
-- アプリケーションの`package.json`で`database`パッケージを依存関係として追加してください。
-
-  ```json
-  "dependencies": {
-    "@tech-post-cast/database": "*"
-  }
-  ```
-
-- データベースアクセスには必ず`PrismaClientManager`を使用してください。
-
-  ```typescript
-  import { PrismaClientManager } from '@tech-post-cast/database';
-
-  @Injectable()
-  export class UserService {
-    constructor(private prismaClientManager: PrismaClientManager) {}
-
-    async findUser(id: string) {
-      return this.prismaClientManager.client.user.findUnique({
-        where: { id }
-      });
-    }
-  }
-  ```
-
-#### データモデルの拡張方法
-
-- 新しいデータモデルを追加するには、`database/prisma/schema.prisma`を修正してください。
-- モデル変更後は、以下の手順にしたがってください：
-  1. マイグレーションスクリプトを生成: `yarn workspace @tech-post-cast/database prisma migrate dev --name <変更内容>`
-  2. 型定義を更新: `yarn workspace @tech-post-cast/database prisma generate`
-  3. テストを実行して変更の影響を確認
-- モデル変更の前にはチームメンバーと協議し、変更の影響範囲を確認してください。
-
-### 共有コード使用の一般原則
-
-- 共有コードとアプリケーション固有のコードの間に明確な境界を設けてください。
-- 循環依存を避けるため、共有パッケージは他の共有パッケージやアプリケーションに依存しないようにしてください。
-- アプリケーション固有のロジックは共有パッケージに移動せず、適切なアプリケーションモジュール内に保持してください。
-- 共有コードに変更を加える際は、すべての依存アプリケーションへの影響を考慮してください。
-- 共有パッケージのAPIに破壊的変更を加える場合は、移行計画を立て、チームに通知してください。
-
-### データベーススキーマ変更時の影響管理
-
-#### 変更前チェックリスト
-
-データベーススキーマを変更する際は、以下の影響範囲を必ず確認する：
-
-1. **全アプリケーションのファクトリクラス**
-   - `apps/api-backend/src/test/factories/`
-   - `apps/backend/src/test/factories/`
-   - 新フィールド追加時のデフォルト値設定
-
-2. **型定義ファイル**
-   - `packages/database/` の型定義
-   - 各アプリケーションの custom.d.ts
-
-3. **既存テストへの影響**
-   - スキーマ変更によるテスト失敗の確認
-   - 必要に応じたテストデータ更新
-
-#### 変更後の確認手順
-
-1. **全アプリケーションでのテスト実行**
-
-   ```bash
-   yarn workspace @tech-post-cast/api-backend test
-   yarn workspace @tech-post-cast/backend test
-   ```
-
-2. **ビルド確認**
-
-   ```bash
-   yarn build
-   ```
-
-3. **型定義の整合性確認**
-   - TypeScript コンパイルエラーの解消
-   - OpenAPI 仕様生成の確認
-
-## 事前設計レビュープロセス
-
-### 新機能実装前のチェックリスト
-
-実装開始前に以下の項目を必ず確認し、チームでレビューを実施する：
-
-1. **データベース設計の整合性**
-   - テーブル名とドメインモデル名の一致
-   - 既存テーブルとの関連性
-   - マイグレーション戦略
-
-2. **既存パターンとの一貫性**
-   - 類似機能の実装パターン調査
-   - アーキテクチャパターンの統一
-   - エラーハンドリング方式の統一
-
-3. **命名規則の確認**
-   - ディレクトリ構造
-   - クラス名・メソッド名
-   - API エンドポイント名
-
-4. **テスト戦略の確認**
-   - ファクトリクラスの設計
-   - テストカバレッジ計画
-   - モック戦略
-
-### レビュー実施タイミング
-
-- Phase 1 実装前: データベース設計とドメインモデル設計
-- Phase 2 実装前: アーキテクチャパターンとAPI設計
-- 実装完了後: 最終的な一貫性確認
-
-## 段階的実装アプローチ
-
-### 推奨実装フェーズ
-
-大規模な機能実装時は以下のフェーズに分割して実装する：
-
-1. **Phase 1: データアクセス層**
-   - Repository インターフェイスと実装
-   - エラークラス定義
-   - Repository テスト
-
-2. **Phase 2: ビジネスロジック層**
-   - Service クラス実装
-   - ビジネスルール実装
-   - Service テスト
-
-3. **Phase 3: コントローラー層**
-   - DTO クラス定義
-   - エンドポイント実装
-   - Controller テスト
-
-4. **Phase 4: 影響調査と対応**
-   - 他アプリケーションへの影響確認
-   - 必要に応じた修正
-
-5. **Phase 5: ドキュメントと統合**
-   - API ドキュメント作成
-   - Rest Client ファイル作成
-   - 最終テスト実行
-
-### フェーズ間の確認事項
-
-- 各フェーズ完了時にテストがすべて成功することを確認
-- 次フェーズ開始前に設計レビューを実施
-- 問題発見時は早期に前フェーズに戻って修正
-
-## Rest Client実装ガイドライン
-
-### ファイル構成と配置
-
-- **配置場所**: プロジェクトルート直下の `rest-client/` ディレクトリ
-- **ディレクトリ構造**:
-
-  ```
-  rest-client/
-  ├── api-backend/
-  │   ├── {domain}.http
-  │   └── auth.http
-  ├── backend/
-  │   └── {domain}.http
-  └── .env
-  ```
-
-### Rest Clientファイルの標準フォーマット
-
-```http
-### 変数定義
-@baseUrl = {{$dotenv API_BASE_URL}}
-@authToken = {{$dotenv JWT_TOKEN}}
-
-### {機能名} - 正常系
-GET {{baseUrl}}/api/endpoint
-Authorization: Bearer {{authToken}}
-Content-Type: application/json
-
-### {機能名} - ページネーション
-GET {{baseUrl}}/api/endpoint?limit=10&offset=0
-Authorization: Bearer {{authToken}}
-Content-Type: application/json
-
-### {機能名} - エラーケース: 認証なし
-GET {{baseUrl}}/api/endpoint
-Content-Type: application/json
-
-### 期待レスポンス例
-# {
-#   "data": [...],
-#   "totalCount": 100,
-#   "hasNext": true
-# }
-```
-
-### 必須テストケース
-
-各APIエンドポイントに対して以下のテストケースを必ず含める：
-
-1. **正常系**: 基本的な成功ケース
-2. **ページネーション**: limit/offset パラメーター付き
-3. **認証エラー**: Authorization ヘッダーなし
-4. **バリデーションエラー**: 不正なパラメーター
-5. **権限エラー**: 他ユーザーのリソースアクセス
-
-### 環境変数管理
-
-- `.env` ファイルで環境依存の値を管理
-- 機密情報（JWT トークン等）は `.env.example` に記載せず、個別設定
-
-## フロントエンド・バックエンド連携ガイドライン
-
-### API定義とクライアント生成
-
-#### OpenAPI定義の管理
-
-- バックエンドでOpenAPI仕様を自動生成し、フロントエンドで利用する
-- API定義の変更時は以下の手順を実行：
-  1. バックエンドでAPI実装・テスト完了
-  2. OpenAPI仕様の生成・確認
-  3. フロントエンドでAPIクライアント再生成
-  4. フロントエンドの型定義・実装更新
-
-#### APIクライアント生成手順
-
-```bash
-# フロントエンドでAPIクライアントを生成
-cd apps/lp-frontend
-yarn generate:api-client
-```
-
-- 生成されたAPIクライアントは直接編集せず、ラッパーを作成
-- プラグインファイル（`plugins/api-client.ts`）に新しいAPIクラスを追加
-- Composablesで生成されたAPIクライアントを使用
-
-### バリデーション仕様の統一
-
-#### フロントエンド・バックエンド間の整合性
-
-- **バリデーションルール**: フロントエンドとバックエンドで同一のルールを適用
-- **エラーメッセージ**: 一貫性のあるエラーメッセージ形式を使用
-- **空文字・null処理**: 明確な仕様定義と両端での統一実装
-
-#### 実装例：Webhook URLバリデーション
+複数の関連する機能やcomposableが存在する場合は、段階的統一化パターンを適用してください：
 
 ```typescript
-// フロントエンド（Composable）
-const validateSlackWebhookUrl = (url: string): string | null => {
-  if (!url.trim()) return null; // 空文字は許可
-  if (!url.startsWith('https://')) return 'HTTPS形式で入力してください';
-  if (!url.includes('hooks.slack.com')) return 'Slack Webhook URLを入力してください';
-  return null;
-};
-```
-
-```typescript
-// バックエンド（DTO）
-@Matches(/^$|^https:\/\/hooks\.slack\.com\/.*$/, {
-  message: 'Slack Webhook URLはHTTPS形式で、hooks.slack.comドメインである必要があります',
-})
-slackWebhookUrl?: string;
-```
-
-### エラーハンドリングの統一
-
-#### エラーレスポンス形式
-
-バックエンドは以下の形式でエラーを返す：
-
-```json
-{
-  "statusCode": 400,
-  "message": "Validation failed",
-  "error": "Bad Request",
-  "details": {
-    "field": "slackWebhookUrl",
-    "constraint": "matches",
-    "value": "invalid-url"
-  }
-}
-```
-
-#### フロントエンドでのエラー処理
-
-```typescript
-// Composableでのエラーハンドリング例
-const handleApiError = (error: any): string => {
-  if (error.response?.data?.message) {
-    return `${error.response.data.message} (${error.response.status})`;
-  }
-  return `リクエストに失敗しました: ${error.message}`;
-};
-```
-
-### 状態管理パターン
-
-#### Composablesでの標準的な状態管理
-
-```typescript
-export const useApiResource = () => {
-  const data = ref<ResourceType | null>(null);
-  const originalData = ref<ResourceType | null>(null);
-  const loading = ref(false);
-  const error = ref<string | null>(null);
-
-  const hasChanges = computed(() =>
-    JSON.stringify(data.value) !== JSON.stringify(originalData.value)
-  );
-
-  const fetchData = async () => {
-    loading.value = true;
-    error.value = null;
-    try {
-      const response = await apiClient.getData();
-      data.value = response.data;
-      originalData.value = { ...response.data };
-    } catch (err) {
-      error.value = handleApiError(err);
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  const saveData = async () => {
-    if (!data.value) return;
-    loading.value = true;
-    error.value = null;
-    try {
-      await apiClient.updateData(data.value);
-      originalData.value = { ...data.value };
-      // 成功メッセージの表示
-    } catch (err) {
-      error.value = handleApiError(err);
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  const resetData = () => {
-    if (originalData.value) {
-      data.value = { ...originalData.value };
-    }
-    error.value = null;
-  };
+// ✅ 推奨: 段階的統一化パターン
+export const useUnifiedInterface = (): UnifiedReturn => {
+  const existingFeatureA = useExistingFeatureA(); // 既存機能を活用
+  const existingFeatureB = useExistingFeatureB(); // 既存機能を活用
 
   return {
-    data,
-    loading,
-    error,
-    hasChanges,
-    fetchData,
-    saveData,
-    resetData,
+    // 統一されたAPI
+    doSomething: (options: Options): void => existingFeatureA.execute(options),
+    doAnother: (data: Data): void => existingFeatureB.process(data),
   };
+};
+
+// ❌ 非推奨: 既存機能の完全置き換え
+export const useNewInterface = (): NewReturn => {
+  // 既存の動作するコードを破棄して新規実装
 };
 ```
 
-### テスト機能の実装
+### 既存資産活用の原則
 
-#### API接続テスト機能
+1. **動作するコードの価値**: 既存の動作するコードは貴重な資産として最大限活用してください
+2. **上位レイヤーでの統一**: 下位の実装を変更せず、上位レイヤーで統一インターフェースを提供してください
+3. **後方互換性の維持**: 既存のAPIを破壊せずに新しいAPIを提供してください
+4. **段階的移行**: 一度にすべてを変更せず、段階的に新しいインターフェースに移行してください
 
-- 設定保存前にAPI接続をテストする機能を提供
-- テスト結果を明確にユーザーに表示
-- テスト失敗時の詳細なエラー情報提供
+### 統一インターフェースの設計ガイドライン
 
-```typescript
-// テスト機能の実装例
-export const useApiConnectionTest = () => {
-  const testResult = ref<'success' | 'error' | null>(null);
-  const testMessage = ref<string>('');
-  const testing = ref(false);
+1. **明確な責任分離**: 統一インターフェースは複数の関連機能を束ねるが、各機能の責任は明確に分離してください
+2. **型安全性の確保**: すべての関数に明示的な戻り値型を指定してください
+3. **文書化の徹底**: 統一インターフェースの使用方法をREADMEで明確に説明してください
+4. **テスト可能性**: 統一インターフェースもテスト可能な設計にしてください
 
-  const testConnection = async (config: ConfigType) => {
-    testing.value = true;
-    testResult.value = null;
-    testMessage.value = '';
+## 型安全性とlinter管理
 
-    try {
-      await apiClient.testConnection(config);
-      testResult.value = 'success';
-      testMessage.value = '接続テストが成功しました';
-    } catch (error) {
-      testResult.value = 'error';
-      testMessage.value = handleApiError(error);
-    } finally {
-      testing.value = false;
-    }
-  };
+### TypeScript型定義ルール
 
-  return {
-    testResult,
-    testMessage,
-    testing,
-    testConnection,
-  };
-};
-```
+1. **明示的な戻り値型**: すべての関数に明示的な戻り値型を指定してください
 
-### UI/UX連携パターン
+   ```typescript
+   // ✅ 推奨
+   export const useFeature = (): FeatureReturn => {
+     // 実装
+   };
 
-#### フォーム状態とAPI連携
+   // ❌ 非推奨
+   export const useFeature = () => {
+     // 実装
+   };
+   ```
 
-- **変更検知**: リアルタイムでの変更検知と保存ボタンの制御
-- **バリデーション**: フロントエンドでのリアルタイムバリデーション
-- **エラー表示**: API エラーの適切な表示とクリア
-- **成功フィードバック**: 操作成功時の明確なフィードバック
+2. **インターフェースの定義**: 複雑な戻り値型はインターフェースとして定義してください
 
-#### レスポンシブ対応
+   ```typescript
+   interface FeatureReturn {
+     execute: (options?: ExecuteOptions) => void;
+     reset: () => void;
+     state: Ref<FeatureState>;
+   }
+   ```
 
-- API通信中のローディング状態表示
-- エラー状態での適切なUI表示
-- モバイル・デスクトップでの一貫したUX
+### Linterエラー管理ルール
 
-### デバッグ・トラブルシューティング
+1. **完全解消の原則**: 実装完了前にすべてのlinterエラーを解消してください
+2. **3回ルール**: 同一ファイルでのlinterエラー修正は3回まで。3回目で解消できない場合は設計を見直してください
+3. **エラー分類**: linterエラーは以下のように分類して対処してください
+   - **型エラー**: 明示的な型定義で解決
+   - **未使用変数**: 不要な変数の削除または`_`プレフィックス
+   - **命名規則**: プロジェクトの命名規則に準拠
 
-#### よくある連携問題と解決方法
+## 知識管理とドキュメント
 
-1. **型定義の不整合**
-   - APIクライアント再生成で解決
-   - バックエンドのDTO定義確認
+### 振り返りと学習の記録
 
-2. **バリデーションエラー**
-   - フロントエンド・バックエンドの仕様統一
-   - 空文字・null・undefinedの扱い明確化
+重要な実装や設計決定については、以下の場所に記録してください：
 
-3. **CORS エラー**
-   - バックエンドのCORS設定確認
-   - 開発環境でのプロキシ設定確認
+1. **`.cursor/memory/`**: 技術的な学びや設計決定の記録
+   - `ui-ux-learnings.md`: UI/UX設計の知見
+   - `architecture-decisions.md`: アーキテクチャ決定の記録
+   - その他カテゴリ別ファイル
 
-4. **認証エラー**
-   - JWTトークンの有効性確認
-   - APIクライアントの認証ヘッダー設定確認
+2. **`docs/coding-rules/`**: コーディングルールの更新
+   - 新しいパターンやベストプラクティスの追加
+   - 既存ルールの改善や明確化
 
-### 実装チェックリスト
+### ドキュメント管理ルール
 
-新しいAPI連携機能を実装する際のチェックリスト：
-
-#### バックエンド側
-
-- [ ] OpenAPI仕様の自動生成設定
-- [ ] DTOクラスでのバリデーション定義
-- [ ] エラーレスポンスの統一形式
-- [ ] テスト用エンドポイントの実装（必要に応じて）
-
-#### フロントエンド側
-
-- [ ] APIクライアントの再生成
-- [ ] プラグインへのAPIクラス追加
-- [ ] Composableでの状態管理実装
-- [ ] エラーハンドリングの実装
-- [ ] バリデーション機能の実装
-- [ ] UI/UXの実装（ローディング、エラー表示等）
-
-#### 連携テスト
-
-- [ ] 正常系のAPI通信確認
-- [ ] エラーケースの動作確認
-- [ ] バリデーションエラーの表示確認
-- [ ] レスポンシブ対応の確認
-- [ ] アクセシビリティの確認
+1. **READMEの配置**: 各重要なディレクトリにREADME.mdを配置してください
+2. **使用例の提供**: 抽象的な説明だけでなく、具体的な使用例を含めてください
+3. **更新の責任**: コードを変更した際は、関連するドキュメントも同時に更新してください
+4. **アーキテクチャ図**: 複雑な設計については、図解を含めてください

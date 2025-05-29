@@ -21,6 +21,13 @@ Nuxt設定はnuxt.config.tsに集約し、不要な設定は追加しないで�
 - スタイルはSCSSまたはCSSを使用してください
 - Props、Emits、Ref等の型は明示的に指定してください
 
+### 共通コンポーネントの配置と命名規則
+
+- **共通コンポーネント**: `src/components/common/`に配置し、`App`プレフィックスを付けてください
+    - 例: `AppSnackbar.vue`, `AppProgress.vue`, `AppHeader.vue`
+- **ページ固有コンポーネント**: `src/components/[page-name]/`に配置してください
+- **UI部品コンポーネント**: `src/components/ui/`は使用せず、共通コンポーネントまたはページ固有コンポーネントとして配置してください
+
 ### コンポーネント分割戦略
 
 - **ページレベル**: フォーム全体とアクションボタンはページレベルで実装し、状態管理を一元化してください
@@ -61,6 +68,40 @@ Nuxt設定はnuxt.config.tsに集約し、不要な設定は追加しないで�
 - **状態管理**: `settings`, `originalSettings`, `loading`, `error`, `hasChanges`などの標準的な状態を含めてください
 - **バリデーション**: フロントエンド側でのリアルタイムバリデーション機能を含めてください
 
+### UI状態管理の統一ルール
+
+**必須**: UI状態管理には`useUIState`composableを使用してください
+
+```typescript
+// ✅ 推奨: 統一されたUI状態管理
+const ui = useUIState();
+ui.showLoading({ message: '処理中...' });
+ui.showSuccess('保存しました');
+ui.showError('エラーが発生しました');
+
+// ❌ 非推奨: 個別のcomposableの直接使用
+const snackbar = useSnackbar();
+const progress = useProgress();
+```
+
+#### UI状態管理のベストプラクティス
+
+1. **統一インターフェースの使用**
+   - `useUIState`を通じてすべてのUI状態を管理してください
+   - 個別のcomposable（`useSnackbar`, `useProgress`）の直接使用は避けてください
+
+2. **共通コンポーネントの活用**
+   - `AppSnackbar`と`AppProgress`をレイアウトファイルに配置してください
+   - これらのコンポーネントは`useUIState`と自動的に連携します
+
+3. **型安全性の確保**
+   - すべてのUI状態関連の関数には明示的な戻り値型を指定してください
+   - linterエラーは完全に解消してから実装を完了してください
+
+4. **段階的移行**
+   - 既存のコードを一度に変更せず、段階的に`useUIState`に移行してください
+   - 既存の動作するコードは可能な限り活用してください
+
 ## API連携
 
 ### 基本設定
@@ -89,6 +130,60 @@ Nuxt設定はnuxt.config.tsに集約し、不要な設定は追加しないで�
 - any型の使用は避け、適切な型を定義してください
 - APIレスポンスの型はDtoサフィックスを付けてください
 - 自動生成されたAPIの型定義は修正せず、必要に応じてラッパー型を定義してください
+
+### Composableの型定義ルール
+
+1. **戻り値型の明示**
+
+   ```typescript
+   // ✅ 推奨: 明示的な戻り値型
+   export const useUIState = (): UIStateReturn => {
+     // 実装
+   };
+
+   // ❌ 非推奨: 型推論に依存
+   export const useUIState = () => {
+     // 実装
+   };
+   ```
+
+2. **インターフェースの定義**
+
+   ```typescript
+   interface UIStateReturn {
+     showLoading: (options?: LoadingOptions) => void;
+     hideLoading: () => void;
+     showSuccess: (message: string, options?: MessageOptions) => void;
+     // ...
+   }
+   ```
+
+## Composable設計ルール
+
+### 統一インターフェースパターン
+
+複数の関連するcomposableがある場合は、統一インターフェースを提供してください：
+
+```typescript
+// 統一インターフェース
+export const useUIState = (): UIStateReturn => {
+  const snackbar = useSnackbar(); // 既存composableを活用
+  const progress = useProgress();  // 既存composableを活用
+
+  return {
+    // 統一されたAPI
+    showLoading: (options?: LoadingOptions): void => progress.show(options),
+    showSuccess: (message: string, options?: MessageOptions): void =>
+      snackbar.showSuccess(message, options),
+  };
+};
+```
+
+### 既存資産活用の原則
+
+1. **段階的統一化**: 既存の動作するcomposableは削除せず、上位レイヤーで統一してください
+2. **後方互換性**: 既存のAPIを破壊せずに新しいAPIを提供してください
+3. **文書化**: 統一インターフェースの使用方法をREADMEで明確に説明してください
 
 ## フォーム実装
 
