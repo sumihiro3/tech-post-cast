@@ -80,7 +80,7 @@
             v-card-title
               | 最近の配信
               v-spacer
-              v-btn(color="primary" variant="text" to="/broadcasts") すべて表示
+              // v-btn(color="primary" variant="text" to="/broadcasts") すべて表示
             v-table
               thead
                 tr
@@ -96,9 +96,13 @@
                   td {{ broadcast.date }}
                   td {{ broadcast.views }}
                   td
-                    v-btn(icon size="small" color="primary" :to="`/broadcasts/${broadcast.id}`")
+                    // v-btn(icon size="small" color="primary" :to="`/broadcasts/${broadcast.id}`")
+                    //   v-icon mdi-eye
+                    // v-btn(icon size="small" color="info" :to="`/broadcasts/${broadcast.id}/edit`")
+                    //   v-icon mdi-pencil
+                    v-btn(icon size="small" color="primary" disabled)
                       v-icon mdi-eye
-                    v-btn(icon size="small" color="info" :to="`/broadcasts/${broadcast.id}/edit`")
+                    v-btn(icon size="small" color="info" disabled)
                       v-icon mdi-pencil
 </template>
 
