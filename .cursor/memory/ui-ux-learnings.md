@@ -124,9 +124,9 @@ TPC-101 ユーザーダッシュボードの実装
 
 1. **完全置き換えアプローチ**: 既存composableを削除し、新しい統一composableを作成
    - 利点: 完全に統一されたAPI
-   - 欠点: 既存の動作するコードを無駄にする、リスクが高い
+   - 欠点: 既存の動作するコードをムダにする、リスクが高い
 
-2. **段階的統一アプローチ**: 既存composableを活用し、上位レイヤーで統一インターフェースを提供
+2. **段階的統一アプローチ**: 既存composableを活用し、上位レイヤーで統一インターフェイスを提供
    - 利点: 既存資産の活用、段階的移行、リスク最小化
    - 欠点: 一時的な複雑性
 
@@ -139,7 +139,7 @@ TPC-101 ユーザーダッシュボードの実装
 段階的統一アプローチを採用し、以下の実装を行った：
 
 ```typescript
-// useUIState: 統一インターフェース
+// useUIState: 統一インターフェイス
 export const useUIState = (): UIStateReturn => {
   const snackbar = useSnackbar(); // 既存composableを活用
   const progress = useProgress();  // 既存composableを活用
@@ -231,7 +231,7 @@ ui.showLoading({ message: '処理中...' });
 - **アプローチA**: ClientOnlyコンポーネントでラップ
 - **アプローチB**: Vuetify設定の調整
 - **アプローチC**: experimental.payloadExtraction無効化
-- **選択**: 全てのアプローチを組み合わせ
+- **選択**: すべてのアプローチを組み合わせ
 
 ### 決定事項と理由
 
@@ -293,11 +293,11 @@ fs.copyFileSync(indexPath, fallbackPath);
 
 2. **Vuetifyコンポーネントのハイドレーション問題**
    - z-indexなどの動的スタイルでSSR/クライアント間の不整合が発生
-   - ClientOnlyラッピングが最も確実な解決策
+   - ClientOnlyラッピングがもっとも確実な解決策
 
 3. **エラーハンドリングの複雑性**
    - SSGとSPAの混在環境では、エラーページのナビゲーション処理が複雑
-   - シンプルなフォールバック（ホームに戻る）が最も確実
+   - シンプルなフォールバック（ホームに戻る）がもっとも確実
 
 #### GLOBAL LEARNING: SPAフォールバック実装パターン
 

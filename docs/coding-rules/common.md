@@ -112,6 +112,77 @@ export const useNewInterface = (): NewReturn => {
 3. **文書化の徹底**: 統一インターフェースの使用方法をREADMEで明確に説明してください
 4. **テスト可能性**: 統一インターフェースもテスト可能な設計にしてください
 
+## バリデーション機能の共通設計原則
+
+### モジュラー設計パターン
+
+バリデーション機能は以下の階層化されたモジュラー設計を採用してください：
+
+```typescript
+// レイヤー1: 純粋なバリデーション関数（ビジネスロジック）
+// 場所: utils/validation/
+export const validateField = (value: string, options: ValidationOptions): FieldValidationResult => {
+  // フレームワークに依存しない純粋なロジック
+};
+
+// レイヤー2: リアクティブ状態管理（フレームワーク固有）
+// 場所: composables/validation/
+export const useValidation = (data: Ref<Data>, options: Options): ValidationReturn => {
+  // Vue/React等のリアクティブシステムとの統合
+};
+
+// レイヤー3: UI統合（コンポーネント固有）
+// 場所: コンポーネント内
+const { validationResult, isValid } = useValidation(formData, validationOptions);
+```
+
+### バリデーション設計の共通ルール
+
+1. **エラーと警告の分離**
+
+   ```typescript
+   interface FieldValidationResult {
+     isValid: boolean;
+     errors: string[];    // 送信を阻害する問題
+     warnings: string[];  // 推奨設定からの逸脱
+   }
+   ```
+
+2. **設定の外部化**
+
+   ```typescript
+   // ✅ 推奨: 設定値を外部から注入
+   const validation = useValidation(data, {
+     maxItems: props.maxItems,  // プランや環境により変動
+     debounceDelay: 500,        // パフォーマンス調整可能
+   });
+
+   // ❌ 非推奨: ハードコードされた設定
+   const maxItems = 10; // 固定値
+   ```
+
+3. **デバウンス時間の標準化**
+   - **推奨値**: 500ms（ユーザー体験とパフォーマンスのバランス）
+   - リアルタイムバリデーションでは必ずデバウンス機能を実装してください
+
+4. **既存機能との統合**
+
+   ```typescript
+   // 新しいバリデーションと既存のエラーハンドリングを統合
+   const getFieldErrors = (field: string): string[] => {
+     const validationErrors = getValidationFieldErrors(field);
+     const existingErrors = props.fieldErrors[field] || [];
+     return [...validationErrors, ...existingErrors];
+   };
+   ```
+
+### バリデーション実装のベストプラクティス
+
+1. **関心の分離**: バリデーションロジック、状態管理、UI統合を明確に分離
+2. **再利用性**: 各バリデーション関数は独立してテスト・再利用可能
+3. **段階的導入**: 既存システムとの互換性を保ちながら段階的に導入
+4. **テスタビリティ**: 各レイヤーを独立してテスト可能な設計
+
 ## 型安全性とlinter管理
 
 ### TypeScript型定義ルール

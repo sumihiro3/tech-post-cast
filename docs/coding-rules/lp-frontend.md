@@ -189,10 +189,132 @@ export const useUIState = (): UIStateReturn => {
 
 ### バリデーション
 
+#### 基本原則
+
 - **リアルタイムバリデーション**: ユーザー入力に対してリアルタイムでフィードバックを提供してください
 - **文字数制限**: 制限がある場合は文字数カウンターを表示してください
 - **URL形式チェック**: URLフィールドでは適切な形式チェックを実装してください
 - **条件付きバリデーション**: 他のフィールドの状態に応じたバリデーションを実装してください
+
+#### リアルタイムバリデーション実装パターン
+
+**必須**: バリデーション機能には階層化されたモジュラー設計を採用してください
+
+```typescript
+// ✅ 推奨: 階層化バリデーション設計
+// レイヤー1: 純粋なバリデーション関数（utils/validation/）
+export const validateTagsFilter = (tags: string[], maxTags: number = 10): FieldValidationResult => {
+  // ビジネスロジック
+};
+
+// レイヤー2: リアクティブ状態管理（composables/validation/）
+export const useFeedValidation = (
+  feedData: Ref<InputPersonalizedFeedData>,
+  options: ValidationOptions = {}
+): FeedValidationReturn => {
+  // Vue固有のリアクティブ処理
+};
+
+// レイヤー3: UI統合（コンポーネント内）
+const { validationResult, isValid, getFieldErrors } = useFeedValidation(feedData, {
+  realtime: true,
+  debounceDelay: 500,
+  maxTags: props.maxTags,
+  maxAuthors: props.maxAuthors,
+});
+```
+
+#### バリデーション設計ガイドライン
+
+1. **デバウンス時間の最適化**
+   - **推奨値**: 500ms（ユーザーの入力速度とフィードバックの即時性のバランス）
+   - 短すぎる（200ms以下）: パフォーマンス低下
+   - 長すぎる（1000ms以上）: ユーザー体験の悪化
+
+2. **エラーと警告の分離**
+
+   ```typescript
+   interface FieldValidationResult {
+     isValid: boolean;
+     errors: string[];    // 送信を阻害する問題
+     warnings: string[];  // 推奨設定からの逸脱
+   }
+   ```
+
+3. **プラン別制限値の動的対応**
+
+   ```typescript
+   // ✅ 推奨: 外部から制限値を注入
+   const { validationResult } = useFeedValidation(feedData, {
+     maxTags: props.maxTags,      // プランにより変動
+     maxAuthors: props.maxAuthors, // プランにより変動
+   });
+
+   // ❌ 非推奨: ハードコードされた制限値
+   const maxTags = 10; // 固定値
+   ```
+
+4. **既存機能との統合**
+
+   ```typescript
+   // 新しいバリデーションと既存のエラーハンドリングを統合
+   const getFieldErrors = (field: string): string[] => {
+     const validationErrors = getValidationFieldErrors(field);
+     const propsErrors = props.fieldErrors[field] || [];
+     return [...validationErrors, ...propsErrors];
+   };
+   ```
+
+#### バリデーション実装のベストプラクティス
+
+1. **関心の分離**
+   - バリデーションロジック: `utils/validation/`
+   - リアクティブ状態管理: `composables/validation/`
+   - UI統合: コンポーネント内
+
+2. **再利用性の確保**
+   - 各バリデーション関数は独立してテスト可能
+   - 他のフォーム画面でも同じパターンを適用可能
+
+3. **段階的導入**
+   - 既存のpropsとの互換性を保持
+   - 新機能をオプショナルにして段階的に導入
+
+4. **Vue 3での変数宣言順序**
+
+   ```typescript
+   // ✅ 推奨: computed内で参照される変数は事前に宣言
+   const filteredQiitaPosts = ref([]);
+   const feedData = computed(() => ({
+     // filteredQiitaPosts.valueを参照
+   }));
+
+   // ❌ 非推奨: 初期化前の参照
+   const feedData = computed(() => ({
+     // filteredQiitaPosts.valueを参照
+   }));
+   const filteredQiitaPosts = ref([]); // エラー: 初期化前にアクセス
+   ```
+
+#### エラーハンドリング強化パターン
+
+```typescript
+// 強化されたエラーハンドリングの実装例
+const { handleError, isRecoverable } = useEnhancedErrorHandler();
+
+// リトライ機能付きAPI呼び出し
+const { execute, isRetrying, retryCount } = useRetryableApiCall();
+
+// 段階的ローディング表示
+const { startStep, completeStep, showProgress } = useProgressiveLoading();
+```
+
+#### バリデーション機能の拡張計画
+
+1. **他フォーム画面への適用**: 同じアーキテクチャパターンを他の画面に展開
+2. **バリデーションルールの外部化**: 設定ファイルや管理画面からのルール変更
+3. **国際化対応**: エラーメッセージの多言語対応
+4. **パフォーマンス最適化**: バリデーション処理の最適化
 
 ### 状態管理
 
@@ -294,3 +416,123 @@ export const useUIState = (): UIStateReturn => {
 - **アクセシビリティ対応**: キーボード操作とスクリーンリーダー対応
 
 この実装を参考に、他の画面でも同様の品質を保ってください。
+
+### パーソナルフィード管理画面のバリデーション実装例
+
+パーソナルフィード管理画面（`pages/app/feeds/create.vue`, `pages/app/feeds/edit.vue`）では、以下の高度なバリデーション機能を実装しています：
+
+#### 1. 階層化バリデーション設計
+
+```typescript
+// utils/validation/feed-validation.ts - ビジネスロジック層
+export const validateTagsFilter = (tags: string[], maxTags: number = 10): FieldValidationResult => {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  if (tags.length > maxTags) {
+    errors.push(`タグは${maxTags}個以下で設定してください`);
+  }
+
+  if (tags.length > 5) {
+    warnings.push('タグが多すぎると、記事が見つからない可能性があります');
+  }
+
+  return { isValid: errors.length === 0, errors, warnings };
+};
+
+// composables/validation/useFeedValidation.ts - リアクティブ状態管理層
+export const useFeedValidation = (
+  feedData: Ref<InputPersonalizedFeedData>,
+  options: ValidationOptions = {}
+): FeedValidationReturn => {
+  const validationResult = ref<ValidationResult>({ isValid: true, errors: {}, warnings: {} });
+
+  const debouncedValidate = useDebounceFn(() => {
+    validationResult.value = validateFeedData(feedData.value, options);
+  }, options.debounceDelay || 500);
+
+  if (options.realtime) {
+    watch(feedData, debouncedValidate, { deep: true });
+  }
+
+  return { validationResult, isValid, getFieldErrors };
+};
+```
+
+#### 2. プラン別制限値の動的対応
+
+```typescript
+// コンポーネント内での使用例
+const props = defineProps<{
+  maxTags?: number;    // プランにより変動（フリー: 3, ベーシック: 10, プレミアム: 20）
+  maxAuthors?: number; // プランにより変動（フリー: 2, ベーシック: 5, プレミアム: 10）
+}>();
+
+const { validationResult, isValid, getFieldErrors } = useFeedValidation(feedData, {
+  realtime: true,
+  debounceDelay: 500,
+  maxTags: props.maxTags || 10,
+  maxAuthors: props.maxAuthors || 10,
+});
+```
+
+#### 3. エラーと警告の統合表示
+
+```vue
+<template>
+  <v-text-field
+    v-model="feedData.title"
+    :error-messages="getFieldErrors('title')"
+    :color="getFieldWarnings('title').length > 0 ? 'warning' : undefined"
+  />
+
+  <!-- 警告メッセージの表示 -->
+  <v-alert
+    v-if="getFieldWarnings('title').length > 0"
+    type="warning"
+    variant="tonal"
+    class="mt-2"
+  >
+    {{ getFieldWarnings('title').join(', ') }}
+  </v-alert>
+</template>
+```
+
+#### 4. Vue 3での変数宣言順序対応
+
+```typescript
+// ✅ 正しい実装: 依存関係を考慮した宣言順序
+const filteredQiitaPosts = ref<QiitaPost[]>([]);
+const filteredQiitaPostsTotalCount = ref(0);
+
+const feedData = computed(() => ({
+  title: title.value,
+  filterGroups: [{
+    tagFilters: selectedTags.value,
+    authorFilters: selectedAuthors.value,
+    // filteredQiitaPosts.valueを安全に参照
+    posts: filteredQiitaPosts.value,
+  }],
+}));
+```
+
+#### 5. 既存機能との統合
+
+```typescript
+// 新しいバリデーションと既存のエラーハンドリングを統合
+const getFieldErrors = (field: string): string[] => {
+  const validationErrors = getValidationFieldErrors(field);
+  const propsErrors = props.fieldErrors[field] || [];
+  return [...validationErrors, ...propsErrors];
+};
+```
+
+#### 実装のポイント
+
+1. **デバウンス時間**: 500msでユーザー体験とパフォーマンスのバランスを実現
+2. **エラーと警告の分離**: 送信阻害エラーと推奨事項警告を明確に区別
+3. **プラン別制限**: ビジネス要件に応じた動的制限値対応
+4. **段階的導入**: 既存機能を破壊せずに新機能を追加
+5. **再利用性**: 他のフォーム画面でも同じパターンを適用可能
+
+この実装パターンを参考に、他のフォーム画面でも同様の高品質なバリデーション機能を実装してください。
