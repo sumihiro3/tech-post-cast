@@ -19,11 +19,12 @@ v-container.max-width-container
     :initial-data="initialFeedData"
     :show-action-button="true"
     action-button-label="更新する"
-    :max-authors="10"
-    :max-tags="10"
+    :max-authors="maxAuthors"
+    :max-tags="maxTags"
     :loading="isSaving"
     :is-valid="isValidFeed"
     :field-errors="fieldErrors"
+    :show-validation-status="false"
     @update:feed-data="handleInputPersonalizedFeedDataUpdate"
     @action-button-click="saveFeed"
   )
@@ -50,7 +51,36 @@ v-container.max-width-container
         variant="tonal"
         closable
         border
+        @click:close="error = null"
       ) {{ error }}
+
+  //- バリデーション詳細表示（開発・デバッグ用）
+  v-row(v-if="showValidationDetails" justify="center" class="mt-4")
+    v-col(cols="12")
+      v-expansion-panels
+        v-expansion-panel(title="バリデーション詳細（開発用）")
+          v-expansion-panel-text
+            .mb-3
+              strong バリデーション状態:
+              v-chip(
+                :color="isValidationPassed ? 'success' : 'error'"
+                size="small"
+                class="ml-2"
+              ) {{ isValidationPassed ? '通過' : 'エラー' }}
+              v-chip(
+                v-if="hasValidationWarnings"
+                color="warning"
+                size="small"
+                class="ml-2"
+              ) 警告あり
+
+            div(v-if="validationErrors && Object.keys(validationErrors).length > 0")
+              strong.text-error エラー:
+              pre.text-caption {{ JSON.stringify(validationErrors, null, 2) }}
+
+            div(v-if="validationWarnings && Object.keys(validationWarnings).length > 0")
+              strong.text-warning 警告:
+              pre.text-caption {{ JSON.stringify(validationWarnings, null, 2) }}
 
   //- キャンセル確認ダイアログ
   ConfirmDialog(
@@ -86,6 +116,7 @@ import { useDeletePersonalizedFeed } from '@/composables/feeds/useDeletePersonal
 import { useGetPersonalizedFeedById } from '@/composables/feeds/useGetPersonalizedFeedById';
 import { useUpdatePersonalizedFeed } from '@/composables/feeds/useUpdatePersonalizedFeed';
 import { useUIState } from '@/composables/useUIState';
+import { useFeedValidation } from '@/composables/validation/useFeedValidation';
 import type { InputPersonalizedFeedData } from '@/types';
 import { HttpError, ValidationError } from '@/types/http-errors';
 import {
@@ -111,6 +142,13 @@ const DEFAULT_DATE_RANGE: number = 7;
 
 /** いいね数のデフォルト値 */
 const DEFAULT_LIKES_COUNT: number = 0;
+
+// 制限値
+const maxTags = ref(10);
+const maxAuthors = ref(5);
+
+// バリデーション詳細表示フラグ（開発用）
+const showValidationDetails = ref(false);
 
 /**
  * フィードの初期データ
@@ -145,6 +183,28 @@ const currentFeedData = ref<InputPersonalizedFeedData>({
   totalCount: 0,
   deliveryFrequency: DeliveryFrequencyEnum.Daily,
 });
+
+// バリデーション機能を統合
+const {
+  validationResult,
+  isValidating: _isValidating,
+  getFieldErrors: _getValidationFieldErrors,
+  getFieldWarnings: _getFieldWarnings,
+  hasFieldError: _hasValidationFieldError,
+  hasFieldWarning: _hasFieldWarning,
+  isValid: isValidationValid,
+  hasWarnings: hasValidationWarnings,
+} = useFeedValidation(currentFeedData, {
+  realtime: true,
+  debounceDelay: 500,
+  maxTags: maxTags.value,
+  maxAuthors: maxAuthors.value,
+});
+
+// バリデーション状態の計算プロパティ
+const isValidationPassed = computed(() => isValidationValid.value);
+const validationErrors = computed(() => validationResult.value.errors);
+const validationWarnings = computed(() => validationResult.value.warnings);
 
 /**
  * キャンセル確認ダイアログの表示状態

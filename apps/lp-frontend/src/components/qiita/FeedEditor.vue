@@ -13,9 +13,18 @@ div
           density="comfortable"
           variant="outlined"
           placeholder="番組名を入力"
-          :error-messages="getFieldErrorMessages('programTitle')"
+          :error-messages="getFieldErrors('programTitle')"
           :error="hasFieldError('programTitle')"
         )
+        //- 警告メッセージ表示
+        v-alert(
+          v-if="hasFieldWarning('programTitle')"
+          type="warning"
+          density="compact"
+          class="mt-2"
+        )
+          ul.mb-0
+            li(v-for="warning in getFieldWarnings('programTitle')" :key="warning") {{ warning }}
 
       v-divider
 
@@ -33,7 +42,7 @@ div
             v-model="deliveryFrequency"
             inline
             density="compact"
-            :error-messages="getFieldErrorMessages('deliveryFrequency')"
+            :error-messages="getFieldErrors('deliveryFrequency')"
             :error="hasFieldError('deliveryFrequency')"
           )
             v-radio(
@@ -50,16 +59,40 @@ div
           .text-subtitle-1.font-weight-bold 記事のフィルタリング設定
 
         //- 著者フィルター (カスタムコンポーネント)
-        QiitaAuthorSelector(
-          v-model="filters.authors"
-          :max-authors="props.maxAuthors"
-        )
+        .mb-3
+          QiitaAuthorSelector(
+            v-model="filters.authors"
+            :max-authors="props.maxAuthors"
+            :error-messages="getFieldErrors('authors')"
+            :error="hasFieldError('authors')"
+          )
+          //- 警告メッセージ表示
+          v-alert(
+            v-if="hasFieldWarning('authors')"
+            type="warning"
+            density="compact"
+            class="mt-2"
+          )
+            ul.mb-0
+              li(v-for="warning in getFieldWarnings('authors')" :key="warning") {{ warning }}
 
         //- タグフィルター (カスタムコンポーネント)
-        QiitaTagSelector(
-          v-model="filters.tags"
-          :max-tags="props.maxTags"
-        )
+        .mb-3
+          QiitaTagSelector(
+            v-model="filters.tags"
+            :max-tags="props.maxTags"
+            :error-messages="getFieldErrors('tags')"
+            :error="hasFieldError('tags')"
+          )
+          //- 警告メッセージ表示
+          v-alert(
+            v-if="hasFieldWarning('tags')"
+            type="warning"
+            density="compact"
+            class="mt-2"
+          )
+            ul.mb-0
+              li(v-for="warning in getFieldWarnings('tags')" :key="warning") {{ warning }}
 
         //- いいね数フィルター
         .mb-3
@@ -74,7 +107,20 @@ div
             show-ticks="always"
             thumb-label="always"
             color="primary"
+            :error="hasFieldError('likesCount')"
           )
+          //- エラーメッセージ表示
+          .text-error.text-caption.mt-1(v-if="hasFieldError('likesCount')")
+            div(v-for="error in getFieldErrors('likesCount')" :key="error") {{ error }}
+          //- 警告メッセージ表示
+          v-alert(
+            v-if="hasFieldWarning('likesCount')"
+            type="warning"
+            density="compact"
+            class="mt-2"
+          )
+            ul.mb-0
+              li(v-for="warning in getFieldWarnings('likesCount')" :key="warning") {{ warning }}
 
         //- 配信日フィルター
         .mb-3
@@ -86,6 +132,7 @@ div
             v-model="filters.dateRange"
             mandatory
             selected-class="primary"
+            :error="hasFieldError('dateRange')"
           )
             v-chip(
               v-for="range in dateRanges"
@@ -95,6 +142,29 @@ div
               variant="elevated"
               size="small"
             ) {{ range.label }}
+          //- エラーメッセージ表示
+          .text-error.text-caption.mt-1(v-if="hasFieldError('dateRange')")
+            div(v-for="error in getFieldErrors('dateRange')" :key="error") {{ error }}
+          //- 警告メッセージ表示
+          v-alert(
+            v-if="hasFieldWarning('dateRange')"
+            type="warning"
+            density="compact"
+            class="mt-2"
+          )
+            ul.mb-0
+              li(v-for="warning in getFieldWarnings('dateRange')" :key="warning") {{ warning }}
+
+        //- フィルター組み合わせの警告
+        v-alert(
+          v-if="hasFieldWarning('filterCombination')"
+          type="warning"
+          density="compact"
+          class="mt-4"
+        )
+          .font-weight-medium フィルター設定について
+          ul.mb-0.mt-2
+            li(v-for="warning in getFieldWarnings('filterCombination')" :key="warning") {{ warning }}
 
     //- カードの下部にボタンを配置
     v-card-actions(v-if="showActionButton")
@@ -106,7 +176,7 @@ div
             variant="elevated"
             block
             :loading="loading"
-            :disabled="!isValid"
+            :disabled="!isValidationPassed"
             @click="handleActionButtonClick"
           ) {{ actionButtonLabel }}
         //- フィルター条件をクリアするボタン
@@ -117,6 +187,24 @@ div
             class="mt-2"
             @click="clearFilters"
           ) フィルター条件をクリア
+
+      //- バリデーション状態表示
+      v-row(v-if="showValidationStatus" justify="center")
+        v-col(cols="12" class="text-center")
+          v-chip(
+            :color="isValidationPassed ? 'success' : 'error'"
+            :prepend-icon="isValidationPassed ? 'mdi-check-circle' : 'mdi-alert-circle'"
+            size="small"
+            class="mt-2"
+          ) {{ isValidationPassed ? 'バリデーション通過' : 'バリデーションエラーあり' }}
+
+          v-chip(
+            v-if="hasValidationWarnings"
+            color="warning"
+            prepend-icon="mdi-alert-outline"
+            size="small"
+            class="mt-2 ml-2"
+          ) 警告あり
 
   //- フィルターされた記事のプレビューリスト
   div
@@ -160,7 +248,8 @@ div
 import type { QiitaPostDto } from '@/api';
 import { PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum } from '@/api';
 import { useGetQiitaPosts } from '@/composables/qiita-api/useGetQiitaPosts';
-import { defineEmits, defineProps, reactive, ref, watch } from 'vue';
+import { useFeedValidation } from '@/composables/validation/useFeedValidation';
+import { computed, defineEmits, defineProps, reactive, ref, watch } from 'vue';
 import type { InputPersonalizedFeedData } from '~/types/personalized-feed';
 
 /** 記事公開日の範囲のデフォルト値 */
@@ -207,10 +296,15 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
-  // フィールドエラーを追加
+  // フィールドエラーを追加（後方互換性のため残す）
   fieldErrors: {
     type: Object as () => Record<string, string[]>,
     default: () => ({}),
+  },
+  // バリデーション状態表示フラグ
+  showValidationStatus: {
+    type: Boolean,
+    default: true,
   },
 });
 
@@ -231,8 +325,8 @@ const deliveryFrequencyOptions = [{ value: DeliveryFrequencyEnum.Daily, label: '
 interface IFilters {
   authors: string[];
   tags: string[];
-  dateRange: number; // 文字列から数値に変更
-  likesCount: number; // いいね数フィルターを追加
+  dateRange: number;
+  likesCount: number;
 }
 
 // 絞り込み条件
@@ -242,9 +336,67 @@ const filters = reactive<IFilters>({
   dateRange:
     typeof props.initialData.filters.dateRange === 'number'
       ? props.initialData.filters.dateRange
-      : DEFAULT_DATE_RANGE, // 数値でない場合はデフォルト値を設定
-  likesCount: props.initialData.filters.likesCount || 0, // いいね数の初期値を設定
+      : DEFAULT_DATE_RANGE,
+  likesCount: props.initialData.filters.likesCount || 0,
 });
+
+// 前回 Qiita API で取得した記事リスト
+const previousQiitaPosts = ref<QiitaPostDto[]>([]);
+
+// 絞り込み条件に応じてAPIで取得した記事リスト
+const filteredQiitaPosts = ref<QiitaPostDto[]>([]);
+
+// フィルターを適用した記事の総数
+const filteredQiitaPostsTotalCount = ref<number>(0);
+
+// フィードデータをリアクティブに管理
+const feedData = computed<InputPersonalizedFeedData>(() => ({
+  programTitle: programTitle.value,
+  filters: {
+    authors: filters.authors,
+    tags: filters.tags,
+    dateRange: filters.dateRange,
+    likesCount: filters.likesCount,
+  },
+  deliveryFrequency: deliveryFrequency.value,
+  posts: filteredQiitaPosts.value,
+  totalCount: filteredQiitaPostsTotalCount.value,
+}));
+
+// バリデーション機能を統合
+const {
+  validationResult: _validationResult,
+  isValidating: _isValidating,
+  getFieldErrors: getValidationFieldErrors,
+  getFieldWarnings,
+  hasFieldError: hasValidationFieldError,
+  hasFieldWarning,
+  isValid: isValidationValid,
+  hasWarnings: hasValidationWarnings,
+} = useFeedValidation(feedData, {
+  realtime: true,
+  debounceDelay: 500,
+  maxTags: props.maxTags,
+  maxAuthors: props.maxAuthors,
+});
+
+// バリデーション状態の計算プロパティ
+const isValidationPassed = computed(() => {
+  // 新しいバリデーション結果と従来のisValidプロパティの両方をチェック
+  return isValidationValid.value && props.isValid;
+});
+
+// フィールドエラー取得（新しいバリデーションと従来のfieldErrorsを統合）
+const getFieldErrors = (field: string): string[] => {
+  const validationErrors = getValidationFieldErrors(field);
+  const propsErrors = props.fieldErrors[field] || [];
+  return [...validationErrors, ...propsErrors];
+};
+
+// フィールドエラー判定（新しいバリデーションと従来のfieldErrorsを統合）
+const hasFieldError = (field: string): boolean => {
+  return hasValidationFieldError(field) || !!props.fieldErrors[field]?.length;
+};
 
 // 前回のフィルター条件
 const previousFilters = ref<IFilters>({
@@ -253,12 +405,9 @@ const previousFilters = ref<IFilters>({
   dateRange:
     typeof props.initialData.filters.dateRange === 'number'
       ? props.initialData.filters.dateRange
-      : DEFAULT_DATE_RANGE, // 数値でない場合はデフォルト値を設定
-  likesCount: props.initialData.filters.likesCount || 0, // いいね数の前回値も設定
+      : DEFAULT_DATE_RANGE,
+  likesCount: props.initialData.filters.likesCount || 0,
 });
-
-// フィルターを適用した記事の総数
-const filteredQiitaPostsTotalCount = ref<number>(0);
 
 // 著者またはタグが選択されているかどうか
 const isAuthorOrTagSelected = (): boolean => {
@@ -267,19 +416,7 @@ const isAuthorOrTagSelected = (): boolean => {
 
 // フィードのデータを親コンポーネントに通知
 const emitFeedData = (): void => {
-  // フィードのデータを親コンポーネントに通知
-  emit('update:feedData', {
-    programTitle: programTitle.value,
-    filters: {
-      authors: filters.authors,
-      tags: filters.tags,
-      dateRange: filters.dateRange,
-      likesCount: filters.likesCount, // いいね数フィルターを追加
-    },
-    posts: filteredQiitaPosts.value,
-    totalCount: filteredQiitaPostsTotalCount.value,
-    deliveryFrequency: deliveryFrequency.value,
-  } satisfies InputPersonalizedFeedData);
+  emit('update:feedData', feedData.value);
 };
 
 // initialDataが変更されたときの監視処理を追加
@@ -302,7 +439,7 @@ watch(
       typeof newInitialData.filters.dateRange === 'number'
         ? newInitialData.filters.dateRange
         : DEFAULT_DATE_RANGE;
-    filters.likesCount = newInitialData.filters.likesCount || 0; // いいね数の更新
+    filters.likesCount = newInitialData.filters.likesCount || 0;
 
     // 前回のフィルター条件も更新
     previousFilters.value = {
@@ -312,7 +449,7 @@ watch(
         typeof newInitialData.filters.dateRange === 'number'
           ? newInitialData.filters.dateRange
           : DEFAULT_DATE_RANGE,
-      likesCount: newInitialData.filters.likesCount || 0, // いいね数の更新
+      likesCount: newInitialData.filters.likesCount || 0,
     };
 
     // 初期値がある場合は記事を取得
@@ -324,21 +461,14 @@ watch(
 );
 
 // 番組名が変更されたときに独立して親コンポーネントへ通知
-watch(programTitle, (_newValue) => {
-  // 番組名だけでも変更を通知するため、emitFeedDataを呼び出す
+watch(programTitle, () => {
   emitFeedData();
 });
 
 // 配信間隔が変更されたときに親コンポーネントへ通知
-watch(deliveryFrequency, (_newValue) => {
+watch(deliveryFrequency, () => {
   emitFeedData();
 });
-
-// 前回 Qiita API で取得した記事リスト
-const previousQiitaPosts = ref<QiitaPostDto[]>([]);
-
-// 絞り込み条件に応じてAPIで取得した記事リスト
-const filteredQiitaPosts = ref<QiitaPostDto[]>([]);
 
 /**
  * フィルター条件が変更されたことを検知して、Qiita API で記事を取得する
@@ -407,16 +537,8 @@ const fetchQiitaPosts = async (): Promise<void> => {
   }
   const result = await useGetQiitaPosts(app, filters.authors, filters.tags, filters.dateRange);
   previousQiitaPosts.value = result.posts;
-  // if (filters.likesCount > 0) {
-  //   // いいね数フィルターが設定されている場合、フィルタリングを行う
-  //   filteredQiitaPosts.value = result.posts.filter(
-  //     (post) => post.likes_count >= filters.likesCount,
-  //   );
-  //   filteredQiitaPostsTotalCount.value = filteredQiitaPosts.value.length;
-  // } else {
   filteredQiitaPosts.value = result.posts;
   filteredQiitaPostsTotalCount.value = result.totalCount;
-  // }
 };
 
 // フィルターをクリアする関数
@@ -424,7 +546,7 @@ const clearFilters = (): void => {
   filters.authors = [];
   filters.tags = [];
   filters.dateRange = 7;
-  filters.likesCount = 0; // いいね数もリセット
+  filters.likesCount = 0;
 };
 
 // 日付範囲のリスト（日数指定）
@@ -445,16 +567,6 @@ if (isAuthorOrTagSelected()) {
 // アクションボタンのクリックイベントハンドラー
 const handleActionButtonClick = (): void => {
   emit('actionButtonClick');
-};
-
-// フィールドエラーを取得する関数
-const getFieldErrorMessages = (field: string): string[] => {
-  return props.fieldErrors[field] || [];
-};
-
-// フィールドにエラーがあるかどうかを判定する関数
-const hasFieldError = (field: string): boolean => {
-  return !!props.fieldErrors[field]?.length;
 };
 </script>
 
