@@ -556,7 +556,7 @@
     },
     "/personalized-feeds": {
       "get": {
-        "description": "ユーザーが登録したパーソナライズフィードの一覧を取得します。クエリパラメータincludeFilters=trueを指定するとフィルターグループ情報も一緒に取得できます。",
+        "description": "ユーザーが登録したパーソナライズフィードの一覧をフィルターグループ情報と一緒に取得します。",
         "operationId": "getPersonalizedFeeds",
         "parameters": [
           {
@@ -583,26 +583,15 @@
               "example": 20,
               "type": "number"
             }
-          },
-          {
-            "name": "includeFilters",
-            "required": false,
-            "in": "query",
-            "description": "フィルター情報を含めるかどうか",
-            "schema": {
-              "default": false,
-              "example": false,
-              "type": "boolean"
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "取得成功（フィルター情報なし）",
+            "description": "取得成功",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GetPersonalizedFeedsResponseDto"
+                  "$ref": "#/components/schemas/GetPersonalizedFeedsWithFiltersResponseDto"
                 }
               }
             }
@@ -1539,105 +1528,6 @@
           "perPage"
         ]
       },
-      "PersonalizedFeedDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "パーソナライズフィードのID",
-            "example": "feed_1234567890"
-          },
-          "name": {
-            "type": "string",
-            "description": "パーソナライズフィードの名前",
-            "example": "技術ブログフィード"
-          },
-          "dataSource": {
-            "type": "string",
-            "description": "データソース",
-            "example": "qiita"
-          },
-          "filterConfig": {
-            "type": "object",
-            "description": "フィルター設定",
-            "example": {
-              "tags": [
-                "JavaScript",
-                "TypeScript"
-              ],
-              "minLikes": 10
-            }
-          },
-          "deliveryConfig": {
-            "type": "object",
-            "description": "配信設定",
-            "example": {
-              "frequency": "daily",
-              "time": "08:00"
-            }
-          },
-          "deliveryFrequency": {
-            "type": "string",
-            "description": "配信間隔",
-            "enum": [
-              "DAILY",
-              "TWICE_WEEKLY",
-              "WEEKLY"
-            ],
-            "example": "WEEKLY"
-          },
-          "isActive": {
-            "type": "boolean",
-            "description": "有効かどうか",
-            "example": true
-          },
-          "createdAt": {
-            "type": "string",
-            "description": "作成日時",
-            "example": "2025-04-08T09:00:00.000Z",
-            "format": "date-time"
-          },
-          "updatedAt": {
-            "type": "string",
-            "description": "更新日時",
-            "example": "2025-04-08T10:30:00.000Z",
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "dataSource",
-          "filterConfig",
-          "deliveryConfig",
-          "deliveryFrequency",
-          "isActive",
-          "createdAt",
-          "updatedAt"
-        ]
-      },
-      "GetPersonalizedFeedsResponseDto": {
-        "type": "object",
-        "properties": {
-          "feeds": {
-            "description": "パーソナライズフィード一覧",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PersonalizedFeedDto"
-            }
-          },
-          "total": {
-            "type": "number",
-            "description": "総件数",
-            "example": 42,
-            "minimum": 0
-          }
-        },
-        "required": [
-          "feeds",
-          "total"
-        ]
-      },
       "ResponseTagFilterDto": {
         "type": "object",
         "properties": {
@@ -1904,6 +1794,28 @@
           "isActive",
           "createdAt",
           "updatedAt"
+        ]
+      },
+      "GetPersonalizedFeedsWithFiltersResponseDto": {
+        "type": "object",
+        "properties": {
+          "feeds": {
+            "description": "フィルター情報を含むパーソナライズフィード一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalizedFeedWithFiltersDto"
+            }
+          },
+          "total": {
+            "type": "number",
+            "description": "総件数",
+            "example": 42,
+            "minimum": 0
+          }
+        },
+        "required": [
+          "feeds",
+          "total"
         ]
       },
       "GetPersonalizedFeedWithFiltersResponseDto": {

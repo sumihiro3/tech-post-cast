@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsInt, IsOptional, Max, Min } from 'class-validator';
 
 /**
  * パーソナライズフィード一覧取得リクエストDTO
@@ -35,18 +35,4 @@ export class GetPersonalizedFeedsRequestDto {
   @Min(1, { message: '1ページあたりの件数は1以上である必要があります' })
   @Max(100, { message: '1ページあたりの件数は100以下である必要があります' })
   perPage?: number;
-
-  @ApiProperty({
-    description: 'フィルター情報を含めるかどうか',
-    default: false,
-    required: false,
-    example: false,
-    type: Boolean,
-  })
-  @IsOptional()
-  @Type(() => Boolean)
-  @IsBoolean({
-    message: 'フィルター情報を含めるかどうかは真偽値である必要があります',
-  })
-  includeFilters?: boolean = false;
 }

@@ -35,7 +35,6 @@ import {
   DeletePersonalizedFeedResponseDto,
   GetPersonalizedFeedWithFiltersResponseDto,
   GetPersonalizedFeedsRequestDto,
-  GetPersonalizedFeedsResponseDto,
   GetPersonalizedFeedsWithFiltersResponseDto,
   UpdatePersonalizedFeedRequestDto,
   UpdatePersonalizedFeedWithFiltersResponseDto,
@@ -53,23 +52,18 @@ export class PersonalizedFeedsController {
 
   /**
    * ユーザーのパーソナライズフィード一覧を取得するAPI
-   * includeFilters=true の場合はフィルター情報も一緒に取得する
+   * 常にフィルター情報も一緒に取得する
    */
   @Get()
   @ApiOperation({
     summary: 'パーソナライズフィード一覧取得',
     description:
-      'ユーザーが登録したパーソナライズフィードの一覧を取得します。クエリパラメータincludeFilters=trueを指定するとフィルターグループ情報も一緒に取得できます。',
+      'ユーザーが登録したパーソナライズフィードの一覧をフィルターグループ情報と一緒に取得します。',
     operationId: 'getPersonalizedFeeds',
   })
   @ApiResponse({
     status: 200,
-    description: '取得成功（フィルター情報なし）',
-    type: GetPersonalizedFeedsResponseDto,
-  })
-  @ApiResponse({
-    status: 200,
-    description: '取得成功（フィルター情報あり）',
+    description: '取得成功',
     type: GetPersonalizedFeedsWithFiltersResponseDto,
   })
   @ApiResponse({
@@ -79,38 +73,23 @@ export class PersonalizedFeedsController {
   async getPersonalizedFeeds(
     @Query() dto: GetPersonalizedFeedsRequestDto,
     @CurrentUserId() userId: string, // JWTトークンからユーザーIDを取得
-  ): Promise<
-    GetPersonalizedFeedsResponseDto | GetPersonalizedFeedsWithFiltersResponseDto
-  > {
+  ): Promise<GetPersonalizedFeedsWithFiltersResponseDto> {
     this.logger.debug(`PersonalizedFeedsController.getPersonalizedFeeds`, {
       userId,
       page: dto.page,
       perPage: dto.perPage,
-      includeFilters: dto.includeFilters,
     });
 
     try {
-      // フィルター情報を含める場合
-      if (dto.includeFilters) {
-        // ユーザーのパーソナライズフィード一覧をフィルター情報付きで取得
-        const result =
-          await this.personalizedFeedsService.findByUserIdWithFilters(
-            userId,
-            dto.page,
-            dto.perPage,
-          );
-        // DTOに変換して返却
-        return GetPersonalizedFeedsWithFiltersResponseDto.fromEntity(result);
-      }
-
-      // フィルター情報を含めない場合（デフォルト）
-      const result = await this.personalizedFeedsService.findByUserId(
-        userId,
-        dto.page,
-        dto.perPage,
-      );
+      // ユーザーのパーソナライズフィード一覧をフィルター情報付きで取得
+      const result =
+        await this.personalizedFeedsService.findByUserIdWithFilters(
+          userId,
+          dto.page,
+          dto.perPage,
+        );
       // DTOに変換して返却
-      return GetPersonalizedFeedsResponseDto.fromEntity(result);
+      return GetPersonalizedFeedsWithFiltersResponseDto.fromEntity(result);
     } catch (error) {
       // UserNotFoundErrorをNotFoundExceptionに変換
       if (error instanceof UserNotFoundError) {
