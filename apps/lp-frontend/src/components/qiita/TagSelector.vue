@@ -4,7 +4,7 @@
       <div class="d-flex align-center mb-2">
         <v-icon size="small" class="mr-1">mdi-tag</v-icon>
         <span class="font-weight-medium">タグ</span>
-        <div class="text-caption text-grey ml-2">(最大10個まで)</div>
+        <div class="text-caption text-grey ml-2">(最大{{ maxTags }}件まで)</div>
       </div>
       <v-combobox
         v-model="displayTags"

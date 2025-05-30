@@ -52,13 +52,13 @@ div
         //- 著者フィルター (カスタムコンポーネント)
         QiitaAuthorSelector(
           v-model="filters.authors"
-          :max-authors="10"
+          :max-authors="props.maxAuthors"
         )
 
         //- タグフィルター (カスタムコンポーネント)
         QiitaTagSelector(
           v-model="filters.tags"
-          :max-tags="10"
+          :max-tags="props.maxTags"
         )
 
         //- いいね数フィルター
@@ -121,17 +121,32 @@ div
   //- フィルターされた記事のプレビューリスト
   div
     .d-flex.align-center.mb-4
-      .text-h6.font-weight-medium 対象記事のプレビュ（{{ filteredQiitaPostsTotalCount }}件）
+      .text-h6.font-weight-medium(v-if="filters.likesCount > 0")
+        | 対象記事のプレビュー（いいね数フィルター設定中）
+      .text-h6.font-weight-medium(v-else)
+        | 対象記事のプレビュー（{{ filteredQiitaPostsTotalCount }}件）
 
     div(v-if="filters.likesCount > 0")
-      v-card
-        v-card-text.text-center.pa-4
-          .text-body-1.text-medium-emphasis プレビュは利用できません
+      v-card(elevation="1" color="blue-grey-lighten-5")
+        v-card-text.text-center.pa-6
+          v-icon(size="48" color="blue-grey" class="mb-3") mdi-information-outline
+          .text-h6.text-blue-grey.mb-2 いいね数フィルター設定時のプレビューについて
+          .text-body-1.text-medium-emphasis.mb-3
+            | いいね数フィルター（{{ filters.likesCount }}以上）が設定されているため、
+            br
+            | プレビューは表示されません。
+          .text-body-2.text-medium-emphasis
+            | 実際の配信時には、設定された条件に一致する記事が自動的に選択されます。
 
     div(v-else-if="filteredQiitaPosts && filteredQiitaPosts.length === 0")
-      v-card
-        v-card-text.text-center.pa-4
-          .text-body-1.text-medium-emphasis 条件に一致する記事が見つかりませんでした。
+      v-card(elevation="1" color="orange-lighten-5")
+        v-card-text.text-center.pa-6
+          v-icon(size="48" color="orange" class="mb-3") mdi-alert-circle-outline
+          .text-h6.text-orange.mb-2 該当する記事が見つかりません
+          .text-body-1.text-medium-emphasis.mb-3
+            | 現在の条件に一致する記事が見つかりませんでした。
+          .text-body-2.text-medium-emphasis
+            | フィルター条件（著者・タグ・日付範囲）を調整してみてください。
 
     div(v-else)
       qiita-post-list-item(
@@ -143,7 +158,7 @@ div
 
 <script setup lang="ts">
 import type { QiitaPostDto } from '@/api';
-import { PersonalizedFeedDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum } from '@/api';
+import { PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum } from '@/api';
 import { useGetQiitaPosts } from '@/composables/qiita-api/useGetQiitaPosts';
 import { defineEmits, defineProps, reactive, ref, watch } from 'vue';
 import type { InputPersonalizedFeedData } from '~/types/personalized-feed';
@@ -163,7 +178,7 @@ const props = defineProps({
         dateRange: 7,
         likesCount: 0,
       },
-      deliveryFrequency: DeliveryFrequencyEnum.Weekly,
+      deliveryFrequency: DeliveryFrequencyEnum.Daily,
       posts: [],
       totalCount: 0,
     }),
@@ -171,6 +186,14 @@ const props = defineProps({
   showActionButton: {
     type: Boolean,
     default: false,
+  },
+  maxAuthors: {
+    type: Number,
+    default: 10,
+  },
+  maxTags: {
+    type: Number,
+    default: 10,
   },
   actionButtonLabel: {
     type: String,
@@ -200,13 +223,9 @@ const programTitle = ref(props.initialData.programTitle);
 
 // 配信間隔
 const deliveryFrequency = ref<DeliveryFrequencyEnum>(
-  props.initialData.deliveryFrequency || DeliveryFrequencyEnum.Weekly,
+  props.initialData.deliveryFrequency || DeliveryFrequencyEnum.Daily,
 );
-const deliveryFrequencyOptions = [
-  { value: DeliveryFrequencyEnum.Daily, label: '毎日' },
-  { value: DeliveryFrequencyEnum.TwiceWeekly, label: '週2回' },
-  { value: DeliveryFrequencyEnum.Weekly, label: '毎週' },
-];
+const deliveryFrequencyOptions = [{ value: DeliveryFrequencyEnum.Daily, label: '毎日' }];
 
 // 絞り込み条件の型
 interface IFilters {

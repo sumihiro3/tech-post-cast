@@ -22,6 +22,8 @@ v-container.max-width-container
     :loading="isSaving"
     :is-valid="isValidFeed"
     :field-errors="fieldErrors"
+    :max-authors="10"
+    :max-tags="10"
     @update:feed-data="handleInputPersonalizedFeedDataUpdate"
     @action-button-click="saveFeed"
   )
@@ -51,7 +53,7 @@ v-container.max-width-container
 
 <script setup lang="ts">
 import { useNuxtApp } from '#app';
-import { PersonalizedFeedDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum } from '@/api';
+import { PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum } from '@/api';
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 import FeedEditor from '@/components/qiita/FeedEditor.vue';
 import { useCreatePersonalizedFeed } from '@/composables/feeds/useCreatePersonalizedFeed';
@@ -89,7 +91,7 @@ const initialFeedData = reactive<InputPersonalizedFeedData>({
   },
   posts: [],
   totalCount: 0,
-  deliveryFrequency: DeliveryFrequencyEnum.Weekly,
+  deliveryFrequency: DeliveryFrequencyEnum.Daily,
 });
 
 /**
@@ -106,7 +108,7 @@ const currentFeedData = ref<InputPersonalizedFeedData>({
   },
   posts: [],
   totalCount: 0,
-  deliveryFrequency: DeliveryFrequencyEnum.Weekly,
+  deliveryFrequency: DeliveryFrequencyEnum.Daily,
 });
 
 /**
@@ -130,7 +132,7 @@ const hasFormChanges = computed(() => {
   const hasDateRangeChanged = currentFeedData.value.filters.dateRange !== -1;
   // 配信間隔が初期値と異なるか
   const hasDeliveryFrequencyChanged =
-    currentFeedData.value.deliveryFrequency !== DeliveryFrequencyEnum.Weekly;
+    currentFeedData.value.deliveryFrequency !== DeliveryFrequencyEnum.Daily;
 
   return (
     hasTitleChanged ||

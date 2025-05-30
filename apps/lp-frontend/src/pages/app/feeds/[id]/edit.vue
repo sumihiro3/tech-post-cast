@@ -19,6 +19,8 @@ v-container.max-width-container
     :initial-data="initialFeedData"
     :show-action-button="true"
     action-button-label="更新する"
+    :max-authors="10"
+    :max-tags="10"
     :loading="isSaving"
     :is-valid="isValidFeed"
     :field-errors="fieldErrors"
@@ -77,7 +79,7 @@ v-container.max-width-container
 
 <script setup lang="ts">
 import { useNuxtApp } from '#app';
-import { PersonalizedFeedDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum } from '@/api';
+import { PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum } from '@/api';
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 import FeedEditor from '@/components/qiita/FeedEditor.vue';
 import { useDeletePersonalizedFeed } from '@/composables/feeds/useDeletePersonalizedFeed';
@@ -124,7 +126,7 @@ const initialFeedData = reactive<InputPersonalizedFeedData>({
   },
   posts: [],
   totalCount: 0,
-  deliveryFrequency: DeliveryFrequencyEnum.Weekly,
+  deliveryFrequency: DeliveryFrequencyEnum.Daily,
 });
 
 /**
@@ -141,7 +143,7 @@ const currentFeedData = ref<InputPersonalizedFeedData>({
   },
   posts: [],
   totalCount: 0,
-  deliveryFrequency: DeliveryFrequencyEnum.Weekly,
+  deliveryFrequency: DeliveryFrequencyEnum.Daily,
 });
 
 /**
@@ -444,7 +446,7 @@ const fetchPersonalizedFeed = async (id: string): Promise<void> => {
     initialFeedData.filters.authors = [...inputData.filters.authors];
     initialFeedData.filters.dateRange = inputData.filters.dateRange;
     initialFeedData.filters.likesCount = inputData.filters.likesCount;
-    initialFeedData.deliveryFrequency = inputData.deliveryFrequency || DeliveryFrequencyEnum.Weekly;
+    initialFeedData.deliveryFrequency = inputData.deliveryFrequency || DeliveryFrequencyEnum.Daily;
     initialFeedData.posts = [...inputData.posts];
     initialFeedData.totalCount = inputData.totalCount;
 
@@ -459,7 +461,7 @@ const fetchPersonalizedFeed = async (id: string): Promise<void> => {
       },
       posts: [...inputData.posts],
       totalCount: inputData.totalCount,
-      deliveryFrequency: inputData.deliveryFrequency || DeliveryFrequencyEnum.Weekly,
+      deliveryFrequency: inputData.deliveryFrequency || DeliveryFrequencyEnum.Daily,
     };
 
     console.log('Loaded feed data:', result);

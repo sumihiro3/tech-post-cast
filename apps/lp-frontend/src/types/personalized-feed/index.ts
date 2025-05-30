@@ -3,7 +3,7 @@ import type {
   CreatePersonalizedFeedRequestDto,
   FilterGroupDto,
   GetPersonalizedFeedWithFiltersResponseDto,
-  PersonalizedFeedDtoDeliveryFrequencyEnum,
+  PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum,
   QiitaPostDto,
   TagFilterDto,
   UpdatePersonalizedFeedRequestDto,
@@ -22,7 +22,7 @@ export interface InputPersonalizedFeedData {
   };
   posts: QiitaPostDto[];
   totalCount: number;
-  deliveryFrequency?: PersonalizedFeedDtoDeliveryFrequencyEnum; // 配信間隔
+  deliveryFrequency?: PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum; // 配信間隔
 }
 
 /**
@@ -157,16 +157,11 @@ export function convertInputDataToCreateDto(
     },
   ];
 
-  // フィルター設定を作成
-  const filterConfig = {
-    dateRange: inputData.filters.dateRange,
-  };
+  // フィルター設定のデフォルト値
+  const filterConfig = {};
 
   // 配信設定のデフォルト値
-  const deliveryConfig = {
-    frequency: 'daily',
-    time: '10:00',
-  };
+  const deliveryConfig = {};
 
   // APIリクエスト用のデータを作成
   return {
@@ -255,4 +250,24 @@ export function convertInputDataToUpdateDto(
     deliveryFrequency: inputData.deliveryFrequency, // 配信間隔
     filterGroups: [filterGroup],
   };
+}
+
+/**
+ * フィード作成・編集フォームの型定義
+ */
+export interface FeedFormData {
+  name: string; // フィード名
+  dataSource: string; // データソース（例: 'qiita'）
+  filterConfig: {
+    tags?: string[]; // タグフィルター
+    authors?: string[]; // 著者フィルター
+    dateRange?: number; // 日付範囲フィルター（日数）
+    likesCount?: number; // いいね数フィルター
+  };
+  deliveryConfig: {
+    frequency?: string; // 配信頻度
+    time?: string; // 配信時刻
+  };
+  deliveryFrequency?: PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum; // 配信間隔
+  isActive?: boolean; // 有効フラグ
 }

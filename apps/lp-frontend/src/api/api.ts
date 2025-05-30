@@ -284,19 +284,19 @@ export interface GetPersonalizedFeedWithFiltersResponseDto {
 /**
  * 
  * @export
- * @interface GetPersonalizedFeedsResponseDto
+ * @interface GetPersonalizedFeedsWithFiltersResponseDto
  */
-export interface GetPersonalizedFeedsResponseDto {
+export interface GetPersonalizedFeedsWithFiltersResponseDto {
     /**
-     * パーソナライズフィード一覧
-     * @type {Array<PersonalizedFeedDto>}
-     * @memberof GetPersonalizedFeedsResponseDto
+     * フィルター情報を含むパーソナライズフィード一覧
+     * @type {Array<PersonalizedFeedWithFiltersDto>}
+     * @memberof GetPersonalizedFeedsWithFiltersResponseDto
      */
-    'feeds': Array<PersonalizedFeedDto>;
+    'feeds': Array<PersonalizedFeedWithFiltersDto>;
     /**
      * 総件数
      * @type {number}
-     * @memberof GetPersonalizedFeedsResponseDto
+     * @memberof GetPersonalizedFeedsWithFiltersResponseDto
      */
     'total': number;
 }
@@ -628,76 +628,6 @@ export interface LikesCountFilterDto {
      */
     'minLikes': number;
 }
-/**
- * 
- * @export
- * @interface PersonalizedFeedDto
- */
-export interface PersonalizedFeedDto {
-    /**
-     * パーソナライズフィードのID
-     * @type {string}
-     * @memberof PersonalizedFeedDto
-     */
-    'id': string;
-    /**
-     * パーソナライズフィードの名前
-     * @type {string}
-     * @memberof PersonalizedFeedDto
-     */
-    'name': string;
-    /**
-     * データソース
-     * @type {string}
-     * @memberof PersonalizedFeedDto
-     */
-    'dataSource': string;
-    /**
-     * フィルター設定
-     * @type {object}
-     * @memberof PersonalizedFeedDto
-     */
-    'filterConfig': object;
-    /**
-     * 配信設定
-     * @type {object}
-     * @memberof PersonalizedFeedDto
-     */
-    'deliveryConfig': object;
-    /**
-     * 配信間隔
-     * @type {string}
-     * @memberof PersonalizedFeedDto
-     */
-    'deliveryFrequency': PersonalizedFeedDtoDeliveryFrequencyEnum;
-    /**
-     * 有効かどうか
-     * @type {boolean}
-     * @memberof PersonalizedFeedDto
-     */
-    'isActive': boolean;
-    /**
-     * 作成日時
-     * @type {string}
-     * @memberof PersonalizedFeedDto
-     */
-    'createdAt': string;
-    /**
-     * 更新日時
-     * @type {string}
-     * @memberof PersonalizedFeedDto
-     */
-    'updatedAt': string;
-}
-
-export const PersonalizedFeedDtoDeliveryFrequencyEnum = {
-    Daily: 'DAILY',
-    TwiceWeekly: 'TWICE_WEEKLY',
-    Weekly: 'WEEKLY'
-} as const;
-
-export type PersonalizedFeedDtoDeliveryFrequencyEnum = typeof PersonalizedFeedDtoDeliveryFrequencyEnum[keyof typeof PersonalizedFeedDtoDeliveryFrequencyEnum];
-
 /**
  * 
  * @export
@@ -2568,15 +2498,14 @@ export const PersonalizedFeedsApiAxiosParamCreator = function (configuration?: C
             };
         },
         /**
-         * ユーザーが登録したパーソナライズフィードの一覧を取得します。クエリパラメータincludeFilters=trueを指定するとフィルターグループ情報も一緒に取得できます。
+         * ユーザーが登録したパーソナライズフィードの一覧をフィルターグループ情報と一緒に取得します。
          * @summary パーソナライズフィード一覧取得
          * @param {number} [page] ページ番号（1から始まる）
          * @param {number} [perPage] 1ページあたりの件数
-         * @param {boolean} [includeFilters] フィルター情報を含めるかどうか
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getPersonalizedFeeds: async (page?: number, perPage?: number, includeFilters?: boolean, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        getPersonalizedFeeds: async (page?: number, perPage?: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             const localVarPath = `/personalized-feeds`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -2595,10 +2524,6 @@ export const PersonalizedFeedsApiAxiosParamCreator = function (configuration?: C
 
             if (perPage !== undefined) {
                 localVarQueryParameter['perPage'] = perPage;
-            }
-
-            if (includeFilters !== undefined) {
-                localVarQueryParameter['includeFilters'] = includeFilters;
             }
 
 
@@ -2702,16 +2627,15 @@ export const PersonalizedFeedsApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * ユーザーが登録したパーソナライズフィードの一覧を取得します。クエリパラメータincludeFilters=trueを指定するとフィルターグループ情報も一緒に取得できます。
+         * ユーザーが登録したパーソナライズフィードの一覧をフィルターグループ情報と一緒に取得します。
          * @summary パーソナライズフィード一覧取得
          * @param {number} [page] ページ番号（1から始まる）
          * @param {number} [perPage] 1ページあたりの件数
-         * @param {boolean} [includeFilters] フィルター情報を含めるかどうか
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getPersonalizedFeeds(page?: number, perPage?: number, includeFilters?: boolean, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetPersonalizedFeedsResponseDto>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getPersonalizedFeeds(page, perPage, includeFilters, options);
+        async getPersonalizedFeeds(page?: number, perPage?: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetPersonalizedFeedsWithFiltersResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getPersonalizedFeeds(page, perPage, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['PersonalizedFeedsApi.getPersonalizedFeeds']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -2771,16 +2695,15 @@ export const PersonalizedFeedsApiFactory = function (configuration?: Configurati
             return localVarFp.getPersonalizedFeed(id, options).then((request) => request(axios, basePath));
         },
         /**
-         * ユーザーが登録したパーソナライズフィードの一覧を取得します。クエリパラメータincludeFilters=trueを指定するとフィルターグループ情報も一緒に取得できます。
+         * ユーザーが登録したパーソナライズフィードの一覧をフィルターグループ情報と一緒に取得します。
          * @summary パーソナライズフィード一覧取得
          * @param {number} [page] ページ番号（1から始まる）
          * @param {number} [perPage] 1ページあたりの件数
-         * @param {boolean} [includeFilters] フィルター情報を含めるかどうか
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getPersonalizedFeeds(page?: number, perPage?: number, includeFilters?: boolean, options?: RawAxiosRequestConfig): AxiosPromise<GetPersonalizedFeedsResponseDto> {
-            return localVarFp.getPersonalizedFeeds(page, perPage, includeFilters, options).then((request) => request(axios, basePath));
+        getPersonalizedFeeds(page?: number, perPage?: number, options?: RawAxiosRequestConfig): AxiosPromise<GetPersonalizedFeedsWithFiltersResponseDto> {
+            return localVarFp.getPersonalizedFeeds(page, perPage, options).then((request) => request(axios, basePath));
         },
         /**
          * 指定されたIDのパーソナライズフィードを更新します
@@ -2840,17 +2763,16 @@ export class PersonalizedFeedsApi extends BaseAPI {
     }
 
     /**
-     * ユーザーが登録したパーソナライズフィードの一覧を取得します。クエリパラメータincludeFilters=trueを指定するとフィルターグループ情報も一緒に取得できます。
+     * ユーザーが登録したパーソナライズフィードの一覧をフィルターグループ情報と一緒に取得します。
      * @summary パーソナライズフィード一覧取得
      * @param {number} [page] ページ番号（1から始まる）
      * @param {number} [perPage] 1ページあたりの件数
-     * @param {boolean} [includeFilters] フィルター情報を含めるかどうか
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof PersonalizedFeedsApi
      */
-    public getPersonalizedFeeds(page?: number, perPage?: number, includeFilters?: boolean, options?: RawAxiosRequestConfig) {
-        return PersonalizedFeedsApiFp(this.configuration).getPersonalizedFeeds(page, perPage, includeFilters, options).then((request) => request(this.axios, this.basePath));
+    public getPersonalizedFeeds(page?: number, perPage?: number, options?: RawAxiosRequestConfig) {
+        return PersonalizedFeedsApiFp(this.configuration).getPersonalizedFeeds(page, perPage, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
