@@ -406,3 +406,109 @@ compiled: async (nitro: Nitro) => {
 - Nuxt 3 Hybrid Rendering Documentation
 - Vuetify SSR Best Practices
 - Static Site Hosting SPA Fallback Patterns
+
+# アーキテクチャ設計決定記録
+
+## フロントエンドバリデーション機能のアーキテクチャ設計 (2025-05-30)
+
+### 背景と課題
+
+パーソナルフィード管理画面において、ユーザー体験向上のためのリアルタイムバリデーション機能の実装が必要だった。既存のシンプルなバリデーションシステムから、拡張性と保守性を持つ包括的なバリデーションアーキテクチャへの移行。
+
+### 検討したアーキテクチャ
+
+1. **コンポーネント内バリデーション**: 各コンポーネント内でバリデーションロジックを実装
+   - 利点: シンプル、依存関係が少ない
+   - 欠点: 重複コード、一貫性の欠如、テストが困難
+2. **中央集権型バリデーション**: 単一のバリデーションサービスで全てを管理
+   - 利点: 一貫性、重複排除
+   - 欠点: 単一障害点、拡張性の問題
+3. **モジュラー型バリデーション**: 機能別に分離されたバリデーションモジュール
+   - 利点: 拡張性、テスタビリティ、再利用性
+   - 欠点: 初期実装の複雑性
+
+### 決定事項と理由
+
+**モジュラー型バリデーションアーキテクチャを採用**
+
+#### アーキテクチャ構成
+
+```
+src/
+├── utils/validation/
+│   └── feed-validation.ts          # バリデーションロジック
+├── composables/validation/
+│   └── useFeedValidation.ts        # リアクティブ状態管理
+├── composables/error-handling/
+│   └── useEnhancedErrorHandler.ts  # エラーハンドリング
+├── composables/api/
+│   └── useRetryableApiCall.ts      # API呼び出し
+└── composables/loading/
+    └── useProgressiveLoading.ts    # ローディング管理
+```
+
+#### 設計原則
+
+1. **関心の分離**: バリデーション、エラーハンドリング、ローディングを独立したモジュールに分離
+2. **単一責任**: 各モジュールは特定の責任のみを持つ
+3. **依存性注入**: 設定値（制限値等）は外部から注入可能
+4. **段階的導入**: 既存システムとの互換性を保ちながら段階的に導入
+
+### 学んだ教訓
+
+#### KEY INSIGHT: レイヤー分離の重要性
+
+```typescript
+// レイヤー1: 純粋なバリデーション関数（ビジネスロジック）
+export const validateTagsFilter = (tags: string[], maxTags: number): FieldValidationResult
+
+// レイヤー2: リアクティブ状態管理（Vue固有）
+export const useFeedValidation = (feedData: Ref<InputPersonalizedFeedData>)
+
+// レイヤー3: UI統合（コンポーネント固有）
+const { validationResult, isValid } = useFeedValidation(feedData)
+```
+
+#### KEY INSIGHT: 設定の外部化
+
+```typescript
+// ハードコードを避け、設定を外部化
+interface ValidationOptions {
+  maxTags?: number;
+  maxAuthors?: number;
+  debounceDelay?: number;
+  realtime?: boolean;
+}
+```
+
+#### KEY INSIGHT: 既存システムとの統合戦略
+
+- 新しいバリデーション機能を既存のpropsと並行して動作
+- 段階的な移行により、リスクを最小化
+- 後方互換性を保持
+
+#### GLOBAL LEARNING: Vue 3 Composition APIでのアーキテクチャパターン
+
+- Composableは単一の関心事に集中
+- リアクティブな状態管理とビジネスロジックを分離
+- 依存性注入により、テスタビリティを向上
+
+### アーキテクチャの利点
+
+1. **拡張性**: 新しいバリデーションルールやフィールドを容易に追加
+2. **再利用性**: 他のフォーム画面でも同じアーキテクチャを適用可能
+3. **テスタビリティ**: 各レイヤーを独立してテスト可能
+4. **保守性**: 関心の分離により、変更の影響範囲を限定
+5. **段階的導入**: 既存システムを破壊することなく新機能を導入
+
+### 今後の拡張計画
+
+1. **他フォーム画面への適用**: 同じアーキテクチャパターンを他の画面に展開
+2. **バリデーションルールの外部化**: 設定ファイルや管理画面からのルール変更
+3. **国際化対応**: エラーメッセージの多言語対応
+4. **パフォーマンス最適化**: バリデーション処理の最適化
+
+### 関連タスク
+
+- TPC-101: ユーザーダッシュボードの実装
+- パーソナルフィード管理画面のバリデーション機能統合

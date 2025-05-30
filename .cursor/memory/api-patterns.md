@@ -648,3 +648,98 @@ APIエラー時に「Request failed with status code 400」のような汎用的
 ### 関連タスク
 
 TPC-101 ユーザーダッシュボードの実装
+
+## バリデーション機能の設計パターン (2025-05-30)
+
+### 背景と課題
+
+フロントエンドでのリアルタイムバリデーション機能において、再利用可能で保守性の高い設計パターンの確立が必要だった。既存のエラーハンドリングとの統合、プラン別制限値への対応、段階的導入の実現が課題。
+
+### 検討したアプローチ
+
+1. **単一のバリデーション関数**: 全てのバリデーションを一つの関数で処理
+   - 利点: シンプルな構造
+   - 欠点: 拡張性が低い、テストが困難
+2. **フィールド別バリデーション関数**: 各フィールドごとに独立したバリデーション関数
+   - 利点: 単体テストが容易、再利用性が高い
+   - 欠点: フィールド間の関連性を扱いにくい
+3. **階層化バリデーション**: フィールド別 + 全体バリデーションの組み合わせ
+   - 利点: 柔軟性と保守性のバランス
+   - 欠点: 若干の複雑性
+
+### 決定事項と理由
+
+**階層化バリデーション + Composable パターンを採用**
+
+- フィールド別バリデーション関数で個別検証
+- 全体バリデーション関数でフィールド間の関連性を検証
+- Composableでリアクティブな状態管理とデバウンス機能を提供
+
+### 学んだ教訓
+
+#### KEY INSIGHT: バリデーション関数の設計原則
+
+```typescript
+// 各バリデーション関数は統一されたインターフェースを持つ
+interface FieldValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+// プラン別制限値をパラメータ化
+export const validateTagsFilter = (tags: string[], maxTags: number = 10): FieldValidationResult
+```
+
+#### KEY INSIGHT: Composableでの状態管理パターン
+
+```typescript
+// リアクティブな状態管理とデバウンス機能の統合
+export const useFeedValidation = (
+  feedData: Ref<InputPersonalizedFeedData>,
+  options: ValidationOptions = {}
+) => {
+  const validationResult = ref<ValidationResult>({ isValid: true, errors: {}, warnings: {} });
+
+  // デバウンス付きバリデーション実行
+  const debouncedValidate = useDebounceFn(() => {
+    validationResult.value = validateFeedData(feedData.value, options);
+  }, options.debounceDelay || 500);
+
+  // リアルタイムバリデーションの監視
+  if (options.realtime) {
+    watch(feedData, debouncedValidate, { deep: true });
+  }
+
+  return { validationResult, isValid, getFieldErrors, /* ... */ };
+};
+```
+
+#### KEY INSIGHT: 既存機能との統合パターン
+
+```typescript
+// 新しいバリデーションと既存のエラーハンドリングを統合
+const getFieldErrors = (field: string): string[] => {
+  const validationErrors = getValidationFieldErrors(field);
+  const propsErrors = props.fieldErrors[field] || [];
+  return [...validationErrors, ...propsErrors];
+};
+```
+
+#### GLOBAL LEARNING: 段階的導入のための設計
+
+- 既存のpropsとの互換性を保持
+- 新機能をオプショナルにして段階的に導入可能
+- 既存のエラーハンドリングを置き換えるのではなく拡張
+
+### 実装パターンの利点
+
+1. **再利用性**: 他のフォーム画面でも同じパターンを適用可能
+2. **テスタビリティ**: 各バリデーション関数を独立してテスト可能
+3. **拡張性**: 新しいバリデーションルールを容易に追加可能
+4. **保守性**: 関心の分離により、変更の影響範囲を限定
+
+### 関連タスク
+
+- TPC-101: ユーザーダッシュボードの実装
+- パーソナルフィード管理画面のバリデーション機能統合
