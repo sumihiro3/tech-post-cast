@@ -14,6 +14,7 @@ import {
   GetDashboardPersonalizedFeedsSummaryResponseDto,
   GetDashboardPersonalizedProgramsRequestDto,
   GetDashboardPersonalizedProgramsResponseDto,
+  GetDashboardStatsResponseDto,
 } from './dto';
 
 @Controller('dashboard')
@@ -23,6 +24,43 @@ export class DashboardController {
   private readonly logger = new Logger(DashboardController.name);
 
   constructor(private readonly dashboardService: DashboardService) {}
+
+  @Get('stats')
+  @ApiOperation({
+    operationId: 'getDashboardStats',
+    summary: 'ダッシュボード統計情報取得',
+    description:
+      'ダッシュボード表示用の統計情報（アクティブフィード数、月間配信数、総番組時間）を取得します',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'ダッシュボード統計情報',
+    type: GetDashboardStatsResponseDto,
+  })
+  async getDashboardStats(
+    @CurrentUserId() userId: string,
+  ): Promise<GetDashboardStatsResponseDto> {
+    this.logger.debug('DashboardController.getDashboardStats called', {
+      userId,
+    });
+
+    try {
+      const stats = await this.dashboardService.getDashboardStats(userId);
+
+      this.logger.log('ダッシュボード統計情報を取得しました', {
+        userId,
+        activeFeedsCount: stats.activeFeedsCount,
+        monthlyEpisodesCount: stats.monthlyEpisodesCount,
+        totalProgramDuration: stats.totalProgramDuration,
+      });
+
+      return stats;
+    } catch (error) {
+      const errorMessage = 'ダッシュボード統計情報の取得に失敗しました';
+      this.logger.error(errorMessage, { userId, error }, error.stack);
+      throw new InternalServerErrorException(errorMessage);
+    }
+  }
 
   @Get('personalized-feeds/summary')
   @ApiOperation({

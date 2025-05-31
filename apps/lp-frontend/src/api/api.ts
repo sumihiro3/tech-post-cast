@@ -271,6 +271,31 @@ export interface GetDashboardPersonalizedProgramsResponseDto {
 /**
  * 
  * @export
+ * @interface GetDashboardStatsResponseDto
+ */
+export interface GetDashboardStatsResponseDto {
+    /**
+     * アクティブなフィード数
+     * @type {number}
+     * @memberof GetDashboardStatsResponseDto
+     */
+    'activeFeedsCount': number;
+    /**
+     * 今月の配信番組数
+     * @type {number}
+     * @memberof GetDashboardStatsResponseDto
+     */
+    'monthlyEpisodesCount': number;
+    /**
+     * 総番組時間（フォーマット済み）
+     * @type {string}
+     * @memberof GetDashboardStatsResponseDto
+     */
+    'totalProgramDuration': string;
+}
+/**
+ * 
+ * @export
  * @interface GetPersonalizedFeedWithFiltersResponseDto
  */
 export interface GetPersonalizedFeedWithFiltersResponseDto {
@@ -2284,6 +2309,36 @@ export const DashboardApiAxiosParamCreator = function (configuration?: Configura
                 options: localVarRequestOptions,
             };
         },
+        /**
+         * ダッシュボード表示用の統計情報（アクティブフィード数、月間配信数、総番組時間）を取得します
+         * @summary ダッシュボード統計情報取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDashboardStats: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/dashboard/stats`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
     }
 };
 
@@ -2320,6 +2375,18 @@ export const DashboardApiFp = function(configuration?: Configuration) {
             const localVarOperationServerBasePath = operationServerMap['DashboardApi.getDashboardPersonalizedPrograms']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
+        /**
+         * ダッシュボード表示用の統計情報（アクティブフィード数、月間配信数、総番組時間）を取得します
+         * @summary ダッシュボード統計情報取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getDashboardStats(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetDashboardStatsResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getDashboardStats(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['DashboardApi.getDashboardStats']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
     }
 };
 
@@ -2349,6 +2416,15 @@ export const DashboardApiFactory = function (configuration?: Configuration, base
          */
         getDashboardPersonalizedPrograms(limit?: number, offset?: number, options?: RawAxiosRequestConfig): AxiosPromise<GetDashboardPersonalizedProgramsResponseDto> {
             return localVarFp.getDashboardPersonalizedPrograms(limit, offset, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * ダッシュボード表示用の統計情報（アクティブフィード数、月間配信数、総番組時間）を取得します
+         * @summary ダッシュボード統計情報取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDashboardStats(options?: RawAxiosRequestConfig): AxiosPromise<GetDashboardStatsResponseDto> {
+            return localVarFp.getDashboardStats(options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -2382,6 +2458,17 @@ export class DashboardApi extends BaseAPI {
      */
     public getDashboardPersonalizedPrograms(limit?: number, offset?: number, options?: RawAxiosRequestConfig) {
         return DashboardApiFp(this.configuration).getDashboardPersonalizedPrograms(limit, offset, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * ダッシュボード表示用の統計情報（アクティブフィード数、月間配信数、総番組時間）を取得します
+     * @summary ダッシュボード統計情報取得
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DashboardApi
+     */
+    public getDashboardStats(options?: RawAxiosRequestConfig) {
+        return DashboardApiFp(this.configuration).getDashboardStats(options).then((request) => request(this.axios, this.basePath));
     }
 }
 

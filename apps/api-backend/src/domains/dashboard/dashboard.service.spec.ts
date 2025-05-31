@@ -1,7 +1,7 @@
+import { PersonalizedFeedsRepository } from '@/infrastructure/database/personalized-feeds/personalized-feeds.repository';
+import { PersonalizedFeedFactory } from '@/test/factories/personalized-feed.factory';
+import { PersonalizedProgramFactory } from '@/test/factories/personalized-program.factory';
 import { Test, TestingModule } from '@nestjs/testing';
-import { PersonalizedFeedsRepository } from '../../infrastructure/database/personalized-feeds/personalized-feeds.repository';
-import { PersonalizedFeedFactory } from '../../test/factories/personalized-feed.factory';
-import { PersonalizedProgramFactory } from '../../test/factories/personalized-program.factory';
 import {
   restoreLogOutput,
   suppressLogOutput,
@@ -230,6 +230,192 @@ describe('DashboardService', () => {
 
       expect(result.hasNext).toBe(true);
       expect(result.totalCount).toBe(12);
+    });
+  });
+
+  describe('getDashboardStats', () => {
+    beforeEach(() => {
+      // 現在時刻を2025年1月15日に固定
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2025-01-15T12:00:00.000Z'));
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('統計情報を正しく取得できること', async () => {
+      const userId = 'user-1';
+
+      // モックデータの準備
+      const mockFeeds = [
+        PersonalizedFeedFactory.createPersonalizedFeedWithFilters({
+          id: 'feed-1',
+          isActive: true,
+        }),
+        PersonalizedFeedFactory.createPersonalizedFeedWithFilters({
+          id: 'feed-2',
+          isActive: true,
+        }),
+        PersonalizedFeedFactory.createPersonalizedFeedWithFilters({
+          id: 'feed-3',
+          isActive: false,
+        }),
+      ];
+
+      const mockFeedsResult = {
+        feeds: mockFeeds,
+        total: 3,
+      };
+
+      const mockPrograms = [
+        PersonalizedProgramFactory.createPersonalizedProgram({
+          id: 'program-1',
+          audioUrl: 'https://example.com/audio1.mp3',
+          audioDuration: 300000, // 5分
+          createdAt: new Date('2025-01-15'), // 今月
+        }),
+        PersonalizedProgramFactory.createPersonalizedProgram({
+          id: 'program-2',
+          audioUrl: 'https://example.com/audio2.mp3',
+          audioDuration: 600000, // 10分
+          createdAt: new Date('2025-01-20'), // 今月
+        }),
+        PersonalizedProgramFactory.createPersonalizedProgram({
+          id: 'program-3',
+          audioUrl: 'https://example.com/audio3.mp3',
+          audioDuration: 900000, // 15分
+          createdAt: new Date('2024-12-15'), // 先月
+        }),
+      ];
+
+      const mockProgramsResult = {
+        programs: mockPrograms,
+        totalCount: 3,
+      };
+
+      // モックの設定
+      personalizedFeedsRepository.findByUserIdWithFilters.mockResolvedValue(
+        mockFeedsResult,
+      );
+      personalizedProgramsRepository.findByUserIdWithPagination.mockResolvedValue(
+        mockProgramsResult,
+      );
+
+      // 実行
+      const result = await service.getDashboardStats(userId);
+
+      // 検証
+      expect(result).toBeDefined();
+      expect(result.activeFeedsCount).toBe(2); // アクティブなフィードは2つ
+      expect(result.monthlyEpisodesCount).toBe(2); // 今月の番組は2つ
+      expect(result.totalProgramDuration).toBe('30m'); // 総時間30分
+
+      // リポジトリメソッドが正しく呼ばれたことを確認
+      expect(
+        personalizedFeedsRepository.findByUserIdWithFilters,
+      ).toHaveBeenCalledWith(userId, 1, 1000);
+      expect(
+        personalizedProgramsRepository.findByUserIdWithPagination,
+      ).toHaveBeenCalledWith(userId, {
+        limit: 1000,
+        offset: 0,
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('音声ファイルがない番組は総時間計算から除外されること', async () => {
+      const userId = 'user-1';
+
+      const mockFeeds = [
+        PersonalizedFeedFactory.createPersonalizedFeedWithFilters({
+          id: 'feed-1',
+          isActive: true,
+        }),
+      ];
+
+      const mockFeedsResult = {
+        feeds: mockFeeds,
+        total: 1,
+      };
+
+      const mockPrograms = [
+        PersonalizedProgramFactory.createPersonalizedProgram({
+          id: 'program-1',
+          audioUrl: '', // 音声ファイルなし
+          audioDuration: 300000,
+          createdAt: new Date('2025-01-15'),
+        }),
+        PersonalizedProgramFactory.createPersonalizedProgram({
+          id: 'program-2',
+          audioUrl: 'https://example.com/audio2.mp3',
+          audioDuration: 600000, // 10分
+          createdAt: new Date('2025-01-15'),
+        }),
+      ];
+
+      const mockProgramsResult = {
+        programs: mockPrograms,
+        totalCount: 2,
+      };
+
+      personalizedFeedsRepository.findByUserIdWithFilters.mockResolvedValue(
+        mockFeedsResult,
+      );
+      personalizedProgramsRepository.findByUserIdWithPagination.mockResolvedValue(
+        mockProgramsResult,
+      );
+
+      const result = await service.getDashboardStats(userId);
+
+      expect(result.totalProgramDuration).toBe('10m'); // 音声ファイルがある番組のみカウント
+    });
+
+    it('時間フォーマットが正しく動作すること', async () => {
+      const userId = 'user-1';
+
+      const mockFeedsResult = {
+        feeds: [],
+        total: 0,
+      };
+
+      const mockPrograms = [
+        PersonalizedProgramFactory.createPersonalizedProgram({
+          id: 'program-1',
+          audioUrl: 'https://example.com/audio1.mp3',
+          audioDuration: 3900000, // 65分 = 1時間5分
+          createdAt: new Date('2025-01-15'),
+        }),
+      ];
+
+      const mockProgramsResult = {
+        programs: mockPrograms,
+        totalCount: 1,
+      };
+
+      personalizedFeedsRepository.findByUserIdWithFilters.mockResolvedValue(
+        mockFeedsResult,
+      );
+      personalizedProgramsRepository.findByUserIdWithPagination.mockResolvedValue(
+        mockProgramsResult,
+      );
+
+      const result = await service.getDashboardStats(userId);
+
+      expect(result.totalProgramDuration).toBe('1h'); // 1時間として表示
+    });
+
+    it('エラーが発生した場合は適切にハンドリングされること', async () => {
+      const userId = 'user-1';
+      const error = new Error('Database error');
+
+      personalizedFeedsRepository.findByUserIdWithFilters.mockRejectedValue(
+        error,
+      );
+
+      await expect(service.getDashboardStats(userId)).rejects.toThrow(
+        'Database error',
+      );
     });
   });
 });

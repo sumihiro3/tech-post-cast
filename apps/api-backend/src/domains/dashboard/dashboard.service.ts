@@ -2,12 +2,18 @@ import {
   GetDashboardPersonalizedFeedsSummaryResponseDto,
   GetDashboardPersonalizedProgramsRequestDto,
   GetDashboardPersonalizedProgramsResponseDto,
+  GetDashboardStatsResponseDto,
   PersonalizedFeedSummaryDto,
   PersonalizedProgramSummaryDto,
 } from '@/controllers/dashboard/dto';
 import { IPersonalizedProgramsRepository } from '@/domains/personalized-programs/personalized-programs.repository.interface';
 import { PersonalizedFeedsRepository } from '@/infrastructure/database/personalized-feeds/personalized-feeds.repository';
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  getFirstDayOfMonth,
+  getLastDayOfMonth,
+  TIME_ZONE_JST,
+} from '@tech-post-cast/commons';
 
 @Injectable()
 export class DashboardService {
@@ -18,6 +24,111 @@ export class DashboardService {
     @Inject('PersonalizedProgramsRepository')
     private readonly personalizedProgramsRepository: IPersonalizedProgramsRepository,
   ) {}
+
+  /**
+   * ダッシュボード統計情報を取得する
+   */
+  async getDashboardStats(
+    userId: string,
+  ): Promise<GetDashboardStatsResponseDto> {
+    this.logger.debug('DashboardService.getDashboardStats called', {
+      userId,
+    });
+
+    try {
+      // 現在の月の開始日と終了日を計算（JST）
+      const now = new Date();
+      const currentMonthStart = getFirstDayOfMonth(now, TIME_ZONE_JST);
+      const currentMonthEnd = getLastDayOfMonth(now, TIME_ZONE_JST);
+
+      // アクティブなフィード数を取得
+      const feedsResult =
+        await this.personalizedFeedsRepository.findByUserIdWithFilters(
+          userId,
+          1,
+          1000, // 大きなページサイズで全件取得
+        );
+      const activeFeedsCount = feedsResult.feeds.filter(
+        (feed) => feed.isActive,
+      ).length;
+
+      // 今月の配信番組数を取得（全番組を取得してフィルタリング）
+      const allPrograms =
+        await this.personalizedProgramsRepository.findByUserIdWithPagination(
+          userId,
+          {
+            limit: 1000, // 大きなページサイズで全件取得
+            offset: 0,
+            orderBy: { createdAt: 'desc' },
+          },
+        );
+
+      // 今月作成された番組をフィルタリング
+      const monthlyPrograms = allPrograms.programs.filter((program) => {
+        const createdAt = new Date(program.createdAt);
+        return createdAt >= currentMonthStart && createdAt <= currentMonthEnd;
+      });
+      const monthlyEpisodesCount = monthlyPrograms.length;
+
+      // 総番組時間を計算（全番組の音声時間を合計）
+      const totalDurationMs = allPrograms.programs
+        .filter((program) => program.audioUrl) // 音声ファイルが存在する番組のみ
+        .reduce((total, program) => total + (program.audioDuration || 0), 0);
+
+      // ミリ秒を時間単位に変換してフォーマット
+      const totalProgramDuration = this.formatDuration(totalDurationMs);
+
+      const result: GetDashboardStatsResponseDto = {
+        activeFeedsCount,
+        monthlyEpisodesCount,
+        totalProgramDuration,
+      };
+
+      this.logger.debug('DashboardService.getDashboardStats completed', {
+        userId,
+        result,
+      });
+
+      return result;
+    } catch (error) {
+      this.logger.error('Failed to get dashboard stats', {
+        userId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * 音声時間（ミリ秒）を人間が読みやすい形式にフォーマットする
+   * @param durationMs 音声時間（ミリ秒）
+   * @returns フォーマット済み文字列（例: "12.5h", "45m"）
+   */
+  private formatDuration(durationMs: number): string {
+    if (durationMs === 0) {
+      return '0m';
+    }
+
+    const totalMinutes = Math.floor(durationMs / (1000 * 60));
+
+    if (totalMinutes < 60) {
+      return `${totalMinutes}m`;
+    }
+
+    const hours = Math.floor(totalMinutes / 60);
+    const remainingMinutes = totalMinutes % 60;
+
+    if (remainingMinutes === 0) {
+      return `${hours}h`;
+    }
+
+    // 30分以上の場合は.5時間として表示
+    if (remainingMinutes >= 30) {
+      return `${hours}.5h`;
+    }
+
+    return `${hours}h`;
+  }
 
   /**
    * パーソナルフィード概要情報を取得する

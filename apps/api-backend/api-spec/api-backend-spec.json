@@ -929,6 +929,29 @@
         ]
       }
     },
+    "/dashboard/stats": {
+      "get": {
+        "description": "ダッシュボード表示用の統計情報（アクティブフィード数、月間配信数、総番組時間）を取得します",
+        "operationId": "getDashboardStats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "ダッシュボード統計情報",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetDashboardStatsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "ダッシュボード統計情報取得",
+        "tags": [
+          "Dashboard"
+        ]
+      }
+    },
     "/dashboard/personalized-feeds/summary": {
       "get": {
         "description": "ダッシュボード表示用のパーソナルフィード概要情報を取得します",
@@ -2352,6 +2375,34 @@
         },
         "required": [
           "count"
+        ]
+      },
+      "GetDashboardStatsResponseDto": {
+        "type": "object",
+        "properties": {
+          "activeFeedsCount": {
+            "type": "number",
+            "description": "アクティブなフィード数",
+            "example": 8,
+            "minimum": 0
+          },
+          "monthlyEpisodesCount": {
+            "type": "number",
+            "description": "今月の配信番組数",
+            "example": 24,
+            "minimum": 0
+          },
+          "totalProgramDuration": {
+            "type": "string",
+            "description": "総番組時間（フォーマット済み）",
+            "example": "12.5h",
+            "pattern": "^\\d+(\\.\\d+)?[hm]$"
+          }
+        },
+        "required": [
+          "activeFeedsCount",
+          "monthlyEpisodesCount",
+          "totalProgramDuration"
         ]
       },
       "PersonalizedFeedSummaryDto": {
