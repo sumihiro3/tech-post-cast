@@ -1,114 +1,75 @@
 <template lang="pug">
-  v-container(class="max-width-container")
-    //- v-navigation-drawer(
-    //-   v-model="drawer"
-    //-   app
-    //-   permanent
-    //-   color="white"
-    //-   dark
-    //- )
-    //-   v-list(nav dense)
-    //-     v-list-item(
-    //-       v-for="(item, i) in menuItems"
-    //-       :key="i"
-    //-       :to="item.to"
-    //-       :prepend-icon="item.icon"
-    //-       :title="item.title"
-    //-       color="primary"
-    //-     )
+DashboardLayout
+  template(#stats)
+    // 統計カードセクション
+    StatsCardGrid(
+      :stats="stats"
+      @stat-click="handleStatClick"
+    )
 
-    v-container(fluid)
-      // ダッシュボードコンテンツ
-      h1.text-h4.mb-6 ダッシュボード
+  template(#main-content)
+    // 最近の配信番組セクション
+    ProgramList.mb-6(
+      title="最近の配信番組"
+      icon="mdi-radio"
+      :programs="recentPrograms"
+      @play="playProgram"
+      @feed-click="goToFeedPrograms"
+      @details="showProgramDetails"
+    )
+      template(#actions)
+        v-btn(color="primary" variant="text" size="small")
+          | すべて表示
+          v-icon.ml-1 mdi-arrow-right
 
-      v-row
-        v-col(cols="12" md="6" lg="3")
-          v-card(elevation="2" class="mb-4")
-            v-card-title
-              v-icon(left color="primary" class="mr-2") mdi-television-play
-              | 配信中の番組
-            v-card-text.text-h4.text-center 12
+    // パーソナルフィード概要セクション
+    FeedOverview(
+      :feeds="personalFeeds"
+      @edit="editFeed"
+      @create-feed="createFeed"
+    )
+      template(#actions)
+        v-btn(color="primary" variant="text" size="small" to="/app/feeds")
+          | フィード設定
+          v-icon.ml-1 mdi-cog
 
-        v-col(cols="12" md="6" lg="3")
-          v-card(elevation="2" class="mb-4")
-            v-card-title
-              v-icon(left color="info" class="mr-2") mdi-account-group
-              | 総視聴者数
-            v-card-text.text-h4.text-center 1,254
+  template(#sidebar)
+    // サブスクリプション情報セクション
+    SubscriptionCard.mb-6(
+      :subscription="subscriptionInfo"
+      :usage-items="usageItems"
+      :show-upgrade-button="subscriptionInfo.planName === 'Free'"
+      @upgrade="upgradeSubscription"
+    )
 
-        v-col(cols="12" md="6" lg="3")
-          v-card(elevation="2" class="mb-4")
-            v-card-title
-              v-icon(left color="success" class="mr-2") mdi-chart-timeline-variant
-              | 月間アクセス
-            v-card-text.text-h4.text-center 45,678
+    // クイックアクション
+    QuickActions(
+      :actions="quickActions"
+      @action-click="handleActionClick"
+    )
 
-        v-col(cols="12" md="6" lg="3")
-          v-card(elevation="2" class="mb-4")
-            v-card-title
-              v-icon(left color="warning" class="mr-2") mdi-star
-              | 平均評価
-            v-card-text.text-h4.text-center 4.7
-
-      v-row
-        v-col(cols="12" md="8")
-          v-card(elevation="2")
-            v-card-title
-              | 視聴者分析
-              v-spacer
-              v-select(
-                v-model="selectedPeriod"
-                :items="periods"
-                label="期間"
-                hide-details
-                dense
-                outlined
-                class="period-selector"
-              )
-            v-card-text
-              canvas(ref="viewerChart" height="250")
-
-        v-col(cols="12" md="4")
-          v-card(elevation="2")
-            v-card-title 人気カテゴリ
-            v-card-text
-              canvas(ref="categoryChart" height="250")
-
-      v-row(class="mt-4")
-        v-col(cols="12")
-          v-card(elevation="2")
-            v-card-title
-              | 最近の配信
-              v-spacer
-              // v-btn(color="primary" variant="text" to="/broadcasts") すべて表示
-            v-table
-              thead
-                tr
-                  th タイトル
-                  th カテゴリ
-                  th 配信日時
-                  th 視聴回数
-                  th アクション
-              tbody
-                tr(v-for="(broadcast, index) in recentBroadcasts" :key="index")
-                  td {{ broadcast.title }}
-                  td {{ broadcast.category }}
-                  td {{ broadcast.date }}
-                  td {{ broadcast.views }}
-                  td
-                    // v-btn(icon size="small" color="primary" :to="`/broadcasts/${broadcast.id}`")
-                    //   v-icon mdi-eye
-                    // v-btn(icon size="small" color="info" :to="`/broadcasts/${broadcast.id}/edit`")
-                    //   v-icon mdi-pencil
-                    v-btn(icon size="small" color="primary" disabled)
-                      v-icon mdi-eye
-                    v-btn(icon size="small" color="info" disabled)
-                      v-icon mdi-pencil
+  template(#footer)
+    // 音声プレイヤー（固定）
+    AudioPlayer(
+      :current-program="currentProgram"
+      :is-playing="isPlaying"
+      :current-time="currentTime"
+      @toggle-play="togglePlay"
+      @time-update="updateCurrentTime"
+      @close="closePlayer"
+    )
 </template>
 
 <script setup lang="ts">
+import AudioPlayer from '@/components/dashboard/AudioPlayer.vue';
+import DashboardLayout from '@/components/dashboard/DashboardLayout.vue';
+import FeedOverview from '@/components/dashboard/FeedOverview.vue';
+import ProgramList from '@/components/dashboard/ProgramList.vue';
+import QuickActions from '@/components/dashboard/QuickActions.vue';
+import StatsCardGrid from '@/components/dashboard/StatsCardGrid.vue';
+import SubscriptionCard from '@/components/dashboard/SubscriptionCard.vue';
 import { useUIState } from '@/composables/useUIState';
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 
 // レイアウトをuser-appにする
 definePageMeta({
@@ -116,65 +77,338 @@ definePageMeta({
 });
 
 // UI状態管理
-const _ui = useUIState();
+const ui = useUIState();
 
-// import { useRouter } from 'vue-router';
+// 統計データの型定義
+interface StatItem {
+  title: string;
+  value: string | number;
+  icon: string;
+  color: string;
+  subtitle?: string;
+  clickable?: boolean;
+  action?: () => void;
+}
 
-// const router = useRouter();
-// const drawer = ref(true);
-const selectedPeriod = ref('week');
+interface QuickAction {
+  title: string;
+  icon: string;
+  color: string;
+  disabled?: boolean;
+  badge?: string;
+  badgeColor?: string;
+  action?: () => void;
+}
 
-// const menuItems = [
-//   { title: 'ダッシュボード', icon: 'mdi-view-dashboard', to: '/app/dashboard' },
-//   { title: 'パーソナライズ番組の配信一覧', icon: 'mdi-television-play', to: '/app/broadcasts' },
-//   { title: 'パーソナライズ番組設定', icon: 'mdi-cog', to: '/app/program-filter' },
-//   { title: 'サブスクリプション一覧', icon: 'mdi-credit-card-outline', to: '/app/subscriptions' },
-//   { title: 'ユーザー情報', icon: 'mdi-account', to: '/app/profile' },
-// ];
+// 統計データ（仮データ）
+const stats = ref<StatItem[]>([
+  {
+    title: 'アクティブフィード数',
+    value: '8',
+    icon: 'mdi-rss',
+    color: 'primary',
+    subtitle: '設定済み',
+    clickable: true,
+    action: (): void => {
+      navigateTo('/app/feeds');
+    },
+  },
+  {
+    title: '今月の配信数',
+    value: '24',
+    icon: 'mdi-radio',
+    color: 'secondary',
+    subtitle: '前月比 +12%',
+    clickable: true,
+    action: (): void => {
+      navigateTo('/app/programs');
+    },
+  },
+  {
+    title: '総番組時間',
+    value: '12.5h',
+    icon: 'mdi-clock',
+    color: 'success',
+    subtitle: '今月の合計',
+    clickable: false,
+  },
+]);
 
-const periods = ['日', '週', '月', '年'];
-
-const recentBroadcasts = ref([
+// 最近の配信番組（仮データ）
+const recentPrograms = ref([
   {
     id: 1,
-    title: '週間ニュースダイジェスト',
-    category: 'ニュース',
-    date: '2025-03-28',
-    views: 1254,
+    title: 'React 18の新機能とConcurrent Features',
+    date: '2024-01-15',
+    duration: '15:30',
+    feedName: 'React最新情報',
+    feedColor: 'blue',
+    isPlaying: false,
   },
   {
     id: 2,
-    title: 'テクノロジートレンド2025',
-    category: 'テクノロジー',
-    date: '2025-03-27',
-    views: 986,
+    title: 'TypeScript 5.0のパフォーマンス改善',
+    date: '2024-01-14',
+    duration: '12:45',
+    feedName: 'TypeScript Updates',
+    feedColor: 'indigo',
+    isPlaying: false,
   },
-  { id: 3, title: '健康レシピ特集', category: '料理', date: '2025-03-26', views: 765 },
-  { id: 4, title: '週末おすすめスポット', category: '旅行', date: '2025-03-25', views: 543 },
+  {
+    id: 3,
+    title: 'Vue 3 Composition APIのベストプラクティス',
+    date: '2024-01-13',
+    duration: '18:20',
+    feedName: 'Vue.js情報',
+    feedColor: 'green',
+    isPlaying: false,
+  },
+  {
+    id: 4,
+    title: 'Next.js 14のApp Routerパフォーマンス最適化',
+    date: '2024-01-12',
+    duration: '14:15',
+    feedName: 'Next.js Updates',
+    feedColor: 'purple',
+    isPlaying: false,
+  },
+  {
+    id: 5,
+    title: 'Docker Composeを使った開発環境構築',
+    date: '2024-01-11',
+    duration: '16:40',
+    feedName: 'DevOps情報',
+    feedColor: 'orange',
+    isPlaying: false,
+  },
 ]);
 
-onMounted(() => {
-  // Chart.jsなどを使用してグラフを描画する処理をここに書く
-  // 実際の実装では、Chart.jsのインポートとグラフ描画コードが必要
-  // 将来的にダッシュボードデータをAPIから取得する場合の例：
-  // try {
-  //   ui.showLoading({ message: 'ダッシュボードデータを読み込み中...' });
-  //   // await fetchDashboardData();
-  //   ui.showSuccess('ダッシュボードを更新しました');
-  // } catch (error) {
-  //   ui.showError('ダッシュボードデータの取得に失敗しました');
-  // } finally {
-  //   ui.hideLoading();
-  // }
+// パーソナルフィード（仮データ）
+const personalFeeds = ref([
+  {
+    id: 1,
+    name: 'React最新情報',
+    tagCount: 5,
+    authorCount: 12,
+    frequency: '日次',
+    isActive: true,
+  },
+  {
+    id: 2,
+    name: 'TypeScript Updates',
+    tagCount: 3,
+    authorCount: 8,
+    frequency: '週次',
+    isActive: true,
+  },
+  {
+    id: 3,
+    name: 'Vue.js情報',
+    tagCount: 4,
+    authorCount: 6,
+    frequency: '週次',
+    isActive: false,
+  },
+  {
+    id: 4,
+    name: 'Next.js Updates',
+    tagCount: 6,
+    authorCount: 10,
+    frequency: '日次',
+    isActive: true,
+  },
+  {
+    id: 5,
+    name: 'DevOps情報',
+    tagCount: 8,
+    authorCount: 15,
+    frequency: '月次',
+    isActive: true,
+  },
+]);
+
+// サブスクリプション情報（仮データ）
+const subscriptionInfo = ref({
+  planName: 'Free',
+  planColor: 'grey',
+  features: [
+    { name: '基本的なフィード作成', available: true },
+    { name: '日次配信', available: true },
+    { name: '週次配信', available: true },
+    { name: '月次配信', available: false },
+    { name: '高度なフィルタリング', available: false },
+    { name: 'API アクセス', available: false },
+  ],
 });
+
+// 使用量データ（仮データ）
+const usageItems = ref([
+  {
+    label: 'フィード数',
+    current: 5,
+    limit: 10,
+    showPercentage: true,
+    warningThreshold: 70,
+    dangerThreshold: 90,
+  },
+  {
+    label: 'タグ数',
+    current: 26,
+    limit: 50,
+    showPercentage: true,
+    warningThreshold: 70,
+    dangerThreshold: 90,
+  },
+]);
+
+// 型定義
+interface Program {
+  id: number;
+  title: string;
+  date: string;
+  duration: string;
+  feedName: string;
+  feedColor: string;
+  isPlaying: boolean;
+}
+
+interface ProgramWithTotalTime extends Program {
+  totalTime: number;
+}
+
+// クイックアクション（仮データ）
+const quickActions = ref<QuickAction[]>([
+  {
+    title: '新しいフィードを作成',
+    icon: 'mdi-plus',
+    color: 'primary',
+    action: (): void => {
+      navigateTo('/app/feeds/create');
+    },
+  },
+  {
+    title: 'フィード設定を編集',
+    icon: 'mdi-pencil',
+    color: 'secondary',
+    action: (): void => {
+      navigateTo('/app/feeds');
+    },
+  },
+  {
+    title: 'ユーザー設定',
+    icon: 'mdi-account-cog',
+    color: 'info',
+    action: (): void => {
+      navigateTo('/app/settings');
+    },
+  },
+]);
+
+// 音声プレイヤー関連
+const currentProgram = ref<ProgramWithTotalTime | null>(null);
+const isPlaying = ref(false);
+const currentTime = ref(0);
+
+// メソッド
+const playProgram = (program: Program): void => {
+  if (currentProgram.value?.id === program.id) {
+    isPlaying.value = !isPlaying.value;
+  } else {
+    currentProgram.value = {
+      ...program,
+      totalTime: 930, // 15:30 in seconds
+    };
+    isPlaying.value = true;
+    currentTime.value = 0;
+  }
+
+  // Update program playing state
+  recentPrograms.value.forEach((p) => {
+    p.isPlaying = p.id === program.id && isPlaying.value;
+  });
+};
+
+const togglePlay = (): void => {
+  isPlaying.value = !isPlaying.value;
+  if (currentProgram.value) {
+    const program = recentPrograms.value.find((p) => p.id === currentProgram.value!.id);
+    if (program) {
+      program.isPlaying = isPlaying.value;
+    }
+  }
+};
+
+const updateCurrentTime = (time: number): void => {
+  currentTime.value = time;
+};
+
+const closePlayer = (): void => {
+  currentProgram.value = null;
+  isPlaying.value = false;
+  currentTime.value = 0;
+  recentPrograms.value.forEach((p) => {
+    p.isPlaying = false;
+  });
+};
+
+const showProgramDetails = (program: { title: string }): void => {
+  ui.showInfo(`番組詳細: ${program.title}`);
+};
+
+const editFeed = (feed: { id: number }): void => {
+  navigateTo(`/app/feeds/${feed.id}/edit`);
+};
+
+const createFeed = (): void => {
+  navigateTo('/app/feeds/create');
+};
+
+const upgradeSubscription = (): void => {
+  ui.showInfo('プランアップグレード機能は準備中です');
+};
+
+const goToFeedPrograms = (feedName: string): void => {
+  // フィード名で番組一覧を絞り込んで表示
+  navigateTo(`/app/programs?feed=${encodeURIComponent(feedName)}`);
+};
+
+// 統計カードクリック時の処理
+const handleStatClick = (stat: StatItem): void => {
+  ui.showInfo(`${stat.title}がクリックされました`);
+};
+
+// アクションクリック時の処理
+const handleActionClick = (action: QuickAction): void => {
+  ui.showInfo(`${action.title}がクリックされました`);
+};
 </script>
 
 <style scoped>
-.period-selector {
-  max-width: 150px;
-}
-
 .v-card {
   border-radius: 12px;
+}
+
+.v-btn {
+  text-transform: none;
+}
+
+.v-chip {
+  font-weight: 500;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.border-t {
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.player-footer {
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.v-progress-linear {
+  border-radius: 4px;
 }
 </style>
