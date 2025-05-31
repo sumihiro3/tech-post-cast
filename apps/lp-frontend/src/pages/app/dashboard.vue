@@ -4,6 +4,7 @@ DashboardLayout
     // 統計カードセクション
     StatsCardGrid(
       :stats="stats"
+      :loading="statsLoading"
       @stat-click="handleStatClick"
     )
 
@@ -68,8 +69,9 @@ import ProgramList from '@/components/dashboard/ProgramList.vue';
 import QuickActions from '@/components/dashboard/QuickActions.vue';
 import StatsCardGrid from '@/components/dashboard/StatsCardGrid.vue';
 import SubscriptionCard from '@/components/dashboard/SubscriptionCard.vue';
+import { useDashboardStats } from '@/composables/useDashboardStats';
 import { useUIState } from '@/composables/useUIState';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 // レイアウトをuser-appにする
 definePageMeta({
@@ -100,39 +102,20 @@ interface QuickAction {
   action?: () => void;
 }
 
-// 統計データ（仮データ）
-const stats = ref<StatItem[]>([
-  {
-    title: 'アクティブフィード数',
-    value: '8',
-    icon: 'mdi-rss',
-    color: 'primary',
-    subtitle: '設定済み',
-    clickable: true,
-    action: (): void => {
-      navigateTo('/app/feeds');
-    },
-  },
-  {
-    title: '今月の配信数',
-    value: '24',
-    icon: 'mdi-radio',
-    color: 'secondary',
-    subtitle: '前月比 +12%',
-    clickable: true,
-    action: (): void => {
-      navigateTo('/app/programs');
-    },
-  },
-  {
-    title: '総番組時間',
-    value: '12.5h',
-    icon: 'mdi-clock',
-    color: 'success',
-    subtitle: '今月の合計',
-    clickable: false,
-  },
-]);
+// 統計データ取得
+const {
+  stats,
+  loading: statsLoading,
+  error: statsError,
+  refresh: _refreshStats,
+} = useDashboardStats();
+
+// エラーハンドリング
+watch(statsError, (error) => {
+  if (error) {
+    ui.showError('統計情報の取得に失敗しました');
+  }
+});
 
 // 最近の配信番組（仮データ）
 const recentPrograms = ref([

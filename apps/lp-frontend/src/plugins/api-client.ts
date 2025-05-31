@@ -1,5 +1,6 @@
 import {
   Configuration,
+  DashboardApi,
   PersonalizedFeedsApi,
   ProgramContentApiApi,
   QiitaPostsApi,
@@ -17,6 +18,7 @@ export default defineNuxtPlugin((nuxt) => {
       qiitaPostApi: new QiitaPostsApi(options),
       personalizedFeedApi: new PersonalizedFeedsApi(options),
       userSettingsApi: new UserSettingsApi(options),
+      dashboardApi: new DashboardApi(options),
     },
   };
 });

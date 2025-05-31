@@ -7,7 +7,15 @@ v-row.mb-6
     sm="4"
     md="4"
   )
+    // ローディング中はスケルトンローダーを表示
+    v-skeleton-loader(
+      v-if="loading"
+      type="card"
+      class="stats-skeleton"
+    )
+    // データがある場合は統計カードを表示
     StatsCard(
+      v-else
       :title="stat.title"
       :value="stat.value"
       :icon="stat.icon"
@@ -33,13 +41,17 @@ interface StatItem {
 
 interface Props {
   stats: StatItem[];
+  loading?: boolean;
 }
 
 interface Emits {
   (e: 'stat-click', stat: StatItem): void;
 }
 
-defineProps<Props>();
+withDefaults(defineProps<Props>(), {
+  loading: false,
+});
+
 const emit = defineEmits<Emits>();
 
 const handleStatClick = (stat: StatItem): void => {
@@ -51,5 +63,8 @@ const handleStatClick = (stat: StatItem): void => {
 </script>
 
 <style scoped>
-/* グリッド固有のスタイルがあれば追加 */
+.stats-skeleton {
+  border-radius: 12px;
+  height: 140px;
+}
 </style>
