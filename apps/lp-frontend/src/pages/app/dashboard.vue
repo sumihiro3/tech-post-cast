@@ -25,14 +25,14 @@ DashboardLayout
     )
 
   template(#sidebar)
-    // サブスクリプション情報セクション
-    SubscriptionCard.mb-6
-
     // クイックアクション
-    QuickActions.mb-12(
+    QuickActions.mb-6(
       :actions="quickActions"
       @action-click="handleActionClick"
     )
+
+    // サブスクリプション情報セクション
+    SubscriptionCard.mb-6
 
   template(#footer)
     // 音声プレイヤーは削除（ProgramListCardで個別に処理）

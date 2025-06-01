@@ -152,6 +152,8 @@ const handleViewAll = (): void => {
 }
 
 .program-item {
+  /* 上下の余白 */
+  padding: 16px 16px;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }

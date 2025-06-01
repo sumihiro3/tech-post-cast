@@ -39,7 +39,7 @@ v-card.feed-list-card(elevation="2")
             template(#prepend)
               v-avatar(
                 :color="feed.isActive ? 'success' : 'grey'"
-                size="40"
+                size="56"
               )
                 v-icon(
                   :icon="feed.isActive ? 'mdi-rss' : 'mdi-rss-off'"
@@ -140,6 +140,8 @@ const handleViewAll = (): void => {
 }
 
 .feed-item {
+  /* 上下の余白 */
+  padding: 16px 16px;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
