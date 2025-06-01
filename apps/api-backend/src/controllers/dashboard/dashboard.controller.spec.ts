@@ -135,6 +135,31 @@ describe('DashboardController', () => {
       );
     });
 
+    it('AppUserが見つからない場合、NotFoundExceptionを投げること', async () => {
+      const userId = 'non-existent-user';
+      const query: GetDashboardPersonalizedProgramsRequestDto = {
+        limit: 10,
+        offset: 0,
+      };
+      const notFoundError = new NotFoundException(
+        `User with ID ${userId} not found`,
+      );
+
+      dashboardService.getPersonalizedPrograms.mockRejectedValue(notFoundError);
+
+      await expect(
+        controller.getDashboardPersonalizedPrograms(userId, query),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        controller.getDashboardPersonalizedPrograms(userId, query),
+      ).rejects.toThrow(`User with ID ${userId} not found`);
+
+      expect(dashboardService.getPersonalizedPrograms).toHaveBeenCalledWith(
+        userId,
+        query,
+      );
+    });
+
     it('サービスでエラーが発生した場合、InternalServerErrorExceptionを投げること', async () => {
       const userId = 'user-1';
       const query: GetDashboardPersonalizedProgramsRequestDto = {

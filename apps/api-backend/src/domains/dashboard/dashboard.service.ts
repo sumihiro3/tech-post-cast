@@ -157,46 +157,72 @@ export class DashboardService {
       query,
     });
 
-    const { limit = 10, offset = 0 } = query;
+    try {
+      // ユーザーの存在確認
+      const user = await this.appUsersRepository.findOne(userId);
+      if (!user) {
+        throw new NotFoundException(`User with ID ${userId} not found`);
+      }
 
-    // パーソナルプログラム一覧を取得（ページネーション対応）
-    const { programs, totalCount } =
-      await this.personalizedProgramsRepository.findByUserIdWithPagination(
-        userId,
-        {
-          limit,
-          offset,
-          orderBy: { createdAt: 'desc' },
-        },
+      const { limit = 10, offset = 0 } = query;
+
+      // パーソナルプログラム一覧を取得（ページネーション対応）
+      const { programs, totalCount } =
+        await this.personalizedProgramsRepository.findByUserIdWithPagination(
+          userId,
+          {
+            limit,
+            offset,
+            orderBy: { createdAt: 'desc' },
+          },
+        );
+
+      // DTOに変換
+      const programDtos: PersonalizedProgramSummaryDto[] = programs.map(
+        (program) => ({
+          id: program.id,
+          title: program.title,
+          feedId: program.feedId,
+          feedName: program.feed.name,
+          audioUrl: program.audioUrl,
+          audioDuration: program.audioDuration,
+          imageUrl: program.imageUrl,
+          postsCount: program.posts.length,
+          expiresAt: program.expiresAt,
+          isExpired: program.isExpired,
+          createdAt: program.createdAt,
+          updatedAt: program.updatedAt,
+        }),
       );
 
-    // DTOに変換
-    const programDtos: PersonalizedProgramSummaryDto[] = programs.map(
-      (program) => ({
-        id: program.id,
-        title: program.title,
-        feedId: program.feedId,
-        feedName: program.feed.name,
-        audioUrl: program.audioUrl,
-        audioDuration: program.audioDuration,
-        imageUrl: program.imageUrl,
-        postsCount: program.posts.length,
-        expiresAt: program.expiresAt,
-        isExpired: program.isExpired,
-        createdAt: program.createdAt,
-        updatedAt: program.updatedAt,
-      }),
-    );
+      const hasNext = offset + limit < totalCount;
 
-    const hasNext = offset + limit < totalCount;
+      const result: GetDashboardPersonalizedProgramsResponseDto = {
+        programs: programDtos,
+        totalCount,
+        limit,
+        offset,
+        hasNext,
+      };
 
-    return {
-      programs: programDtos,
-      totalCount,
-      limit,
-      offset,
-      hasNext,
-    };
+      this.logger.debug('DashboardService.getPersonalizedPrograms completed', {
+        userId,
+        programsCount: result.programs.length,
+        totalCount: result.totalCount,
+        limit: result.limit,
+        offset: result.offset,
+        hasNext: result.hasNext,
+      });
+
+      return result;
+    } catch (error) {
+      this.logger.error('Failed to get personalized programs', {
+        userId,
+        query,
+        error: error.message,
+      });
+      throw error;
+    }
   }
 
   /**

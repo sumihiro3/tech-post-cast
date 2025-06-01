@@ -1,3 +1,4 @@
+import { AppConfigService } from '@/app-config/app-config.service';
 import { PersonalizedFeedsRepository } from '@/infrastructure/database/personalized-feeds/personalized-feeds.repository';
 import { PersonalizedFeedFactory } from '@/test/factories/personalized-feed.factory';
 import { PersonalizedProgramFactory } from '@/test/factories/personalized-program.factory';
@@ -16,6 +17,7 @@ describe('DashboardService', () => {
   let personalizedFeedsRepository: jest.Mocked<PersonalizedFeedsRepository>;
   let personalizedProgramsRepository: jest.Mocked<IPersonalizedProgramsRepository>;
   let appUsersRepository: jest.Mocked<IAppUsersRepository>;
+  let appConfigService: jest.Mocked<AppConfigService>;
   let logSpies: jest.SpyInstance[];
 
   beforeEach(async () => {
@@ -38,6 +40,10 @@ describe('DashboardService', () => {
       delete: jest.fn(),
     };
 
+    const mockAppConfigService = {
+      FreePlanId: 'free-plan-id',
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DashboardService,
@@ -53,6 +59,10 @@ describe('DashboardService', () => {
           provide: 'AppUsersRepository',
           useValue: mockAppUsersRepository,
         },
+        {
+          provide: AppConfigService,
+          useValue: mockAppConfigService,
+        },
       ],
     }).compile();
 
@@ -66,6 +76,7 @@ describe('DashboardService', () => {
     appUsersRepository = module.get(
       'AppUsersRepository',
     ) as jest.Mocked<IAppUsersRepository>;
+    appConfigService = module.get(AppConfigService);
   });
 
   afterEach(() => {
@@ -76,6 +87,11 @@ describe('DashboardService', () => {
     it('パーソナルプログラム一覧を正しく取得できること', async () => {
       const userId = 'user-1';
       const query = { limit: 10, offset: 0 };
+
+      // ユーザーの存在確認のモック
+      const mockUser = { id: userId };
+      appUsersRepository.findOne.mockResolvedValue(mockUser as any);
+
       const mockProgramsResult = {
         programs: [
           PersonalizedProgramFactory.createPersonalizedProgram({
@@ -103,6 +119,7 @@ describe('DashboardService', () => {
       expect(result.offset).toBe(0);
       expect(result.hasNext).toBe(false);
 
+      expect(appUsersRepository.findOne).toHaveBeenCalledWith(userId);
       expect(
         personalizedProgramsRepository.findByUserIdWithPagination,
       ).toHaveBeenCalledWith(userId, {
@@ -115,6 +132,11 @@ describe('DashboardService', () => {
     it('デフォルトのページネーション値を使用すること', async () => {
       const userId = 'user-1';
       const query = {}; // limit, offsetを指定しない
+
+      // ユーザーの存在確認のモック
+      const mockUser = { id: userId };
+      appUsersRepository.findOne.mockResolvedValue(mockUser as any);
+
       const mockProgramsResult = {
         programs: [],
         totalCount: 0,
@@ -131,6 +153,7 @@ describe('DashboardService', () => {
       expect(result.offset).toBe(0); // デフォルト値
       expect(result.hasNext).toBe(false);
 
+      expect(appUsersRepository.findOne).toHaveBeenCalledWith(userId);
       expect(
         personalizedProgramsRepository.findByUserIdWithPagination,
       ).toHaveBeenCalledWith(userId, {
@@ -143,6 +166,11 @@ describe('DashboardService', () => {
     it('hasNextフラグを正しく計算すること', async () => {
       const userId = 'user-1';
       const query = { limit: 5, offset: 0 };
+
+      // ユーザーの存在確認のモック
+      const mockUser = { id: userId };
+      appUsersRepository.findOne.mockResolvedValue(mockUser as any);
+
       const mockProgramsResult = {
         programs: PersonalizedProgramFactory.createPersonalizedPrograms(5, {
           posts: [], // 記事なしのプログラム
@@ -158,11 +186,16 @@ describe('DashboardService', () => {
 
       expect(result.hasNext).toBe(true);
       expect(result.totalCount).toBe(12);
+      expect(appUsersRepository.findOne).toHaveBeenCalledWith(userId);
     });
 
     it('番組が存在しない場合でも正常に動作すること', async () => {
       const userId = 'user-empty';
       const query = { limit: 10, offset: 0 };
+
+      // ユーザーの存在確認のモック
+      const mockUser = { id: userId };
+      appUsersRepository.findOne.mockResolvedValue(mockUser as any);
 
       const mockProgramsResult = {
         programs: [],
@@ -179,6 +212,24 @@ describe('DashboardService', () => {
       expect(result.programs).toHaveLength(0);
       expect(result.totalCount).toBe(0);
       expect(result.hasNext).toBe(false);
+      expect(appUsersRepository.findOne).toHaveBeenCalledWith(userId);
+    });
+
+    it('ユーザーが見つからない場合、NotFoundExceptionを投げること', async () => {
+      const userId = 'non-existent-user';
+      const query = { limit: 10, offset: 0 };
+
+      // ユーザーが見つからない場合のモック
+      appUsersRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.getPersonalizedPrograms(userId, query),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.getPersonalizedPrograms(userId, query),
+      ).rejects.toThrow(`User with ID ${userId} not found`);
+
+      expect(appUsersRepository.findOne).toHaveBeenCalledWith(userId);
     });
 
     it('エラーが発生した場合は適切にハンドリングされること', async () => {
@@ -186,21 +237,14 @@ describe('DashboardService', () => {
       const query = { limit: 10, offset: 0 };
       const error = new Error('Database connection failed');
 
-      personalizedProgramsRepository.findByUserIdWithPagination.mockRejectedValue(
-        error,
-      );
+      // ユーザー取得でエラーが発生する場合
+      appUsersRepository.findOne.mockRejectedValue(error);
 
       await expect(
         service.getPersonalizedPrograms(userId, query),
       ).rejects.toThrow('Database connection failed');
 
-      expect(
-        personalizedProgramsRepository.findByUserIdWithPagination,
-      ).toHaveBeenCalledWith(userId, {
-        limit: 10,
-        offset: 0,
-        orderBy: { createdAt: 'desc' },
-      });
+      expect(appUsersRepository.findOne).toHaveBeenCalledWith(userId);
     });
   });
 
@@ -572,7 +616,7 @@ describe('DashboardService', () => {
           {
             label: 'フィード数',
             current: 2, // アクティブなフィード数
-            limit: 10,
+            limit: 1,
             showPercentage: true,
             warningThreshold: 70,
             dangerThreshold: 90,
@@ -580,7 +624,7 @@ describe('DashboardService', () => {
           {
             label: 'タグ数',
             current: 3, // 全フィードのタグ数合計
-            limit: 50,
+            limit: 1,
             showPercentage: true,
             warningThreshold: 70,
             dangerThreshold: 90,

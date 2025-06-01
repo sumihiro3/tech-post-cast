@@ -88,6 +88,14 @@ export class DashboardController {
     description: 'パーソナルプログラム一覧',
     type: GetDashboardPersonalizedProgramsResponseDto,
   })
+  @ApiResponse({
+    status: 404,
+    description: 'ユーザーが見つかりません',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'サーバーエラー',
+  })
   async getDashboardPersonalizedPrograms(
     @CurrentUserId() userId: string,
     @Query() query: GetDashboardPersonalizedProgramsRequestDto,
@@ -107,12 +115,20 @@ export class DashboardController {
         userId,
         programsCount: programs.programs.length,
         totalCount: programs.totalCount,
+        limit: programs.limit,
+        offset: programs.offset,
+        hasNext: programs.hasNext,
       });
 
       return programs;
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        this.logger.warn(`AppUser [${userId}] が見つかりません`, { userId });
+        throw error;
+      }
+
       const errorMessage = 'パーソナルプログラム一覧の取得に失敗しました';
-      this.logger.error(errorMessage, { userId, error }, error.stack);
+      this.logger.error(errorMessage, { userId, query, error }, error.stack);
       throw new InternalServerErrorException(errorMessage);
     }
   }
