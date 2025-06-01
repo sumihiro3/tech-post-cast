@@ -114,6 +114,7 @@ v-card.subscription-card(elevation="2")
 
 <script setup lang="ts">
 import type { UsageItemDto } from '@/api';
+import { useDashboardSubscription } from '@/composables/dashboard/useDashboardSubscription';
 
 // コンポーザブル
 const { subscription, loading, error, planDisplayName, planColorClass, usageWarnings } =

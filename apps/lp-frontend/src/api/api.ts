@@ -203,6 +203,103 @@ export interface FilterGroupDto {
 /**
  * 
  * @export
+ * @interface GetDashboardPersonalizedProgramDetailResponseDto
+ */
+export interface GetDashboardPersonalizedProgramDetailResponseDto {
+    /**
+     * プログラムID
+     * @type {string}
+     * @memberof GetDashboardPersonalizedProgramDetailResponseDto
+     */
+    'id': string;
+    /**
+     * プログラムタイトル
+     * @type {string}
+     * @memberof GetDashboardPersonalizedProgramDetailResponseDto
+     */
+    'title': string;
+    /**
+     * フィードID
+     * @type {string}
+     * @memberof GetDashboardPersonalizedProgramDetailResponseDto
+     */
+    'feedId': string;
+    /**
+     * フィード名
+     * @type {string}
+     * @memberof GetDashboardPersonalizedProgramDetailResponseDto
+     */
+    'feedName': string;
+    /**
+     * データソース
+     * @type {string}
+     * @memberof GetDashboardPersonalizedProgramDetailResponseDto
+     */
+    'dataSource': string;
+    /**
+     * 音声ファイルURL
+     * @type {string}
+     * @memberof GetDashboardPersonalizedProgramDetailResponseDto
+     */
+    'audioUrl': string;
+    /**
+     * 音声ファイルの長さ（ミリ秒）
+     * @type {number}
+     * @memberof GetDashboardPersonalizedProgramDetailResponseDto
+     */
+    'audioDuration': number;
+    /**
+     * 画像URL
+     * @type {string}
+     * @memberof GetDashboardPersonalizedProgramDetailResponseDto
+     */
+    'imageUrl': string | null;
+    /**
+     * 番組台本（JSON形式）
+     * @type {object}
+     * @memberof GetDashboardPersonalizedProgramDetailResponseDto
+     */
+    'script': object;
+    /**
+     * チャプター情報
+     * @type {Array<ProgramChapterDto>}
+     * @memberof GetDashboardPersonalizedProgramDetailResponseDto
+     */
+    'chapters': Array<ProgramChapterDto>;
+    /**
+     * 紹介記事一覧
+     * @type {Array<ProgramPostDto>}
+     * @memberof GetDashboardPersonalizedProgramDetailResponseDto
+     */
+    'posts': Array<ProgramPostDto>;
+    /**
+     * 番組の有効期限
+     * @type {string}
+     * @memberof GetDashboardPersonalizedProgramDetailResponseDto
+     */
+    'expiresAt': string | null;
+    /**
+     * 番組が期限切れかどうか
+     * @type {boolean}
+     * @memberof GetDashboardPersonalizedProgramDetailResponseDto
+     */
+    'isExpired': boolean;
+    /**
+     * プログラムの作成日時
+     * @type {string}
+     * @memberof GetDashboardPersonalizedProgramDetailResponseDto
+     */
+    'createdAt': string;
+    /**
+     * プログラムの更新日時
+     * @type {string}
+     * @memberof GetDashboardPersonalizedProgramDetailResponseDto
+     */
+    'updatedAt': string;
+}
+/**
+ * 
+ * @export
  * @interface GetDashboardPersonalizedProgramsRequestDto
  */
 export interface GetDashboardPersonalizedProgramsRequestDto {
@@ -269,11 +366,11 @@ export interface GetDashboardStatsResponseDto {
      */
     'activeFeedsCount': number;
     /**
-     * 今月の配信番組数
+     * 総配信番組数
      * @type {number}
      * @memberof GetDashboardStatsResponseDto
      */
-    'monthlyEpisodesCount': number;
+    'totalEpisodesCount': number;
     /**
      * 総番組時間（フォーマット済み）
      * @type {string}
@@ -919,6 +1016,104 @@ export interface PostSummaryDto {
      * @memberof PostSummaryDto
      */
     'summary': string;
+}
+/**
+ * 
+ * @export
+ * @interface ProgramChapterDto
+ */
+export interface ProgramChapterDto {
+    /**
+     * チャプターのタイトル
+     * @type {string}
+     * @memberof ProgramChapterDto
+     */
+    'title': string;
+    /**
+     * チャプターの開始時間（ミリ秒）
+     * @type {number}
+     * @memberof ProgramChapterDto
+     */
+    'startTime': number;
+    /**
+     * チャプターの終了時間（ミリ秒）
+     * @type {number}
+     * @memberof ProgramChapterDto
+     */
+    'endTime': number;
+}
+/**
+ * 
+ * @export
+ * @interface ProgramPostDto
+ */
+export interface ProgramPostDto {
+    /**
+     * 記事ID
+     * @type {string}
+     * @memberof ProgramPostDto
+     */
+    'id': string;
+    /**
+     * 記事タイトル
+     * @type {string}
+     * @memberof ProgramPostDto
+     */
+    'title': string;
+    /**
+     * 記事URL
+     * @type {string}
+     * @memberof ProgramPostDto
+     */
+    'url': string;
+    /**
+     * 記事の投稿者名
+     * @type {string}
+     * @memberof ProgramPostDto
+     */
+    'authorName': string;
+    /**
+     * 記事の投稿者ID
+     * @type {string}
+     * @memberof ProgramPostDto
+     */
+    'authorId': string;
+    /**
+     * いいね数
+     * @type {number}
+     * @memberof ProgramPostDto
+     */
+    'likesCount': number;
+    /**
+     * ストック数
+     * @type {number}
+     * @memberof ProgramPostDto
+     */
+    'stocksCount': number;
+    /**
+     * 記事の要約
+     * @type {string}
+     * @memberof ProgramPostDto
+     */
+    'summary': string | null;
+    /**
+     * 記事の作成日時
+     * @type {string}
+     * @memberof ProgramPostDto
+     */
+    'createdAt': string;
+    /**
+     * 記事の更新日時
+     * @type {string}
+     * @memberof ProgramPostDto
+     */
+    'updatedAt': string;
+    /**
+     * 限定共有記事かどうか
+     * @type {boolean}
+     * @memberof ProgramPostDto
+     */
+    'private': boolean;
 }
 /**
  * 
@@ -2316,7 +2511,7 @@ export const DashboardApiAxiosParamCreator = function (configuration?: Configura
             };
         },
         /**
-         * ダッシュボード表示用の統計情報（アクティブフィード数、月間配信数、総番組時間）を取得します
+         * ダッシュボード表示用の統計情報（アクティブフィード数、総配信数、総番組時間）を取得します
          * @summary ダッシュボード統計情報取得
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -2375,6 +2570,40 @@ export const DashboardApiAxiosParamCreator = function (configuration?: Configura
                 options: localVarRequestOptions,
             };
         },
+        /**
+         * 指定されたIDのパーソナルプログラムの詳細情報（チャプター、紹介記事一覧、番組台本等）を取得します。
+         * @summary パーソナルプログラムの詳細情報を取得
+         * @param {string} id パーソナルプログラムID
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getPersonalizedProgramDetail: async (id: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('getPersonalizedProgramDetail', 'id', id)
+            const localVarPath = `/dashboard/personalized-programs/{id}`
+                .replace(`{${"id"}}`, encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
     }
 };
 
@@ -2400,7 +2629,7 @@ export const DashboardApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * ダッシュボード表示用の統計情報（アクティブフィード数、月間配信数、総番組時間）を取得します
+         * ダッシュボード表示用の統計情報（アクティブフィード数、総配信数、総番組時間）を取得します
          * @summary ダッシュボード統計情報取得
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -2421,6 +2650,19 @@ export const DashboardApiFp = function(configuration?: Configuration) {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getDashboardSubscription(options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['DashboardApi.getDashboardSubscription']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * 指定されたIDのパーソナルプログラムの詳細情報（チャプター、紹介記事一覧、番組台本等）を取得します。
+         * @summary パーソナルプログラムの詳細情報を取得
+         * @param {string} id パーソナルプログラムID
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getPersonalizedProgramDetail(id: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetDashboardPersonalizedProgramDetailResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getPersonalizedProgramDetail(id, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['DashboardApi.getPersonalizedProgramDetail']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
     }
@@ -2445,7 +2687,7 @@ export const DashboardApiFactory = function (configuration?: Configuration, base
             return localVarFp.getDashboardPersonalizedPrograms(limit, offset, options).then((request) => request(axios, basePath));
         },
         /**
-         * ダッシュボード表示用の統計情報（アクティブフィード数、月間配信数、総番組時間）を取得します
+         * ダッシュボード表示用の統計情報（アクティブフィード数、総配信数、総番組時間）を取得します
          * @summary ダッシュボード統計情報取得
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -2461,6 +2703,16 @@ export const DashboardApiFactory = function (configuration?: Configuration, base
          */
         getDashboardSubscription(options?: RawAxiosRequestConfig): AxiosPromise<GetDashboardSubscriptionResponseDto> {
             return localVarFp.getDashboardSubscription(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 指定されたIDのパーソナルプログラムの詳細情報（チャプター、紹介記事一覧、番組台本等）を取得します。
+         * @summary パーソナルプログラムの詳細情報を取得
+         * @param {string} id パーソナルプログラムID
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getPersonalizedProgramDetail(id: string, options?: RawAxiosRequestConfig): AxiosPromise<GetDashboardPersonalizedProgramDetailResponseDto> {
+            return localVarFp.getPersonalizedProgramDetail(id, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -2486,7 +2738,7 @@ export class DashboardApi extends BaseAPI {
     }
 
     /**
-     * ダッシュボード表示用の統計情報（アクティブフィード数、月間配信数、総番組時間）を取得します
+     * ダッシュボード表示用の統計情報（アクティブフィード数、総配信数、総番組時間）を取得します
      * @summary ダッシュボード統計情報取得
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -2505,6 +2757,18 @@ export class DashboardApi extends BaseAPI {
      */
     public getDashboardSubscription(options?: RawAxiosRequestConfig) {
         return DashboardApiFp(this.configuration).getDashboardSubscription(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 指定されたIDのパーソナルプログラムの詳細情報（チャプター、紹介記事一覧、番組台本等）を取得します。
+     * @summary パーソナルプログラムの詳細情報を取得
+     * @param {string} id パーソナルプログラムID
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DashboardApi
+     */
+    public getPersonalizedProgramDetail(id: string, options?: RawAxiosRequestConfig) {
+        return DashboardApiFp(this.configuration).getPersonalizedProgramDetail(id, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

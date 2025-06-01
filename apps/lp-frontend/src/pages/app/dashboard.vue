@@ -13,10 +13,8 @@ DashboardLayout
     ProgramListCard.mb-6(
       :programs="programs"
       :total-count="totalCount"
-      :has-next="hasNext"
       :loading="programsLoading"
       :error="programsError"
-      :load-more="loadMore"
     )
 
     // パーソナルフィード一覧セクション
@@ -59,9 +57,9 @@ import ProgramListCard from '@/components/dashboard/ProgramListCard.vue';
 import QuickActions from '@/components/dashboard/QuickActions.vue';
 import StatsCardGrid from '@/components/dashboard/StatsCardGrid.vue';
 import SubscriptionCard from '@/components/dashboard/SubscriptionCard.vue';
-import { useDashboardFeeds } from '@/composables/useDashboardFeeds';
-import { useDashboardPrograms } from '@/composables/useDashboardPrograms';
-import { useDashboardStats } from '@/composables/useDashboardStats';
+import { useDashboardFeeds } from '@/composables/dashboard/useDashboardFeeds';
+import { useDashboardPrograms } from '@/composables/dashboard/useDashboardPrograms';
+import { useDashboardStats } from '@/composables/dashboard/useDashboardStats';
 import { useUIState } from '@/composables/useUIState';
 import { computed, ref, watch } from 'vue';
 
@@ -106,10 +104,8 @@ const {
 const {
   programs,
   totalCount,
-  hasNext,
   loading: programsLoading,
   error: programsError,
-  loadMore,
 } = useDashboardPrograms({ limit: 5 });
 
 // フィードデータ取得

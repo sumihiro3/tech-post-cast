@@ -52,7 +52,17 @@ v-container.max-width-container
         closable
         border
         @click:close="error = null"
-      ) {{ error }}
+      )
+        div {{ error }}
+        div(v-if="error.includes('存在しないか、削除されている')" class="mt-3")
+          v-btn(
+            color="primary"
+            variant="outlined"
+            size="small"
+            @click="navigateTo('/app/feeds')"
+          )
+            v-icon.mr-2 mdi-format-list-bulleted
+            | フィード一覧に戻る
 
   //- バリデーション詳細表示（開発・デバッグ用）
   v-row(v-if="showValidationDetails" justify="center" class="mt-4")
@@ -491,6 +501,7 @@ const fetchPersonalizedFeed = async (id: string): Promise<void> => {
     // プログレスサークルを表示
     ui.showLoading({ message: 'パーソナライズフィードを読み込み中...' });
 
+    console.log('Fetching personalized feed with ID:', id);
     const app = useNuxtApp();
     // 作成したcomposableを使用してフィードを取得
     const result = await useGetPersonalizedFeedById(app, user.value!.id, id);
@@ -536,7 +547,11 @@ const fetchPersonalizedFeed = async (id: string): Promise<void> => {
       handleValidationError(err);
     } else if (err instanceof HttpError) {
       // その他のHTTPエラーの場合
-      error.value = err.message;
+      if (err.statusCode === 404) {
+        error.value = `フィードID「${id}」は存在しないか、削除されている可能性があります。パーソナルプログラムが古い場合、関連するフィードが削除されている可能性があります。`;
+      } else {
+        error.value = err.message;
+      }
     } else if (err instanceof Error) {
       // 通常のエラーの場合
       error.value = err.message;

@@ -49,35 +49,13 @@ v-card.program-list-card(elevation="2")
               )
                 v-icon(color="white") mdi-podcast
             template(#append)
-              .d-flex.flex-column.align-end
-                v-chip(
-                  :color="program.isExpired ? 'error' : 'success'"
-                  variant="flat"
-                  size="x-small"
-                  class="mb-1"
-                ) {{ program.isExpired ? '期限切れ' : '有効' }}
-
-                v-btn(
-                  v-if="program.audioUrl && !program.isExpired"
-                  icon="mdi-play"
-                  size="small"
-                  variant="text"
-                  color="primary"
-                  @click.stop="handlePlayAudio(program)"
-                )
+              v-chip(
+                :color="program.isExpired ? 'error' : 'success'"
+                variant="flat"
+                size="x-small"
+              ) {{ program.isExpired ? '期限切れ' : '有効' }}
 
           v-divider(v-if="index < programs.length - 1")
-
-      // もっと読み込むボタン
-      .text-center.mt-4(v-if="hasNext")
-        v-btn(
-          :loading="loading"
-          color="primary"
-          variant="outlined"
-          @click="loadMore"
-        )
-          v-icon.mr-2 mdi-plus
-          | さらに読み込む
 
     // データなし状態
     v-alert(
@@ -116,10 +94,8 @@ import { ja } from 'date-fns/locale';
 interface Props {
   programs: PersonalizedProgramSummaryDto[];
   totalCount: number;
-  hasNext: boolean;
   loading: boolean;
   error: Error | null;
-  loadMore: () => Promise<void>;
 }
 
 defineProps<Props>();
@@ -153,18 +129,8 @@ const formatProgramSubtitle = (program: PersonalizedProgramSummaryDto): string =
 
 // プログラムクリック処理
 const handleProgramClick = (program: PersonalizedProgramSummaryDto): void => {
-  // TODO: プログラム詳細ページへの遷移を実装
   console.log('プログラム詳細へ遷移:', program.id);
   navigateTo(`/app/programs/${program.id}`);
-};
-
-// 音声再生処理
-const handlePlayAudio = (program: PersonalizedProgramSummaryDto): void => {
-  // TODO: 音声再生機能を実装
-  console.log('音声再生:', program.audioUrl);
-  if (program.audioUrl) {
-    window.open(program.audioUrl, '_blank');
-  }
 };
 
 // フィード作成処理

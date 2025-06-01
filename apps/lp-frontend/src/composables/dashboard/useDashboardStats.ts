@@ -54,29 +54,29 @@ export function useDashboardStats(): UseDashboardStatsReturn {
         value: rawStats.value.activeFeedsCount,
         icon: 'mdi-rss',
         color: 'primary',
-        subtitle: '設定済み',
+        subtitle: '※ 現在有効なフィード数',
         clickable: true,
         action: (): void => {
           navigateTo('/app/feeds');
         },
       },
       {
-        title: '今月の配信数',
-        value: rawStats.value.monthlyEpisodesCount,
-        icon: 'mdi-radio',
+        title: '累計配信数',
+        value: rawStats.value.totalEpisodesCount,
+        icon: 'mdi-podcast',
         color: 'secondary',
-        subtitle: '前月比データ準備中',
+        subtitle: '※ 有効期限切れの番組を含む',
         clickable: true,
         action: (): void => {
           navigateTo('/app/programs');
         },
       },
       {
-        title: '総番組時間',
+        title: '累計番組時間',
         value: rawStats.value.totalProgramDuration,
         icon: 'mdi-clock',
         color: 'success',
-        subtitle: '累計時間',
+        subtitle: '※ 有効期限切れの番組を含む',
         clickable: false,
       },
     ];

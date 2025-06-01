@@ -80,8 +80,8 @@ v-card.feed-list-card(elevation="2")
       variant="text"
       @click="handleViewAll"
     )
-      | フィード管理
-      v-icon.ml-2 mdi-cog
+      | パーソナルフィード設定
+      v-icon.ml-2 mdi-rss
 </template>
 
 <script setup lang="ts">
