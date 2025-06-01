@@ -9,30 +9,22 @@ DashboardLayout
     )
 
   template(#main-content)
-    // 最近の配信番組セクション
-    ProgramList.mb-6(
-      title="最近の配信番組"
-      icon="mdi-radio"
-      :programs="recentPrograms"
-      @play="playProgram"
-      @feed-click="goToFeedPrograms"
-      @details="showProgramDetails"
+    // 最新のパーソナルプログラムセクション
+    ProgramListCard.mb-6(
+      :programs="programs"
+      :total-count="totalCount"
+      :has-next="hasNext"
+      :loading="programsLoading"
+      :error="programsError"
+      :load-more="loadMore"
     )
-      template(#actions)
-        v-btn(color="primary" variant="text" size="small")
-          | すべて表示
-          v-icon.ml-1 mdi-arrow-right
 
-    // パーソナルフィード概要セクション
-    FeedOverview(
-      :feeds="personalFeeds"
-      @edit="editFeed"
-      @create-feed="createFeed"
+    // パーソナルフィード一覧セクション
+    FeedListCard(
+      :feeds="feeds"
+      :loading="feedsLoading"
+      :error="feedsError"
     )
-      template(#actions)
-        v-btn(color="primary" variant="text" size="small" to="/app/feeds")
-          | フィード設定
-          v-icon.ml-1 mdi-cog
 
   template(#sidebar)
     // サブスクリプション情報セクション
@@ -45,28 +37,33 @@ DashboardLayout
     )
 
   template(#footer)
-    // 音声プレイヤー（固定）
-    AudioPlayer(
-      :current-program="currentProgram"
-      :is-playing="isPlaying"
-      :current-time="currentTime"
-      @toggle-play="togglePlay"
-      @time-update="updateCurrentTime"
-      @close="closePlayer"
-    )
+    // 音声プレイヤーは削除（ProgramListCardで個別に処理）
+
+    // 開発環境でのみ環境設定情報を表示
+    v-card.mt-6(v-if="showEnvironmentInfo" elevation="1")
+      v-card-title.text-caption 環境設定情報（開発用）
+      v-card-text
+        v-chip.mr-2.mb-2(
+          v-for="(value, key) in environmentInfo"
+          :key="key"
+          :color="getChipColor(key, value)"
+          size="small"
+          variant="flat"
+        ) {{ key }}: {{ value }}
 </template>
 
 <script setup lang="ts">
-import AudioPlayer from '@/components/dashboard/AudioPlayer.vue';
 import DashboardLayout from '@/components/dashboard/DashboardLayout.vue';
-import FeedOverview from '@/components/dashboard/FeedOverview.vue';
-import ProgramList from '@/components/dashboard/ProgramList.vue';
+import FeedListCard from '@/components/dashboard/FeedListCard.vue';
+import ProgramListCard from '@/components/dashboard/ProgramListCard.vue';
 import QuickActions from '@/components/dashboard/QuickActions.vue';
 import StatsCardGrid from '@/components/dashboard/StatsCardGrid.vue';
 import SubscriptionCard from '@/components/dashboard/SubscriptionCard.vue';
+import { useDashboardFeeds } from '@/composables/useDashboardFeeds';
+import { useDashboardPrograms } from '@/composables/useDashboardPrograms';
 import { useDashboardStats } from '@/composables/useDashboardStats';
 import { useUIState } from '@/composables/useUIState';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 // レイアウトをuser-appにする
 definePageMeta({
@@ -105,6 +102,19 @@ const {
   refresh: _refreshStats,
 } = useDashboardStats();
 
+// プログラムデータ取得
+const {
+  programs,
+  totalCount,
+  hasNext,
+  loading: programsLoading,
+  error: programsError,
+  loadMore,
+} = useDashboardPrograms({ limit: 5 });
+
+// フィードデータ取得
+const { feeds, loading: feedsLoading, error: feedsError } = useDashboardFeeds();
+
 // エラーハンドリング
 watch(statsError, (error) => {
   if (error) {
@@ -112,115 +122,19 @@ watch(statsError, (error) => {
   }
 });
 
-// 最近の配信番組（仮データ）
-const recentPrograms = ref([
-  {
-    id: 1,
-    title: 'React 18の新機能とConcurrent Features',
-    date: '2024-01-15',
-    duration: '15:30',
-    feedName: 'React最新情報',
-    feedColor: 'blue',
-    isPlaying: false,
-  },
-  {
-    id: 2,
-    title: 'TypeScript 5.0のパフォーマンス改善',
-    date: '2024-01-14',
-    duration: '12:45',
-    feedName: 'TypeScript Updates',
-    feedColor: 'indigo',
-    isPlaying: false,
-  },
-  {
-    id: 3,
-    title: 'Vue 3 Composition APIのベストプラクティス',
-    date: '2024-01-13',
-    duration: '18:20',
-    feedName: 'Vue.js情報',
-    feedColor: 'green',
-    isPlaying: false,
-  },
-  {
-    id: 4,
-    title: 'Next.js 14のApp Routerパフォーマンス最適化',
-    date: '2024-01-12',
-    duration: '14:15',
-    feedName: 'Next.js Updates',
-    feedColor: 'purple',
-    isPlaying: false,
-  },
-  {
-    id: 5,
-    title: 'Docker Composeを使った開発環境構築',
-    date: '2024-01-11',
-    duration: '16:40',
-    feedName: 'DevOps情報',
-    feedColor: 'orange',
-    isPlaying: false,
-  },
-]);
+watch(programsError, (error) => {
+  if (error) {
+    ui.showError('プログラム一覧の取得に失敗しました');
+  }
+});
 
-// パーソナルフィード（仮データ）
-const personalFeeds = ref([
-  {
-    id: 1,
-    name: 'React最新情報',
-    tagCount: 5,
-    authorCount: 12,
-    frequency: '日次',
-    isActive: true,
-  },
-  {
-    id: 2,
-    name: 'TypeScript Updates',
-    tagCount: 3,
-    authorCount: 8,
-    frequency: '週次',
-    isActive: true,
-  },
-  {
-    id: 3,
-    name: 'Vue.js情報',
-    tagCount: 4,
-    authorCount: 6,
-    frequency: '週次',
-    isActive: false,
-  },
-  {
-    id: 4,
-    name: 'Next.js Updates',
-    tagCount: 6,
-    authorCount: 10,
-    frequency: '日次',
-    isActive: true,
-  },
-  {
-    id: 5,
-    name: 'DevOps情報',
-    tagCount: 8,
-    authorCount: 15,
-    frequency: '月次',
-    isActive: true,
-  },
-]);
+watch(feedsError, (error) => {
+  if (error) {
+    ui.showError('フィード一覧の取得に失敗しました');
+  }
+});
 
-// 型定義
-interface Program {
-  id: number;
-  title: string;
-  date: string;
-  duration: string;
-  feedName: string;
-  feedColor: string;
-  isPlaying: boolean;
-}
-
-interface ProgramWithTotalTime extends Program {
-  totalTime: number;
-}
-
-// クイックアクション（仮データ）
+// クイックアクション
 const quickActions = ref<QuickAction[]>([
   {
     title: '新しいフィードを作成',
@@ -248,70 +162,6 @@ const quickActions = ref<QuickAction[]>([
   },
 ]);
 
-// 音声プレイヤー関連
-const currentProgram = ref<ProgramWithTotalTime | null>(null);
-const isPlaying = ref(false);
-const currentTime = ref(0);
-
-// メソッド
-const playProgram = (program: Program): void => {
-  if (currentProgram.value?.id === program.id) {
-    isPlaying.value = !isPlaying.value;
-  } else {
-    currentProgram.value = {
-      ...program,
-      totalTime: 930, // 15:30 in seconds
-    };
-    isPlaying.value = true;
-    currentTime.value = 0;
-  }
-
-  // Update program playing state
-  recentPrograms.value.forEach((p) => {
-    p.isPlaying = p.id === program.id && isPlaying.value;
-  });
-};
-
-const togglePlay = (): void => {
-  isPlaying.value = !isPlaying.value;
-  if (currentProgram.value) {
-    const program = recentPrograms.value.find((p) => p.id === currentProgram.value!.id);
-    if (program) {
-      program.isPlaying = isPlaying.value;
-    }
-  }
-};
-
-const updateCurrentTime = (time: number): void => {
-  currentTime.value = time;
-};
-
-const closePlayer = (): void => {
-  currentProgram.value = null;
-  isPlaying.value = false;
-  currentTime.value = 0;
-  recentPrograms.value.forEach((p) => {
-    p.isPlaying = false;
-  });
-};
-
-const showProgramDetails = (program: { title: string }): void => {
-  ui.showInfo(`番組詳細: ${program.title}`);
-};
-
-const editFeed = (feed: { id: number }): void => {
-  navigateTo(`/app/feeds/${feed.id}/edit`);
-};
-
-const createFeed = (): void => {
-  navigateTo('/app/feeds/create');
-};
-
-const goToFeedPrograms = (feedName: string): void => {
-  // フィード名で番組一覧を絞り込んで表示
-  navigateTo(`/app/programs?feed=${encodeURIComponent(feedName)}`);
-};
-
 // 統計カードクリック時の処理
 const handleStatClick = (stat: StatItem): void => {
   ui.showInfo(`${stat.title}がクリックされました`);
@@ -320,6 +170,24 @@ const handleStatClick = (stat: StatItem): void => {
 // アクションクリック時の処理
 const handleActionClick = (action: QuickAction): void => {
   ui.showInfo(`${action.title}がクリックされました`);
+};
+
+// 環境情報表示（開発環境のみ）
+const showEnvironmentInfo = computed(() => isDevelopment());
+const environmentInfo = computed(() => {
+  const { isSignedIn, userId } = useAuth();
+  return {
+    ...getEnvironmentInfo(),
+    isSignedIn: isSignedIn.value,
+    userId: userId.value || 'N/A',
+  };
+});
+
+// チップの色を決定する関数
+const getChipColor = (key: string, value: unknown): string => {
+  if (key === 'isDevelopment' && value === true) return 'info';
+  if (key === 'isProduction' && value === true) return 'success';
+  return 'default';
 };
 </script>
 

@@ -14,6 +14,7 @@ export default defineNuxtPlugin((nuxt) => {
   const options = new Configuration({
     basePath: apiUrl,
   });
+
   // 各 API を useNuxtApp で利用できるようにする
   return {
     provide: {
