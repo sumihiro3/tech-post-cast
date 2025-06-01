@@ -458,7 +458,7 @@
     },
     "/api/webhooks/clerk": {
       "post": {
-        "operationId": "ClerkWebhookController_handleWebhook",
+        "operationId": "handleWebhook",
         "parameters": [],
         "responses": {
           "201": {
@@ -944,32 +944,15 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "ユーザーが見つかりません"
+          },
+          "500": {
+            "description": "サーバーエラー"
           }
         },
         "summary": "ダッシュボード統計情報取得",
-        "tags": [
-          "Dashboard"
-        ]
-      }
-    },
-    "/dashboard/personalized-feeds/summary": {
-      "get": {
-        "description": "ダッシュボード表示用のパーソナルフィード概要情報を取得します",
-        "operationId": "getDashboardPersonalizedFeedsSummary",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "パーソナルフィード概要情報",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GetDashboardPersonalizedFeedsSummaryResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "ダッシュボード用パーソナルフィード概要取得",
         "tags": [
           "Dashboard"
         ]
@@ -1022,10 +1005,39 @@
         ]
       }
     },
+    "/dashboard/subscription": {
+      "get": {
+        "description": "ユーザーのサブスクリプション情報、使用量、機能一覧を取得します",
+        "operationId": "getDashboardSubscription",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "サブスクリプション情報の取得に成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetDashboardSubscriptionResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ユーザーが見つかりません"
+          },
+          "500": {
+            "description": "サーバーエラー"
+          }
+        },
+        "summary": "ダッシュボードサブスクリプション情報取得",
+        "tags": [
+          "Dashboard"
+        ]
+      }
+    },
     "/user-settings": {
       "get": {
         "description": "認証ユーザーのユーザー設定（表示名、Slack通知設定など）を取得します。",
-        "operationId": "UserSettingsController_getUserSettings",
+        "operationId": "getUserSettings",
         "parameters": [],
         "responses": {
           "200": {
@@ -1060,7 +1072,7 @@
       },
       "patch": {
         "description": "認証ユーザーのユーザー設定（表示名、Slack通知設定など）を更新します。",
-        "operationId": "UserSettingsController_updateUserSettings",
+        "operationId": "updateUserSettings",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1110,7 +1122,7 @@
     "/user-settings/test-slack-webhook": {
       "post": {
         "description": "指定されたSlack Webhook URLに対してテスト通知を送信し、接続を確認します。",
-        "operationId": "UserSettingsController_testSlackWebhook",
+        "operationId": "testSlackWebhook",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1156,7 +1168,7 @@
     },
     "/": {
       "get": {
-        "operationId": "AppController_getHello",
+        "operationId": "getHello",
         "parameters": [],
         "responses": {
           "200": {
@@ -2405,102 +2417,6 @@
           "totalProgramDuration"
         ]
       },
-      "PersonalizedFeedSummaryDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "フィードID",
-            "example": "feed_123"
-          },
-          "name": {
-            "type": "string",
-            "description": "フィード名",
-            "example": "React関連記事フィード"
-          },
-          "description": {
-            "type": "string",
-            "description": "フィード説明",
-            "example": "React.jsに関する最新記事を収集するフィード"
-          },
-          "isActive": {
-            "type": "boolean",
-            "description": "アクティブ状態",
-            "example": true
-          },
-          "tagFiltersCount": {
-            "type": "number",
-            "description": "タグフィルター数",
-            "example": 3
-          },
-          "authorFiltersCount": {
-            "type": "number",
-            "description": "著者フィルター数",
-            "example": 2
-          },
-          "totalFiltersCount": {
-            "type": "number",
-            "description": "フィルター条件総数",
-            "example": 5
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string",
-            "description": "作成日時",
-            "example": "2025-03-25T10:00:00Z"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": "string",
-            "description": "最終更新日時",
-            "example": "2025-03-25T15:30:00Z"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "description",
-          "isActive",
-          "tagFiltersCount",
-          "authorFiltersCount",
-          "totalFiltersCount",
-          "createdAt",
-          "updatedAt"
-        ]
-      },
-      "GetDashboardPersonalizedFeedsSummaryResponseDto": {
-        "type": "object",
-        "properties": {
-          "activeFeedsCount": {
-            "type": "number",
-            "description": "アクティブなフィード数",
-            "example": 5
-          },
-          "totalFeedsCount": {
-            "type": "number",
-            "description": "総フィード数",
-            "example": 8
-          },
-          "recentFeeds": {
-            "description": "最近作成されたフィード（最新5件）",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PersonalizedFeedSummaryDto"
-            }
-          },
-          "totalFiltersCount": {
-            "type": "number",
-            "description": "総フィルター条件数",
-            "example": 25
-          }
-        },
-        "required": [
-          "activeFeedsCount",
-          "totalFeedsCount",
-          "recentFeeds",
-          "totalFiltersCount"
-        ]
-      },
       "PersonalizedProgramSummaryDto": {
         "type": "object",
         "properties": {
@@ -2622,6 +2538,121 @@
           "limit",
           "offset",
           "hasNext"
+        ]
+      },
+      "SubscriptionFeatureDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "機能名",
+            "example": "基本的なフィード作成"
+          },
+          "available": {
+            "type": "boolean",
+            "description": "機能が利用可能かどうか",
+            "example": true
+          }
+        },
+        "required": [
+          "name",
+          "available"
+        ]
+      },
+      "UsageItemDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "使用量項目のラベル",
+            "example": "フィード数"
+          },
+          "current": {
+            "type": "number",
+            "description": "現在の使用量",
+            "example": 5,
+            "minimum": 0
+          },
+          "limit": {
+            "type": "number",
+            "description": "制限値",
+            "example": 10,
+            "minimum": 0
+          },
+          "showPercentage": {
+            "type": "boolean",
+            "description": "パーセンテージ表示するかどうか",
+            "example": true
+          },
+          "warningThreshold": {
+            "type": "number",
+            "description": "警告しきい値（パーセンテージ）",
+            "example": 70,
+            "minimum": 0,
+            "maximum": 100
+          },
+          "dangerThreshold": {
+            "type": "number",
+            "description": "危険しきい値（パーセンテージ）",
+            "example": 90,
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "label",
+          "current",
+          "limit",
+          "showPercentage",
+          "warningThreshold",
+          "dangerThreshold"
+        ]
+      },
+      "GetDashboardSubscriptionResponseDto": {
+        "type": "object",
+        "properties": {
+          "planName": {
+            "type": "string",
+            "description": "プラン名",
+            "example": "Free",
+            "enum": [
+              "Free",
+              "Basic",
+              "Pro",
+              "Enterprise"
+            ]
+          },
+          "planColor": {
+            "type": "string",
+            "description": "プランの表示色",
+            "example": "grey"
+          },
+          "features": {
+            "description": "プランの機能一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionFeatureDto"
+            }
+          },
+          "usageItems": {
+            "description": "使用量情報一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UsageItemDto"
+            }
+          },
+          "showUpgradeButton": {
+            "type": "boolean",
+            "description": "アップグレードボタンを表示するかどうか",
+            "example": true
+          }
+        },
+        "required": [
+          "planName",
+          "planColor",
+          "features",
+          "usageItems",
+          "showUpgradeButton"
         ]
       },
       "GetUserSettingsResponseDto": {
@@ -2839,6 +2870,24 @@
           "name",
           "versions"
         ]
+      },
+      "GetDashboardPersonalizedProgramsRequestDto": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "number",
+            "description": "取得件数（デフォルト: 10, 最大: 50）",
+            "example": 10,
+            "minimum": 1,
+            "maximum": 50
+          },
+          "offset": {
+            "type": "number",
+            "description": "オフセット（デフォルト: 0）",
+            "example": 0,
+            "minimum": 0
+          }
+        }
       }
     }
   }

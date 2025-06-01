@@ -20,6 +20,5 @@ import { UserSettingsController } from './user-settings.controller';
       useClass: AppUsersRepository,
     },
   ],
-  exports: [UserSettingsService],
 })
 export class UserSettingsModule {}

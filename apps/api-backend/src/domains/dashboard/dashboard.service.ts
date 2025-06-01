@@ -1,17 +1,23 @@
+import { AppConfigService } from '@/app-config/app-config.service';
 import {
-  GetDashboardPersonalizedFeedsSummaryResponseDto,
   GetDashboardPersonalizedProgramsRequestDto,
   GetDashboardPersonalizedProgramsResponseDto,
   GetDashboardStatsResponseDto,
-  PersonalizedFeedSummaryDto,
+  GetDashboardSubscriptionResponseDto,
   PersonalizedProgramSummaryDto,
+  SubscriptionFeatureDto,
+  UsageItemDto,
 } from '@/controllers/dashboard/dto';
+import { IAppUsersRepository } from '@/domains/app-users/app-users.repository.interface';
 import { IPersonalizedProgramsRepository } from '@/domains/personalized-programs/personalized-programs.repository.interface';
 import { PersonalizedFeedsRepository } from '@/infrastructure/database/personalized-feeds/personalized-feeds.repository';
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   getFirstDayOfMonth,
   getLastDayOfMonth,
+  getSubscriptionFeatures,
+  SUBSCRIPTION_PLAN_COLORS,
+  SubscriptionPlanName,
   TIME_ZONE_JST,
 } from '@tech-post-cast/commons';
 
@@ -20,9 +26,12 @@ export class DashboardService {
   private readonly logger = new Logger(DashboardService.name);
 
   constructor(
+    private readonly appConfigService: AppConfigService,
     private readonly personalizedFeedsRepository: PersonalizedFeedsRepository,
     @Inject('PersonalizedProgramsRepository')
     private readonly personalizedProgramsRepository: IPersonalizedProgramsRepository,
+    @Inject('AppUsersRepository')
+    private readonly appUsersRepository: IAppUsersRepository,
   ) {}
 
   /**
@@ -36,6 +45,12 @@ export class DashboardService {
     });
 
     try {
+      // ユーザーの存在確認
+      const user = await this.appUsersRepository.findOne(userId);
+      if (!user) {
+        throw new NotFoundException(`User with ID ${userId} not found`);
+      }
+
       // 現在の月の開始日と終了日を計算（JST）
       const now = new Date();
       const currentMonthStart = getFirstDayOfMonth(now, TIME_ZONE_JST);
@@ -131,92 +146,6 @@ export class DashboardService {
   }
 
   /**
-   * パーソナルフィード概要情報を取得する
-   */
-  async getPersonalizedFeedsSummary(
-    userId: string,
-  ): Promise<GetDashboardPersonalizedFeedsSummaryResponseDto> {
-    this.logger.debug('DashboardService.getPersonalizedFeedsSummary called', {
-      userId,
-    });
-
-    // ユーザーの全フィードをフィルター情報付きで取得（大きなページサイズで全件取得）
-    const feedsResult =
-      await this.personalizedFeedsRepository.findByUserIdWithFilters(
-        userId,
-        1,
-        1000,
-      );
-
-    // アクティブなフィード数を計算
-    const activeFeedsCount = feedsResult.feeds.filter(
-      (feed) => feed.isActive,
-    ).length;
-
-    // 最近作成されたフィード（最新5件）を取得
-    const recentFeeds = feedsResult.feeds
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(0, 5)
-      .map((feed): PersonalizedFeedSummaryDto => {
-        const tagFiltersCount = feed.filterGroups.reduce(
-          (count, group) => count + (group.tagFilters?.length || 0),
-          0,
-        );
-        const authorFiltersCount = feed.filterGroups.reduce(
-          (count, group) => count + (group.authorFilters?.length || 0),
-          0,
-        );
-        const dateRangeFiltersCount = feed.filterGroups.reduce(
-          (count, group) => count + (group.dateRangeFilters?.length || 0),
-          0,
-        );
-        const likesCountFiltersCount = feed.filterGroups.reduce(
-          (count, group) => count + (group.likesCountFilters?.length || 0),
-          0,
-        );
-
-        return {
-          id: feed.id,
-          name: feed.name,
-          description: feed.dataSource, // dataSourceを説明として使用
-          isActive: feed.isActive,
-          tagFiltersCount,
-          authorFiltersCount,
-          totalFiltersCount:
-            tagFiltersCount +
-            authorFiltersCount +
-            dateRangeFiltersCount +
-            likesCountFiltersCount,
-          createdAt: feed.createdAt,
-          updatedAt: feed.updatedAt,
-        };
-      });
-
-    // 総フィルター条件数を計算
-    const totalFiltersCount = feedsResult.feeds.reduce((total, feed) => {
-      return (
-        total +
-        feed.filterGroups.reduce((groupTotal, group) => {
-          return (
-            groupTotal +
-            (group.tagFilters?.length || 0) +
-            (group.authorFilters?.length || 0) +
-            (group.dateRangeFilters?.length || 0) +
-            (group.likesCountFilters?.length || 0)
-          );
-        }, 0)
-      );
-    }, 0);
-
-    return {
-      activeFeedsCount,
-      totalFeedsCount: feedsResult.total,
-      recentFeeds,
-      totalFiltersCount,
-    };
-  }
-
-  /**
    * パーソナルプログラム一覧を取得する
    */
   async getPersonalizedPrograms(
@@ -268,5 +197,133 @@ export class DashboardService {
       offset,
       hasNext,
     };
+  }
+
+  /**
+   * ダッシュボードサブスクリプション情報を取得する
+   */
+  async getDashboardSubscription(
+    userId: string,
+  ): Promise<GetDashboardSubscriptionResponseDto> {
+    this.logger.debug('DashboardService.getDashboardSubscription called', {
+      userId,
+    });
+
+    try {
+      // ユーザーのサブスクリプション情報を取得
+      const userWithSubscription =
+        await this.appUsersRepository.findOneWithSubscription(userId);
+
+      if (!userWithSubscription) {
+        throw new NotFoundException(`User with ID ${userId} not found`);
+      }
+
+      // プラン情報を取得（サブスクリプションがない場合はFreeプランとして扱う）
+      let planName: SubscriptionPlanName = 'Free';
+      let planColor: string = 'grey'; // Freeプランの色
+      let maxFeeds: number;
+      let maxTags: number;
+      let showUpgradeButton = true;
+
+      if (
+        userWithSubscription?.subscription?.plan &&
+        userWithSubscription.subscription.plan.id !==
+          this.appConfigService.FreePlanId
+      ) {
+        // 有料プランの場合
+        const plan = userWithSubscription.subscription.plan;
+        planName = plan.name as SubscriptionPlanName;
+        planColor = SUBSCRIPTION_PLAN_COLORS[planName] || 'grey';
+        maxFeeds = plan.maxFeeds;
+        maxTags = plan.maxTags;
+        showUpgradeButton = false; // 有料プランの場合はアップグレードボタンを非表示
+      } else {
+        // Freeプランの場合、デフォルト値を使用
+        // 将来的にはデータベースのFreeプランから取得することも可能
+        maxFeeds = 1;
+        maxTags = 1;
+      }
+
+      // 現在のフィード数を取得
+      const feedsResult =
+        await this.personalizedFeedsRepository.findByUserIdWithFilters(
+          userId,
+          1,
+          1000, // 大きなページサイズで全件取得
+        );
+      const activeFeedsCount = feedsResult.feeds.filter(
+        (feed) => feed.isActive,
+      ).length;
+
+      // タグ数を計算（filterGroupsからtagFiltersを取得）
+      const totalTagsCount = feedsResult.feeds.reduce((sum, feed) => {
+        if (!feed.filterGroups) return sum;
+        return (
+          sum +
+          feed.filterGroups.reduce((groupSum, group) => {
+            return groupSum + (group.tagFilters?.length || 0);
+          }, 0)
+        );
+      }, 0);
+
+      // プラン別の機能定義
+      const planFeatures = getSubscriptionFeatures();
+      const features: SubscriptionFeatureDto[] = [
+        {
+          name: 'パーソナルフィード作成',
+          available: planFeatures.personalizedFeedCreation,
+        },
+        { name: '日次配信', available: planFeatures.dailyDelivery },
+        // 初期リリースでは以下の機能は実装しないため削除
+        // { name: '週次配信', available: planFeatures.weeklyDelivery },
+        // { name: '月次配信', available: planFeatures.monthlyDelivery },
+        // { name: '高度なフィルタリング', available: planFeatures.advancedFiltering },
+        // { name: 'API アクセス', available: planFeatures.apiAccess },
+      ];
+
+      // 使用量情報
+      const usageItems: UsageItemDto[] = [
+        {
+          label: 'フィード数',
+          current: activeFeedsCount,
+          limit: maxFeeds,
+          showPercentage: true,
+          warningThreshold: 70,
+          dangerThreshold: 90,
+        },
+        {
+          label: 'タグ数',
+          current: totalTagsCount,
+          limit: maxTags,
+          showPercentage: true,
+          warningThreshold: 70,
+          dangerThreshold: 90,
+        },
+      ];
+
+      const result: GetDashboardSubscriptionResponseDto = {
+        planName,
+        planColor,
+        features,
+        usageItems,
+        showUpgradeButton,
+      };
+
+      this.logger.debug('DashboardService.getDashboardSubscription result', {
+        userId,
+        planName: result.planName,
+        featuresCount: result.features.length,
+        usageItemsCount: result.usageItems.length,
+      });
+
+      return result;
+    } catch (error) {
+      this.logger.error('Failed to get dashboard subscription', {
+        userId,
+        error: error.message,
+        stack: error.stack,
+      });
+      throw error;
+    }
   }
 }

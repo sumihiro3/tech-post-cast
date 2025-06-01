@@ -1,11 +1,13 @@
 import { PersonalizedFeedsRepository } from '@/infrastructure/database/personalized-feeds/personalized-feeds.repository';
 import { PersonalizedFeedFactory } from '@/test/factories/personalized-feed.factory';
 import { PersonalizedProgramFactory } from '@/test/factories/personalized-program.factory';
+import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   restoreLogOutput,
   suppressLogOutput,
 } from '../../test/helpers/logger.helper';
+import { IAppUsersRepository } from '../app-users/app-users.repository.interface';
 import { IPersonalizedProgramsRepository } from '../personalized-programs/personalized-programs.repository.interface';
 import { DashboardService } from './dashboard.service';
 
@@ -13,6 +15,7 @@ describe('DashboardService', () => {
   let service: DashboardService;
   let personalizedFeedsRepository: jest.Mocked<PersonalizedFeedsRepository>;
   let personalizedProgramsRepository: jest.Mocked<IPersonalizedProgramsRepository>;
+  let appUsersRepository: jest.Mocked<IAppUsersRepository>;
   let logSpies: jest.SpyInstance[];
 
   beforeEach(async () => {
@@ -27,6 +30,14 @@ describe('DashboardService', () => {
       findById: jest.fn(),
     };
 
+    const mockAppUsersRepository = {
+      findOneWithSubscription: jest.fn(),
+      findOne: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DashboardService,
@@ -38,6 +49,10 @@ describe('DashboardService', () => {
           provide: 'PersonalizedProgramsRepository',
           useValue: mockPersonalizedProgramsRepository,
         },
+        {
+          provide: 'AppUsersRepository',
+          useValue: mockAppUsersRepository,
+        },
       ],
     }).compile();
 
@@ -48,100 +63,13 @@ describe('DashboardService', () => {
     personalizedProgramsRepository = module.get(
       'PersonalizedProgramsRepository',
     ) as jest.Mocked<IPersonalizedProgramsRepository>;
+    appUsersRepository = module.get(
+      'AppUsersRepository',
+    ) as jest.Mocked<IAppUsersRepository>;
   });
 
   afterEach(() => {
     restoreLogOutput(logSpies);
-  });
-
-  describe('getPersonalizedFeedsSummary', () => {
-    it('パーソナルフィード概要情報を正しく取得できること', async () => {
-      const userId = 'user-1';
-      const mockFeedsResult = {
-        feeds: [
-          PersonalizedFeedFactory.createPersonalizedFeedWithFilters({
-            id: 'feed-1',
-            name: 'テストフィード1',
-            isActive: true,
-            createdAt: new Date('2025-01-01'),
-            updatedAt: new Date('2025-01-01'),
-          }),
-          PersonalizedFeedFactory.createPersonalizedFeedWithFilters({
-            id: 'feed-2',
-            name: 'テストフィード2',
-            isActive: false,
-            createdAt: new Date('2025-01-02'),
-            updatedAt: new Date('2025-01-02'),
-            filterGroups: [
-              {
-                id: 'group-2',
-                filterId: 'feed-2',
-                name: 'グループ2',
-                logicType: 'OR' as const,
-                createdAt: new Date('2025-01-02'),
-                updatedAt: new Date('2025-01-02'),
-                tagFilters: [
-                  {
-                    id: 'tag-2',
-                    groupId: 'group-2',
-                    tagName: 'typescript',
-                    createdAt: new Date('2025-01-02'),
-                  },
-                ],
-                authorFilters: [],
-                dateRangeFilters: [],
-                likesCountFilters: [],
-              },
-            ],
-          }),
-        ],
-        total: 2,
-      };
-
-      personalizedFeedsRepository.findByUserIdWithFilters.mockResolvedValue(
-        mockFeedsResult,
-      );
-
-      const result = await service.getPersonalizedFeedsSummary(userId);
-
-      expect(result).toBeDefined();
-      expect(result.activeFeedsCount).toBe(1);
-      expect(result.totalFeedsCount).toBe(2);
-      expect(result.recentFeeds).toHaveLength(2);
-      expect(result.recentFeeds[0].id).toBe('feed-2'); // 最新順
-      expect(result.recentFeeds[0].name).toBe('テストフィード2');
-      expect(result.recentFeeds[0].tagFiltersCount).toBe(1);
-      expect(result.recentFeeds[0].totalFiltersCount).toBe(1);
-      expect(result.recentFeeds[1].id).toBe('feed-1');
-      expect(result.recentFeeds[1].tagFiltersCount).toBe(1);
-      expect(result.recentFeeds[1].authorFiltersCount).toBe(1);
-      expect(result.recentFeeds[1].totalFiltersCount).toBe(4);
-      expect(result.totalFiltersCount).toBe(5); // 全フィードの合計
-
-      expect(
-        personalizedFeedsRepository.findByUserIdWithFilters,
-      ).toHaveBeenCalledWith(userId, 1, 1000);
-    });
-
-    it('フィードが存在しない場合、適切なデフォルト値を返すこと', async () => {
-      const userId = 'user-1';
-      const mockFeedsResult = {
-        feeds: [],
-        total: 0,
-      };
-
-      personalizedFeedsRepository.findByUserIdWithFilters.mockResolvedValue(
-        mockFeedsResult,
-      );
-
-      const result = await service.getPersonalizedFeedsSummary(userId);
-
-      expect(result).toBeDefined();
-      expect(result.activeFeedsCount).toBe(0);
-      expect(result.totalFeedsCount).toBe(0);
-      expect(result.recentFeeds).toHaveLength(0);
-      expect(result.totalFiltersCount).toBe(0);
-    });
   });
 
   describe('getPersonalizedPrograms', () => {
@@ -231,6 +159,49 @@ describe('DashboardService', () => {
       expect(result.hasNext).toBe(true);
       expect(result.totalCount).toBe(12);
     });
+
+    it('番組が存在しない場合でも正常に動作すること', async () => {
+      const userId = 'user-empty';
+      const query = { limit: 10, offset: 0 };
+
+      const mockProgramsResult = {
+        programs: [],
+        totalCount: 0,
+      };
+
+      personalizedProgramsRepository.findByUserIdWithPagination.mockResolvedValue(
+        mockProgramsResult,
+      );
+
+      const result = await service.getPersonalizedPrograms(userId, query);
+
+      expect(result).toBeDefined();
+      expect(result.programs).toHaveLength(0);
+      expect(result.totalCount).toBe(0);
+      expect(result.hasNext).toBe(false);
+    });
+
+    it('エラーが発生した場合は適切にハンドリングされること', async () => {
+      const userId = 'user-1';
+      const query = { limit: 10, offset: 0 };
+      const error = new Error('Database connection failed');
+
+      personalizedProgramsRepository.findByUserIdWithPagination.mockRejectedValue(
+        error,
+      );
+
+      await expect(
+        service.getPersonalizedPrograms(userId, query),
+      ).rejects.toThrow('Database connection failed');
+
+      expect(
+        personalizedProgramsRepository.findByUserIdWithPagination,
+      ).toHaveBeenCalledWith(userId, {
+        limit: 10,
+        offset: 0,
+        orderBy: { createdAt: 'desc' },
+      });
+    });
   });
 
   describe('getDashboardStats', () => {
@@ -246,6 +217,10 @@ describe('DashboardService', () => {
 
     it('統計情報を正しく取得できること', async () => {
       const userId = 'user-1';
+
+      // ユーザーの存在確認のモック
+      const mockUser = { id: userId };
+      appUsersRepository.findOne.mockResolvedValue(mockUser as any);
 
       // モックデータの準備
       const mockFeeds = [
@@ -312,6 +287,7 @@ describe('DashboardService', () => {
       expect(result.totalProgramDuration).toBe('30m'); // 総時間30分
 
       // リポジトリメソッドが正しく呼ばれたことを確認
+      expect(appUsersRepository.findOne).toHaveBeenCalledWith(userId);
       expect(
         personalizedFeedsRepository.findByUserIdWithFilters,
       ).toHaveBeenCalledWith(userId, 1, 1000);
@@ -326,6 +302,10 @@ describe('DashboardService', () => {
 
     it('音声ファイルがない番組は総時間計算から除外されること', async () => {
       const userId = 'user-1';
+
+      // ユーザーの存在確認のモック
+      const mockUser = { id: userId };
+      appUsersRepository.findOne.mockResolvedValue(mockUser as any);
 
       const mockFeeds = [
         PersonalizedFeedFactory.createPersonalizedFeedWithFilters({
@@ -369,10 +349,15 @@ describe('DashboardService', () => {
       const result = await service.getDashboardStats(userId);
 
       expect(result.totalProgramDuration).toBe('10m'); // 音声ファイルがある番組のみカウント
+      expect(appUsersRepository.findOne).toHaveBeenCalledWith(userId);
     });
 
     it('時間フォーマットが正しく動作すること', async () => {
       const userId = 'user-1';
+
+      // ユーザーの存在確認のモック
+      const mockUser = { id: userId };
+      appUsersRepository.findOne.mockResolvedValue(mockUser as any);
 
       const mockFeedsResult = {
         feeds: [],
@@ -403,18 +388,375 @@ describe('DashboardService', () => {
       const result = await service.getDashboardStats(userId);
 
       expect(result.totalProgramDuration).toBe('1h'); // 1時間として表示
+      expect(appUsersRepository.findOne).toHaveBeenCalledWith(userId);
+    });
+
+    it('フィードや番組が存在しない場合でも正常に動作すること', async () => {
+      const userId = 'user-empty';
+
+      // ユーザーの存在確認のモック
+      const mockUser = { id: userId };
+      appUsersRepository.findOne.mockResolvedValue(mockUser as any);
+
+      const mockFeedsResult = {
+        feeds: [],
+        total: 0,
+      };
+
+      const mockProgramsResult = {
+        programs: [],
+        totalCount: 0,
+      };
+
+      personalizedFeedsRepository.findByUserIdWithFilters.mockResolvedValue(
+        mockFeedsResult,
+      );
+      personalizedProgramsRepository.findByUserIdWithPagination.mockResolvedValue(
+        mockProgramsResult,
+      );
+
+      const result = await service.getDashboardStats(userId);
+
+      expect(result).toBeDefined();
+      expect(result.activeFeedsCount).toBe(0);
+      expect(result.monthlyEpisodesCount).toBe(0);
+      expect(result.totalProgramDuration).toBe('0m');
+      expect(appUsersRepository.findOne).toHaveBeenCalledWith(userId);
+    });
+
+    it('ユーザーが見つからない場合、NotFoundExceptionを投げること', async () => {
+      const userId = 'non-existent-user';
+
+      // ユーザーが見つからない場合のモック
+      appUsersRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.getDashboardStats(userId)).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(service.getDashboardStats(userId)).rejects.toThrow(
+        `User with ID ${userId} not found`,
+      );
+
+      expect(appUsersRepository.findOne).toHaveBeenCalledWith(userId);
     });
 
     it('エラーが発生した場合は適切にハンドリングされること', async () => {
       const userId = 'user-1';
       const error = new Error('Database error');
 
-      personalizedFeedsRepository.findByUserIdWithFilters.mockRejectedValue(
-        error,
-      );
+      // ユーザー取得でエラーが発生する場合
+      appUsersRepository.findOne.mockRejectedValue(error);
 
       await expect(service.getDashboardStats(userId)).rejects.toThrow(
         'Database error',
+      );
+
+      expect(appUsersRepository.findOne).toHaveBeenCalledWith(userId);
+    });
+  });
+
+  describe('getDashboardSubscription', () => {
+    beforeEach(() => {
+      // 現在時刻を2025年1月15日に固定
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2025-01-15T12:00:00.000Z'));
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('サブスクリプション情報を正しく取得できること', async () => {
+      const userId = 'user-1';
+
+      // ユーザーのサブスクリプション情報のモック（Freeプラン）
+      const mockUserWithSubscription = {
+        subscription: null, // Freeプランなのでサブスクリプションなし
+      } as any;
+
+      // モックデータの準備
+      const mockFeeds = [
+        PersonalizedFeedFactory.createPersonalizedFeedWithFilters({
+          id: 'feed-1',
+          isActive: true,
+          filterGroups: [
+            {
+              id: 'group-1',
+              filterId: 'filter-1',
+              name: 'Group 1',
+              logicType: 'AND',
+              tagFilters: [
+                {
+                  id: 'tag-1',
+                  groupId: 'group-1',
+                  tagName: 'React',
+                  createdAt: new Date(),
+                },
+                {
+                  id: 'tag-2',
+                  groupId: 'group-1',
+                  tagName: 'TypeScript',
+                  createdAt: new Date(),
+                },
+              ],
+              authorFilters: [],
+              dateRangeFilters: [],
+              likesCountFilters: [],
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        }),
+        PersonalizedFeedFactory.createPersonalizedFeedWithFilters({
+          id: 'feed-2',
+          isActive: true,
+          filterGroups: [
+            {
+              id: 'group-2',
+              filterId: 'filter-2',
+              name: 'Group 2',
+              logicType: 'OR',
+              tagFilters: [
+                {
+                  id: 'tag-3',
+                  groupId: 'group-2',
+                  tagName: 'Vue',
+                  createdAt: new Date(),
+                },
+              ],
+              authorFilters: [],
+              dateRangeFilters: [],
+              likesCountFilters: [],
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        }),
+        PersonalizedFeedFactory.createPersonalizedFeedWithFilters({
+          id: 'feed-3',
+          isActive: false, // 非アクティブ
+          filterGroups: [],
+        }),
+      ];
+
+      const mockFeedsResult = {
+        feeds: mockFeeds,
+        total: 3,
+      };
+
+      // モックの設定
+      appUsersRepository.findOneWithSubscription.mockResolvedValue(
+        mockUserWithSubscription,
+      );
+      personalizedFeedsRepository.findByUserIdWithFilters.mockResolvedValue(
+        mockFeedsResult,
+      );
+
+      // テスト実行
+      const result = await service.getDashboardSubscription(userId);
+
+      // 検証
+      expect(result).toEqual({
+        planName: 'Free',
+        planColor: 'grey',
+        features: [
+          { name: 'パーソナルフィード作成', available: true },
+          { name: '日次配信', available: true },
+          // 初期リリースでは以下の機能は実装しないため削除
+          // { name: '週次配信', available: true },
+          // { name: '月次配信', available: false },
+          // { name: '高度なフィルタリング', available: false },
+          // { name: 'API アクセス', available: false },
+        ],
+        usageItems: [
+          {
+            label: 'フィード数',
+            current: 2, // アクティブなフィード数
+            limit: 10,
+            showPercentage: true,
+            warningThreshold: 70,
+            dangerThreshold: 90,
+          },
+          {
+            label: 'タグ数',
+            current: 3, // 全フィードのタグ数合計
+            limit: 50,
+            showPercentage: true,
+            warningThreshold: 70,
+            dangerThreshold: 90,
+          },
+        ],
+        showUpgradeButton: true,
+      });
+
+      // モックが正しく呼ばれたことを確認
+      expect(appUsersRepository.findOneWithSubscription).toHaveBeenCalledWith(
+        userId,
+      );
+      expect(
+        personalizedFeedsRepository.findByUserIdWithFilters,
+      ).toHaveBeenCalledWith(userId, 1, 1000);
+    });
+
+    it('フィルターグループがない場合でもエラーにならないこと', async () => {
+      const userId = 'user-3';
+
+      // ユーザーのサブスクリプション情報のモック（サブスクリプションなし）
+      const mockUserWithSubscription = {
+        subscription: null,
+      } as any;
+
+      // モックデータの準備（フィルターグループなし）
+      const mockFeeds = [
+        PersonalizedFeedFactory.createPersonalizedFeedWithFilters({
+          id: 'feed-1',
+          isActive: true,
+          filterGroups: [], // フィルターグループなし
+        }),
+      ];
+
+      const mockFeedsResult = {
+        feeds: mockFeeds,
+        total: 1,
+      };
+
+      // モックの設定
+      appUsersRepository.findOneWithSubscription.mockResolvedValue(
+        mockUserWithSubscription,
+      );
+      personalizedFeedsRepository.findByUserIdWithFilters.mockResolvedValue(
+        mockFeedsResult,
+      );
+
+      // テスト実行
+      const result = await service.getDashboardSubscription(userId);
+
+      // 検証（エラーが発生しないことを確認）
+      expect(result).toBeDefined();
+      expect(result.planName).toBe('Free');
+      expect(result.usageItems[1].current).toBe(0); // タグ数は0
+    });
+
+    it('エラーが発生した場合は例外を再スローすること', async () => {
+      const userId = 'user-error';
+      const error = new Error('Database error');
+
+      // モックの設定
+      appUsersRepository.findOneWithSubscription.mockRejectedValue(error);
+
+      // テスト実行と検証
+      await expect(service.getDashboardSubscription(userId)).rejects.toThrow(
+        'Database error',
+      );
+
+      // モックが正しく呼ばれたことを確認
+      expect(appUsersRepository.findOneWithSubscription).toHaveBeenCalledWith(
+        userId,
+      );
+    });
+
+    it('ユーザーが見つからない場合、NotFoundExceptionを投げること', async () => {
+      const userId = 'non-existent-user';
+
+      // ユーザーが見つからない場合のモック
+      appUsersRepository.findOneWithSubscription.mockResolvedValue(null);
+
+      await expect(service.getDashboardSubscription(userId)).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(service.getDashboardSubscription(userId)).rejects.toThrow(
+        `User with ID ${userId} not found`,
+      );
+
+      expect(appUsersRepository.findOneWithSubscription).toHaveBeenCalledWith(
+        userId,
+      );
+    });
+
+    it('有料プランのサブスクリプション情報を正しく取得できること', async () => {
+      const userId = 'user-2';
+
+      // ユーザーのサブスクリプション情報のモック（Basicプラン）
+      const mockUserWithSubscription = {
+        subscription: {
+          plan: {
+            name: 'Basic',
+            maxFeeds: 5,
+            maxTags: 20,
+          },
+        },
+      } as any;
+
+      // モックデータの準備（フィードなし）
+      const mockFeedsResult = {
+        feeds: [],
+        total: 0,
+      };
+
+      // モックの設定
+      appUsersRepository.findOneWithSubscription.mockResolvedValue(
+        mockUserWithSubscription,
+      );
+      personalizedFeedsRepository.findByUserIdWithFilters.mockResolvedValue(
+        mockFeedsResult,
+      );
+
+      // テスト実行
+      const result = await service.getDashboardSubscription(userId);
+
+      // 検証
+      expect(result).toEqual({
+        planName: 'Basic',
+        planColor: 'blue',
+        features: [
+          { name: 'パーソナルフィード作成', available: true },
+          { name: '日次配信', available: true },
+        ],
+        usageItems: [
+          {
+            label: 'フィード数',
+            current: 0,
+            limit: 5,
+            showPercentage: true,
+            warningThreshold: 70,
+            dangerThreshold: 90,
+          },
+          {
+            label: 'タグ数',
+            current: 0,
+            limit: 20,
+            showPercentage: true,
+            warningThreshold: 70,
+            dangerThreshold: 90,
+          },
+        ],
+        showUpgradeButton: false, // 有料プランなのでアップグレードボタンは非表示
+      });
+
+      // モックが正しく呼ばれたことを確認
+      expect(appUsersRepository.findOneWithSubscription).toHaveBeenCalledWith(
+        userId,
+      );
+      expect(
+        personalizedFeedsRepository.findByUserIdWithFilters,
+      ).toHaveBeenCalledWith(userId, 1, 1000);
+    });
+
+    it('ユーザー情報取得でエラーが発生した場合、エラーを再スローすること', async () => {
+      const userId = 'user-error';
+      const error = new Error('Database connection failed');
+
+      // モックの設定
+      appUsersRepository.findOneWithSubscription.mockRejectedValue(error);
+
+      // テスト実行と検証
+      await expect(service.getDashboardSubscription(userId)).rejects.toThrow(
+        'Database connection failed',
+      );
+
+      // モックが正しく呼ばれたことを確認
+      expect(appUsersRepository.findOneWithSubscription).toHaveBeenCalledWith(
+        userId,
       );
     });
   });

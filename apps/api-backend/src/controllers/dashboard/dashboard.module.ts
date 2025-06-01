@@ -1,4 +1,5 @@
 import { DashboardService } from '@/domains/dashboard/dashboard.service';
+import { AppUsersRepository } from '@/infrastructure/database/app-users/app-users.repository';
 import { PersonalizedFeedsRepository } from '@/infrastructure/database/personalized-feeds/personalized-feeds.repository';
 import { PersonalizedProgramsRepository } from '@/infrastructure/database/personalized-programs/personalized-programs.repository';
 import { Module } from '@nestjs/common';
@@ -14,6 +15,10 @@ import { DashboardController } from './dashboard.controller';
     {
       provide: 'PersonalizedProgramsRepository',
       useClass: PersonalizedProgramsRepository,
+    },
+    {
+      provide: 'AppUsersRepository',
+      useClass: AppUsersRepository,
     },
   ],
   exports: [DashboardService],

@@ -2,15 +2,19 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as fs from 'fs';
 import { AppModule } from '../src/app.module';
-import { ProgramContentApiModule } from '../src/controllers/program-content-api/program-content-api.module';
+import {
+  GetDashboardPersonalizedProgramsRequestDto,
+  GetDashboardPersonalizedProgramsResponseDto,
+  GetDashboardStatsResponseDto,
+  GetDashboardSubscriptionResponseDto,
+} from '../src/controllers/dashboard/dto';
 import { QiitaPostDto } from '../src/controllers/qiita-posts/dto/search-qiita-posts.response.dto';
-import { QiitaPostsModule } from '../src/controllers/qiita-posts/qiita-posts.module';
-import { UserSettingsModule } from '../src/controllers/user-settings/user-settings.module';
 
 // 型定義はsrc/custom.d.tsで定義済み（tsconfig.jsonのfilesで明示的に読み込み）
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
   const builder = new DocumentBuilder()
     .setTitle('TechPostCast API')
     .setDescription('TechPostCast API for frontend application')
@@ -18,8 +22,14 @@ async function bootstrap() {
     .build();
 
   const options = {
-    include: [ProgramContentApiModule, QiitaPostsModule, UserSettingsModule],
-    extraModels: [QiitaPostDto],
+    // include: [DashboardModule],
+    extraModels: [
+      QiitaPostDto,
+      GetDashboardStatsResponseDto,
+      GetDashboardSubscriptionResponseDto,
+      GetDashboardPersonalizedProgramsRequestDto,
+      GetDashboardPersonalizedProgramsResponseDto,
+    ],
     deepScanRoutes: true,
   };
 
@@ -32,6 +42,8 @@ async function bootstrap() {
   const fullApiDocument = SwaggerModule.createDocument(app, builder, {
     ...options,
     include: undefined, // すべてのモジュールを含める
+    ignoreGlobalPrefix: false,
+    operationIdFactory: (controllerKey: string, methodKey: string) => methodKey,
   });
   fs.writeFileSync(
     'api-spec/api-backend-spec.json',

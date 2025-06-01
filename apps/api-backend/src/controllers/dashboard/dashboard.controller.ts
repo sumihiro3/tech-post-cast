@@ -6,15 +6,16 @@ import {
   Get,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
-  GetDashboardPersonalizedFeedsSummaryResponseDto,
   GetDashboardPersonalizedProgramsRequestDto,
   GetDashboardPersonalizedProgramsResponseDto,
   GetDashboardStatsResponseDto,
+  GetDashboardSubscriptionResponseDto,
 } from './dto';
 
 @Controller('dashboard')
@@ -37,6 +38,14 @@ export class DashboardController {
     description: 'ダッシュボード統計情報',
     type: GetDashboardStatsResponseDto,
   })
+  @ApiResponse({
+    status: 404,
+    description: 'ユーザーが見つかりません',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'サーバーエラー',
+  })
   async getDashboardStats(
     @CurrentUserId() userId: string,
   ): Promise<GetDashboardStatsResponseDto> {
@@ -56,44 +65,12 @@ export class DashboardController {
 
       return stats;
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        this.logger.warn(`AppUser [${userId}] が見つかりません`, { userId });
+        throw error;
+      }
+
       const errorMessage = 'ダッシュボード統計情報の取得に失敗しました';
-      this.logger.error(errorMessage, { userId, error }, error.stack);
-      throw new InternalServerErrorException(errorMessage);
-    }
-  }
-
-  @Get('personalized-feeds/summary')
-  @ApiOperation({
-    operationId: 'getDashboardPersonalizedFeedsSummary',
-    summary: 'ダッシュボード用パーソナルフィード概要取得',
-    description: 'ダッシュボード表示用のパーソナルフィード概要情報を取得します',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'パーソナルフィード概要情報',
-    type: GetDashboardPersonalizedFeedsSummaryResponseDto,
-  })
-  async getDashboardPersonalizedFeedsSummary(
-    @CurrentUserId() userId: string,
-  ): Promise<GetDashboardPersonalizedFeedsSummaryResponseDto> {
-    this.logger.debug(
-      'DashboardController.getDashboardPersonalizedFeedsSummary called',
-      { userId },
-    );
-
-    try {
-      const summary =
-        await this.dashboardService.getPersonalizedFeedsSummary(userId);
-
-      this.logger.log('パーソナルフィード概要情報を取得しました', {
-        userId,
-        activeFeedsCount: summary.activeFeedsCount,
-        recentFeedsCount: summary.recentFeeds.length,
-      });
-
-      return summary;
-    } catch (error) {
-      const errorMessage = 'パーソナルフィード概要情報の取得に失敗しました';
       this.logger.error(errorMessage, { userId, error }, error.stack);
       throw new InternalServerErrorException(errorMessage);
     }
@@ -137,6 +114,59 @@ export class DashboardController {
       const errorMessage = 'パーソナルプログラム一覧の取得に失敗しました';
       this.logger.error(errorMessage, { userId, error }, error.stack);
       throw new InternalServerErrorException(errorMessage);
+    }
+  }
+
+  /**
+   * ダッシュボードサブスクリプション情報を取得する
+   */
+  @Get('subscription')
+  @ApiOperation({
+    operationId: 'getDashboardSubscription',
+    summary: 'ダッシュボードサブスクリプション情報取得',
+    description:
+      'ユーザーのサブスクリプション情報、使用量、機能一覧を取得します',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'サブスクリプション情報の取得に成功',
+    type: GetDashboardSubscriptionResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'ユーザーが見つかりません',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'サーバーエラー',
+  })
+  async getDashboardSubscription(
+    @CurrentUserId() userId: string,
+  ): Promise<GetDashboardSubscriptionResponseDto> {
+    this.logger.log('getDashboardSubscription called', { userId });
+
+    try {
+      const result =
+        await this.dashboardService.getDashboardSubscription(userId);
+      this.logger.log('getDashboardSubscription completed', {
+        userId,
+        planName: result.planName,
+      });
+      return result;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        this.logger.warn(`AppUser [${userId}] が見つかりません`, { userId });
+        throw error;
+      }
+
+      this.logger.error('getDashboardSubscription failed', {
+        userId,
+        error: error.message,
+        stack: error.stack,
+      });
+      throw new InternalServerErrorException(
+        'サブスクリプション情報の取得に失敗しました',
+      );
     }
   }
 }
