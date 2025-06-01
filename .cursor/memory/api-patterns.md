@@ -743,3 +743,66 @@ const getFieldErrors = (field: string): string[] => {
 
 - TPC-101: ユーザーダッシュボードの実装
 - パーソナルフィード管理画面のバリデーション機能統合
+
+## 統計情報API設計パターン (2025-01-15)
+
+### 背景と課題
+
+ダッシュボードの統計情報で「月間配信数」から「総配信数（累計）」への変更要求があり、有効期限切れの番組も含める必要が発生。既存のページネーション用メソッドでは有効期限切れの番組が除外されていた。
+
+### 検討したアプローチ
+
+1. **既存メソッドの条件分岐追加**: パラメーターで有効期限チェックのON/OFFを制御
+2. **統計専用メソッドの新規作成**: 統計用途に特化したクエリメソッドを分離
+3. **統計専用サービスの作成**: 統計情報取得を専門に扱うサービス層を新設
+
+### 決定事項と理由
+
+**統計専用メソッドの新規作成**を採用
+
+**理由:**
+
+- 単一責任の原則: 統計用途と業務用途でクエリ条件が異なる
+- 保守性: 既存メソッドの変更リスクを回避
+- 可読性: メソッド名で用途が明確
+- テスタビリティ: 独立したテストケースで検証可能
+
+### 実装パターン
+
+```typescript
+// リポジトリインターフェース
+interface IPersonalizedProgramsRepository {
+  // 通常の業務用途（有効期限チェックあり）
+  findByUserIdWithPagination(userId: string, options: PaginationOptions): Promise<PersonalizedProgramsResult>;
+
+  // 統計用途（有効期限チェックなし）
+  findAllByUserIdForStats(userId: string, options: PaginationOptions): Promise<PersonalizedProgramsResult>;
+}
+
+// サービス層での使い分け
+class DashboardService {
+  async getDashboardStats(userId: string) {
+    // 統計専用メソッドを使用
+    const allPrograms = await this.personalizedProgramsRepository.findAllByUserIdForStats(userId, options);
+    // 統計計算ロジック
+  }
+}
+```
+
+### 学んだ教訓
+
+1. **KEY INSIGHT**: 表示文言の変更でも、ビジネスロジックへの影響を事前に確認する
+2. 統計情報は通常の業務ロジックとは異なる要件を持つことが多い
+3. メソッド名で用途を明確にすることで、将来の保守性が向上
+4. API仕様変更時は、フロントエンドの型定義更新まで含めて完了とする
+
+### 関連タスク
+
+- ダッシュボード統計情報の累計表示対応
+- DTOプロパティ名の統一（monthlyEpisodesCount → totalEpisodesCount）
+
+### パフォーマンス考慮事項
+
+- 統計情報は変更頻度が低いため、キャッシュ導入を検討
+- 大量データの場合は、事前計算とスナップショット保存を検討
+- 統計専用のインデックス設計を検討

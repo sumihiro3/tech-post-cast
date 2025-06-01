@@ -411,3 +411,101 @@ mockPrismaClient.appUser.update.mockRejectedValue(
 - **カバレッジ**: Service, Repository, Controller層
 
 ---
+
+## 統計情報機能のテスト戦略 (2025-01-15)
+
+### 背景と課題
+
+ダッシュボード統計情報の累計表示対応で、新しいリポジトリメソッド`findAllByUserIdForStats`を追加。有効期限切れの番組も含める要件により、既存のテストケースでは不十分。
+
+### 検討したテストアプローチ
+
+1. **既存テストの拡張**: 既存のテストケースにパラメーターを追加
+2. **専用テストケースの作成**: 統計用メソッド専用のテストスイートを作成
+3. **統合テストでの検証**: エンドツーエンドでの統計情報取得をテスト
+
+### 決定事項と理由
+
+**専用テストケースの作成**を採用
+
+**理由:**
+
+- 明確な責任分離: 統計用途と通常用途のテストを分離
+- 網羅性: 有効期限切れの番組を含む/含まないケースを明確にテスト
+- 保守性: 将来の統計ロジック変更時の影響範囲を限定
+
+### 実装したテストパターン
+
+#### リポジトリレベルのテスト
+
+```typescript
+describe('findAllByUserIdForStats', () => {
+  it('指定ユーザーの全パーソナルプログラム一覧を取得できること（有効期限切れも含む）', async () => {
+    const userId = 'user-1';
+    const mockPrograms = [
+      PersonalizedProgramFactory.createPersonalizedProgram(),
+      PersonalizedProgramFactory.createExpiredPersonalizedProgram(), // 有効期限切れ
+    ];
+
+    // モック設定
+    mockPrismaClient.personalizedFeedProgram.count.mockResolvedValue(2);
+    mockPrismaClient.personalizedFeedProgram.findMany.mockResolvedValue(mockPrograms);
+
+    const result = await repository.findAllByUserIdForStats(userId, options);
+
+    // 有効期限切れの番組も含まれることを検証
+    expect(result.programs).toHaveLength(2);
+    expect(result.totalCount).toBe(2);
+  });
+});
+```
+
+#### サービスレベルのテスト
+
+```typescript
+describe('getDashboardStats', () => {
+  it('統計情報を正しく取得できること（有効期限切れの番組も含む）', async () => {
+    // 有効期限切れの番組を含むモックデータ
+    const mockProgramsResult = {
+      programs: [
+        createValidProgram(),
+        createExpiredProgram(), // 有効期限切れ
+      ],
+      totalCount: 2,
+    };
+
+    personalizedProgramsRepository.findAllByUserIdForStats.mockResolvedValue(mockProgramsResult);
+
+    const result = await service.getDashboardStats(userId);
+
+    // 累計数値が正しく計算されることを検証
+    expect(result.totalEpisodesCount).toBe(2); // 有効期限切れも含む
+  });
+});
+```
+
+### 学んだ教訓
+
+1. **KEY INSIGHT**: 統計情報のテストでは、境界条件（有効期限切れ、データなし等）の検証が重要
+2. ファクトリクラスで有効期限切れのテストデータを作成することで、テストの可読性が向上
+3. 統計用メソッドは通常のCRUD操作とは異なるテスト観点が必要
+4. モックデータの設計で、実際のビジネスロジックの複雑さを反映することが重要
+
+### テストカバレッジの観点
+
+- **正常系**: 有効な番組のみ、有効期限切れの番組のみ、混在パターン
+- **異常系**: ユーザーが存在しない、番組が0件、データベースエラー
+- **境界値**: 大量データ、音声ファイルなしの番組、時間計算の精度
+
+### 関連タスク
+
+- ダッシュボード統計情報の累計表示対応
+- PersonalizedProgramFactoryの拡張（有効期限切れデータ対応）
+
+### 今後の改善案
+
+- 統計情報の性能テスト（大量データでの応答時間）
+- 統計計算ロジックの単体テスト分離
+- 統計情報のキャッシュ機能のテスト戦略
+
+---
