@@ -7,11 +7,19 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  Param,
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import {
+  GetDashboardPersonalizedProgramDetailResponseDto,
   GetDashboardPersonalizedProgramsRequestDto,
   GetDashboardPersonalizedProgramsResponseDto,
   GetDashboardStatsResponseDto,
@@ -31,7 +39,7 @@ export class DashboardController {
     operationId: 'getDashboardStats',
     summary: 'ダッシュボード統計情報取得',
     description:
-      'ダッシュボード表示用の統計情報（アクティブフィード数、月間配信数、総番組時間）を取得します',
+      'ダッシュボード表示用の統計情報（アクティブフィード数、総配信数、総番組時間）を取得します',
   })
   @ApiResponse({
     status: 200,
@@ -59,7 +67,7 @@ export class DashboardController {
       this.logger.log('ダッシュボード統計情報を取得しました', {
         userId,
         activeFeedsCount: stats.activeFeedsCount,
-        monthlyEpisodesCount: stats.monthlyEpisodesCount,
+        totalEpisodesCount: stats.totalEpisodesCount,
         totalProgramDuration: stats.totalProgramDuration,
       });
 
@@ -184,5 +192,48 @@ export class DashboardController {
         'サブスクリプション情報の取得に失敗しました',
       );
     }
+  }
+
+  /**
+   * パーソナルプログラムの詳細情報を取得する
+   */
+  @Get('personalized-programs/:id')
+  @UseGuards(ClerkJwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'パーソナルプログラムの詳細情報を取得',
+    description:
+      '指定されたIDのパーソナルプログラムの詳細情報（チャプター、紹介記事一覧、番組台本等）を取得します。',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'パーソナルプログラムID',
+    example: 'program-123',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'パーソナルプログラムの詳細情報',
+    type: GetDashboardPersonalizedProgramDetailResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'プログラムが見つからない',
+  })
+  async getPersonalizedProgramDetail(
+    @CurrentUserId() userId: string,
+    @Param('id') programId: string,
+  ): Promise<GetDashboardPersonalizedProgramDetailResponseDto> {
+    this.logger.debug(
+      'DashboardController.getPersonalizedProgramDetail called',
+      {
+        userId,
+        programId,
+      },
+    );
+
+    return this.dashboardService.getPersonalizedProgramDetail(
+      userId,
+      programId,
+    );
   }
 }

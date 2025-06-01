@@ -29,6 +29,18 @@ export interface IPersonalizedProgramsRepository {
   ): Promise<PersonalizedProgramsResult>;
 
   /**
+   * 指定ユーザーの全パーソナルプログラム一覧を取得する（統計情報用）
+   * 有効期限切れの番組も含めて取得する
+   * @param userId ユーザーID
+   * @param options ページネーションオプション
+   * @returns パーソナルプログラム一覧と総件数
+   */
+  findAllByUserIdForStats(
+    userId: string,
+    options: PaginationOptions,
+  ): Promise<PersonalizedProgramsResult>;
+
+  /**
    * 指定IDのパーソナルプログラムを取得する
    * @param id プログラムID
    * @returns パーソナルプログラム、存在しない場合はnull

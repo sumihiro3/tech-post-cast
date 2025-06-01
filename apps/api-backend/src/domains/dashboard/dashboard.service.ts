@@ -1,10 +1,13 @@
 import { AppConfigService } from '@/app-config/app-config.service';
 import {
+  GetDashboardPersonalizedProgramDetailResponseDto,
   GetDashboardPersonalizedProgramsRequestDto,
   GetDashboardPersonalizedProgramsResponseDto,
   GetDashboardStatsResponseDto,
   GetDashboardSubscriptionResponseDto,
   PersonalizedProgramSummaryDto,
+  ProgramChapterDto,
+  ProgramPostDto,
   SubscriptionFeatureDto,
   UsageItemDto,
 } from '@/controllers/dashboard/dto';
@@ -13,12 +16,9 @@ import { IPersonalizedProgramsRepository } from '@/domains/personalized-programs
 import { PersonalizedFeedsRepository } from '@/infrastructure/database/personalized-feeds/personalized-feeds.repository';
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
-  getFirstDayOfMonth,
-  getLastDayOfMonth,
   getSubscriptionFeatures,
   SUBSCRIPTION_PLAN_COLORS,
   SubscriptionPlanName,
-  TIME_ZONE_JST,
 } from '@tech-post-cast/commons';
 
 @Injectable()
@@ -51,11 +51,6 @@ export class DashboardService {
         throw new NotFoundException(`User with ID ${userId} not found`);
       }
 
-      // 現在の月の開始日と終了日を計算（JST）
-      const now = new Date();
-      const currentMonthStart = getFirstDayOfMonth(now, TIME_ZONE_JST);
-      const currentMonthEnd = getLastDayOfMonth(now, TIME_ZONE_JST);
-
       // アクティブなフィード数を取得
       const feedsResult =
         await this.personalizedFeedsRepository.findByUserIdWithFilters(
@@ -67,9 +62,9 @@ export class DashboardService {
         (feed) => feed.isActive,
       ).length;
 
-      // 今月の配信番組数を取得（全番組を取得してフィルタリング）
+      // 総配信番組数を取得（有効期限切れの番組も含む）
       const allPrograms =
-        await this.personalizedProgramsRepository.findByUserIdWithPagination(
+        await this.personalizedProgramsRepository.findAllByUserIdForStats(
           userId,
           {
             limit: 1000, // 大きなページサイズで全件取得
@@ -78,14 +73,10 @@ export class DashboardService {
           },
         );
 
-      // 今月作成された番組をフィルタリング
-      const monthlyPrograms = allPrograms.programs.filter((program) => {
-        const createdAt = new Date(program.createdAt);
-        return createdAt >= currentMonthStart && createdAt <= currentMonthEnd;
-      });
-      const monthlyEpisodesCount = monthlyPrograms.length;
+      // 総配信番組数（有効期限切れの番組も含む）
+      const totalEpisodesCount = allPrograms.programs.length;
 
-      // 総番組時間を計算（全番組の音声時間を合計）
+      // 総番組時間を計算（有効期限切れの番組も含む）
       const totalDurationMs = allPrograms.programs
         .filter((program) => program.audioUrl) // 音声ファイルが存在する番組のみ
         .reduce((total, program) => total + (program.audioDuration || 0), 0);
@@ -95,7 +86,7 @@ export class DashboardService {
 
       const result: GetDashboardStatsResponseDto = {
         activeFeedsCount,
-        monthlyEpisodesCount,
+        totalEpisodesCount: totalEpisodesCount,
         totalProgramDuration,
       };
 
@@ -348,6 +339,102 @@ export class DashboardService {
         userId,
         error: error.message,
         stack: error.stack,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * パーソナルプログラムの詳細情報を取得する
+   */
+  async getPersonalizedProgramDetail(
+    userId: string,
+    programId: string,
+  ): Promise<GetDashboardPersonalizedProgramDetailResponseDto> {
+    this.logger.debug('DashboardService.getPersonalizedProgramDetail called', {
+      userId,
+      programId,
+    });
+
+    try {
+      // ユーザーの存在確認
+      const user = await this.appUsersRepository.findOne(userId);
+      if (!user) {
+        throw new NotFoundException(`User with ID ${userId} not found`);
+      }
+
+      // パーソナルプログラムの詳細情報を取得
+      const program =
+        await this.personalizedProgramsRepository.findById(programId);
+      if (!program) {
+        throw new NotFoundException(`Program with ID ${programId} not found`);
+      }
+
+      // プログラムの所有者確認
+      if (program.userId !== userId) {
+        throw new NotFoundException(`Program with ID ${programId} not found`);
+      }
+
+      // チャプター情報の変換
+      const chapters: ProgramChapterDto[] = Array.isArray(program.chapters)
+        ? (program.chapters as any[]).map((chapter) => ({
+            title: chapter.title || '',
+            startTime: chapter.startTime || 0,
+            endTime: chapter.endTime || 0,
+          }))
+        : [];
+
+      // 紹介記事一覧の変換
+      const posts: ProgramPostDto[] = program.posts.map((post) => ({
+        id: post.id,
+        title: post.title,
+        url: post.url,
+        authorName: post.authorName,
+        authorId: post.authorId,
+        likesCount: post.likesCount,
+        stocksCount: post.stocksCount,
+        summary: post.summary,
+        createdAt: post.createdAt,
+        updatedAt: post.updatedAt,
+        private: post.private,
+      }));
+
+      const result: GetDashboardPersonalizedProgramDetailResponseDto = {
+        id: program.id,
+        title: program.title,
+        feedId: program.feedId,
+        feedName: program.feed.name,
+        dataSource: program.feed.dataSource,
+        audioUrl: program.audioUrl,
+        audioDuration: program.audioDuration,
+        imageUrl: program.imageUrl,
+        script: program.script as Record<string, any>,
+        chapters,
+        posts,
+        expiresAt: program.expiresAt,
+        isExpired: program.isExpired,
+        createdAt: program.createdAt,
+        updatedAt: program.updatedAt,
+      };
+
+      this.logger.debug(
+        'DashboardService.getPersonalizedProgramDetail completed',
+        {
+          userId,
+          programId,
+          feedId: result.feedId,
+          feedName: result.feedName,
+          postsCount: result.posts.length,
+          chaptersCount: result.chapters.length,
+        },
+      );
+
+      return result;
+    } catch (error) {
+      this.logger.error('Failed to get personalized program detail', {
+        userId,
+        programId,
+        error: error.message,
       });
       throw error;
     }

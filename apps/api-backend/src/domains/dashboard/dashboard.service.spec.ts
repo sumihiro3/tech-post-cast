@@ -1,5 +1,6 @@
 import { AppConfigService } from '@/app-config/app-config.service';
 import { PersonalizedFeedsRepository } from '@/infrastructure/database/personalized-feeds/personalized-feeds.repository';
+import { AppUserFactory } from '@/test/factories/app-user.factory';
 import { PersonalizedFeedFactory } from '@/test/factories/personalized-feed.factory';
 import { PersonalizedProgramFactory } from '@/test/factories/personalized-program.factory';
 import { NotFoundException } from '@nestjs/common';
@@ -30,6 +31,7 @@ describe('DashboardService', () => {
     const mockPersonalizedProgramsRepository = {
       findByUserIdWithPagination: jest.fn(),
       findById: jest.fn(),
+      findAllByUserIdForStats: jest.fn(),
     };
 
     const mockAppUsersRepository = {
@@ -317,7 +319,7 @@ describe('DashboardService', () => {
       personalizedFeedsRepository.findByUserIdWithFilters.mockResolvedValue(
         mockFeedsResult,
       );
-      personalizedProgramsRepository.findByUserIdWithPagination.mockResolvedValue(
+      personalizedProgramsRepository.findAllByUserIdForStats.mockResolvedValue(
         mockProgramsResult,
       );
 
@@ -327,7 +329,7 @@ describe('DashboardService', () => {
       // 検証
       expect(result).toBeDefined();
       expect(result.activeFeedsCount).toBe(2); // アクティブなフィードは2つ
-      expect(result.monthlyEpisodesCount).toBe(2); // 今月の番組は2つ
+      expect(result.totalEpisodesCount).toBe(3); // 総番組数は3つ（有効期限切れも含む）
       expect(result.totalProgramDuration).toBe('30m'); // 総時間30分
 
       // リポジトリメソッドが正しく呼ばれたことを確認
@@ -336,7 +338,7 @@ describe('DashboardService', () => {
         personalizedFeedsRepository.findByUserIdWithFilters,
       ).toHaveBeenCalledWith(userId, 1, 1000);
       expect(
-        personalizedProgramsRepository.findByUserIdWithPagination,
+        personalizedProgramsRepository.findAllByUserIdForStats,
       ).toHaveBeenCalledWith(userId, {
         limit: 1000,
         offset: 0,
@@ -386,7 +388,7 @@ describe('DashboardService', () => {
       personalizedFeedsRepository.findByUserIdWithFilters.mockResolvedValue(
         mockFeedsResult,
       );
-      personalizedProgramsRepository.findByUserIdWithPagination.mockResolvedValue(
+      personalizedProgramsRepository.findAllByUserIdForStats.mockResolvedValue(
         mockProgramsResult,
       );
 
@@ -425,7 +427,7 @@ describe('DashboardService', () => {
       personalizedFeedsRepository.findByUserIdWithFilters.mockResolvedValue(
         mockFeedsResult,
       );
-      personalizedProgramsRepository.findByUserIdWithPagination.mockResolvedValue(
+      personalizedProgramsRepository.findAllByUserIdForStats.mockResolvedValue(
         mockProgramsResult,
       );
 
@@ -455,7 +457,7 @@ describe('DashboardService', () => {
       personalizedFeedsRepository.findByUserIdWithFilters.mockResolvedValue(
         mockFeedsResult,
       );
-      personalizedProgramsRepository.findByUserIdWithPagination.mockResolvedValue(
+      personalizedProgramsRepository.findAllByUserIdForStats.mockResolvedValue(
         mockProgramsResult,
       );
 
@@ -463,7 +465,7 @@ describe('DashboardService', () => {
 
       expect(result).toBeDefined();
       expect(result.activeFeedsCount).toBe(0);
-      expect(result.monthlyEpisodesCount).toBe(0);
+      expect(result.totalEpisodesCount).toBe(0);
       expect(result.totalProgramDuration).toBe('0m');
       expect(appUsersRepository.findOne).toHaveBeenCalledWith(userId);
     });
@@ -802,6 +804,176 @@ describe('DashboardService', () => {
       expect(appUsersRepository.findOneWithSubscription).toHaveBeenCalledWith(
         userId,
       );
+    });
+  });
+
+  describe('getPersonalizedProgramDetail', () => {
+    it('パーソナルプログラムの詳細情報を正常に取得できること', async () => {
+      const userId = 'user-1';
+      const programId = 'program-1';
+      const mockUser = AppUserFactory.createAppUser({ id: userId });
+      const mockProgram = PersonalizedProgramFactory.createPersonalizedProgram({
+        id: programId,
+        userId,
+        title: 'テストプログラム詳細',
+        script: {
+          opening: 'こんにちは、今週の記事をお届けします。',
+          sections: [
+            {
+              title: 'React 18の新機能',
+              content: 'React 18で追加された新機能について...',
+            },
+          ],
+          closing: '以上、今週の記事でした。',
+        },
+        chapters: [
+          {
+            title: 'オープニング',
+            startTime: 0,
+            endTime: 30,
+          },
+          {
+            title: 'メインコンテンツ',
+            startTime: 30,
+            endTime: 150,
+          },
+        ],
+      });
+
+      appUsersRepository.findOne.mockResolvedValue(mockUser);
+      personalizedProgramsRepository.findById.mockResolvedValue(mockProgram);
+
+      const result = await service.getPersonalizedProgramDetail(
+        userId,
+        programId,
+      );
+
+      expect(result).toBeDefined();
+      expect(result.id).toBe(programId);
+      expect(result.title).toBe('テストプログラム詳細');
+      expect(result.feedId).toBe('feed-1');
+      expect(result.feedName).toBe('テストフィード1');
+      expect(result.dataSource).toBe('qiita');
+      expect(result.script).toEqual({
+        opening: 'こんにちは、今週の記事をお届けします。',
+        sections: [
+          {
+            title: 'React 18の新機能',
+            content: 'React 18で追加された新機能について...',
+          },
+        ],
+        closing: '以上、今週の記事でした。',
+      });
+      expect(result.chapters).toHaveLength(2);
+      expect(result.chapters[0]).toEqual({
+        title: 'オープニング',
+        startTime: 0,
+        endTime: 30,
+      });
+      expect(result.posts).toHaveLength(1);
+      expect(result.posts[0].id).toBe('post-1');
+      expect(result.posts[0].title).toBe('テスト記事1');
+
+      expect(appUsersRepository.findOne).toHaveBeenCalledWith(userId);
+      expect(personalizedProgramsRepository.findById).toHaveBeenCalledWith(
+        programId,
+      );
+    });
+
+    it('ユーザーが存在しない場合、NotFoundExceptionをスローすること', async () => {
+      const userId = 'non-existent-user';
+      const programId = 'program-1';
+
+      appUsersRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.getPersonalizedProgramDetail(userId, programId),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(appUsersRepository.findOne).toHaveBeenCalledWith(userId);
+      expect(personalizedProgramsRepository.findById).not.toHaveBeenCalled();
+    });
+
+    it('プログラムが存在しない場合、NotFoundExceptionをスローすること', async () => {
+      const userId = 'user-1';
+      const programId = 'non-existent-program';
+      const mockUser = AppUserFactory.createAppUser({ id: userId });
+
+      appUsersRepository.findOne.mockResolvedValue(mockUser);
+      personalizedProgramsRepository.findById.mockResolvedValue(null);
+
+      await expect(
+        service.getPersonalizedProgramDetail(userId, programId),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(appUsersRepository.findOne).toHaveBeenCalledWith(userId);
+      expect(personalizedProgramsRepository.findById).toHaveBeenCalledWith(
+        programId,
+      );
+    });
+
+    it('プログラムの所有者が異なる場合、NotFoundExceptionをスローすること', async () => {
+      const userId = 'user-1';
+      const programId = 'program-1';
+      const mockUser = AppUserFactory.createAppUser({ id: userId });
+      const mockProgram = PersonalizedProgramFactory.createPersonalizedProgram({
+        id: programId,
+        userId: 'other-user', // 異なるユーザーID
+      });
+
+      appUsersRepository.findOne.mockResolvedValue(mockUser);
+      personalizedProgramsRepository.findById.mockResolvedValue(mockProgram);
+
+      await expect(
+        service.getPersonalizedProgramDetail(userId, programId),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(appUsersRepository.findOne).toHaveBeenCalledWith(userId);
+      expect(personalizedProgramsRepository.findById).toHaveBeenCalledWith(
+        programId,
+      );
+    });
+
+    it('チャプター情報が空の場合、空配列を返すこと', async () => {
+      const userId = 'user-1';
+      const programId = 'program-1';
+      const mockUser = AppUserFactory.createAppUser({ id: userId });
+      const mockProgram = PersonalizedProgramFactory.createPersonalizedProgram({
+        id: programId,
+        userId,
+        chapters: [], // 空のチャプター
+      });
+
+      appUsersRepository.findOne.mockResolvedValue(mockUser);
+      personalizedProgramsRepository.findById.mockResolvedValue(mockProgram);
+
+      const result = await service.getPersonalizedProgramDetail(
+        userId,
+        programId,
+      );
+
+      expect(result.chapters).toEqual([]);
+    });
+
+    it('チャプター情報がnullの場合、空配列を返すこと', async () => {
+      const userId = 'user-1';
+      const programId = 'program-1';
+      const mockUser = AppUserFactory.createAppUser({ id: userId });
+      const mockProgram = PersonalizedProgramFactory.createPersonalizedProgram({
+        id: programId,
+        userId,
+        chapters: null, // nullのチャプター
+      });
+
+      appUsersRepository.findOne.mockResolvedValue(mockUser);
+      personalizedProgramsRepository.findById.mockResolvedValue(mockProgram);
+
+      const result = await service.getPersonalizedProgramDetail(
+        userId,
+        programId,
+      );
+
+      expect(result.chapters).toEqual([]);
     });
   });
 });

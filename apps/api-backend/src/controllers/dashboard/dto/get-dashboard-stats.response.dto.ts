@@ -15,13 +15,13 @@ export class GetDashboardStatsResponseDto {
   activeFeedsCount: number;
 
   @ApiProperty({
-    description: '今月の配信番組数',
+    description: '総配信番組数',
     example: 24,
     minimum: 0,
   })
   @IsNumber()
   @Min(0)
-  monthlyEpisodesCount: number;
+  totalEpisodesCount: number;
 
   @ApiProperty({
     description: '総番組時間（フォーマット済み）',
