@@ -9,18 +9,17 @@ v-list-item.py-3
     )
       v-icon {{ program.isPlaying ? 'mdi-pause' : 'mdi-play' }}
 
-  v-list-item-content
-    v-list-item-title.font-weight-medium {{ program.title }}
-    v-list-item-subtitle.d-flex.align-center.mt-1
-      v-chip(
-        :color="program.feedColor"
-        size="x-small"
-        class="mr-2 cursor-pointer"
-        @click="handleFeedClick"
-      ) {{ program.feedName }}
-      span.mr-2 {{ program.date }}
-      v-icon.mr-1(size="small") mdi-clock-outline
-      span {{ program.duration }}
+  v-list-item-title.font-weight-medium {{ program.title }}
+  v-list-item-subtitle.d-flex.align-center.mt-1
+    v-chip(
+      :color="program.feedColor"
+      size="x-small"
+      class="mr-2 cursor-pointer"
+      @click="handleFeedClick"
+    ) {{ program.feedName }}
+    span.mr-2 {{ program.date }}
+    v-icon.mr-1(size="small") mdi-clock-outline
+    span {{ program.duration }}
 
   template(#append)
     v-btn(

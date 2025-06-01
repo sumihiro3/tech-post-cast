@@ -98,7 +98,7 @@ export const useUserSettings = (): UseUserSettingsReturn => {
     error.value = null;
 
     try {
-      const response = await $userSettingsApi.userSettingsControllerGetUserSettings();
+      const response = await $userSettingsApi.getUserSettings();
 
       const fetchedSettings: UserSettings = {
         displayName: response.data.displayName,
@@ -160,7 +160,7 @@ export const useUserSettings = (): UseUserSettingsReturn => {
         requestData.notificationEnabled = data.notificationEnabled;
       }
 
-      const response = await $userSettingsApi.userSettingsControllerUpdateUserSettings(requestData);
+      const response = await $userSettingsApi.updateUserSettings(requestData);
 
       const updatedSettings: UserSettings = {
         displayName: response.data.displayName,
@@ -265,7 +265,7 @@ export const useUserSettings = (): UseUserSettingsReturn => {
       webhookUrl,
     };
 
-    const response = await $userSettingsApi.userSettingsControllerTestSlackWebhook(requestData);
+    const response = await $userSettingsApi.testSlackWebhook(requestData);
     return response.data;
   };
 

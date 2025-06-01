@@ -1,22 +1,21 @@
 <template lang="pug">
 v-list-item.py-3
-  v-list-item-content
-    .d-flex.align-center.mb-1
-      v-list-item-title.font-weight-medium.mr-2 {{ feed.name }}
-      v-chip(
-        :color="feed.isActive ? 'success' : 'grey'"
-        size="x-small"
-      ) {{ feed.isActive ? '有効' : '無効' }}
-    v-list-item-subtitle.d-flex.align-center
-      span.mr-3
-        v-icon.mr-1(size="small") mdi-tag-multiple
-        | {{ feed.tagCount }}個のタグ
-      span.mr-3
-        v-icon.mr-1(size="small") mdi-account-multiple
-        | {{ feed.authorCount }}人の著者
-      span
-        v-icon.mr-1(size="small") mdi-calendar
-        | {{ feed.frequency }}
+  .d-flex.align-center.mb-1
+    v-list-item-title.font-weight-medium.mr-2 {{ feed.name }}
+    v-chip(
+      :color="feed.isActive ? 'success' : 'grey'"
+      size="x-small"
+    ) {{ feed.isActive ? '有効' : '無効' }}
+  v-list-item-subtitle.d-flex.align-center
+    span.mr-3
+      v-icon.mr-1(size="small") mdi-tag-multiple
+      | {{ feed.tagCount }}個のタグ
+    span.mr-3
+      v-icon.mr-1(size="small") mdi-account-multiple
+      | {{ feed.authorCount }}人の著者
+    span
+      v-icon.mr-1(size="small") mdi-calendar
+      | {{ feed.frequency }}
 
   template(#append)
     v-btn(

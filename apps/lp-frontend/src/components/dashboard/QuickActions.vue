@@ -67,5 +67,18 @@ const handleActionClick = (action: QuickAction): void => {
 </script>
 
 <style scoped>
-/* クイックアクション固有のスタイルがあれば追加 */
+/* クイックアクション固有のスタイル */
+.v-card {
+  /* 下部に追加のパディングを設定 */
+  padding-bottom: 20px;
+}
+
+/* ボタンの間隔調整 */
+.v-btn {
+  margin-bottom: 8px;
+}
+
+.v-btn:last-child {
+  margin-bottom: 0;
+}
 </style>

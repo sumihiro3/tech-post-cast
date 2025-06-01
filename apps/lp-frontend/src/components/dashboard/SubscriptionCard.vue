@@ -1,117 +1,154 @@
 <template lang="pug">
-SectionCard(
-  :title="title"
-  :icon="icon"
-  :class="containerClass"
-)
-  template(#actions)
-    slot(name="actions")
+v-card.subscription-card(elevation="2")
+  v-card-title.d-flex.align-center.justify-space-between
+    .d-flex.align-center
+      v-icon.mr-2(color="primary") mdi-crown
+      span サブスクリプション情報
+    v-chip(
+      v-if="subscription"
+      :color="planColorClass"
+      variant="flat"
+      size="small"
+    ) {{ planDisplayName }}
 
   v-card-text
-    .text-center.mb-4
-      v-chip(
-        :color="subscription.planColor"
-        size="large"
-        class="font-weight-bold"
-      ) {{ subscription.planName }}
+    // ローディング状態
+    v-skeleton-loader(
+      v-if="loading"
+      type="list-item-two-line, divider, list-item-two-line, divider, list-item-two-line"
+    )
 
-    // プラン制限の使用状況
-    template(v-for="usage in usageItems" :key="usage.label")
-      UsageProgress(
-        :label="usage.label"
-        :current="usage.current"
-        :limit="usage.limit"
-        :show-percentage="usage.showPercentage"
-        :warning-threshold="usage.warningThreshold"
-        :danger-threshold="usage.dangerThreshold"
+    // エラー状態
+    v-alert(
+      v-else-if="error"
+      type="error"
+      variant="tonal"
+      :text="error.message"
+    )
+
+    // サブスクリプション情報表示
+    div(v-else-if="subscription")
+      // 機能一覧
+      .mb-4
+        h4.text-subtitle-1.mb-2 利用可能な機能
+        v-list.bg-transparent(density="compact")
+          v-list-item(
+            v-for="feature in subscription.features"
+            :key="feature.name"
+            :prepend-icon="feature.available ? 'mdi-check-circle' : 'mdi-close-circle'"
+            :class="{ 'text-disabled': !feature.available }"
+          )
+            v-list-item-title {{ feature.name }}
+            template(#prepend)
+              v-icon(
+                :color="feature.available ? 'success' : 'error'"
+                :icon="feature.available ? 'mdi-check-circle' : 'mdi-close-circle'"
+              )
+
+      v-divider.my-4
+
+      // 使用量情報
+      .mb-4
+        h4.text-subtitle-1.mb-2 使用量
+
+        // 警告表示（フィード数の直上に配置）
+        v-alert(
+          v-if="usageWarnings.length > 0"
+          :type="hasHighUsage ? 'error' : 'warning'"
+          variant="tonal"
+          class="mb-3"
+        )
+          template(#title)
+            span {{ hasHighUsage ? '使用量上限に近づいています' : '使用量が多くなっています' }}
+          ul.mt-2
+            li(v-for="warning in usageWarnings" :key="warning.label")
+              | {{ warning.label }}: {{ Math.round(warning.percentage) }}%
+
+        // アップグレードボタン（警告表示の直下）
+        v-btn(
+          v-if="subscription.showUpgradeButton && usageWarnings.length > 0"
+          color="primary"
+          variant="elevated"
+          block
+          class="mb-3"
+          @click="handleUpgrade"
+        )
+          v-icon.mr-2 mdi-arrow-up-bold
+          | プランをアップグレード
+
+        .usage-items
+          .usage-item(
+            v-for="item in subscription.usageItems"
+            :key="item.label"
+            class="mb-3"
+          )
+            .d-flex.justify-space-between.align-center.mb-1
+              span.text-body-2 {{ item.label }}
+              span.text-caption {{ item.current }} / {{ item.limit }}
+            v-progress-linear(
+              :model-value="(item.current / item.limit) * 100"
+              :color="getUsageColor(item)"
+              height="8"
+              rounded
+            )
+
+      // アップグレードボタン（警告がない場合）
+      v-btn(
+        v-if="subscription.showUpgradeButton && usageWarnings.length === 0"
+        color="primary"
+        variant="elevated"
+        block
+        @click="handleUpgrade"
       )
+        v-icon.mr-2 mdi-arrow-up-bold
+        | プランをアップグレード
 
-    // 利用可能な機能
-    v-list.mb-4(v-if="subscription.features && subscription.features.length > 0" density="compact")
-      v-list-subheader {{ featuresTitle }}
-      v-list-item(
-        v-for="feature in subscription.features"
-        :key="feature.name"
-        class="px-0"
-      )
-        template(#prepend)
-          v-icon(
-            :color="feature.available ? 'success' : 'grey'"
-            size="small"
-          ) {{ feature.available ? 'mdi-check-circle' : 'mdi-close-circle' }}
-        v-list-item-title(
-          :class="{ 'text-grey': !feature.available }"
-          class="text-body-2"
-        ) {{ feature.name }}
-
-    // アップグレードボタン
-    v-btn(
-      v-if="showUpgradeButton"
-      color="primary"
-      block
-      size="large"
-      @click="handleUpgrade"
-    ) {{ upgradeButtonText }}
-
-    // カスタムアクション
-    slot(name="custom-actions")
+    // データなし状態
+    v-alert(
+      v-else
+      type="info"
+      variant="tonal"
+      text="サブスクリプション情報を読み込み中..."
+    )
 </template>
 
 <script setup lang="ts">
-import SectionCard from './SectionCard.vue';
-import UsageProgress from './UsageProgress.vue';
+import type { UsageItemDto } from '@/api';
 
-interface Feature {
-  name: string;
-  available: boolean;
-}
+// コンポーザブル
+const { subscription, loading, error, planDisplayName, planColorClass, usageWarnings } =
+  useDashboardSubscription();
 
-interface UsageItem {
-  label: string;
-  current: number;
-  limit: number;
-  showPercentage?: boolean;
-  warningThreshold?: number;
-  dangerThreshold?: number;
-}
+// 使用量の色を決定
+const getUsageColor = (item: UsageItemDto): string => {
+  const percentage = (item.current / item.limit) * 100;
+  if (percentage >= item.dangerThreshold) {
+    return 'error';
+  } else if (percentage >= item.warningThreshold) {
+    return 'warning';
+  }
+  return 'success';
+};
 
-interface Subscription {
-  planName: string;
-  planColor: string;
-  features?: Feature[];
-}
-
-interface Props {
-  title?: string;
-  icon?: string;
-  subscription: Subscription;
-  usageItems: UsageItem[];
-  containerClass?: string;
-  featuresTitle?: string;
-  showUpgradeButton?: boolean;
-  upgradeButtonText?: string;
-}
-
-interface Emits {
-  (e: 'upgrade'): void;
-}
-
-withDefaults(defineProps<Props>(), {
-  title: 'サブスクリプション',
-  icon: 'mdi-crown',
-  containerClass: '',
-  featuresTitle: '利用可能な機能',
-  showUpgradeButton: true,
-  upgradeButtonText: 'プランをアップグレード',
+// 高使用量の警告があるかチェック
+const hasHighUsage = computed(() => {
+  return usageWarnings.value.some((warning) => warning.level === 'danger');
 });
 
-const emit = defineEmits<Emits>();
-
+// アップグレード処理
 const handleUpgrade = (): void => {
-  emit('upgrade');
+  // TODO: アップグレードページへの遷移を実装
+  console.log('アップグレード処理');
+  navigateTo('/app/subscription/upgrade');
 };
 </script>
 
 <style scoped>
-/* サブスクリプションカード固有のスタイルがあれば追加 */
+.subscription-card {
+  /* height: 100%を削除してコンテンツに応じた高さにする */
+}
+
+.usage-item {
+  padding: 8px 0;
+}
 </style>

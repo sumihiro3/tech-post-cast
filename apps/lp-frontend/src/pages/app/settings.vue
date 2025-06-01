@@ -1,49 +1,53 @@
 <template lang="pug">
-div
-  // ページヘッダー
-  .mb-6
-    h1.text-h4.font-weight-bold.mb-2 ユーザー設定
-    p.text-body-1.text-medium-emphasis
-      | アカウント情報と通知設定を管理できます
+v-container(fluid class="settings-page")
+  v-row(justify="center")
+    v-col(cols="12" md="10" lg="8" xl="6")
+      // ページヘッダー
+      .d-flex.align-center.mb-6
+        v-icon.mr-3(color="primary" size="large") mdi-cog
+        div
+          h1.text-h4.font-weight-bold ユーザー設定
+          p.text-body-1.text-medium-emphasis.mt-1
+            | アカウント情報と通知設定を管理できます
 
-  // 設定セクション
-  .settings-container
-    // ユーザー名設定セクション
-    DashboardSettingsUserNameSection(
-      v-model="settings.displayName"
-      :error="displayNameError"
-      :disabled="loading"
-      @blur="validateDisplayName"
-    )
+      // 設定セクション
+      .settings-container
+        // ユーザー名設定セクション
+        DashboardSettingsUserNameSection(
+          v-model="settings.displayName"
+          :error="displayNameError"
+          :disabled="loading"
+          @blur="validateDisplayName"
+        )
 
-    // Slack通知設定セクション
-    DashboardSettingsSlackWebhookSection(
-      v-model:webhook-url="settings.slackWebhookUrl"
-      v-model:notification-enabled="settings.notificationEnabled"
-      :error="slackWebhookError"
-      :disabled="loading"
-      :on-test-webhook="handleTestWebhook"
-      @blur="validateSlackWebhook"
-    )
+        // Slack通知設定セクション
+        DashboardSettingsSlackWebhookSection(
+          v-model:webhook-url="settings.slackWebhookUrl"
+          v-model:notification-enabled="settings.notificationEnabled"
+          :error="slackWebhookError"
+          :disabled="loading"
+          :on-test-webhook="handleTestWebhook"
+          @blur="validateSlackWebhook"
+        )
 
-    // アクションボタン
-    .d-flex.justify-end.gap-2.mt-8
-      v-btn(
-        v-if="hasChanges"
-        :disabled="loading"
-        variant="outlined"
-        color="grey"
-        prepend-icon="mdi-refresh"
-        @click="handleReset"
-      ) リセット
+        // アクションボタン
+        .d-flex.justify-end.gap-2.mt-8
+          v-btn(
+            v-if="hasChanges"
+            :disabled="loading"
+            variant="outlined"
+            color="grey"
+            prepend-icon="mdi-refresh"
+            @click="handleReset"
+          ) リセット
 
-      v-btn(
-        :loading="loading"
-        :disabled="!hasChanges"
-        color="primary"
-        prepend-icon="mdi-content-save"
-        @click="handleSave"
-      ) 保存
+          v-btn(
+            :loading="loading"
+            :disabled="!hasChanges"
+            color="primary"
+            prepend-icon="mdi-content-save"
+            @click="handleSave"
+          ) 保存
 </template>
 
 <script setup lang="ts">
@@ -247,17 +251,28 @@ const clearValidationErrors = (): void => {
 </script>
 
 <style scoped>
+.settings-page {
+  padding: 24px;
+  min-height: calc(100vh - 200px);
+}
+
 .settings-container {
-  max-width: 800px;
+  width: 100%;
 }
 
 .gap-2 {
   gap: 8px;
 }
 
+@media (max-width: 960px) {
+  .settings-page {
+    padding: 16px;
+  }
+}
+
 @media (max-width: 600px) {
-  .settings-container {
-    max-width: 100%;
+  .settings-page {
+    padding: 12px;
   }
 
   .d-flex.justify-end {

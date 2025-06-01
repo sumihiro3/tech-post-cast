@@ -8,8 +8,11 @@ import {
 } from '@/api';
 
 export default defineNuxtPlugin((nuxt) => {
+  // 開発環境でのデフォルトAPIベースURL
+  const apiUrl = nuxt.$config.public.apiUrl || 'http://localhost:3001';
+
   const options = new Configuration({
-    basePath: nuxt.$config.public.apiUrl,
+    basePath: apiUrl,
   });
   // 各 API を useNuxtApp で利用できるようにする
   return {

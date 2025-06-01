@@ -203,33 +203,21 @@ export interface FilterGroupDto {
 /**
  * 
  * @export
- * @interface GetDashboardPersonalizedFeedsSummaryResponseDto
+ * @interface GetDashboardPersonalizedProgramsRequestDto
  */
-export interface GetDashboardPersonalizedFeedsSummaryResponseDto {
+export interface GetDashboardPersonalizedProgramsRequestDto {
     /**
-     * アクティブなフィード数
+     * 取得件数（デフォルト: 10, 最大: 50）
      * @type {number}
-     * @memberof GetDashboardPersonalizedFeedsSummaryResponseDto
+     * @memberof GetDashboardPersonalizedProgramsRequestDto
      */
-    'activeFeedsCount': number;
+    'limit'?: number;
     /**
-     * 総フィード数
+     * オフセット（デフォルト: 0）
      * @type {number}
-     * @memberof GetDashboardPersonalizedFeedsSummaryResponseDto
+     * @memberof GetDashboardPersonalizedProgramsRequestDto
      */
-    'totalFeedsCount': number;
-    /**
-     * 最近作成されたフィード（最新5件）
-     * @type {Array<PersonalizedFeedSummaryDto>}
-     * @memberof GetDashboardPersonalizedFeedsSummaryResponseDto
-     */
-    'recentFeeds': Array<PersonalizedFeedSummaryDto>;
-    /**
-     * 総フィルター条件数
-     * @type {number}
-     * @memberof GetDashboardPersonalizedFeedsSummaryResponseDto
-     */
-    'totalFiltersCount': number;
+    'offset'?: number;
 }
 /**
  * 
@@ -293,6 +281,53 @@ export interface GetDashboardStatsResponseDto {
      */
     'totalProgramDuration': string;
 }
+/**
+ * 
+ * @export
+ * @interface GetDashboardSubscriptionResponseDto
+ */
+export interface GetDashboardSubscriptionResponseDto {
+    /**
+     * プラン名
+     * @type {string}
+     * @memberof GetDashboardSubscriptionResponseDto
+     */
+    'planName': GetDashboardSubscriptionResponseDtoPlanNameEnum;
+    /**
+     * プランの表示色
+     * @type {string}
+     * @memberof GetDashboardSubscriptionResponseDto
+     */
+    'planColor': string;
+    /**
+     * プランの機能一覧
+     * @type {Array<SubscriptionFeatureDto>}
+     * @memberof GetDashboardSubscriptionResponseDto
+     */
+    'features': Array<SubscriptionFeatureDto>;
+    /**
+     * 使用量情報一覧
+     * @type {Array<UsageItemDto>}
+     * @memberof GetDashboardSubscriptionResponseDto
+     */
+    'usageItems': Array<UsageItemDto>;
+    /**
+     * アップグレードボタンを表示するかどうか
+     * @type {boolean}
+     * @memberof GetDashboardSubscriptionResponseDto
+     */
+    'showUpgradeButton': boolean;
+}
+
+export const GetDashboardSubscriptionResponseDtoPlanNameEnum = {
+    Free: 'Free',
+    Basic: 'Basic',
+    Pro: 'Pro',
+    Enterprise: 'Enterprise'
+} as const;
+
+export type GetDashboardSubscriptionResponseDtoPlanNameEnum = typeof GetDashboardSubscriptionResponseDtoPlanNameEnum[keyof typeof GetDashboardSubscriptionResponseDtoPlanNameEnum];
+
 /**
  * 
  * @export
@@ -652,67 +687,6 @@ export interface LikesCountFilterDto {
      * @memberof LikesCountFilterDto
      */
     'minLikes': number;
-}
-/**
- * 
- * @export
- * @interface PersonalizedFeedSummaryDto
- */
-export interface PersonalizedFeedSummaryDto {
-    /**
-     * フィードID
-     * @type {string}
-     * @memberof PersonalizedFeedSummaryDto
-     */
-    'id': string;
-    /**
-     * フィード名
-     * @type {string}
-     * @memberof PersonalizedFeedSummaryDto
-     */
-    'name': string;
-    /**
-     * フィード説明
-     * @type {string}
-     * @memberof PersonalizedFeedSummaryDto
-     */
-    'description': string;
-    /**
-     * アクティブ状態
-     * @type {boolean}
-     * @memberof PersonalizedFeedSummaryDto
-     */
-    'isActive': boolean;
-    /**
-     * タグフィルター数
-     * @type {number}
-     * @memberof PersonalizedFeedSummaryDto
-     */
-    'tagFiltersCount': number;
-    /**
-     * 著者フィルター数
-     * @type {number}
-     * @memberof PersonalizedFeedSummaryDto
-     */
-    'authorFiltersCount': number;
-    /**
-     * フィルター条件総数
-     * @type {number}
-     * @memberof PersonalizedFeedSummaryDto
-     */
-    'totalFiltersCount': number;
-    /**
-     * 作成日時
-     * @type {string}
-     * @memberof PersonalizedFeedSummaryDto
-     */
-    'createdAt': string;
-    /**
-     * 最終更新日時
-     * @type {string}
-     * @memberof PersonalizedFeedSummaryDto
-     */
-    'updatedAt': string;
 }
 /**
  * 
@@ -1389,6 +1363,25 @@ export interface SearchQiitaPostsResponseDto {
 /**
  * 
  * @export
+ * @interface SubscriptionFeatureDto
+ */
+export interface SubscriptionFeatureDto {
+    /**
+     * 機能名
+     * @type {string}
+     * @memberof SubscriptionFeatureDto
+     */
+    'name': string;
+    /**
+     * 機能が利用可能かどうか
+     * @type {boolean}
+     * @memberof SubscriptionFeatureDto
+     */
+    'available': boolean;
+}
+/**
+ * 
+ * @export
  * @interface TagFilterDto
  */
 export interface TagFilterDto {
@@ -1587,6 +1580,49 @@ export interface UpdateUserSettingsRequestDto {
      */
     'notificationEnabled'?: boolean;
 }
+/**
+ * 
+ * @export
+ * @interface UsageItemDto
+ */
+export interface UsageItemDto {
+    /**
+     * 使用量項目のラベル
+     * @type {string}
+     * @memberof UsageItemDto
+     */
+    'label': string;
+    /**
+     * 現在の使用量
+     * @type {number}
+     * @memberof UsageItemDto
+     */
+    'current': number;
+    /**
+     * 制限値
+     * @type {number}
+     * @memberof UsageItemDto
+     */
+    'limit': number;
+    /**
+     * パーセンテージ表示するかどうか
+     * @type {boolean}
+     * @memberof UsageItemDto
+     */
+    'showPercentage': boolean;
+    /**
+     * 警告しきい値（パーセンテージ）
+     * @type {number}
+     * @memberof UsageItemDto
+     */
+    'warningThreshold': number;
+    /**
+     * 危険しきい値（パーセンテージ）
+     * @type {number}
+     * @memberof UsageItemDto
+     */
+    'dangerThreshold': number;
+}
 
 /**
  * AppApi - axios parameter creator
@@ -1599,7 +1635,7 @@ export const AppApiAxiosParamCreator = function (configuration?: Configuration) 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        appControllerGetHello: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        getHello: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             const localVarPath = `/`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -1638,10 +1674,10 @@ export const AppApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async appControllerGetHello(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.appControllerGetHello(options);
+        async getHello(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getHello(options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['AppApi.appControllerGetHello']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['AppApi.getHello']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
     }
@@ -1659,8 +1695,8 @@ export const AppApiFactory = function (configuration?: Configuration, basePath?:
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        appControllerGetHello(options?: RawAxiosRequestConfig): AxiosPromise<void> {
-            return localVarFp.appControllerGetHello(options).then((request) => request(axios, basePath));
+        getHello(options?: RawAxiosRequestConfig): AxiosPromise<void> {
+            return localVarFp.getHello(options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -1678,8 +1714,8 @@ export class AppApi extends BaseAPI {
      * @throws {RequiredError}
      * @memberof AppApi
      */
-    public appControllerGetHello(options?: RawAxiosRequestConfig) {
-        return AppApiFp(this.configuration).appControllerGetHello(options).then((request) => request(this.axios, this.basePath));
+    public getHello(options?: RawAxiosRequestConfig) {
+        return AppApiFp(this.configuration).getHello(options).then((request) => request(this.axios, this.basePath));
     }
 }
 
@@ -1696,7 +1732,7 @@ export const ClerkWebhookApiAxiosParamCreator = function (configuration?: Config
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        clerkWebhookControllerHandleWebhook: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        handleWebhook: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             const localVarPath = `/api/webhooks/clerk`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -1735,10 +1771,10 @@ export const ClerkWebhookApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async clerkWebhookControllerHandleWebhook(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.clerkWebhookControllerHandleWebhook(options);
+        async handleWebhook(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.handleWebhook(options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['ClerkWebhookApi.clerkWebhookControllerHandleWebhook']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['ClerkWebhookApi.handleWebhook']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
     }
@@ -1756,8 +1792,8 @@ export const ClerkWebhookApiFactory = function (configuration?: Configuration, b
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        clerkWebhookControllerHandleWebhook(options?: RawAxiosRequestConfig): AxiosPromise<void> {
-            return localVarFp.clerkWebhookControllerHandleWebhook(options).then((request) => request(axios, basePath));
+        handleWebhook(options?: RawAxiosRequestConfig): AxiosPromise<void> {
+            return localVarFp.handleWebhook(options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -1775,8 +1811,8 @@ export class ClerkWebhookApi extends BaseAPI {
      * @throws {RequiredError}
      * @memberof ClerkWebhookApi
      */
-    public clerkWebhookControllerHandleWebhook(options?: RawAxiosRequestConfig) {
-        return ClerkWebhookApiFp(this.configuration).clerkWebhookControllerHandleWebhook(options).then((request) => request(this.axios, this.basePath));
+    public handleWebhook(options?: RawAxiosRequestConfig) {
+        return ClerkWebhookApiFp(this.configuration).handleWebhook(options).then((request) => request(this.axios, this.basePath));
     }
 }
 
@@ -2240,36 +2276,6 @@ export class CompatibilityApiApi extends BaseAPI {
 export const DashboardApiAxiosParamCreator = function (configuration?: Configuration) {
     return {
         /**
-         * ダッシュボード表示用のパーソナルフィード概要情報を取得します
-         * @summary ダッシュボード用パーソナルフィード概要取得
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        getDashboardPersonalizedFeedsSummary: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            const localVarPath = `/dashboard/personalized-feeds/summary`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-
-    
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
          * ダッシュボードトップ画面表示用の最新パーソナルプログラム一覧を取得します
          * @summary ダッシュボード用パーソナルプログラム一覧取得
          * @param {number} [limit] 取得件数（デフォルト: 10, 最大: 50）
@@ -2339,6 +2345,36 @@ export const DashboardApiAxiosParamCreator = function (configuration?: Configura
                 options: localVarRequestOptions,
             };
         },
+        /**
+         * ユーザーのサブスクリプション情報、使用量、機能一覧を取得します
+         * @summary ダッシュボードサブスクリプション情報取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDashboardSubscription: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/dashboard/subscription`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
     }
 };
 
@@ -2349,18 +2385,6 @@ export const DashboardApiAxiosParamCreator = function (configuration?: Configura
 export const DashboardApiFp = function(configuration?: Configuration) {
     const localVarAxiosParamCreator = DashboardApiAxiosParamCreator(configuration)
     return {
-        /**
-         * ダッシュボード表示用のパーソナルフィード概要情報を取得します
-         * @summary ダッシュボード用パーソナルフィード概要取得
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async getDashboardPersonalizedFeedsSummary(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetDashboardPersonalizedFeedsSummaryResponseDto>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getDashboardPersonalizedFeedsSummary(options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['DashboardApi.getDashboardPersonalizedFeedsSummary']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
         /**
          * ダッシュボードトップ画面表示用の最新パーソナルプログラム一覧を取得します
          * @summary ダッシュボード用パーソナルプログラム一覧取得
@@ -2387,6 +2411,18 @@ export const DashboardApiFp = function(configuration?: Configuration) {
             const localVarOperationServerBasePath = operationServerMap['DashboardApi.getDashboardStats']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
+        /**
+         * ユーザーのサブスクリプション情報、使用量、機能一覧を取得します
+         * @summary ダッシュボードサブスクリプション情報取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getDashboardSubscription(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetDashboardSubscriptionResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getDashboardSubscription(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['DashboardApi.getDashboardSubscription']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
     }
 };
 
@@ -2397,15 +2433,6 @@ export const DashboardApiFp = function(configuration?: Configuration) {
 export const DashboardApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
     const localVarFp = DashboardApiFp(configuration)
     return {
-        /**
-         * ダッシュボード表示用のパーソナルフィード概要情報を取得します
-         * @summary ダッシュボード用パーソナルフィード概要取得
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        getDashboardPersonalizedFeedsSummary(options?: RawAxiosRequestConfig): AxiosPromise<GetDashboardPersonalizedFeedsSummaryResponseDto> {
-            return localVarFp.getDashboardPersonalizedFeedsSummary(options).then((request) => request(axios, basePath));
-        },
         /**
          * ダッシュボードトップ画面表示用の最新パーソナルプログラム一覧を取得します
          * @summary ダッシュボード用パーソナルプログラム一覧取得
@@ -2426,6 +2453,15 @@ export const DashboardApiFactory = function (configuration?: Configuration, base
         getDashboardStats(options?: RawAxiosRequestConfig): AxiosPromise<GetDashboardStatsResponseDto> {
             return localVarFp.getDashboardStats(options).then((request) => request(axios, basePath));
         },
+        /**
+         * ユーザーのサブスクリプション情報、使用量、機能一覧を取得します
+         * @summary ダッシュボードサブスクリプション情報取得
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDashboardSubscription(options?: RawAxiosRequestConfig): AxiosPromise<GetDashboardSubscriptionResponseDto> {
+            return localVarFp.getDashboardSubscription(options).then((request) => request(axios, basePath));
+        },
     };
 };
 
@@ -2436,17 +2472,6 @@ export const DashboardApiFactory = function (configuration?: Configuration, base
  * @extends {BaseAPI}
  */
 export class DashboardApi extends BaseAPI {
-    /**
-     * ダッシュボード表示用のパーソナルフィード概要情報を取得します
-     * @summary ダッシュボード用パーソナルフィード概要取得
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof DashboardApi
-     */
-    public getDashboardPersonalizedFeedsSummary(options?: RawAxiosRequestConfig) {
-        return DashboardApiFp(this.configuration).getDashboardPersonalizedFeedsSummary(options).then((request) => request(this.axios, this.basePath));
-    }
-
     /**
      * ダッシュボードトップ画面表示用の最新パーソナルプログラム一覧を取得します
      * @summary ダッシュボード用パーソナルプログラム一覧取得
@@ -2469,6 +2494,17 @@ export class DashboardApi extends BaseAPI {
      */
     public getDashboardStats(options?: RawAxiosRequestConfig) {
         return DashboardApiFp(this.configuration).getDashboardStats(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * ユーザーのサブスクリプション情報、使用量、機能一覧を取得します
+     * @summary ダッシュボードサブスクリプション情報取得
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DashboardApi
+     */
+    public getDashboardSubscription(options?: RawAxiosRequestConfig) {
+        return DashboardApiFp(this.configuration).getDashboardSubscription(options).then((request) => request(this.axios, this.basePath));
     }
 }
 
@@ -3726,7 +3762,7 @@ export const UserSettingsApiAxiosParamCreator = function (configuration?: Config
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        userSettingsControllerGetUserSettings: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        getUserSettings: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             const localVarPath = `/user-settings`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -3757,9 +3793,9 @@ export const UserSettingsApiAxiosParamCreator = function (configuration?: Config
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        userSettingsControllerTestSlackWebhook: async (testSlackWebhookRequestDto: TestSlackWebhookRequestDto, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        testSlackWebhook: async (testSlackWebhookRequestDto: TestSlackWebhookRequestDto, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'testSlackWebhookRequestDto' is not null or undefined
-            assertParamExists('userSettingsControllerTestSlackWebhook', 'testSlackWebhookRequestDto', testSlackWebhookRequestDto)
+            assertParamExists('testSlackWebhook', 'testSlackWebhookRequestDto', testSlackWebhookRequestDto)
             const localVarPath = `/user-settings/test-slack-webhook`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -3793,9 +3829,9 @@ export const UserSettingsApiAxiosParamCreator = function (configuration?: Config
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        userSettingsControllerUpdateUserSettings: async (updateUserSettingsRequestDto: UpdateUserSettingsRequestDto, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        updateUserSettings: async (updateUserSettingsRequestDto: UpdateUserSettingsRequestDto, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'updateUserSettingsRequestDto' is not null or undefined
-            assertParamExists('userSettingsControllerUpdateUserSettings', 'updateUserSettingsRequestDto', updateUserSettingsRequestDto)
+            assertParamExists('updateUserSettings', 'updateUserSettingsRequestDto', updateUserSettingsRequestDto)
             const localVarPath = `/user-settings`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -3838,10 +3874,10 @@ export const UserSettingsApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async userSettingsControllerGetUserSettings(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetUserSettingsResponseDto>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.userSettingsControllerGetUserSettings(options);
+        async getUserSettings(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetUserSettingsResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getUserSettings(options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['UserSettingsApi.userSettingsControllerGetUserSettings']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['UserSettingsApi.getUserSettings']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -3851,10 +3887,10 @@ export const UserSettingsApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async userSettingsControllerTestSlackWebhook(testSlackWebhookRequestDto: TestSlackWebhookRequestDto, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<TestSlackWebhookResponseDto>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.userSettingsControllerTestSlackWebhook(testSlackWebhookRequestDto, options);
+        async testSlackWebhook(testSlackWebhookRequestDto: TestSlackWebhookRequestDto, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<TestSlackWebhookResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.testSlackWebhook(testSlackWebhookRequestDto, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['UserSettingsApi.userSettingsControllerTestSlackWebhook']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['UserSettingsApi.testSlackWebhook']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -3864,10 +3900,10 @@ export const UserSettingsApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async userSettingsControllerUpdateUserSettings(updateUserSettingsRequestDto: UpdateUserSettingsRequestDto, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetUserSettingsResponseDto>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.userSettingsControllerUpdateUserSettings(updateUserSettingsRequestDto, options);
+        async updateUserSettings(updateUserSettingsRequestDto: UpdateUserSettingsRequestDto, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetUserSettingsResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.updateUserSettings(updateUserSettingsRequestDto, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['UserSettingsApi.userSettingsControllerUpdateUserSettings']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['UserSettingsApi.updateUserSettings']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
     }
@@ -3886,8 +3922,8 @@ export const UserSettingsApiFactory = function (configuration?: Configuration, b
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        userSettingsControllerGetUserSettings(options?: RawAxiosRequestConfig): AxiosPromise<GetUserSettingsResponseDto> {
-            return localVarFp.userSettingsControllerGetUserSettings(options).then((request) => request(axios, basePath));
+        getUserSettings(options?: RawAxiosRequestConfig): AxiosPromise<GetUserSettingsResponseDto> {
+            return localVarFp.getUserSettings(options).then((request) => request(axios, basePath));
         },
         /**
          * 指定されたSlack Webhook URLに対してテスト通知を送信し、接続を確認します。
@@ -3896,8 +3932,8 @@ export const UserSettingsApiFactory = function (configuration?: Configuration, b
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        userSettingsControllerTestSlackWebhook(testSlackWebhookRequestDto: TestSlackWebhookRequestDto, options?: RawAxiosRequestConfig): AxiosPromise<TestSlackWebhookResponseDto> {
-            return localVarFp.userSettingsControllerTestSlackWebhook(testSlackWebhookRequestDto, options).then((request) => request(axios, basePath));
+        testSlackWebhook(testSlackWebhookRequestDto: TestSlackWebhookRequestDto, options?: RawAxiosRequestConfig): AxiosPromise<TestSlackWebhookResponseDto> {
+            return localVarFp.testSlackWebhook(testSlackWebhookRequestDto, options).then((request) => request(axios, basePath));
         },
         /**
          * 認証ユーザーのユーザー設定（表示名、Slack通知設定など）を更新します。
@@ -3906,8 +3942,8 @@ export const UserSettingsApiFactory = function (configuration?: Configuration, b
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        userSettingsControllerUpdateUserSettings(updateUserSettingsRequestDto: UpdateUserSettingsRequestDto, options?: RawAxiosRequestConfig): AxiosPromise<GetUserSettingsResponseDto> {
-            return localVarFp.userSettingsControllerUpdateUserSettings(updateUserSettingsRequestDto, options).then((request) => request(axios, basePath));
+        updateUserSettings(updateUserSettingsRequestDto: UpdateUserSettingsRequestDto, options?: RawAxiosRequestConfig): AxiosPromise<GetUserSettingsResponseDto> {
+            return localVarFp.updateUserSettings(updateUserSettingsRequestDto, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -3926,8 +3962,8 @@ export class UserSettingsApi extends BaseAPI {
      * @throws {RequiredError}
      * @memberof UserSettingsApi
      */
-    public userSettingsControllerGetUserSettings(options?: RawAxiosRequestConfig) {
-        return UserSettingsApiFp(this.configuration).userSettingsControllerGetUserSettings(options).then((request) => request(this.axios, this.basePath));
+    public getUserSettings(options?: RawAxiosRequestConfig) {
+        return UserSettingsApiFp(this.configuration).getUserSettings(options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -3938,8 +3974,8 @@ export class UserSettingsApi extends BaseAPI {
      * @throws {RequiredError}
      * @memberof UserSettingsApi
      */
-    public userSettingsControllerTestSlackWebhook(testSlackWebhookRequestDto: TestSlackWebhookRequestDto, options?: RawAxiosRequestConfig) {
-        return UserSettingsApiFp(this.configuration).userSettingsControllerTestSlackWebhook(testSlackWebhookRequestDto, options).then((request) => request(this.axios, this.basePath));
+    public testSlackWebhook(testSlackWebhookRequestDto: TestSlackWebhookRequestDto, options?: RawAxiosRequestConfig) {
+        return UserSettingsApiFp(this.configuration).testSlackWebhook(testSlackWebhookRequestDto, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -3950,8 +3986,8 @@ export class UserSettingsApi extends BaseAPI {
      * @throws {RequiredError}
      * @memberof UserSettingsApi
      */
-    public userSettingsControllerUpdateUserSettings(updateUserSettingsRequestDto: UpdateUserSettingsRequestDto, options?: RawAxiosRequestConfig) {
-        return UserSettingsApiFp(this.configuration).userSettingsControllerUpdateUserSettings(updateUserSettingsRequestDto, options).then((request) => request(this.axios, this.basePath));
+    public updateUserSettings(updateUserSettingsRequestDto: UpdateUserSettingsRequestDto, options?: RawAxiosRequestConfig) {
+        return UserSettingsApiFp(this.configuration).updateUserSettings(updateUserSettingsRequestDto, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

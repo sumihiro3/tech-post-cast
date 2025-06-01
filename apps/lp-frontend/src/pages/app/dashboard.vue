@@ -36,15 +36,10 @@ DashboardLayout
 
   template(#sidebar)
     // サブスクリプション情報セクション
-    SubscriptionCard.mb-6(
-      :subscription="subscriptionInfo"
-      :usage-items="usageItems"
-      :show-upgrade-button="subscriptionInfo.planName === 'Free'"
-      @upgrade="upgradeSubscription"
-    )
+    SubscriptionCard.mb-6
 
     // クイックアクション
-    QuickActions(
+    QuickActions.mb-12(
       :actions="quickActions"
       @action-click="handleActionClick"
     )
@@ -210,40 +205,6 @@ const personalFeeds = ref([
   },
 ]);
 
-// サブスクリプション情報（仮データ）
-const subscriptionInfo = ref({
-  planName: 'Free',
-  planColor: 'grey',
-  features: [
-    { name: '基本的なフィード作成', available: true },
-    { name: '日次配信', available: true },
-    { name: '週次配信', available: true },
-    { name: '月次配信', available: false },
-    { name: '高度なフィルタリング', available: false },
-    { name: 'API アクセス', available: false },
-  ],
-});
-
-// 使用量データ（仮データ）
-const usageItems = ref([
-  {
-    label: 'フィード数',
-    current: 5,
-    limit: 10,
-    showPercentage: true,
-    warningThreshold: 70,
-    dangerThreshold: 90,
-  },
-  {
-    label: 'タグ数',
-    current: 26,
-    limit: 50,
-    showPercentage: true,
-    warningThreshold: 70,
-    dangerThreshold: 90,
-  },
-]);
-
 // 型定義
 interface Program {
   id: number;
@@ -344,10 +305,6 @@ const editFeed = (feed: { id: number }): void => {
 
 const createFeed = (): void => {
   navigateTo('/app/feeds/create');
-};
-
-const upgradeSubscription = (): void => {
-  ui.showInfo('プランアップグレード機能は準備中です');
 };
 
 const goToFeedPrograms = (feedName: string): void => {
