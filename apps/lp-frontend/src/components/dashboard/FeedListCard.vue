@@ -47,40 +47,11 @@ v-card.feed-list-card(elevation="2")
                 )
 
             template(#append)
-              .d-flex.flex-column.align-end
-                v-chip(
-                  :color="feed.isActive ? 'success' : 'grey'"
-                  variant="flat"
-                  size="x-small"
-                  class="mb-1"
-                ) {{ feed.isActive ? 'アクティブ' : '停止中' }}
-
-                v-menu(location="bottom end")
-                  template(#activator="{ props }")
-                    v-btn(
-                      icon="mdi-dots-vertical"
-                      size="small"
-                      variant="text"
-                      v-bind="props"
-                      @click.stop
-                    )
-
-                  v-list(density="compact")
-                    v-list-item(
-                      prepend-icon="mdi-pencil"
-                      title="編集"
-                      @click="handleEditFeed(feed)"
-                    )
-                    v-list-item(
-                      prepend-icon="mdi-eye"
-                      title="番組一覧"
-                      @click="handleViewPrograms(feed)"
-                    )
-                    v-list-item(
-                      :prepend-icon="feed.isActive ? 'mdi-pause' : 'mdi-play'"
-                      :title="feed.isActive ? '停止' : '開始'"
-                      @click="handleToggleActive(feed)"
-                    )
+              v-chip(
+                :color="feed.isActive ? 'success' : 'grey'"
+                variant="flat"
+                size="x-small"
+              ) {{ feed.isActive ? 'アクティブ' : '停止中' }}
 
           v-divider(v-if="index < feeds.length - 1")
 
@@ -146,26 +117,8 @@ const formatFeedSubtitle = (feed: PersonalizedFeedWithFiltersDto): string => {
 
 // フィードクリック処理
 const handleFeedClick = (feed: PersonalizedFeedWithFiltersDto): void => {
-  console.log('フィード詳細へ遷移:', feed.id);
-  navigateTo(`/app/feeds/${feed.id}`);
-};
-
-// フィード編集処理
-const handleEditFeed = (feed: PersonalizedFeedWithFiltersDto): void => {
-  console.log('フィード編集:', feed.id);
+  console.log('フィード編集画面へ遷移:', feed.id);
   navigateTo(`/app/feeds/${feed.id}/edit`);
-};
-
-// 番組一覧表示処理
-const handleViewPrograms = (feed: PersonalizedFeedWithFiltersDto): void => {
-  console.log('番組一覧表示:', feed.id);
-  navigateTo(`/app/programs?feed=${feed.id}`);
-};
-
-// アクティブ状態切り替え処理
-const handleToggleActive = (feed: PersonalizedFeedWithFiltersDto): void => {
-  // TODO: フィードのアクティブ状態を切り替えるAPI呼び出しを実装
-  console.log('アクティブ状態切り替え:', feed.id, !feed.isActive);
 };
 
 // フィード作成処理
