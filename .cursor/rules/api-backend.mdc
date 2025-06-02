@@ -3,10 +3,9 @@ description: NestJSバックエンド実装ルール
 globs: "apps/api-backend/**/*"
 alwaysApply: false
 ---
-
 # NestJSバックエンド実装ルール
 
-**適用対象**: apps/api-backend/**/*
+**適用対象**: apps/api-backend/**/* apps/backend/**/*
 
 あなたは、NestJSフレームワークの経験があり、クリーンなプログラミングとデザインパターンを重視するシニアTypeScriptプログラマーです。
 
@@ -130,6 +129,38 @@ alwaysApply: false
 
 ### Prismaの使用ガイドライン
 
+#### 🚨 重要なアーキテクチャ原則（必須）
+
+- **Repositoryパターン**: Repositoryクラスは必ずインターフェイスを定義し、ドメイン層とインフラ層を分離する
+  - ドメイン層: `src/domains/{domain-name}/{domain-name}.repository.interface.ts`
+  - インフラ層: `src/infrastructure/database/{domain-name}/{domain-name}.repository.ts`
+  - サービス層: `@Inject('RepositoryName')` でインターフェイスを注入
+
+```typescript
+// ❌ 悪い例: 直接Repositoryクラスを注入
+constructor(private repository: UsersRepository) {}
+
+// ✅ 良い例: インターフェイスを注入
+constructor(
+  @Inject('UsersRepository')
+  private readonly repository: IUsersRepository,
+) {}
+```
+
+- **テストデータ管理**: テストデータは必ずファクトリクラスから取得する
+  - 場所: `src/test/factories/{domain-name}.factory.ts`
+  - インデックス: `src/test/factories/index.ts` でエクスポート管理
+
+```typescript
+// ❌ 悪い例: テスト内でデータを直接作成
+const user = { id: '1', name: 'test' };
+
+// ✅ 良い例: ファクトリクラスを使用
+const user = UserFactory.createUser({ name: 'test' });
+```
+
+- **型定義の共有**: 複雑なPrisma型は `packages/database/src/types/` で定義し、アプリケーション間で共有する
+
 - スキーマ定義
 
   ```prisma
@@ -144,35 +175,48 @@ alwaysApply: false
   }
   ```
 
-- Repositoryの実装例
+- Repositoryインターフェイスと実装の例
 
   ```typescript
-  // src/users/repositories/user.repository.ts
+  // src/domains/users/users.repository.interface.ts
+  export interface IUsersRepository {
+    findById(id: string): Promise<UserWithDetails | null>;
+    findByEmail(email: string): Promise<User | null>;
+    create(data: CreateUserParams): Promise<UserWithDetails>;
+    update(id: string, data: UpdateUserParams): Promise<UserWithDetails>;
+    delete(id: string): Promise<User>;
+  }
+  ```
+
+  ```typescript
+  // src/infrastructure/database/users/users.repository.ts
+  import { IUsersRepository } from '@/domains/users/users.repository.interface';
+
   @Injectable()
-  export class UserRepository {
+  export class UsersRepository implements IUsersRepository {
     constructor(private prisma: PrismaService) {}
 
-    async findById(id: string) {
+    async findById(id: string): Promise<UserWithDetails | null> {
       return this.prisma.client.user.findUnique({
         where: { id },
         include: { posts: true },
       });
     }
 
-    async findByEmail(email: string) {
+    async findByEmail(email: string): Promise<User | null> {
       return this.prisma.client.user.findUnique({
         where: { email },
       });
     }
 
-    async create(data: CreateUserDto) {
+    async create(data: CreateUserParams): Promise<UserWithDetails> {
       return this.prisma.client.user.create({
         data,
         include: { posts: true },
       });
     }
 
-    async update(id: string, data: UpdateUserDto) {
+    async update(id: string, data: UpdateUserParams): Promise<UserWithDetails> {
       return this.prisma.client.user.update({
         where: { id },
         data,
@@ -180,7 +224,7 @@ alwaysApply: false
       });
     }
 
-    async delete(id: string) {
+    async delete(id: string): Promise<User> {
       return this.prisma.client.user.delete({
         where: { id },
       });
@@ -191,11 +235,12 @@ alwaysApply: false
 - Serviceの実装例
 
   ```typescript
-  // src/users/services/user.service.ts
+  // src/domains/users/users.service.ts
   @Injectable()
-  export class UserService {
+  export class UsersService {
     constructor(
-      private userRepository: UserRepository,
+      @Inject('UsersRepository')
+      private readonly usersRepository: IUsersRepository,
       private prismaClientManager: PrismaClientManager,
     ) {}
 
@@ -209,50 +254,14 @@ alwaysApply: false
       const hashedPassword = await this.hashPassword(data.password);
 
       // Repositoryを使用してデータを保存
-      return this.userRepository.create({
+      return this.usersRepository.create({
         ...data,
         password: hashedPassword,
       });
     }
 
-    async transfer(fromId: string, toId: string, amount: number) {
-      // トランザクション処理はビジネスロジックの一部としてServiceクラスで実装
-      return this.prismaClientManager.transaction(async (tx) => {
-        // 送金元の残高チェック
-        const fromUser = await tx.user.findUnique({
-          where: { id: fromId },
-          select: { balance: true },
-        });
-        if (!fromUser || fromUser.balance < amount) {
-          throw new BadRequestException('残高が不足しています');
-        }
-
-        // 送金処理
-        const from = await tx.user.update({
-          where: { id: fromId },
-          data: { balance: { decrement: amount } },
-        });
-        const to = await tx.user.update({
-          where: { id: toId },
-          data: { balance: { increment: amount } },
-        });
-
-        // 取引履歴の記録
-        await tx.transaction.create({
-          data: {
-            fromUserId: fromId,
-            toUserId: toId,
-            amount,
-            status: 'COMPLETED',
-          },
-        });
-
-        return { from, to };
-      });
-    }
-
     private async isEmailAlreadyExists(email: string): Promise<boolean> {
-      const user = await this.userRepository.findByEmail(email);
+      const user = await this.usersRepository.findByEmail(email);
       return !!user;
     }
 
@@ -262,3 +271,18 @@ alwaysApply: false
     }
   }
   ```
+
+```typescript
+// src/controllers/users/users.module.ts
+@Module({
+  controllers: [UsersController],
+  providers: [
+    UsersService,
+    {
+      provide: 'UsersRepository',
+      useClass: UsersRepository,
+    },
+  ],
+})
+export class UsersModule {}
+```

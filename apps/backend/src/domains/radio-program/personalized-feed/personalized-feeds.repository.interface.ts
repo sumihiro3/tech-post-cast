@@ -105,6 +105,23 @@ export interface IPersonalizedFeedsRepository {
   ): Promise<PersonalizedProgramAttempt>;
 
   /**
+   * パーソナライズフィードを元に生成された番組のスキップの試行履歴を作成する
+   * @param user ユーザー
+   * @param feed パーソナルフィード
+   * @param programDate 番組日
+   * @param postCount 紹介記事数
+   * @param reason スキップ理由
+   * @returns 試行履歴
+   */
+  addPersonalizedProgramSkippedAttempt(
+    user: AppUser,
+    feed: PersonalizedFeedWithFilters,
+    programDate: Date,
+    postCount: number,
+    reason: PersonalizedProgramAttemptFailureReason,
+  ): Promise<PersonalizedProgramAttempt>;
+
+  /**
    * パーソナライズフィードを元に生成された番組の失敗の試行履歴を作成する
    * @param user ユーザー
    * @param feed パーソナルフィード

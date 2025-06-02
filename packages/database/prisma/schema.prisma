@@ -245,6 +245,12 @@ model AppUser {
   // デフォルトの支払い方法ID
   defaultPaymentMethodId String? @map("default_payment_method_id") @db.VarChar(100)
 
+  // ユーザー設定関連フィールド
+  // 個別のSlack Webhook URL（番組生成完了時の通知用）
+  slackWebhookUrl     String? @map("slack_webhook_url") @db.VarChar(500)
+  // 通知が有効かどうかを表すフラグ
+  notificationEnabled Boolean @default(false) @map("notification_enabled")
+
   // リレーション
   personalizedProgramFilters  PersonalizedFeed[]
   personalizedPrograms        PersonalizedFeedProgram[]
@@ -496,7 +502,7 @@ model PersonalizedProgramAttempt {
   id        String   @id @default(cuid()) @db.VarChar(100)
   userId    String   @map("user_id") @db.VarChar(50)
   feedId    String   @map("feed_id") @db.VarChar(50)
-  status    String   @db.VarChar(20) // "SUCCESS" or "FAILED"
+  status    String   @db.VarChar(20) // "SUCCESS", "SKIPPED", or "FAILED"
   reason    String?  @db.VarChar(255) // 失敗理由（例: "NOT_ENOUGH_POSTS"）
   postCount Int      @default(0)
   createdAt DateTime @default(now()) @map("created_at")

@@ -84,6 +84,8 @@
 
 ### テスト
 
+#### 基本原則
+
 - テストにはArrange-Act-Assert規約に従います。
 - テスト変数には明確な名前を付けます。
     - 規約に従います：inputX、mockX、actualX、expectedXなど。
@@ -92,6 +94,143 @@
         - 実行コストが高くないサードパーティ依存関係は除きます。
 - 各モジュールの受け入れテストを書きます。
     - Given-When-Then規約に従います。
+
+#### テストデータ管理（必須）
+
+- **ファクトリクラスの使用**: テストデータは必ずファクトリクラスから取得する
+    - 場所: `src/test/factories/{domain-name}.factory.ts`
+    - 命名規則: `{DomainName}Factory`
+    - インデックスファイル: `src/test/factories/index.ts` でエクスポート管理
+
+```typescript
+// src/test/factories/user.factory.ts
+export class UserFactory {
+  static createUser(overrides: Partial<User> = {}): User {
+    return {
+      id: 'user-1',
+      email: 'test@example.com',
+      name: 'テストユーザー',
+      createdAt: new Date('2023-01-01'),
+      updatedAt: new Date('2023-01-01'),
+      ...overrides,
+    };
+  }
+
+  static createUsers(count: number, overrides: Partial<User> = {}): User[] {
+    return Array.from({ length: count }, (_, index) =>
+      this.createUser({
+        id: `user-${index + 1}`,
+        email: `test${index + 1}@example.com`,
+        ...overrides,
+      }),
+    );
+  }
+}
+```
+
+```typescript
+// テストでの使用例
+import { UserFactory } from '@/test/factories';
+
+describe('UserService', () => {
+  it('should create user successfully', () => {
+    // Arrange
+    const userData = UserFactory.createUser({
+      email: 'custom@example.com',
+    });
+
+    // Act & Assert
+    // ...
+  });
+});
+```
+
+#### ファクトリクラス設計のベストプラクティス
+
+- **基本メソッドの提供**: 各ドメインに対して以下のメソッドを必ず実装する
+
+  ```typescript
+  // 基本作成メソッド
+  static create{DomainName}(overrides?: Partial<{DomainName}>): {DomainName}
+
+  // 複数作成メソッド
+  static create{DomainName}s(count: number, overrides?: Partial<{DomainName}>): {DomainName}[]
+
+  // 特化メソッド（必要に応じて）
+  static create{SpecificCase}{DomainName}s(): {DomainName}[]
+  ```
+
+- **特化ファクトリメソッドの命名規則**:
+    - ステータス別: `createActiveUsers()`, `createInactiveUsers()`
+    - 時系列データ: `createTimeSeriesData()`
+    - 複合データ: `createMixedStatusData()`
+
+- **ファクトリメソッドの責任範囲**:
+    - テストに必要な最小限のデータ作成
+    - リアルなデータ構造の模倣
+    - テスト間の独立性確保
+
+#### ファクトリクラス使用の強制
+
+- **必須使用**: すべてのテストでファクトリクラスからテストデータを取得する
+- **直接記載禁止**: テストコード内でのオブジェクトリテラル直接記載を禁止
+- **例外**: プリミティブ型の単純な値（文字列、数値）は直接記載可能
+
+#### Repositoryテストの実装
+
+- Repositoryクラスのテストでは、PrismaServiceをモック化する
+- ファクトリクラスを使用してテストデータを作成する
+- エラーケースも必ずテストする
+
+```typescript
+// src/infrastructure/database/users/users.repository.spec.ts
+import { UsersRepository } from './users.repository';
+import { UserFactory } from '@/test/factories';
+import { createTestingModuleWithMockPrisma } from '@/test/helpers';
+
+describe('UsersRepository', () => {
+  let repository: UsersRepository;
+  let mockPrisma: any;
+
+  beforeEach(async () => {
+    const [module, prisma] = await createTestingModuleWithMockPrisma({
+      providers: [UsersRepository],
+    });
+
+    repository = module.get<UsersRepository>(UsersRepository);
+    mockPrisma = prisma;
+  });
+
+  describe('findById', () => {
+    it('should return user when found', async () => {
+      // Arrange
+      const expectedUser = UserFactory.createUser();
+      mockPrisma.user.findUnique.mockResolvedValue(expectedUser);
+
+      // Act
+      const result = await repository.findById('user-1');
+
+      // Assert
+      expect(result).toEqual(expectedUser);
+      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        include: { posts: true },
+      });
+    });
+
+    it('should return null when user not found', async () => {
+      // Arrange
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+
+      // Act
+      const result = await repository.findById('non-existent');
+
+      // Assert
+      expect(result).toBeNull();
+    });
+  });
+});
+```
 
 ## NestJS固有のガイドライン
 
@@ -124,6 +263,73 @@
     - 共有ビジネスロジック
 
 ### Prismaの使用ガイドライン
+
+#### アーキテクチャ原則
+
+- **依存性逆転の原則**: Repositoryクラスは必ずインターフェイスを定義し、ドメイン層とインフラ層を分離する
+    - ドメイン層: `src/domains/{domain-name}/{domain-name}.repository.interface.ts` にインターフェイスを定義
+    - インフラ層: `src/infrastructure/database/{domain-name}/{domain-name}.repository.ts` に実装クラスを配置
+    - サービス層: インターフェイスに依存し、DIコンテナーで実装クラスを注入
+
+- **型定義の共有**: 複雑なPrisma型は`packages/database/src/types/`で定義し、アプリケーション間で共有する
+
+#### Repositoryインターフェイスの実装例
+
+```typescript
+// src/domains/users/users.repository.interface.ts
+export interface IUsersRepository {
+  findById(id: string): Promise<UserWithDetails | null>;
+  findByEmail(email: string): Promise<User | null>;
+  create(data: CreateUserParams): Promise<UserWithDetails>;
+  update(id: string, data: UpdateUserParams): Promise<UserWithDetails>;
+  delete(id: string): Promise<User>;
+}
+```
+
+```typescript
+// src/infrastructure/database/users/users.repository.ts
+import { IUsersRepository } from '@/domains/users/users.repository.interface';
+
+@Injectable()
+export class UsersRepository implements IUsersRepository {
+  constructor(private prisma: PrismaService) {}
+
+  async findById(id: string): Promise<UserWithDetails | null> {
+    return this.prisma.client.user.findUnique({
+      where: { id },
+      include: { posts: true },
+    });
+  }
+  // ... 他のメソッド実装
+}
+```
+
+```typescript
+// src/domains/users/users.service.ts
+@Injectable()
+export class UsersService {
+  constructor(
+    @Inject('UsersRepository')
+    private readonly usersRepository: IUsersRepository,
+  ) {}
+  // ... サービス実装
+}
+```
+
+```typescript
+// src/controllers/users/users.module.ts
+@Module({
+  controllers: [UsersController],
+  providers: [
+    UsersService,
+    {
+      provide: 'UsersRepository',
+      useClass: UsersRepository,
+    },
+  ],
+})
+export class UsersModule {}
+```
 
 - スキーマ定義
 
@@ -179,81 +385,6 @@
       return this.prisma.client.user.delete({
         where: { id },
       });
-    }
-  }
-  ```
-
-- Serviceの実装例
-
-  ```typescript
-  // src/users/services/user.service.ts
-  @Injectable()
-  export class UserService {
-    constructor(
-      private userRepository: UserRepository,
-      private prismaClientManager: PrismaClientManager,
-    ) {}
-
-    async createUser(data: CreateUserDto) {
-      // ビジネスロジックの実装
-      if (await this.isEmailAlreadyExists(data.email)) {
-        throw new ConflictException('このメールアドレスは既に使用されています');
-      }
-
-      // パスワードのハッシュ化などの処理
-      const hashedPassword = await this.hashPassword(data.password);
-
-      // Repositoryを使用してデータを保存
-      return this.userRepository.create({
-        ...data,
-        password: hashedPassword,
-      });
-    }
-
-    async transfer(fromId: string, toId: string, amount: number) {
-      // トランザクション処理はビジネスロジックの一部としてServiceクラスで実装
-      return this.prismaClientManager.transaction(async (tx) => {
-        // 送金元の残高チェック
-        const fromUser = await tx.user.findUnique({
-          where: { id: fromId },
-          select: { balance: true },
-        });
-        if (!fromUser || fromUser.balance < amount) {
-          throw new BadRequestException('残高が不足しています');
-        }
-
-        // 送金処理
-        const from = await tx.user.update({
-          where: { id: fromId },
-          data: { balance: { decrement: amount } },
-        });
-        const to = await tx.user.update({
-          where: { id: toId },
-          data: { balance: { increment: amount } },
-        });
-
-        // 取引履歴の記録
-        await tx.transaction.create({
-          data: {
-            fromUserId: fromId,
-            toUserId: toId,
-            amount,
-            status: 'COMPLETED',
-          },
-        });
-
-        return { from, to };
-      });
-    }
-
-    private async isEmailAlreadyExists(email: string): Promise<boolean> {
-      const user = await this.userRepository.findByEmail(email);
-      return !!user;
-    }
-
-    private async hashPassword(password: string): Promise<string> {
-      // パスワードハッシュ化の実装
-      return bcrypt.hash(password, 10);
     }
   }
   ```
@@ -397,3 +528,143 @@ NestJSバックエンドでは、OpenAPI仕様に基づいたAPI定義を自動�
     // ...
   }
   ```
+
+## セキュリティ実装ガイドライン
+
+### リソースアクセス制御
+
+#### 所有者確認パターン（必須）
+
+ユーザーが所有するリソースにアクセスする際は、必ず所有者確認を実装する：
+
+```typescript
+// Service層での所有者確認実装例
+async getProgramGenerationHistory(userId: string, request: GetDashboardProgramGenerationHistoryRequestDto) {
+  // 1. ユーザー存在確認
+  await this.validateUserExists(userId);
+
+  // 2. リソース所有者確認（feedIdが指定された場合）
+  if (request.feedId) {
+    const feed = await this.personalizedFeedsRepository.findById(request.feedId);
+    if (!feed || feed.userId !== userId) {
+      throw new NotFoundException('指定されたフィードが見つかりません');
+    }
+  }
+
+  // 3. データ取得処理
+  // ...
+}
+```
+
+#### 情報漏洩防止
+
+エラーメッセージからリソースの存在有無を推測できないよう統一する：
+
+```typescript
+// ❌ 悪い例：リソース存在有無が推測可能
+if (!feed) {
+  throw new NotFoundException('フィードが存在しません');
+}
+if (feed.userId !== userId) {
+  throw new ForbiddenException('このフィードにアクセスする権限がありません');
+}
+
+// ✅ 良い例：統一されたエラーメッセージ
+if (!feed || feed.userId !== userId) {
+  throw new NotFoundException('指定されたフィードが見つかりません');
+}
+```
+
+### 段階的アクセス制御
+
+リソースの状態に応じた段階的なアクセス制御を実装する：
+
+```typescript
+// 非アクティブリソースの制御例
+async getPersonalizedProgramDetail(userId: string, programId: string) {
+  const program = await this.repository.findByIdWithFeed(programId);
+
+  // 所有者確認
+  if (!program || program.feed.userId !== userId) {
+    throw new NotFoundException('指定された番組が見つかりません');
+  }
+
+  // 非アクティブフィードの番組詳細アクセス制限
+  if (!program.feed.isActive) {
+    throw new ForbiddenException('非アクティブなフィードの番組詳細にはアクセスできません');
+  }
+
+  return program;
+}
+```
+
+## DTO設計ガイドライン
+
+### ネスト構造による一貫性
+
+関連データは適切にネスト構造で表現し、フロントエンドでの使いやすさを考慮する：
+
+```typescript
+// ✅ 推奨：ネスト構造
+export class ProgramGenerationHistoryDto {
+  id: string;
+  executedAt: Date;
+  status: string;
+  reason: string | null;
+  articlesCount: number;
+
+  feed: {
+    id: string;
+    name: string;
+  };
+
+  program: {
+    id: string;
+    title: string;
+    expiresAt: Date;
+    isExpired: boolean;
+  } | null;
+}
+
+// ❌ 非推奨：フラット構造
+export class ProgramGenerationHistoryDto {
+  id: string;
+  executedAt: Date;
+  status: string;
+  reason: string | null;
+  articlesCount: number;
+  feedId: string;
+  feedName: string;
+  programId: string | null;
+  programTitle: string | null;
+  programExpiresAt: Date | null;
+  programIsExpired: boolean | null;
+}
+```
+
+### 時間経過による状態変化への対応
+
+時間経過により状態が変化するリソースは、現在の状態を含める：
+
+```typescript
+export class ProgramDto {
+  id: string;
+  title: string;
+  expiresAt: Date;
+  isExpired: boolean; // 現在時刻での期限切れ状態
+}
+```
+
+### レスポンス構造の標準化
+
+ページネーション対応APIのレスポンス構造を統一する：
+
+```typescript
+export class GetDashboardProgramGenerationHistoryResponseDto {
+  history: ProgramGenerationHistoryDto[];
+  totalCount: number;
+  limit: number;
+  offset: number;
+  hasNext: boolean;
+}
+```

@@ -1,9 +1,12 @@
 import { AppConfigService } from '@/app-config/app-config.service';
-import { PrismaClientManager, UserWithSubscriptionResult } from '@tech-post-cast/database';
-import { AppUsersRepository } from './app-users.repository';
-import { createTestingModule } from '../../../test/helpers/test-module.helper';
-import { suppressLogOutput, restoreLogOutput } from '../../../test/helpers/logger.helper';
 import { AppUserFindError } from '@/types/errors/app-user.error';
+import { PrismaClientManager } from '@tech-post-cast/database';
+import {
+  restoreLogOutput,
+  suppressLogOutput,
+} from '../../../test/helpers/logger.helper';
+import { createTestingModule } from '../../../test/helpers/test-module.helper';
+import { AppUsersRepository } from './app-users.repository';
 
 describe('AppUsersRepository', () => {
   let repository: AppUsersRepository;
@@ -85,7 +88,9 @@ describe('AppUsersRepository', () => {
 
       mockPrismaClient.appUser.findUnique.mockResolvedValue(null);
 
-      await expect(repository.findOne(userId)).rejects.toThrow(AppUserFindError);
+      await expect(repository.findOne(userId)).rejects.toThrow(
+        AppUserFindError,
+      );
       expect(mockPrismaClient.appUser.findUnique).toHaveBeenCalledWith({
         where: { id: userId },
       });
@@ -107,6 +112,8 @@ describe('AppUsersRepository', () => {
         lastSignInAt: null,
         stripeCustomerId: null,
         defaultPaymentMethodId: null,
+        slackWebhookUrl: null,
+        notificationEnabled: false,
       };
 
       const mockUser = {
@@ -166,6 +173,8 @@ describe('AppUsersRepository', () => {
         lastSignInAt: null,
         stripeCustomerId: null,
         defaultPaymentMethodId: null,
+        slackWebhookUrl: null,
+        notificationEnabled: false,
       };
 
       const mockExistingUser = {
@@ -181,6 +190,8 @@ describe('AppUsersRepository', () => {
         lastSignInAt: null,
         stripeCustomerId: null,
         defaultPaymentMethodId: null,
+        slackWebhookUrl: null,
+        notificationEnabled: false,
       };
 
       mockPrismaClient.appUser.findUnique.mockResolvedValue(mockExistingUser);
@@ -211,6 +222,8 @@ describe('AppUsersRepository', () => {
         lastSignInAt: null,
         stripeCustomerId: null,
         defaultPaymentMethodId: null,
+        slackWebhookUrl: null,
+        notificationEnabled: false,
       };
 
       mockPrismaClient.appUser.findUnique.mockResolvedValue(null);
@@ -309,6 +322,8 @@ describe('AppUsersRepository', () => {
         lastSignInAt: null,
         stripeCustomerId: null,
         defaultPaymentMethodId: null,
+        slackWebhookUrl: null,
+        notificationEnabled: false,
         subscriptions: [],
       };
 

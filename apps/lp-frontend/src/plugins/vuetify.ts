@@ -21,6 +21,13 @@ export default defineNuxtPlugin((app) => {
         techPostCastLightTheme,
       },
     },
+    ssr: true,
+    defaults: {
+      VNavigationDrawer: {
+        temporary: false,
+        permanent: true,
+      },
+    },
   });
   app.vueApp.use(vuetify);
 });

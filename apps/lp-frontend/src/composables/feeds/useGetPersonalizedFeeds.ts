@@ -1,20 +1,23 @@
 import type { NuxtApp } from '#app';
-import type { GetPersonalizedFeedsResponseDto } from '@/api';
+import type { GetPersonalizedFeedsWithFiltersResponseDto } from '@/api';
 
 /**
  * パーソナライズフィードを取得する
  * @param app NuxtApp
  * @param userId ユーザーID
- * @returns パーソナライズフィードの配列
+ * @returns フィルター情報を含むパーソナライズフィードの配列
  */
 export const useGetPersonalizedFeeds = async (
   app: NuxtApp,
   userId: string,
-): Promise<GetPersonalizedFeedsResponseDto> => {
+): Promise<GetPersonalizedFeedsWithFiltersResponseDto> => {
   console.log(`useGetPersonalizedFeeds called`, { userId });
   try {
-    // バックエンドAPIを呼び出す
-    const response = await app.$personalizedFeedApi.getPersonalizedFeeds();
+    // バックエンドAPIを呼び出す（常にフィルター情報付き）
+    const response = await app.$personalizedFeedApi.getPersonalizedFeeds(
+      undefined, // page
+      undefined, // perPage
+    );
     const result = response.data;
     console.log(`getPersonalizedFeeds API response`, { result });
     return result;

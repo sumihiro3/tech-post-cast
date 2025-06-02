@@ -12,6 +12,16 @@ export class PersonalizedFeedError extends ErrorBase {
 }
 
 /**
+ * パーソナルフィードが見つからない場合のエラー
+ */
+export class PersonalizedFeedNotFoundError extends PersonalizedFeedError {
+  override name = 'PersonalizedFeedNotFoundError';
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}
+
+/**
  * パーソナルフィードの作成制限に達した場合のエラー
  */
 export class PersonalizedFeedCreationLimitError extends PersonalizedFeedError {

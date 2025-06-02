@@ -179,3 +179,134 @@ export function getJapaneseDateStringWithWeekday(target: Date): string {
   const date = dayjs(target).format('YYYY年MM月DD日（ddd）');
   return date;
 }
+
+/**
+ * 指定日時を基準にした当週の開始日（月曜日）を返す
+ * @param date 対象日時
+ * @param timezone タイムゾーン
+ * @returns 当週の開始日（月曜日）
+ */
+export function getFirstDayOfWeek(date: Date, timezone: string = TIME_ZONE_UTC): Date {
+  return dayjs(date).tz(timezone).startOf('week').add(1, 'day').toDate(); // 月曜日を週の開始とする
+}
+
+/**
+ * 指定日時を基準にした当週の終了日（日曜日）を返す
+ * @param date 対象日時
+ * @param timezone タイムゾーン
+ * @returns 当週の終了日（日曜日）
+ */
+export function getLastDayOfWeek(date: Date, timezone: string = TIME_ZONE_UTC): Date {
+  return dayjs(date).tz(timezone).endOf('week').toDate();
+}
+
+/**
+ * 指定日時を基準にした前週の開始日（月曜日）を返す
+ * @param date 対象日時
+ * @param timezone タイムゾーン
+ * @returns 前週の開始日（月曜日）
+ */
+export function getFirstDayOfPreviousWeek(date: Date, timezone: string = TIME_ZONE_UTC): Date {
+  return dayjs(date).tz(timezone).subtract(1, 'week').startOf('week').add(1, 'day').toDate();
+}
+
+/**
+ * 指定日時を基準にした前週の終了日（日曜日）を返す
+ * @param date 対象日時
+ * @param timezone タイムゾーン
+ * @returns 前週の終了日（日曜日）
+ */
+export function getLastDayOfPreviousWeek(date: Date, timezone: string = TIME_ZONE_UTC): Date {
+  return dayjs(date).tz(timezone).subtract(1, 'week').endOf('week').toDate();
+}
+
+/**
+ * 指定された日付が今日かどうかを判定する
+ * @param date 対象日付
+ * @param timezone タイムゾーン
+ * @returns 今日の場合true
+ */
+export function isToday(date: Date, timezone: string = TIME_ZONE_JST): boolean {
+  const today = dayjs().tz(timezone).startOf('day');
+  const targetDate = dayjs(date).tz(timezone).startOf('day');
+  return today.isSame(targetDate);
+}
+
+/**
+ * 指定された日付が今週かどうかを判定する
+ * @param date 対象日付
+ * @param timezone タイムゾーン
+ * @returns 今週の場合true
+ */
+export function isThisWeek(date: Date, timezone: string = TIME_ZONE_JST): boolean {
+  const thisWeekStart = getFirstDayOfWeek(new Date(), timezone);
+  const thisWeekEnd = getLastDayOfWeek(new Date(), timezone);
+  const targetDate = dayjs(date).tz(timezone);
+  return targetDate.isAfter(thisWeekStart) && targetDate.isBefore(thisWeekEnd);
+}
+
+/**
+ * 指定された日付が今月かどうかを判定する
+ * @param date 対象日付
+ * @param timezone タイムゾーン
+ * @returns 今月の場合true
+ */
+export function isThisMonth(date: Date, timezone: string = TIME_ZONE_JST): boolean {
+  const thisMonthStart = getFirstDayOfMonth(new Date(), timezone);
+  const thisMonthEnd = getLastDayOfMonth(new Date(), timezone);
+  const targetDate = dayjs(date).tz(timezone);
+  return targetDate.isAfter(thisMonthStart) && targetDate.isBefore(thisMonthEnd);
+}
+
+/**
+ * 相対的な日付表示文字列を取得する（例：「今日」「昨日」「3日前」）
+ * @param date 対象日付
+ * @param timezone タイムゾーン
+ * @returns 相対日付文字列
+ */
+export function getRelativeDateString(date: Date, timezone: string = TIME_ZONE_JST): string {
+  const now = dayjs().tz(timezone);
+  const target = dayjs(date).tz(timezone);
+  const diffDays = now.diff(target, 'day');
+
+  if (diffDays === 0) return '今日';
+  if (diffDays === 1) return '昨日';
+  if (diffDays === 2) return '一昨日';
+  if (diffDays <= 7) return `${diffDays}日前`;
+  if (diffDays <= 30) return `${Math.floor(diffDays / 7)}週間前`;
+  if (diffDays <= 365) return `${Math.floor(diffDays / 30)}ヶ月前`;
+  return `${Math.floor(diffDays / 365)}年前`;
+}
+
+/**
+ * 期間の長さを人間が読みやすい形式で取得する
+ * @param startDate 開始日
+ * @param endDate 終了日
+ * @param timezone タイムゾーン
+ * @returns 期間文字列（例：「3日間」「2週間」「1ヶ月」）
+ */
+export function getDurationString(
+  startDate: Date,
+  endDate: Date,
+  timezone: string = TIME_ZONE_JST,
+): string {
+  const start = dayjs(startDate).tz(timezone);
+  const end = dayjs(endDate).tz(timezone);
+  const diffDays = end.diff(start, 'day');
+
+  if (diffDays === 0) return '当日';
+  if (diffDays === 1) return '1日間';
+  if (diffDays < 7) return `${diffDays}日間`;
+  if (diffDays < 30) {
+    const weeks = Math.floor(diffDays / 7);
+    const remainingDays = diffDays % 7;
+    if (remainingDays === 0) return `${weeks}週間`;
+    return `${weeks}週間${remainingDays}日`;
+  }
+  if (diffDays < 365) {
+    const months = Math.floor(diffDays / 30);
+    return `約${months}ヶ月`;
+  }
+  const years = Math.floor(diffDays / 365);
+  return `約${years}年`;
+}

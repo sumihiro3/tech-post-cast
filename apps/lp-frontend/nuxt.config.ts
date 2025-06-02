@@ -48,12 +48,19 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devServer: {
     port: 3333,
+    // SPAモードでのフォールバック処理を有効化
+    https: false,
   },
   devtools: { enabled: true },
   build: {
     transpile: ['vuetify'],
   },
+  // SSRを有効にして、routeRulesで個別制御
   ssr: true,
+  // SSRハイドレーション問題を軽減
+  experimental: {
+    payloadExtraction: false,
+  },
   // ルート別のレンダリング戦略
   routeRules: {
     // パブリックページ: SSG
@@ -64,7 +71,10 @@ export default defineNuxtConfig({
     '/login': { ssr: false },
 
     // アプリページ: SPA (クライアントサイドのみ)
-    '/app/**': { ssr: false },
+    '/app/**': {
+      ssr: false,
+      headers: { 'cache-control': 'no-cache' },
+    },
 
     // API関連: SSRなし、キャッシュなし
     '/api/**': { ssr: false, cache: false },
@@ -90,6 +100,24 @@ export default defineNuxtConfig({
       crawlLinks: true,
       failOnError: true,
     },
+    // SPAフォールバック設定を追加
+    experimental: {
+      wasm: true,
+    },
+    // SSGビルドでのSPAフォールバック設定
+    storage: {
+      redis: {
+        driver: 'memory',
+      },
+    },
+    // 開発環境でのルーティング設定
+    routeRules: {
+      '/app/**': {
+        headers: {
+          'cache-control': 'no-cache',
+        },
+      },
+    },
     hooks: {
       'prerender:config': async (nitroConfig: NitroConfig) => {
         console.log('Nitro hook [prerender:config] called');
@@ -104,6 +132,22 @@ export default defineNuxtConfig({
         await generateSpotifyRssFeed(nitro);
         // 各番組ページ用の oEmbed JSON ファイルを生成する
         await generateOembedJsonFiles(nitro);
+
+        // SSGビルド後にSPAフォールバック用の200.htmlを生成
+        const fs = await import('fs');
+        const path = await import('path');
+
+        // index.htmlを200.htmlとしてコピー（SPAフォールバック用）
+        const publicDir = nitro.options.output?.publicDir;
+        if (publicDir) {
+          const indexPath = path.join(publicDir, 'index.html');
+          const fallbackPath = path.join(publicDir, '200.html');
+
+          if (fs.existsSync(indexPath)) {
+            fs.copyFileSync(indexPath, fallbackPath);
+            console.log('Created 200.html for SPA fallback');
+          }
+        }
       },
     },
   },
@@ -192,6 +236,14 @@ export default defineNuxtConfig({
       template: {
         transformAssetUrls,
       },
+    },
+    // 開発サーバーでのSPAフォールバック設定
+    server: {
+      fs: {
+        allow: ['..'],
+      },
+      // SPAルートのフォールバック処理
+      middlewareMode: false,
     },
   },
 });

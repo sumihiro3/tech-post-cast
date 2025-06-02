@@ -18,19 +18,22 @@ div(v-if="isVisible")
 </template>
 
 <script setup lang="ts">
-import { progress } from '@/composables/useProgress';
+import { useUIState } from '@/composables/useUIState';
 import { computed } from 'vue';
 
 // クライアントサイドかどうかをチェック
 const isClient = typeof window !== 'undefined';
 
+// useUIStateを使用してProgress状態を管理
+const ui = useUIState();
+
 // グローバルなprogressのプロパティを参照
-const isVisible = computed(() => isClient && progress.isVisible.value);
-const text = computed(() => (isClient ? progress.text.value : ''));
-const color = computed(() => (isClient ? progress.color.value : 'primary'));
-const size = computed(() => (isClient ? progress.size.value : 70));
-const indeterminate = computed(() => (isClient ? progress.indeterminate.value : true));
-const overlay = computed(() => (isClient ? progress.overlay.value : true));
+const isVisible = computed(() => isClient && ui.loadingState.isVisible.value);
+const text = computed(() => (isClient ? ui.loadingState.text.value : ''));
+const color = computed(() => (isClient ? ui.loadingState.color.value : 'primary'));
+const size = computed(() => (isClient ? ui.loadingState.size.value : 70));
+const indeterminate = computed(() => true); // 常に不確定モード
+const overlay = computed(() => (isClient ? ui.loadingState.overlay.value : true));
 </script>
 
 <style scoped>

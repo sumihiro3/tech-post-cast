@@ -13,10 +13,11 @@
 - エラーハンドリングは適切に行い、エラーメッセージは具体的に記述してください。
 - マジックナンバーや文字列リテラルを避け、定数として定義してください。
 - 循環的依存関係を避けてください。
+- 各アプリケーション種別ごとのコーディングガイドラインは `/docs/coding-rules/` ディレクトリを参照してください。
 
 ## ディレクトリ構造
 
-```
+```txt
 tech-post-cast/
 ├── apps/                # アプリケーション
 │   ├── api-backend/     # バックエンドAPI (NestJS)
@@ -27,8 +28,12 @@ tech-post-cast/
 │   └── infra/           # インフラストラクチャコード (AWS CDK)
 ├── packages/            # 共有パッケージ
 │   ├── database/        # データベース関連コード・スキーマ
-│   └── commons/         # 共通ユーティリティと機能
+│   ├── commons/         # 共通ユーティリティと機能
+│   ├── eslint-config/   # ESLint設定
+│   ├── tsconfig/        # TypeScript設定
+│   └── ui-components/   # 共有UIコンポーネント
 └── docs/                # プロジェクトドキュメント
+    └── coding-rules/    # 詳細なコーディングルール
 ```
 
 ## Git管理
@@ -41,155 +46,10 @@ tech-post-cast/
 ## テスト
 
 - 新しい機能を追加する場合は、対応するテストも追加してください。
+- **テストデータは必ずファクトリクラスから取得してください**（NestJSアプリケーション）
 - テストカバレッジを維持するように努めてください。
 - テストは自動化され、CI/CDパイプラインに組み込まれています。
-
-## 統一テスト戦略
-
-すべてのアプリケーションに適用される共通のテスト戦略を以下に定義します。各アプリケーション種別固有のテスト実装の詳細は、それぞれのガイドラインドキュメントを参照してください。
-
-### テストの種類と目的
-
-1. **単体テスト (Unit Tests)**
-   - 個々の関数、メソッド、コンポーネントを分離してテスト
-   - 外部依存性はモック/スタブする
-   - 開発者が機能を実装する際に作成
-   - 目標カバレッジ: 80%以上（ロジックを含むコード）
-
-2. **統合テスト (Integration Tests)**
-   - 複数のコンポーネントやサービスの連携をテスト
-   - 実際の依存関係を使用するが、外部システム（データベース、APIなど）はモック化
-   - 機能単位で実装
-   - 目標カバレッジ: 重要な統合ポイントを網羅
-
-3. **E2Eテスト (End-to-End Tests)**
-   - ユーザーフロー全体をシミュレート
-   - 実際の環境に近い状態でテスト
-   - 主要なユーザーストーリーに対して実装
-   - 目標: 主要なユーザーフローをカバー
-
-### テスト命名規則
-
-- テストファイル名は対象ファイル名に `.spec.ts` または `.test.ts` を付加
-    - 例: `user.service.ts` → `user.service.spec.ts`
-- テストケース名は機能と期待される結果を明確に表現
-    - 形式: `should [期待される結果] when [条件]`
-    - 例: `should return user object when valid ID is provided`
-
-### テスト構造
-
-- **単体テスト・統合テスト**: Arrange-Act-Assert パターンを使用
-
-  ```typescript
-  it('should calculate correct tax amount when given a price', () => {
-    // Arrange
-    const price = 100;
-    const taxRate = 0.1;
-    const expectedTax = 10;
-
-    // Act
-    const actualTax = calculateTax(price, taxRate);
-
-    // Assert
-    expect(actualTax).toBe(expectedTax);
-  });
-  ```
-
-- **E2Eテスト**: Given-When-Then パターンを使用
-
-  ```typescript
-  describe('User login', () => {
-    it('should allow access to dashboard when credentials are valid', async () => {
-      // Given
-      const validCredentials = { email: 'user@example.com', password: 'password123' };
-
-      // When
-      await loginPage.navigate();
-      await loginPage.login(validCredentials);
-
-      // Then
-      expect(await dashboardPage.isVisible()).toBe(true);
-    });
-  });
-  ```
-
-### テストデータ管理
-
-- テストデータは各テストケース内でセットアップ
-- 共通のテストデータはファクトリ関数またはフィクスチャとして実装
-- 機密データをテストに含めない
-- テスト間の独立性を確保するため、各テスト前に状態をリセット
-
-### モック・スタブの使用
-
-- 外部依存性は必ずモック化またはスタブ化
-- テスト対象の隣接コンポーネントもモック化することを推奨
-- 一貫性のあるモックを作成するために、モックファクトリを使用
-
-  ```typescript
-  // モックファクトリの例
-  export const createUserServiceMock = () => ({
-    findById: jest.fn().mockResolvedValue({ id: '1', name: 'Test User' }),
-    create: jest.fn().mockImplementation((data) => ({ id: '1', ...data })),
-    update: jest.fn().mockResolvedValue(true),
-    delete: jest.fn().mockResolvedValue(true),
-  });
-  ```
-
-### テストカバレッジ
-
-- CI/CDパイプラインでテストカバレッジレポートを生成
-- 以下のカバレッジ目標を設定：
-    - ステートメントカバレッジ: 80%以上
-    - ブランチカバレッジ: 75%以上
-    - 関数カバレッジ: 90%以上
-- 新機能の追加や既存機能の変更時にはカバレッジを維持または向上させる
-- 重要なビジネスロジックは100%のカバレッジを目指す
-
-### テスト環境の設定
-
-- `.env.test` ファイルを使用してテスト環境変数を管理
-- テスト環境ではモックサーバーを使用して外部依存性をシミュレート
-- インメモリデータベースを使用してデータベーステストを高速化
-- CI環境では並列テスト実行を活用して実行時間を短縮
-
-### テスト実行
-
-- 開発中: 変更に関連するテストのみ実行
-
-  ```bash
-  # 特定のファイルのテストを実行
-  yarn test:watch -- user.service
-  ```
-
-- コミット前: 影響範囲のテストを実行
-- CI/CD: すべてのテストを実行
-
-  ```bash
-  # すべてのテストを実行
-  yarn test
-  ```
-
-### バグ修正と回帰テスト
-
-- バグ修正時は必ず回帰テストを追加
-- バグ再現のテストケースを先に作成し、修正後にテストが通ることを確認
-- 類似のバグが他の場所で発生していないか確認するためのテストも検討
-
-### パフォーマンステスト
-
-- 重要なAPIエンドポイントに対してはパフォーマンステストを実施
-- レスポンスタイムの閾値を設定し、CI/CDパイプラインで検証
-- 大量データ処理時の挙動をテスト
-
-### アプリケーション種別ごとのテスト戦略
-
-各アプリケーション種別に対する具体的なテスト実装方法は、以下のドキュメントを参照してください：
-
-- [NestJSバックエンドテスト戦略](/docs/coding-rules/api-backend.md#テスト)
-- [Nuxt 3フロントエンドテスト戦略](/docs/coding-rules/lp-frontend.md#テスト)
-- [LINE Botテスト戦略](/docs/coding-rules/line-bot.md#テスト)
-- [インフラストラクチャテスト戦略](/docs/coding-rules/infra.md#テスト)
+- 詳細なテスト戦略については `/docs/coding-rules/common.md#統一テスト戦略` を参照してください。
 
 ## パッケージ管理
 
@@ -211,83 +71,173 @@ tech-post-cast/
 
 ## 共有コードとパッケージの使用ガイドライン
 
-### packages/commons パッケージ
+- 共有パッケージ（commons, database等）の詳細な利用ガイドラインは `/docs/coding-rules/common.md#共有コードとパッケージの使用ガイドライン` を参照してください。
 
-`commons`パッケージは、複数のアプリケーション間で共有されるユーティリティ関数やミドルウェアなどの基本的な機能を提供します。
+## 統一インターフェイス設計原則
 
-#### 利用方法
+### 段階的統一化パターン
 
-- アプリケーションの`package.json`で`commons`パッケージを依存関係として追加してください。
+複数の関連する機能やcomposableが存在する場合は、段階的統一化パターンを適用してください：
 
-  ```json
-  "dependencies": {
-    "@tech-post-cast/commons": "*"
-  }
-  ```
+```typescript
+// ✅ 推奨: 段階的統一化パターン
+export const useUnifiedInterface = (): UnifiedReturn => {
+  const existingFeatureA = useExistingFeatureA(); // 既存機能を活用
+  const existingFeatureB = useExistingFeatureB(); // 既存機能を活用
 
-- 特定の機能のみをインポートし、不要な依存関係を避けてください。
+  return {
+    // 統一されたAPI
+    doSomething: (options: Options): void => existingFeatureA.execute(options),
+    doAnother: (data: Data): void => existingFeatureB.process(data),
+  };
+};
 
-  ```typescript
-  // 良い例: 必要な機能だけをインポート
-  import { formatDate } from '@tech-post-cast/commons';
+// ❌ 非推奨: 既存機能の完全置き換え
+export const useNewInterface = (): NewReturn => {
+  // 既存の動作するコードを破棄して新規実装
+};
+```
 
-  // 避けるべき例: 全体をインポート
-  import * as commons from '@tech-post-cast/commons';
-  ```
+### 既存資産活用の原則
 
-#### 拡張方法
+1. **動作するコードの価値**: 既存の動作するコードは貴重な資産として最大限活用してください
+2. **上位レイヤーでの統一**: 下位の実装を変更せず、上位レイヤーで統一インターフェイスを提供してください
+3. **後方互換性の維持**: 既存のAPIを破壊せずに新しいAPIを提供してください
+4. **段階的移行**: 一度にすべてを変更せず、段階的に新しいインターフェイスに移行してください
 
-- `commons`パッケージに新機能を追加する際は、以下の基準を考慮してください：
-  1. 複数のアプリケーションで必要となる汎用的な機能であること
-  2. アプリケーション固有のロジックを含まないこと
-  3. 単一責任の原則にしたがっていること
-- 新しいユーティリティ関数を追加する場合、適切なテストを作成してください。
-- バックワードコンパティビリティを維持し、破壊的変更は避けてください。
+### 統一インターフェイスの設計ガイドライン
 
-### packages/database パッケージ
+1. **明確な責任分離**: 統一インターフェイスは複数の関連機能を束ねるが、各機能の責任は明確に分離してください
+2. **型安全性の確保**: すべての関数に明示的な戻り値型を指定してください
+3. **文書化の徹底**: 統一インターフェイスの使用方法をREADMEで明確に説明してください
+4. **テスト可能性**: 統一インターフェイスもテスト可能な設計にしてください
 
-`database`パッケージは、Prismaスキーマ定義とデータベースアクセスのための共通機能を提供します。
+## バリデーション機能の共通設計原則
 
-#### 利用方法
+### モジュラー設計パターン
 
-- アプリケーションの`package.json`で`database`パッケージを依存関係として追加してください。
+バリデーション機能は以下の階層化されたモジュラー設計を採用してください：
 
-  ```json
-  "dependencies": {
-    "@tech-post-cast/database": "*"
-  }
-  ```
+```typescript
+// レイヤー1: 純粋なバリデーション関数（ビジネスロジック）
+// 場所: utils/validation/
+export const validateField = (value: string, options: ValidationOptions): FieldValidationResult => {
+  // フレームワークに依存しない純粋なロジック
+};
 
-- データベースアクセスには必ず`PrismaClientManager`を使用してください。
+// レイヤー2: リアクティブ状態管理（フレームワーク固有）
+// 場所: composables/validation/
+export const useValidation = (data: Ref<Data>, options: Options): ValidationReturn => {
+  // Vue/React等のリアクティブシステムとの統合
+};
 
-  ```typescript
-  import { PrismaClientManager } from '@tech-post-cast/database';
+// レイヤー3: UI統合（コンポーネント固有）
+// 場所: コンポーネント内
+const { validationResult, isValid } = useValidation(formData, validationOptions);
+```
 
-  @Injectable()
-  export class UserService {
-    constructor(private prismaClientManager: PrismaClientManager) {}
+### バリデーション設計の共通ルール
 
-    async findUser(id: string) {
-      return this.prismaClientManager.client.user.findUnique({
-        where: { id }
-      });
-    }
-  }
-  ```
+1. **エラーと警告の分離**
 
-#### データモデルの拡張方法
+   ```typescript
+   interface FieldValidationResult {
+     isValid: boolean;
+     errors: string[];    // 送信を阻害する問題
+     warnings: string[];  // 推奨設定からの逸脱
+   }
+   ```
 
-- 新しいデータモデルを追加するには、`database/prisma/schema.prisma`を修正してください。
-- モデル変更後は、以下の手順にしたがってください：
-  1. マイグレーションスクリプトを生成: `yarn workspace @tech-post-cast/database prisma migrate dev --name <変更内容>`
-  2. 型定義を更新: `yarn workspace @tech-post-cast/database prisma generate`
-  3. テストを実行して変更の影響を確認
-- モデル変更の前にはチームメンバーと協議し、変更の影響範囲を確認してください。
+2. **設定の外部化**
 
-### 共有コード使用の一般原則
+   ```typescript
+   // ✅ 推奨: 設定値を外部から注入
+   const validation = useValidation(data, {
+     maxItems: props.maxItems,  // プランや環境により変動
+     debounceDelay: 500,        // パフォーマンス調整可能
+   });
 
-- 共有コードとアプリケーション固有のコードの間に明確な境界を設けてください。
-- 循環依存を避けるため、共有パッケージは他の共有パッケージやアプリケーションに依存しないようにしてください。
-- アプリケーション固有のロジックは共有パッケージに移動せず、適切なアプリケーションモジュール内に保持してください。
-- 共有コードに変更を加える際は、すべての依存アプリケーションへの影響を考慮してください。
-- 共有パッケージのAPIに破壊的変更を加える場合は、移行計画を立て、チームに通知してください。
+   // ❌ 非推奨: ハードコードされた設定
+   const maxItems = 10; // 固定値
+   ```
+
+3. **デバウンス時間の標準化**
+   - **推奨値**: 500ms（ユーザー体験とパフォーマンスのバランス）
+   - リアルタイムバリデーションでは必ずデバウンス機能を実装してください
+
+4. **既存機能との統合**
+
+   ```typescript
+   // 新しいバリデーションと既存のエラーハンドリングを統合
+   const getFieldErrors = (field: string): string[] => {
+     const validationErrors = getValidationFieldErrors(field);
+     const existingErrors = props.fieldErrors[field] || [];
+     return [...validationErrors, ...existingErrors];
+   };
+   ```
+
+### バリデーション実装のベストプラクティス
+
+1. **関心の分離**: バリデーションロジック、状態管理、UI統合を明確に分離
+2. **再利用性**: 各バリデーション関数は独立してテスト・再利用可能
+3. **段階的導入**: 既存システムとの互換性を保ちながら段階的に導入
+4. **テスタビリティ**: 各レイヤーを独立してテスト可能な設計
+
+## 型安全性とlinter管理
+
+### TypeScript型定義ルール
+
+1. **明示的な戻り値型**: すべての関数に明示的な戻り値型を指定してください
+
+   ```typescript
+   // ✅ 推奨
+   export const useFeature = (): FeatureReturn => {
+     // 実装
+   };
+
+   // ❌ 非推奨
+   export const useFeature = () => {
+     // 実装
+   };
+   ```
+
+2. **インターフェイスの定義**: 複雑な戻り値型はインターフェイスとして定義してください
+
+   ```typescript
+   interface FeatureReturn {
+     execute: (options?: ExecuteOptions) => void;
+     reset: () => void;
+     state: Ref<FeatureState>;
+   }
+   ```
+
+### Linterエラー管理ルール
+
+1. **完全解消の原則**: 実装完了前にすべてのlinterエラーを解消してください
+2. **3回ルール**: 同一ファイルでのlinterエラー修正は3回まで。3回目で解消できない場合は設計を見直してください
+3. **エラー分類**: linterエラーは以下のように分類して対処してください
+   - **型エラー**: 明示的な型定義で解決
+   - **未使用変数**: 不要な変数の削除または`_`プレフィックス
+   - **命名規則**: プロジェクトの命名規則に準拠
+
+## 知識管理とドキュメント
+
+### 振り返りと学習の記録
+
+重要な実装や設計決定については、以下の場所に記録してください：
+
+1. **`.cursor/memory/`**: 技術的な学びや設計決定の記録
+   - `ui-ux-learnings.md`: UI/UX設計の知見
+   - `architecture-decisions.md`: アーキテクチャ決定の記録
+   - その他カテゴリ別ファイル
+
+2. **`docs/coding-rules/`**: コーディングルールの更新
+   - 新しいパターンやベストプラクティスの追加
+   - 既存ルールの改善や明確化
+
+### ドキュメント管理ルール
+
+1. **READMEの配置**: 各重要なディレクトリにREADME.mdを配置してください
+2. **使用例の提供**: 抽象的な説明だけでなく、具体的な使用例を含めてください
+3. **更新の責任**: コードを変更した際は、関連するドキュメントも同時に更新してください
+4. **アーキテクチャ図**: 複雑な設計については、図解を含めてください

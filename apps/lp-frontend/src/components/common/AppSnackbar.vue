@@ -24,7 +24,7 @@ import { computed } from 'vue';
 // composableが定義されているかチェック（SSR対策）
 const isClient = typeof window !== 'undefined';
 
-// グローバルなsnackbarのプロパティを参照
+// グローバルなsnackbarインスタンスを直接使用
 const isVisible = computed({
   get: () => (isClient ? snackbar.isVisible.value : false),
   set: (value) => {
@@ -36,7 +36,10 @@ const isVisible = computed({
 const text = computed(() => (isClient ? snackbar.text.value : ''));
 const type = computed(() => (isClient ? snackbar.type.value : 'info'));
 const timeout = computed(() => (isClient ? snackbar.timeout.value : 10 * 1000));
-const position = computed(() => (isClient ? snackbar.position.value : 'top'));
+const position = computed(() =>
+  isClient ? (snackbar.position.value as 'top' | 'bottom' | 'left' | 'right' | undefined) : 'top',
+);
+
 // タイプに応じた色を返す
 const snackbarColor = computed(() => {
   switch (type.value) {
@@ -68,7 +71,7 @@ const snackbarIcon = computed(() => {
 });
 
 // Snackbarを閉じる
-const close = () => {
+const close = (): void => {
   snackbar.close();
 };
 </script>

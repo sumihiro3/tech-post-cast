@@ -1,0 +1,219 @@
+##################################################
+# User Settings API - ユーザー設定API
+##################################################
+
+@apiBaseUrl = http://localhost:3001
+@authToken = your_clerk_jwt_token_here
+
+##################################################
+# ユーザー設定取得
+##################################################
+
+### ユーザー設定取得
+# 認証ユーザーの現在の設定を取得
+GET {{apiBaseUrl}}/user-settings
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+##################################################
+# ユーザー設定更新
+##################################################
+
+### ユーザー設定更新（全フィールド）
+# 表示名、Slack Webhook URL、通知設定をすべて更新
+PATCH {{apiBaseUrl}}/user-settings
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "displayName": "田中 太郎",
+  "slackWebhookUrl": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXX",
+  "notificationEnabled": true
+}
+
+### ユーザー設定更新（表示名のみ）
+# 表示名のみを更新
+PATCH {{apiBaseUrl}}/user-settings
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "displayName": "新しい表示名"
+}
+
+### ユーザー設定更新（Slack設定のみ）
+# Slack Webhook URLと通知設定のみを更新
+PATCH {{apiBaseUrl}}/user-settings
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "slackWebhookUrl": "https://hooks.slack.com/services/T11111111/B11111111/YYYYYYYYYYYYYYYYYYYYYYYY",
+  "notificationEnabled": true
+}
+
+### ユーザー設定更新（通知無効化）
+# 通知を無効にする
+PATCH {{apiBaseUrl}}/user-settings
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "notificationEnabled": false
+}
+
+### ユーザー設定更新（Slack URL削除）
+# Slack Webhook URLを削除（null設定）
+PATCH {{apiBaseUrl}}/user-settings
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "slackWebhookUrl": null,
+  "notificationEnabled": false
+}
+
+##################################################
+# Slack Webhook URLテスト
+##################################################
+
+### Slack Webhook URLテスト（有効なURL）
+# 指定されたSlack Webhook URLに対してテスト通知を送信
+@slackIncomingWebhookUrl = {{$dotenv SLACK_INCOMING_WEBHOOK_URL}}
+
+POST {{apiBaseUrl}}/user-settings/test-slack-webhook
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "webhookUrl": "{{slackIncomingWebhookUrl}}"
+}
+
+### Slack Webhook URLテスト（無効なURL）
+# 無効なURLでテスト（エラーレスポンスの確認）
+POST {{apiBaseUrl}}/user-settings/test-slack-webhook
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "webhookUrl": "https://hooks.slack.com/services/INVALID/INVALID/INVALID"
+}
+
+##################################################
+# エラーケースのテスト
+##################################################
+
+### 認証なしでアクセス（401エラーが期待される）
+GET {{apiBaseUrl}}/user-settings
+Content-Type: application/json
+
+### 無効な認証トークンでアクセス（401エラーが期待される）
+GET {{apiBaseUrl}}/user-settings
+Content-Type: application/json
+Authorization: Bearer invalid_token
+
+### 無効なリクエストボディ（400エラーが期待される）
+# 表示名が長すぎる場合
+PATCH {{apiBaseUrl}}/user-settings
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "displayName": "この表示名は100文字を超えているため、バリデーションエラーになるはずです。この表示名は100文字を超えているため、バリデーションエラーになるはずです。この表示名は100文字を超えているため、バリデーションエラーになるはずです。"
+}
+
+### 無効なSlack Webhook URL（400エラーが期待される）
+PATCH {{apiBaseUrl}}/user-settings
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "slackWebhookUrl": "invalid-url"
+}
+
+### 無効なnotificationEnabledタイプ（400エラーが期待される）
+PATCH {{apiBaseUrl}}/user-settings
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "notificationEnabled": "invalid-boolean"
+}
+
+### 空のリクエストボディでSlack URLテスト（400エラーが期待される）
+POST {{apiBaseUrl}}/user-settings/test-slack-webhook
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+}
+
+### 無効なSlack URLでテスト（400エラーが期待される）
+POST {{apiBaseUrl}}/user-settings/test-slack-webhook
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "webhookUrl": "not-a-valid-url"
+}
+
+##################################################
+# 認証トークンの取得方法とレスポンス例
+##################################################
+###
+# 認証トークンの取得方法:
+# 1. フロントエンドアプリケーション（http://localhost:3000）にログイン
+# 2. ブラウザの開発者ツールでネットワークタブを開く
+# 3. APIリクエストのAuthorizationヘッダーからトークンをコピー
+# 4. 上記の @authToken 変数に設定
+#
+# レスポンス例:
+#
+# ユーザー設定取得:
+# {
+#   "userId": "user_01234567890abcdef",
+#   "displayName": "田中 太郎",
+#   "slackWebhookUrl": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXX",
+#   "notificationEnabled": true,
+#   "updatedAt": "2024-01-15T10:30:00.000Z"
+# }
+#
+# ユーザー設定更新:
+# {
+#   "userId": "user_01234567890abcdef",
+#   "displayName": "新しい表示名",
+#   "slackWebhookUrl": "https://hooks.slack.com/services/T11111111/B11111111/YYYYYYYYYYYYYYYYYYYYYYYY",
+#   "notificationEnabled": true,
+#   "updatedAt": "2024-01-15T10:35:00.000Z"
+# }
+#
+# Slack Webhook URLテスト（成功）:
+# {
+#   "success": true,
+#   "errorMessage": null,
+#   "responseTime": 245
+# }
+#
+# Slack Webhook URLテスト（失敗）:
+# {
+#   "success": false,
+#   "errorMessage": "Slack API エラー: 404 Not Found",
+#   "responseTime": 1200
+# }
+#
+# エラーレスポンス例（400 Bad Request）:
+# {
+#   "statusCode": 400,
+#   "message": [
+#     "displayName must be shorter than or equal to 100 characters"
+#   ],
+#   "error": "Bad Request"
+# }
+#
+# エラーレスポンス例（401 Unauthorized）:
+# {
+#   "statusCode": 401,
+#   "message": "Unauthorized",
+#   "error": "Unauthorized"
+# }
+###

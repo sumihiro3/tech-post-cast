@@ -40,6 +40,8 @@ describe('PersonalizedFeedsService', () => {
     lastSignInAt: new Date(),
     stripeCustomerId: 'cus_123456',
     defaultPaymentMethodId: 'pm_123456',
+    slackWebhookUrl: null,
+    notificationEnabled: false,
   };
 
   const mockPersonalizedFeed = {

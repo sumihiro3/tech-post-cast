@@ -1,22 +1,30 @@
 <template lang="pug">
   v-app
     Header(:show-drawer-toggle="true" @toggle-drawer="toggleDrawer")
-    v-navigation-drawer(
-      v-model="drawer"
-      color="white"
-      :width="240"
-      :mini-variant="!drawer"
-      mini-variant-width="56"
-    )
-      v-list(nav dense)
-        v-list-item(
-          v-for="(item, i) in menuItems"
-          :key="i"
-          :to="item.to"
-          :prepend-icon="item.icon"
-          :title="item.title"
-          color="primary"
-        )
+    ClientOnly
+      v-navigation-drawer(
+        v-model="drawer"
+        app
+        color="white"
+        :width="240"
+        :mini-variant="!drawer"
+        mini-variant-width="56"
+        :temporary="false"
+        :permanent="true"
+      )
+        v-list(nav dense)
+          v-list-item(
+            v-for="(item, i) in menuItems"
+            :key="i"
+            :to="item.to"
+            :prepend-icon="item.icon"
+            :title="item.title"
+            color="primary"
+            :active="isMenuItemActive(item)"
+          )
+      template(#fallback)
+        // サーバーサイドレンダリング時のフォールバック
+        div
     v-main
       v-container(fluid :class="{'pl-0 pr-0': $vuetify.display.mdAndUp && drawer}")
         slot.ma-0.pa-0
@@ -24,6 +32,8 @@
 </template>
 
 <script setup lang="ts">
+import { useRoute } from 'vue-router';
+
 useHead({
   link: [
     {
@@ -39,17 +49,37 @@ useHead({
 });
 
 const drawer = ref(true);
+const route = useRoute();
 
-const menuItems = [
+interface MenuItem {
+  title: string;
+  icon: string;
+  to: string;
+  exact?: boolean;
+}
+
+const menuItems: MenuItem[] = [
   { title: 'ダッシュボード', icon: 'mdi-view-dashboard', to: '/app/dashboard' },
-  // { title: 'パーソナライズ番組の配信一覧', icon: 'mdi-television-play', to: '/app/broadcasts' },
-  { title: 'パーソナライズ番組設定', icon: 'mdi-cog', to: '/app/feeds' },
+  { title: 'パーソナルプログラム', icon: 'mdi-podcast', to: '/app/programs', exact: false },
+  { title: 'パーソナルフィード設定', icon: 'mdi-rss', to: '/app/feeds', exact: false },
+  { title: 'ユーザー設定', icon: 'mdi-account-cog', to: '/app/settings' },
   // { title: 'サブスクリプション一覧', icon: 'mdi-credit-card-outline', to: '/app/subscriptions' },
-  // { title: 'ユーザー情報', icon: 'mdi-account', to: '/app/profile' },
 ];
 
 const toggleDrawer = (): void => {
   drawer.value = !drawer.value;
+};
+
+const isMenuItemActive = (item: MenuItem): boolean => {
+  const currentPath = route.path;
+
+  // exactがfalseの場合は、パスが始まっているかをチェック
+  if (item.exact === false) {
+    return currentPath.startsWith(item.to);
+  }
+
+  // デフォルトは完全一致
+  return currentPath === item.to;
 };
 </script>
 

@@ -4,7 +4,7 @@
       <div class="d-flex align-center mb-2">
         <v-icon size="small" class="mr-1">mdi-account</v-icon>
         <span class="font-weight-medium">著者</span>
-        <div class="text-caption text-grey ml-2">(最大10人まで)</div>
+        <div class="text-caption text-grey ml-2">(最大{{ maxAuthors }}件まで)</div>
       </div>
       <v-combobox
         v-model="displayAuthors"
@@ -112,7 +112,7 @@ const validatedAuthors = ref(new Set<string>());
  */
 const invalidAuthorsExist = computed(() => {
   return selectedAuthors.value.some(
-    author => !validAuthors.value.includes(author) && !pendingAuthors.value.includes(author),
+    (author) => !validAuthors.value.includes(author) && !pendingAuthors.value.includes(author),
   );
 });
 
@@ -167,7 +167,7 @@ const onDisplayAuthorsChange = (): void => {
   }
   // 新しく追加された著者を検出
   const newAuthors = selectedAuthors.value.filter(
-    author => !prevSelectedAuthors.includes(author),
+    (author) => !prevSelectedAuthors.includes(author),
   );
   if (newAuthors.length > 0) {
     console.log('新しく追加された著者:', newAuthors);
@@ -177,9 +177,9 @@ const onDisplayAuthorsChange = (): void => {
       const lowerCaseNewAuthor = newAuthor.toLowerCase();
       const duplicateIndex = selectedAuthors.value.findIndex(
         (author, index) =>
-          author.toLowerCase() === lowerCaseNewAuthor
-          && author !== newAuthor
-          && selectedAuthors.value.indexOf(newAuthor) !== index,
+          author.toLowerCase() === lowerCaseNewAuthor &&
+          author !== newAuthor &&
+          selectedAuthors.value.indexOf(newAuthor) !== index,
       );
       if (duplicateIndex !== -1) {
         // すでに入力済みの著者が見つかった場合
@@ -219,9 +219,9 @@ const onDisplayAuthorsChange = (): void => {
  */
 const handleAuthorInput = (value: string, input: HTMLInputElement): void => {
   if (
-    value
-    && !selectedAuthors.value.includes(value)
-    && selectedAuthors.value.length < props.maxAuthors
+    value &&
+    !selectedAuthors.value.includes(value) &&
+    selectedAuthors.value.length < props.maxAuthors
   ) {
     selectedAuthors.value.push(value);
     displayAuthors.value.push(value);
@@ -295,7 +295,7 @@ const isAuthorAlreadyValidated = (author: string): boolean => {
 const findExistingAuthor = (author: string): { index: number; author: string } | null => {
   const authorLowerCase = author.toLowerCase();
   const existingAuthorIndex = selectedAuthors.value.findIndex(
-    a => a.toLowerCase() === authorLowerCase && a !== author,
+    (a) => a.toLowerCase() === authorLowerCase && a !== author,
   );
   if (existingAuthorIndex !== -1) {
     // 既存著者が見つかった場合
@@ -355,21 +355,18 @@ const validateAuthorWithQiitaApi = async (author: string): Promise<void> => {
     console.log(`著者を検証中: "${author}"`);
     const userData = await useGetQiitaAuthor(app, author);
     // 検証中から削除
-    pendingAuthors.value = pendingAuthors.value.filter(a => a !== author);
+    pendingAuthors.value = pendingAuthors.value.filter((a) => a !== author);
     if (userData) {
       console.log(`著者の検証完了: "${author}" は有効です。ID="${userData.id}"`);
       // APIから取得した著者IDで重複チェック
       handleAuthorFromApiResponse(author, userData);
-    }
-    else {
+    } else {
       console.warn(`著者の検証完了: "${author}" は無効です。Qiitaに存在しません。`);
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Error validating author:', error);
-    pendingAuthors.value = pendingAuthors.value.filter(a => a !== author);
-  }
-  finally {
+    pendingAuthors.value = pendingAuthors.value.filter((a) => a !== author);
+  } finally {
     // モデル値を更新
     emit('update:modelValue', selectedAuthors.value);
   }
@@ -387,13 +384,12 @@ const handleAuthorFromApiResponse = (inputAuthor: string, userData: QiitaUserApi
   // APIから取得した正確な著者IDで再度重複チェック
   const correctAuthorLowerCase = userData.id.toLowerCase();
   const correctAuthorExistingIndex = selectedAuthors.value.findIndex(
-    a => a.toLowerCase() === correctAuthorLowerCase && a !== inputAuthor,
+    (a) => a.toLowerCase() === correctAuthorLowerCase && a !== inputAuthor,
   );
   if (correctAuthorExistingIndex !== -1) {
     // APIから取得した正確な著者IDが既に存在する場合
     handleApiAuthorDuplication(inputAuthor, correctAuthorExistingIndex, userData);
-  }
-  else {
+  } else {
     // 重複がない場合は正確な著者IDに置き換え
     updateAuthorWithCorrectId(inputAuthor, userData);
   }
@@ -453,8 +449,7 @@ const updateAuthorWithCorrectId = (inputAuthor: string, userData: QiitaUserApiRe
       validAuthors.value.push(userData.id);
     }
     console.log(`著者を正規化: "${inputAuthor}" → "${userData.id}"`);
-  }
-  else {
+  } else {
     console.warn(`著者 "${inputAuthor}" が選択リストに見つかりません`);
   }
 };

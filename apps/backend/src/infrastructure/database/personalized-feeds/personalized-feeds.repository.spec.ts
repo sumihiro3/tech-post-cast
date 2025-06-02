@@ -27,6 +27,8 @@ const mockAppUser: AppUser = {
   lastSignInAt: new Date('2025-01-01'),
   stripeCustomerId: 'stripe_customer_id',
   defaultPaymentMethodId: 'default_payment_method_id',
+  slackWebhookUrl: null,
+  notificationEnabled: false,
 };
 
 const mockSubscription: Subscription = {

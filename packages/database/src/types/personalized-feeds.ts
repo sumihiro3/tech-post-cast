@@ -9,7 +9,11 @@ export enum PersonalizedProgramAttemptStatus {
    */
   SUCCESS = 'SUCCESS',
   /**
-   * 失敗
+   * スキップ（記事不足等の理由で生成をスキップ）
+   */
+  SKIPPED = 'SKIPPED',
+  /**
+   * 失敗（処理エラー等で生成に失敗）
    */
   FAILED = 'FAILED',
 }

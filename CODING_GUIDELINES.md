@@ -80,6 +80,7 @@ NestJSアプリケーションは以下の層に分けて実装します：
 - テストケースは機能の正常系と異常系の両方をカバーする
 - NestJSのテストはArrange-Act-Assert規約に従う
 - Nuxtのテストはコンポーネントのロジックをcomposablesに分離してテスト可能にする
+- **テストデータは必ずファクトリクラスから取得する**（詳細は各アプリケーションのガイドライン参照）
 - テストユーティリティ（ファクトリー、ログ制御、ヘルパー関数）を活用してテストコードの品質と効率を向上させる
 
 ## コメント
@@ -100,6 +101,7 @@ NestJSアプリケーションは以下の層に分けて実装します：
 - `apps/backend/src/test/factories/` - Backend用ファクトリー
 
 **使用例:**
+
 ```typescript
 import { QiitaPostFactory } from '@/test/factories/qiita-post.factory';
 
@@ -117,12 +119,14 @@ const posts = QiitaPostFactory.createQiitaPosts(5);
 テスト実行時のログ出力を制御するための機能を提供しています：
 
 **環境変数による制御:**
+
 ```bash
 # ログ出力を有効化（デバッグ時）
 TEST_LOG_ENABLED=true yarn test
 ```
 
 **プログラムによる制御:**
+
 ```typescript
 import { suppressLogOutput, restoreLogOutput } from '@/test/helpers/logger.helper';
 
@@ -177,3 +181,18 @@ const [module, mockPrisma] = await createTestingModuleWithMockPrisma({
 ## 詳細な規約
 
 より詳細なコーディング規約については、[/docs/coding-rules/](/docs/coding-rules/)ディレクトリのドキュメントを参照してください。新しいアプリケーションやパッケージを追加する場合は、既存のルールを拡張し、必要に応じて新しいガイドラインドキュメントを作成してください。
+
+## アーキテクチャ原則
+
+### 依存性逆転の原則（NestJSアプリケーション）
+
+- **Repositoryパターン**: データアクセス層は必ずインターフェイスを定義し、ドメイン層とインフラ層を分離する
+    - ドメイン層: `src/domains/{domain-name}/{domain-name}.repository.interface.ts`
+    - インフラ層: `src/infrastructure/database/{domain-name}/{domain-name}.repository.ts`
+    - サービス層: インターフェイスに依存し、DIコンテナーで実装クラスを注入
+
+### クリーンアーキテクチャ
+
+- 各層の責任を明確に分離する
+- 外側の層は内側の層に依存するが、内側の層は外側の層に依存しない
+- ビジネスロジックはドメイン層に集約する

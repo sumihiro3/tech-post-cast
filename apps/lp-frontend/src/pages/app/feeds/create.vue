@@ -22,6 +22,9 @@ v-container.max-width-container
     :loading="isSaving"
     :is-valid="isValidFeed"
     :field-errors="fieldErrors"
+    :max-authors="maxAuthors"
+    :max-tags="maxTags"
+    :show-validation-status="true"
     @update:feed-data="handleInputPersonalizedFeedDataUpdate"
     @action-button-click="saveFeed"
   )
@@ -34,7 +37,36 @@ v-container.max-width-container
         variant="tonal"
         closable
         border
+        @click:close="error = null"
       ) {{ error }}
+
+  //- バリデーション詳細表示（開発・デバッグ用）
+  v-row(v-if="showValidationDetails" justify="center" class="mt-4")
+    v-col(cols="12")
+      v-expansion-panels
+        v-expansion-panel(title="バリデーション詳細（開発用）")
+          v-expansion-panel-text
+            .mb-3
+              strong バリデーション状態:
+              v-chip(
+                :color="isValidationPassed ? 'success' : 'error'"
+                size="small"
+                class="ml-2"
+              ) {{ isValidationPassed ? '通過' : 'エラー' }}
+              v-chip(
+                v-if="hasValidationWarnings"
+                color="warning"
+                size="small"
+                class="ml-2"
+              ) 警告あり
+
+            div(v-if="validationErrors && Object.keys(validationErrors).length > 0")
+              strong.text-error エラー:
+              pre.text-caption {{ JSON.stringify(validationErrors, null, 2) }}
+
+            div(v-if="validationWarnings && Object.keys(validationWarnings).length > 0")
+              strong.text-warning 警告:
+              pre.text-caption {{ JSON.stringify(validationWarnings, null, 2) }}
 
   //- キャンセル確認ダイアログ（共通コンポーネントを使用）
   ConfirmDialog(
@@ -51,12 +83,12 @@ v-container.max-width-container
 
 <script setup lang="ts">
 import { useNuxtApp } from '#app';
-import { PersonalizedFeedDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum } from '@/api';
+import { PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum } from '@/api';
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 import FeedEditor from '@/components/qiita/FeedEditor.vue';
 import { useCreatePersonalizedFeed } from '@/composables/feeds/useCreatePersonalizedFeed';
-import { progress } from '@/composables/useProgress';
-import { snackbar } from '@/composables/useSnackbar';
+import { useUIState } from '@/composables/useUIState';
+import { useFeedValidation } from '@/composables/validation/useFeedValidation';
 import type { InputPersonalizedFeedData } from '@/types';
 import { HttpError, ValidationError } from '@/types/http-errors';
 import { convertInputDataToCreateDto } from '@/types/personalized-feed';
@@ -67,11 +99,21 @@ definePageMeta({
   layout: 'user-app',
 });
 
+// UI状態管理
+const ui = useUIState();
+
 /** 記事公開日の範囲のデフォルト値 */
 const DEFAULT_DATE_RANGE: number = 7;
 
 /** いいね数のデフォルト値 */
 const DEFAULT_LIKES_COUNT: number = 0;
+
+// 制限値
+const maxTags = ref(10);
+const maxAuthors = ref(5);
+
+// バリデーション詳細表示フラグ（開発用）
+const showValidationDetails = ref(false);
 
 /**
  * フィードの初期データ
@@ -87,7 +129,7 @@ const initialFeedData = reactive<InputPersonalizedFeedData>({
   },
   posts: [],
   totalCount: 0,
-  deliveryFrequency: DeliveryFrequencyEnum.Weekly,
+  deliveryFrequency: DeliveryFrequencyEnum.Daily,
 });
 
 /**
@@ -104,8 +146,30 @@ const currentFeedData = ref<InputPersonalizedFeedData>({
   },
   posts: [],
   totalCount: 0,
-  deliveryFrequency: DeliveryFrequencyEnum.Weekly,
+  deliveryFrequency: DeliveryFrequencyEnum.Daily,
 });
+
+// バリデーション機能を統合
+const {
+  validationResult,
+  isValidating: _isValidating,
+  getFieldErrors: _getValidationFieldErrors,
+  getFieldWarnings: _getFieldWarnings,
+  hasFieldError: _hasValidationFieldError,
+  hasFieldWarning: _hasFieldWarning,
+  isValid: isValidationValid,
+  hasWarnings: hasValidationWarnings,
+} = useFeedValidation(currentFeedData, {
+  realtime: true,
+  debounceDelay: 500,
+  maxTags: maxTags.value,
+  maxAuthors: maxAuthors.value,
+});
+
+// バリデーション状態の計算プロパティ
+const isValidationPassed = computed(() => isValidationValid.value);
+const validationErrors = computed(() => validationResult.value.errors);
+const validationWarnings = computed(() => validationResult.value.warnings);
 
 /**
  * キャンセル確認ダイアログの表示状態
@@ -128,7 +192,7 @@ const hasFormChanges = computed(() => {
   const hasDateRangeChanged = currentFeedData.value.filters.dateRange !== -1;
   // 配信間隔が初期値と異なるか
   const hasDeliveryFrequencyChanged =
-    currentFeedData.value.deliveryFrequency !== DeliveryFrequencyEnum.Weekly;
+    currentFeedData.value.deliveryFrequency !== DeliveryFrequencyEnum.Daily;
 
   return (
     hasTitleChanged ||
@@ -215,9 +279,16 @@ const resetErrors = (): void => {
 
 /**
  * フィードが有効かどうかを判定するcomputed
+ * 新しいバリデーション結果と従来のロジックを統合
  * @returns {boolean} フィードが有効な場合はtrue、そうでない場合はfalse
  */
 const isValidFeed = computed(() => {
+  // 新しいバリデーション結果をチェック
+  if (!isValidationPassed.value) {
+    return false;
+  }
+
+  // 従来のロジックも維持
   const hasTitle = currentFeedData.value.programTitle.trim() !== '';
   const hasTags = (currentFeedData.value.filters.tags?.length || 0) > 0;
   const hasAuthors = (currentFeedData.value.filters.authors?.length || 0) > 0;
@@ -241,9 +312,15 @@ const saveFeed = async (): Promise<void> => {
     // エラーメッセージをリセット
     resetErrors();
     // プログレスサークルを表示
-    progress.show({ text: 'パーソナライズフィードを作成中...' });
+    ui.showLoading({ message: 'パーソナライズフィードを作成中...' });
 
-    // フロントエンドでのバリデーション
+    // 新しいバリデーション機能でのチェック
+    if (!isValidationPassed.value) {
+      error.value = 'フォームに入力エラーがあります。内容を確認してください。';
+      return;
+    }
+
+    // フロントエンドでのバリデーション（従来のロジックも維持）
     if (!currentFeedData.value.programTitle) {
       error.value = 'タイトルを入力してください';
       fieldErrors['programTitle'] = ['タイトルを入力してください'];
@@ -266,7 +343,7 @@ const saveFeed = async (): Promise<void> => {
     await useCreatePersonalizedFeed(app, requestData);
 
     // 成功時にSnackbarで通知
-    snackbar.showSuccess('パーソナライズフィードを作成しました');
+    ui.showSuccess('パーソナライズフィードを作成しました');
 
     // 保存成功の場合、フィード一覧画面に遷移
     navigateTo('/app/feeds');
@@ -289,10 +366,10 @@ const saveFeed = async (): Promise<void> => {
     }
 
     // エラー時にSnackbarで通知
-    snackbar.showError(error.value || 'パーソナライズフィードの作成に失敗しました');
+    ui.showError(error.value || 'パーソナライズフィードの作成に失敗しました');
   } finally {
     // プログレスサークルを非表示
-    progress.hide();
+    ui.hideLoading();
     // 保存中フラグをOFF
     isSaving.value = false;
   }

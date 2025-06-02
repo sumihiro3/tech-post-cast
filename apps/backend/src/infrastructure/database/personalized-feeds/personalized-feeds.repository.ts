@@ -400,10 +400,72 @@ export class PersonalizedFeedsRepository
   }
 
   /**
+   * パーソナライズフィードを元に生成された番組のスキップの試行履歴を作成する
+   * @param user ユーザー
+   * @param feed パーソナルフィード
+   * @param programDate 番組日
+   * @param postCount 紹介記事数
+   * @param reason スキップ理由
+   * @returns 試行履歴
+   */
+  async addPersonalizedProgramSkippedAttempt(
+    user: AppUser,
+    feed: PersonalizedFeedWithFilters,
+    programDate: Date,
+    postCount: number,
+    reason: PersonalizedProgramAttemptFailureReason,
+  ): Promise<PersonalizedProgramAttempt> {
+    this.logger.debug(
+      `PersonalizedFeedsRepository.addPersonalizedProgramSkippedAttempt called`,
+      {
+        userId: user.id,
+        feedId: feed.id,
+        programDate,
+        postCount,
+        reason,
+      },
+    );
+    try {
+      const client = this.prisma.getClient();
+      const result = await client.personalizedProgramAttempt.create({
+        data: {
+          userId: user.id,
+          feedId: feed.id,
+          status: PersonalizedProgramAttemptStatus.SKIPPED,
+          reason,
+          postCount,
+          createdAt: programDate,
+        },
+      });
+      this.logger.debug(
+        `パーソナライズフィードを元に生成された番組のスキップの試行履歴を作成しました`,
+        {
+          result,
+        },
+      );
+      return result;
+    } catch (error) {
+      const errorMessage = `パーソナライズフィードを元に生成された番組のスキップの試行履歴の作成に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        userId: user.id,
+        feedId: feed.id,
+        programDate,
+        reason,
+      });
+      this.logger.error(error.message, error.stack);
+      throw new PersonalizedProgramAttemptPersistenceError(errorMessage, {
+        cause: error,
+      });
+    }
+  }
+
+  /**
    * パーソナライズフィードを元に生成された番組の失敗の試行履歴を作成する
    * @param user ユーザー
    * @param feed パーソナルフィード
    * @param programDate 番組日
+   * @param postCount 紹介記事数
    * @param reason 失敗理由
    * @returns 試行履歴
    */

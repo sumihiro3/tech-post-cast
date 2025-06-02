@@ -4,7 +4,7 @@
       <div class="d-flex align-center mb-2">
         <v-icon size="small" class="mr-1">mdi-tag</v-icon>
         <span class="font-weight-medium">タグ</span>
-        <div class="text-caption text-grey ml-2">(最大10個まで)</div>
+        <div class="text-caption text-grey ml-2">(最大{{ maxTags }}件まで)</div>
       </div>
       <v-combobox
         v-model="displayTags"
@@ -19,6 +19,9 @@
         class="mb-4"
         @update:model-value="onDisplayTagsChange"
         @keydown.space.prevent="onTagInput"
+        @keydown.enter="onEnterKey"
+        @compositionstart="onCompositionStart"
+        @compositionend="onCompositionEnd"
         @blur="validateCurrentTag"
       >
         <template #chip="{ props: slotProps, item }">
@@ -107,6 +110,12 @@ const pendingTags = ref<string[]>([]);
 const validatedTags = ref(new Set<string>());
 
 /**
+ * IME（日本語入力）の変換中かどうかを示すフラグ
+ * @type {boolean}
+ */
+const isComposing = ref<boolean>(false);
+
+/**
  * 無効なタグが存在するかどうか
  * @return {boolean}
  */
@@ -147,6 +156,43 @@ const getTagIcon = (tag: string): string => {
 };
 
 /**
+ * IME変換開始時の処理
+ * @param {CompositionEvent} _e - コンポジションイベント
+ */
+const onCompositionStart = (_e: CompositionEvent): void => {
+  isComposing.value = true;
+  console.debug('IME変換開始');
+};
+
+/**
+ * IME変換終了時の処理
+ * @param {CompositionEvent} _e - コンポジションイベント
+ */
+const onCompositionEnd = (_e: CompositionEvent): void => {
+  isComposing.value = false;
+  console.debug('IME変換終了');
+};
+
+/**
+ * Enterキーが押されたときの処理
+ * IME変換中の場合はタグ追加を行わない
+ * @param {KeyboardEvent} e - キーボードイベント
+ */
+const onEnterKey = (e: KeyboardEvent): void => {
+  // IME変換中の場合はタグ追加を行わない
+  if (isComposing.value) {
+    console.debug('IME変換中のため、Enterキーによるタグ追加をスキップ');
+    return;
+  }
+
+  // IME変換中でない場合はタグを追加
+  e.preventDefault();
+  const input = e.target as HTMLInputElement;
+  const value = input.value.trim();
+  handleTagInput(value, input);
+};
+
+/**
  * 表示用のタグが変更されたときの処理
  * - 選択されたタグを更新
  * - 最大タグ数を超えないようにする
@@ -167,7 +213,7 @@ const onDisplayTagsChange = (): void => {
   }
 
   // 新しく追加されたタグを検出
-  const newTags = selectedTags.value.filter(tag => !prevSelectedTags.includes(tag));
+  const newTags = selectedTags.value.filter((tag) => !prevSelectedTags.includes(tag));
   if (newTags.length > 0) {
     console.log('新しく追加されたタグ:', newTags);
     // 既存タグとの大文字小文字を無視した重複をチェック
@@ -176,9 +222,9 @@ const onDisplayTagsChange = (): void => {
       const lowerCaseNewTag = newTag.toLowerCase();
       const duplicateIndex = selectedTags.value.findIndex(
         (tag, index) =>
-          tag.toLowerCase() === lowerCaseNewTag
-          && tag !== newTag
-          && selectedTags.value.indexOf(newTag) !== index,
+          tag.toLowerCase() === lowerCaseNewTag &&
+          tag !== newTag &&
+          selectedTags.value.indexOf(newTag) !== index,
       );
       if (duplicateIndex !== -1) {
         console.warn(
@@ -228,9 +274,16 @@ const handleTagInput = (value: string, input: HTMLInputElement): void => {
 
 /**
  * スペースキーが押されたときに新しいタグを追加する
+ * IME変換中の場合はタグ追加を行わない
  * @param {KeyboardEvent} e - キーボードイベント
  */
 const onTagInput = (e: KeyboardEvent): void => {
+  // IME変換中の場合はタグ追加を行わない
+  if (isComposing.value) {
+    console.debug('IME変換中のため、スペースキーによるタグ追加をスキップ');
+    return;
+  }
+
   const input = e.target as HTMLInputElement;
   const value = input.value.trim();
   handleTagInput(value, input);
@@ -290,7 +343,7 @@ const isTagAlreadyValidated = (tag: string): boolean => {
 const findExistingTag = (tag: string): { index: number; tag: string } | null => {
   const tagLowerCase = tag.toLowerCase();
   const existingTagIndex = selectedTags.value.findIndex(
-    t => t.toLowerCase() === tagLowerCase && t !== tag,
+    (t) => t.toLowerCase() === tagLowerCase && t !== tag,
   );
   if (existingTagIndex !== -1) {
     // 既存タグが見つかった場合
@@ -346,21 +399,18 @@ const validateTagWithQiitaApi = async (tag: string): Promise<void> => {
     console.log(`タグを検証中: "${tag}"`);
     const tagData = await useGetQiitaTag(app, tag);
     // 検証中から削除
-    pendingTags.value = pendingTags.value.filter(t => t !== tag);
+    pendingTags.value = pendingTags.value.filter((t) => t !== tag);
     if (tagData) {
       console.log(`タグの検証完了: "${tag}" は有効です。ID="${tagData.id}"`);
       // APIから取得したタグIDで重複チェック
       handleTagFromApiResponse(tag, tagData);
-    }
-    else {
+    } else {
       console.warn(`タグの検証完了: "${tag}" は無効です。Qiitaに存在しません。`);
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Error validating tag:', error);
-    pendingTags.value = pendingTags.value.filter(t => t !== tag);
-  }
-  finally {
+    pendingTags.value = pendingTags.value.filter((t) => t !== tag);
+  } finally {
     // モデル値を更新
     emit('update:modelValue', selectedTags.value);
   }
@@ -378,13 +428,12 @@ const handleTagFromApiResponse = (inputTag: string, tagData: QiitaTagApiResponse
   // APIから取得した正確なタグIDで再度重複チェック
   const correctTagLowerCase = tagData.id.toLowerCase();
   const correctTagExistingIndex = selectedTags.value.findIndex(
-    t => t.toLowerCase() === correctTagLowerCase && t !== inputTag,
+    (t) => t.toLowerCase() === correctTagLowerCase && t !== inputTag,
   );
   if (correctTagExistingIndex !== -1) {
     // APIから取得した正確なタグIDが既に存在する場合
     handleApiTagDuplication(inputTag, correctTagExistingIndex, tagData);
-  }
-  else {
+  } else {
     // 重複がない場合は正確なタグIDに置き換え
     updateTagWithCorrectId(inputTag, tagData);
   }
@@ -442,8 +491,7 @@ const updateTagWithCorrectId = (inputTag: string, tagData: QiitaTagApiResponse):
       validTags.value.push(tagData.id);
     }
     console.log(`タグを正規化: "${inputTag}" → "${tagData.id}"`);
-  }
-  else {
+  } else {
     console.warn(`タグ "${inputTag}" が選択リストに見つかりません`);
   }
 };

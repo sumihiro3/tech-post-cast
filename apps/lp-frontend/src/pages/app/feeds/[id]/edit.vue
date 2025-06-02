@@ -19,9 +19,12 @@ v-container.max-width-container
     :initial-data="initialFeedData"
     :show-action-button="true"
     action-button-label="更新する"
+    :max-authors="maxAuthors"
+    :max-tags="maxTags"
     :loading="isSaving"
     :is-valid="isValidFeed"
     :field-errors="fieldErrors"
+    :show-validation-status="false"
     @update:feed-data="handleInputPersonalizedFeedDataUpdate"
     @action-button-click="saveFeed"
   )
@@ -48,7 +51,46 @@ v-container.max-width-container
         variant="tonal"
         closable
         border
-      ) {{ error }}
+        @click:close="error = null"
+      )
+        div {{ error }}
+        div(v-if="error.includes('存在しないか、削除されている')" class="mt-3")
+          v-btn(
+            color="primary"
+            variant="outlined"
+            size="small"
+            @click="navigateTo('/app/feeds')"
+          )
+            v-icon.mr-2 mdi-format-list-bulleted
+            | フィード一覧に戻る
+
+  //- バリデーション詳細表示（開発・デバッグ用）
+  v-row(v-if="showValidationDetails" justify="center" class="mt-4")
+    v-col(cols="12")
+      v-expansion-panels
+        v-expansion-panel(title="バリデーション詳細（開発用）")
+          v-expansion-panel-text
+            .mb-3
+              strong バリデーション状態:
+              v-chip(
+                :color="isValidationPassed ? 'success' : 'error'"
+                size="small"
+                class="ml-2"
+              ) {{ isValidationPassed ? '通過' : 'エラー' }}
+              v-chip(
+                v-if="hasValidationWarnings"
+                color="warning"
+                size="small"
+                class="ml-2"
+              ) 警告あり
+
+            div(v-if="validationErrors && Object.keys(validationErrors).length > 0")
+              strong.text-error エラー:
+              pre.text-caption {{ JSON.stringify(validationErrors, null, 2) }}
+
+            div(v-if="validationWarnings && Object.keys(validationWarnings).length > 0")
+              strong.text-warning 警告:
+              pre.text-caption {{ JSON.stringify(validationWarnings, null, 2) }}
 
   //- キャンセル確認ダイアログ
   ConfirmDialog(
@@ -77,20 +119,21 @@ v-container.max-width-container
 
 <script setup lang="ts">
 import { useNuxtApp } from '#app';
-import { PersonalizedFeedDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum } from '@/api';
+import { PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum } from '@/api';
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 import FeedEditor from '@/components/qiita/FeedEditor.vue';
 import { useDeletePersonalizedFeed } from '@/composables/feeds/useDeletePersonalizedFeed';
 import { useGetPersonalizedFeedById } from '@/composables/feeds/useGetPersonalizedFeedById';
 import { useUpdatePersonalizedFeed } from '@/composables/feeds/useUpdatePersonalizedFeed';
-import { progress } from '@/composables/useProgress';
-import { snackbar } from '@/composables/useSnackbar';
+import { useUIState } from '@/composables/useUIState';
+import { useFeedValidation } from '@/composables/validation/useFeedValidation';
 import type { InputPersonalizedFeedData } from '@/types';
 import { HttpError, ValidationError } from '@/types/http-errors';
 import {
   convertApiResponseToInputData,
   convertInputDataToUpdateDto,
 } from '@/types/personalized-feed';
+import { useUser } from '@clerk/vue';
 import { computed, onMounted, reactive, ref } from 'vue';
 
 // レイアウトをuser-appにする
@@ -98,6 +141,10 @@ definePageMeta({
   layout: 'user-app',
 });
 
+// UI状態管理
+const ui = useUIState();
+
+// ユーザー情報
 const { user } = useUser();
 
 /** 記事公開日の範囲のデフォルト値 */
@@ -105,6 +152,13 @@ const DEFAULT_DATE_RANGE: number = 7;
 
 /** いいね数のデフォルト値 */
 const DEFAULT_LIKES_COUNT: number = 0;
+
+// 制限値
+const maxTags = ref(10);
+const maxAuthors = ref(5);
+
+// バリデーション詳細表示フラグ（開発用）
+const showValidationDetails = ref(false);
 
 /**
  * フィードの初期データ
@@ -120,7 +174,7 @@ const initialFeedData = reactive<InputPersonalizedFeedData>({
   },
   posts: [],
   totalCount: 0,
-  deliveryFrequency: DeliveryFrequencyEnum.Weekly,
+  deliveryFrequency: DeliveryFrequencyEnum.Daily,
 });
 
 /**
@@ -137,8 +191,30 @@ const currentFeedData = ref<InputPersonalizedFeedData>({
   },
   posts: [],
   totalCount: 0,
-  deliveryFrequency: DeliveryFrequencyEnum.Weekly,
+  deliveryFrequency: DeliveryFrequencyEnum.Daily,
 });
+
+// バリデーション機能を統合
+const {
+  validationResult,
+  isValidating: _isValidating,
+  getFieldErrors: _getValidationFieldErrors,
+  getFieldWarnings: _getFieldWarnings,
+  hasFieldError: _hasValidationFieldError,
+  hasFieldWarning: _hasFieldWarning,
+  isValid: isValidationValid,
+  hasWarnings: hasValidationWarnings,
+} = useFeedValidation(currentFeedData, {
+  realtime: true,
+  debounceDelay: 500,
+  maxTags: maxTags.value,
+  maxAuthors: maxAuthors.value,
+});
+
+// バリデーション状態の計算プロパティ
+const isValidationPassed = computed(() => isValidationValid.value);
+const validationErrors = computed(() => validationResult.value.errors);
+const validationWarnings = computed(() => validationResult.value.warnings);
 
 /**
  * キャンセル確認ダイアログの表示状態
@@ -306,7 +382,7 @@ const saveFeed = async (): Promise<void> => {
     // エラーメッセージをリセット
     resetErrors();
     // プログレスサークルを表示
-    progress.show({ text: 'パーソナライズフィードを更新中...' });
+    ui.showLoading({ message: 'パーソナライズフィードを更新中...' });
 
     // フロントエンドでのバリデーション
     if (!currentFeedData.value.programTitle) {
@@ -330,8 +406,8 @@ const saveFeed = async (): Promise<void> => {
     const app = useNuxtApp();
     await useUpdatePersonalizedFeed(app, feedId.value, requestData);
 
-    // 成功時にSnackbarで通知
-    snackbar.showSuccess('パーソナライズフィードを更新しました');
+    // 成功時にAppSnackbarで通知
+    ui.showSuccess('パーソナライズフィードを更新しました');
 
     // 保存成功の場合、フィード一覧画面に遷移
     navigateTo('/app/feeds');
@@ -353,11 +429,11 @@ const saveFeed = async (): Promise<void> => {
       error.value = 'パーソナライズフィードの更新に失敗しました';
     }
 
-    // エラー時にSnackbarで通知
-    snackbar.showError(error.value || 'パーソナライズフィードの更新に失敗しました');
+    // エラー時にAppSnackbarで通知
+    ui.showError(error.value || 'パーソナライズフィードの更新に失敗しました');
   } finally {
     // プログレスサークルを非表示
-    progress.hide();
+    ui.hideLoading();
     // 保存中フラグをOFF
     isSaving.value = false;
   }
@@ -375,14 +451,14 @@ const deleteFeed = async (): Promise<void> => {
     // エラーメッセージをリセット
     resetErrors();
     // プログレスサークルを表示
-    progress.show({ text: 'パーソナライズフィードを削除中...' });
+    ui.showLoading({ message: 'パーソナライズフィードを削除中...' });
 
     // 作成したcomposableを使用してAPIを呼び出す
     const app = useNuxtApp();
     await useDeletePersonalizedFeed(app, feedId.value);
 
-    // 成功時にSnackbarで通知
-    snackbar.showSuccess('パーソナライズフィードを削除しました');
+    // 成功時にAppSnackbarで通知
+    ui.showSuccess('パーソナライズフィードを削除しました');
 
     // 削除成功の場合、フィード一覧画面に遷移
     navigateTo('/app/feeds');
@@ -401,11 +477,11 @@ const deleteFeed = async (): Promise<void> => {
       error.value = 'パーソナライズフィードの削除に失敗しました';
     }
 
-    // エラー時にSnackbarで通知
-    snackbar.showError(error.value || 'パーソナライズフィードの削除に失敗しました');
+    // エラー時にAppSnackbarで通知
+    ui.showError(error.value || 'パーソナライズフィードの削除に失敗しました');
   } finally {
     // プログレスサークルを非表示
-    progress.hide();
+    ui.hideLoading();
     // 削除中フラグをOFF
     isDeleting.value = false;
   }
@@ -423,8 +499,9 @@ const fetchPersonalizedFeed = async (id: string): Promise<void> => {
     // エラーをリセット
     resetErrors();
     // プログレスサークルを表示
-    progress.show({ text: 'パーソナライズフィードを読み込み中...' });
+    ui.showLoading({ message: 'パーソナライズフィードを読み込み中...' });
 
+    console.log('Fetching personalized feed with ID:', id);
     const app = useNuxtApp();
     // 作成したcomposableを使用してフィードを取得
     const result = await useGetPersonalizedFeedById(app, user.value!.id, id);
@@ -440,7 +517,7 @@ const fetchPersonalizedFeed = async (id: string): Promise<void> => {
     initialFeedData.filters.authors = [...inputData.filters.authors];
     initialFeedData.filters.dateRange = inputData.filters.dateRange;
     initialFeedData.filters.likesCount = inputData.filters.likesCount;
-    initialFeedData.deliveryFrequency = inputData.deliveryFrequency || DeliveryFrequencyEnum.Weekly;
+    initialFeedData.deliveryFrequency = inputData.deliveryFrequency || DeliveryFrequencyEnum.Daily;
     initialFeedData.posts = [...inputData.posts];
     initialFeedData.totalCount = inputData.totalCount;
 
@@ -455,7 +532,7 @@ const fetchPersonalizedFeed = async (id: string): Promise<void> => {
       },
       posts: [...inputData.posts],
       totalCount: inputData.totalCount,
-      deliveryFrequency: inputData.deliveryFrequency || DeliveryFrequencyEnum.Weekly,
+      deliveryFrequency: inputData.deliveryFrequency || DeliveryFrequencyEnum.Daily,
     };
 
     console.log('Loaded feed data:', result);
@@ -470,7 +547,11 @@ const fetchPersonalizedFeed = async (id: string): Promise<void> => {
       handleValidationError(err);
     } else if (err instanceof HttpError) {
       // その他のHTTPエラーの場合
-      error.value = err.message;
+      if (err.statusCode === 404) {
+        error.value = `フィードID「${id}」は存在しないか、削除されている可能性があります。パーソナルプログラムが古い場合、関連するフィードが削除されている可能性があります。`;
+      } else {
+        error.value = err.message;
+      }
     } else if (err instanceof Error) {
       // 通常のエラーの場合
       error.value = err.message;
@@ -479,12 +560,12 @@ const fetchPersonalizedFeed = async (id: string): Promise<void> => {
       error.value = 'パーソナライズフィードの読み込みに失敗しました';
     }
 
-    // エラー時にSnackbarで通知
-    snackbar.showError(error.value || 'パーソナライズフィードの読み込みに失敗しました');
+    // エラー時にAppSnackbarで通知
+    ui.showError(error.value || 'パーソナライズフィードの読み込みに失敗しました');
   } finally {
     isLoading.value = false;
     // プログレスサークルを非表示
-    progress.hide();
+    ui.hideLoading();
   }
 };
 
