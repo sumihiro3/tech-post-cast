@@ -509,3 +509,88 @@ describe('getDashboardStats', () => {
 - 統計情報のキャッシュ機能のテスト戦略
 
 ---
+
+## 番組生成履歴API包括テスト戦略 (2024-12-19)
+
+### 背景と課題
+
+番組生成履歴APIの実装において、Repository、Service、Controller各層の包括的なテスト戦略が必要だった。関連データを含む複雑なクエリ、セキュリティ機能、エラーハンドリングを含む多層アーキテクチャのテスト設計。
+
+### 検討したアプローチ
+
+1. **テストデータ管理**
+   - 直接記載 vs ファクトリーパターン
+   - ファクトリーパターンを採用（プロジェクトルール遵守）
+2. **モック戦略**
+   - 完全モック vs 部分モック
+   - 層ごとに適切なモックレベルを選択
+3. **テストケース設計**
+   - ハッピーパス中心 vs エラーケース重視
+   - 両方をバランス良く実装
+
+### 決定事項と理由
+
+1. **ファクトリーパターン採用**: テストデータの一貫性と保守性向上
+2. **層別テスト戦略**: 各層の責任に応じたテスト設計
+3. **包括的エラーテスト**: セキュリティとエラーハンドリングの徹底検証
+4. **型安全性重視**: TypeScriptの型システムを活用したテスト設計
+
+### 実装パターン
+
+#### 1. Repository層テスト
+
+```typescript
+// 関連データ付き取得のテスト
+it('should return attempts with feed and program relations', async () => {
+  const result = await repository.findByUserIdWithRelationsForDashboard(
+    testUserId,
+    { limit: 10, offset: 0 }
+  );
+
+  expect(result.attempts[0]).toHaveProperty('feed');
+  expect(result.attempts[0]).toHaveProperty('program');
+});
+```
+
+#### 2. Service層テスト
+
+```typescript
+// セキュリティテスト
+it('should throw NotFoundException for non-existent feedId', async () => {
+  await expect(
+    service.getProgramGenerationHistory(testUserId, {
+      feedId: 'non-existent',
+      limit: 10,
+      offset: 0,
+    })
+  ).rejects.toThrow(NotFoundException);
+});
+```
+
+#### 3. Controller層テスト
+
+```typescript
+// 認証とレスポンス形式のテスト
+it('should return program generation history', async () => {
+  const response = await request(app.getHttpServer())
+    .get('/dashboard/program-generation-history')
+    .set('Authorization', `Bearer ${validToken}`)
+    .expect(200);
+
+  expect(response.body).toHaveProperty('history');
+  expect(response.body).toHaveProperty('totalCount');
+});
+```
+
+### 学んだ教訓
+
+- **ファクトリーパターンの威力**: テストデータの一貫性と保守性が大幅に向上
+- **層別責任の明確化**: 各層で何をテストすべきかの明確な分離
+- **セキュリティテストの重要性**: 不正アクセスケースの徹底的なテスト
+- **型安全性の活用**: TypeScriptの型システムによるテストの信頼性向上
+
+### 関連タスク
+
+TPC-101 ユーザーダッシュボードの実装
+
+---

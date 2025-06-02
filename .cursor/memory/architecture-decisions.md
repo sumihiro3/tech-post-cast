@@ -145,7 +145,7 @@ lp-frontendアプリケーションにおいて、UI状態管理が分散し、�
 
 #### オプション1: モノリシック統一アプローチ
 
-```
+```txt
 useUIState (新規)
 ├── 独自のSnackbar実装
 ├── 独自のProgress実装
@@ -157,7 +157,7 @@ useUIState (新規)
 
 #### オプション2: レイヤード統一アーキテクチャ（採用）
 
-```
+```txt
 useUIState (統一インターフェース)
 ├── useSnackbar (既存活用)
 ├── useProgress (既存活用)
@@ -173,7 +173,7 @@ useSnackbar   統一API      useProgress
 
 #### オプション3: マイクロパッケージアーキテクチャ
 
-```
+```txt
 packages/ui-components/
 ├── useUIState
 ├── LoadingSpinner
@@ -199,7 +199,7 @@ packages/ui-components/
 
 #### コンポーネント配置戦略
 
-```
+```txt
 src/components/
 ├── common/              # 共通コンポーネント（採用）
 │   ├── AppSnackbar.vue # グローバルSnackbar
@@ -409,106 +409,142 @@ compiled: async (nitro: Nitro) => {
 
 # アーキテクチャ設計決定記録
 
-## フロントエンドバリデーション機能のアーキテクチャ設計 (2025-05-30)
+## 番組生成履歴API多層アーキテクチャ設計 (2024-12-19)
 
 ### 背景と課題
 
-パーソナルフィード管理画面において、ユーザー体験向上のためのリアルタイムバリデーション機能の実装が必要だった。既存のシンプルなバリデーションシステムから、拡張性と保守性を持つ包括的なバリデーションアーキテクチャへの移行。
+ダッシュボード機能の一環として番組生成履歴APIを実装する際、既存のアーキテクチャパターンとの整合性を保ちながら、セキュリティ、パフォーマンス、保守性を考慮した設計が必要だった。
 
-### 検討したアーキテクチャ
+### 検討したアプローチ
 
-1. **コンポーネント内バリデーション**: 各コンポーネント内でバリデーションロジックを実装
-   - 利点: シンプル、依存関係が少ない
-   - 欠点: 重複コード、一貫性の欠如、テストが困難
-2. **中央集権型バリデーション**: 単一のバリデーションサービスですべてを管理
-   - 利点: 一貫性、重複排除
-   - 欠点: 単一障害点、拡張性の問題
-3. **モジュラー型バリデーション**: 機能別に分離されたバリデーションモジュール
-   - 利点: 拡張性、テスタビリティ、再利用性
-   - 欠点: 初期実装の複雑性
+1. **アーキテクチャパターン**
+   - 単層アーキテクチャ（Controller直接DB操作）
+   - 多層アーキテクチャ（Controller → Service → Repository → DB）
+   - 多層アーキテクチャを採用（責任分離と保守性）
+
+2. **データアクセス層設計**
+   - 汎用Repository vs 専用Repository
+   - 既存Repositoryの拡張を採用（一貫性保持）
+
+3. **セキュリティ層の配置**
+   - Controller層 vs Service層
+   - Service層での実装を採用（ビジネスロジック統合）
 
 ### 決定事項と理由
 
-**モジュラー型バリデーションアーキテクチャを採用**
+#### 1. 多層アーキテクチャの採用
 
-#### アーキテクチャ構成
-
-```
-src/
-├── utils/validation/
-│   └── feed-validation.ts          # バリデーションロジック
-├── composables/validation/
-│   └── useFeedValidation.ts        # リアクティブ状態管理
-├── composables/error-handling/
-│   └── useEnhancedErrorHandler.ts  # エラーハンドリング
-├── composables/api/
-│   └── useRetryableApiCall.ts      # API呼び出し
-└── composables/loading/
-    └── useProgressiveLoading.ts    # ローディング管理
+```txt
+Controller Layer (API)
+    ↓ (DTO変換、認証)
+Service Layer (Business Logic)
+    ↓ (セキュリティ、ビジネスルール)
+Repository Layer (Data Access)
+    ↓ (データ取得、関連データ結合)
+Database (Prisma)
 ```
 
-#### 設計原則
+**理由**:
 
-1. **関心の分離**: バリデーション、エラーハンドリング、ローディングを独立したモジュールに分離
-2. **単一責任**: 各モジュールは特定の責任のみを持つ
-3. **依存性注入**: 設定値（制限値等）は外部から注入可能
-4. **段階的導入**: 既存システムとの互換性を保ちながら段階的に導入
+- 責任の明確な分離
+- テスタビリティの向上
+- 既存プロジェクトパターンとの一貫性
 
-### 学んだ教訓
-
-#### KEY INSIGHT: レイヤー分離の重要性
+#### 2. Repository層の拡張設計
 
 ```typescript
-// レイヤー1: 純粋なバリデーション関数（ビジネスロジック）
-export const validateTagsFilter = (tags: string[], maxTags: number): FieldValidationResult
+interface IPersonalizedProgramAttemptsRepository {
+  // 既存メソッド
+  findByUserId(userId: string, options: PaginationOptions): Promise<PersonalizedProgramAttemptsResult>;
 
-// レイヤー2: リアクティブ状態管理（Vue固有）
-export const useFeedValidation = (feedData: Ref<InputPersonalizedFeedData>)
-
-// レイヤー3: UI統合（コンポーネント固有）
-const { validationResult, isValid } = useFeedValidation(feedData)
-```
-
-#### KEY INSIGHT: 設定の外部化
-
-```typescript
-// ハードコードを避け、設定を外部化
-interface ValidationOptions {
-  maxTags?: number;
-  maxAuthors?: number;
-  debounceDelay?: number;
-  realtime?: boolean;
+  // 新規追加メソッド
+  findByUserIdWithRelationsForDashboard(
+    userId: string,
+    options: PaginationOptions & { feedId?: string }
+  ): Promise<PersonalizedProgramAttemptsWithRelationsResult>;
 }
 ```
 
-#### KEY INSIGHT: 既存システムとの統合戦略
+**理由**:
 
-- 新しいバリデーション機能を既存のpropsと並行して動作
-- 段階的な移行により、リスクを最小化
-- 後方互換性を保持
+- 既存インターフェイスの自然な拡張
+- 関連データ取得の効率化
+- 用途別メソッドの明確な分離
 
-#### GLOBAL LEARNING: Vue 3 Composition APIでのアーキテクチャパターン
+#### 3. セキュリティ層の統合設計
 
-- Composableは単一の関心事に集中
-- リアクティブな状態管理とビジネスロジックを分離
-- 依存性注入により、テスタビリティを向上
+```typescript
+// Service層でのセキュリティチェック
+async getProgramGenerationHistory(userId: string, request: GetDashboardProgramGenerationHistoryRequestDto) {
+  // 1. ユーザー存在確認
+  await this.validateUserExists(userId);
 
-### アーキテクチャの利点
+  // 2. feedId所有者確認
+  if (request.feedId) {
+    await this.validateFeedOwnership(userId, request.feedId);
+  }
 
-1. **拡張性**: 新しいバリデーションルールやフィールドを容易に追加
-2. **再利用性**: 他のフォーム画面でも同じアーキテクチャを適用可能
-3. **テスタビリティ**: 各レイヤーを独立してテスト可能
-4. **保守性**: 関心の分離により、変更の影響範囲を限定
-5. **段階的導入**: 既存システムを破壊することなく新機能を導入
+  // 3. データ取得とビジネスロジック
+  // ...
+}
+```
 
-### 今後の拡張計画
+**理由**:
 
-1. **他フォーム画面への適用**: 同じアーキテクチャパターンを他の画面に展開
-2. **バリデーションルールの外部化**: 設定ファイルや管理画面からのルール変更
-3. **国際化対応**: エラーメッセージの多言語対応
-4. **パフォーマンス最適化**: バリデーション処理の最適化
+- ビジネスロジックとセキュリティの統合
+- 一箇所でのセキュリティ制御
+- テストの容易性
+
+### 実装詳細
+
+#### 1. DTO設計パターン
+
+```typescript
+// ネスト構造による一貫性
+export class ProgramGenerationHistoryDto {
+  feed: {
+    id: string;
+    name: string;
+  };
+  program: {
+    id: string;
+    title: string;
+    expiresAt: Date;
+    isExpired: boolean;
+  } | null;
+}
+```
+
+#### 2. エラーハンドリング統一
+
+```typescript
+// 情報漏洩防止のためのエラーメッセージ統一
+if (!feed || feed.userId !== userId) {
+  throw new NotFoundException('指定されたフィードが見つかりません');
+}
+```
+
+### 学んだ教訓
+
+- **KEY INSIGHT**: 多層アーキテクチャは初期コストが高いが、長期的な保守性で大きなメリット
+- **セキュリティ統合**: Service層でのセキュリティチェックにより、ビジネスロジックとの整合性確保
+- **既存パターン活用**: 新機能実装時は既存アーキテクチャパターンの踏襲が重要
+- **段階的拡張**: 既存インターフェイスの自然な拡張により、破壊的変更を回避
+
+### パフォーマンス考慮事項
+
+1. **N+1問題回避**: Prismaのincludeによる効率的な関連データ取得
+2. **ページネーション**: 大量データ対応のためのlimit/offset実装
+3. **インデックス活用**: userId, feedIdでの効率的な検索
+
+### 将来の拡張性
+
+1. **キャッシュ層追加**: Service層とRepository層の間にキャッシュ層挿入可能
+2. **イベント駆動**: Service層からのイベント発行による非同期処理対応
+3. **マイクロサービス分割**: Repository層の独立サービス化が容易
 
 ### 関連タスク
 
-- TPC-101: ユーザーダッシュボードの実装
-- パーソナルフィード管理画面のバリデーション機能統合
+TPC-101 ユーザーダッシュボードの実装
+
+---

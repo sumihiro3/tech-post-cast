@@ -398,170 +398,88 @@ global.fetch = jest.fn();
 - **コンポーネント**: API Backend, Database Schema
 - **ビジネス要件**: ユーザー個人設定管理、Slack通知
 
-## フィード別番組生成履歴API実装 (2025-05-27)
+## 番組生成履歴API実装パターン (2024-12-19)
 
 ### 背景と課題
 
-TPC-101「ユーザーダッシュボードの実装」の一環として、フィード別の番組生成試行履歴を管理・提供するAPIを実装。ユーザーが自分のフィードごとの番組生成状況を詳細に確認できる機能が必要だった。
-
-主な課題：
-
-- 大量の履歴データに対するページネーション対応
-- 統計情報の効率的な計算
-- フィードアクセス権限の適切なチェック
-- 命名規則の統一（PersonalizedFeedHistory vs PersonalizedProgramAttempts）
+ダッシュボード用の番組生成履歴取得APIの実装において、セキュリティ、パフォーマンス、使いやすさを考慮したAPI設計が必要だった。関連データの取得、ページネーション、フィルタリング機能を含む包括的なAPIの設計と実装。
 
 ### 検討したアプローチ
 
-#### 1. 命名規則の統一
-
-- **PersonalizedFeedHistory**: ビジネス観点での命名
-- **PersonalizedProgramAttempts**: データベーステーブル名に合わせた命名
-- **決定**: データベーステーブル名（`personalized_program_attempts`）に合わせて統一
-
-#### 2. インターフェイス設計
-
-- **インターフェイス使用**: 他言語からの移植パターン
-- **直接クラス定義**: プロジェクト内の既存パターンに合わせる
-- **決定**: プロジェクト内の一貫性を保つため、インターフェイスを削除
-
-#### 3. テストデータ管理
-
-- **直接記載**: 簡単だが保守性が低い
-- **ファクトリーパターン**: プロジェクトルールに準拠
-- **決定**: ファクトリーパターンを採用（プロジェクトルール遵守）
+1. **レスポンスDTO構造**
+   - フラット構造（feedId, feedName分離）vs ネスト構造（feedオブジェクト）
+   - ネスト構造を採用（一貫性と使いやすさ）
+2. **セキュリティ対策**
+   - feedId所有者確認の有無
+   - 情報漏洩防止のためのエラーメッセージ統一
+3. **非アクティブリソース対応**
+   - 完全除外 vs 履歴表示可能・詳細アクセス制限
+   - 後者を採用（履歴の完全性保持）
 
 ### 決定事項と理由
 
-#### アーキテクチャパターン
+1. **DTO構造の改善**: `feed: { id, name }`形式でオブジェクト化（一貫性向上）
+2. **セキュリティ強化**: feedId所有者確認を実装（不正アクセス防止）
+3. **エラーメッセージ統一**: 存在しないfeedIdと所有者でないfeedIdで同じメッセージ（情報漏洩防止）
+4. **非アクティブフィード対応**: 履歴表示は可能、詳細アクセスは制限（UX配慮）
+5. **ページネーション標準化**: limit, offset, totalCountの標準形式採用
+6. **番組有効期限対応**: 期限切れ番組の詳細アクセス制限とUI表示制御
 
-```txt
-Controller Layer (API)
-    ↓
-Service Layer (Business Logic)
-    ↓
-Repository Layer (Data Access)
-    ↓
-Database (Prisma)
-```
+### 実装パターン
 
-**理由**: 責任の分離と保守性の向上
-
-#### エンドポイント設計
-
-- `GET /personalized-program-attempts/feeds/:feedId` - 履歴一覧
-- `GET /personalized-program-attempts/feeds/:feedId/statistics` - 統計情報
-- `GET /personalized-program-attempts/feeds/:feedId/count` - 件数
-
-**理由**: RESTful設計原則に従い、リソース指向のURL構造を採用
-
-#### ページネーション実装
+#### 1. セキュリティ強化パターン
 
 ```typescript
-interface PaginationOptions {
-  page: number;
-  limit: number;
-}
-
-interface PaginatedResult<T> {
-  items: T[];
-  totalCount: number;
-  currentPage: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPreviousPage: boolean;
+// feedId所有者確認
+if (feedId) {
+  const feed = await this.personalizedFeedsRepository.findById(feedId);
+  if (!feed || feed.userId !== userId) {
+    throw new NotFoundException('指定されたフィードが見つかりません');
+  }
 }
 ```
 
-**理由**: 大量データ対応と一貫したページネーション体験の提供
+#### 2. 関連データ取得パターン
+
+```typescript
+// Prismaのincludeを使用した効率的な関連データ取得
+const result = await this.personalizedProgramAttemptsRepository
+  .findByUserIdWithRelationsForDashboard(userId, { feedId, limit, offset });
+```
+
+#### 3. DTO変換パターン
+
+```typescript
+const historyDtos: ProgramGenerationHistoryDto[] = attempts.map((attempt) => ({
+  id: attempt.id,
+  executedAt: attempt.executedAt,
+  status: attempt.status,
+  reason: attempt.reason,
+  articlesCount: attempt.articlesCount,
+  feed: {
+    id: attempt.feed.id,
+    name: attempt.feed.name,
+  },
+  program: attempt.program ? {
+    id: attempt.program.id,
+    title: attempt.program.title,
+    expiresAt: attempt.program.expiresAt,
+    isExpired: attempt.program.isExpired,
+  } : null,
+}));
+```
 
 ### 学んだ教訓
 
-#### KEY INSIGHT: 命名規則の重要性
-
-- **教訓**: プロジェクト開始時にデータベーステーブル名とドメインモデル名の命名規則を統一すべき
-- **影響**: 途中での命名変更は大きなリファクタリングコストを伴う
-- **今後の対応**: 新機能実装時は事前にデータベース設計とドメインモデル設計の整合性を確認
-
-#### KEY INSIGHT: プロジェクトルールの一貫性
-
-- **教訓**: 既存コードベースのパターンを理解してから実装を開始すべき
-- **影響**: インターフェイス削除により、プロジェクト全体の一貫性を保持
-- **今後の対応**: 実装前に既存の類似機能のコードレビューを実施
-
-#### GLOBAL LEARNING: ファクトリーパターンの効果
-
-- **教訓**: テストデータ管理にファクトリーパターンを使用することで保守性が大幅に向上
-- **実装例**:
-
-```typescript
-// 基本ファクトリー
-PersonalizedProgramAttemptFactory.createPersonalizedProgramAttempt()
-
-// 特化ファクトリー
-PersonalizedProgramAttemptFactory.createMixedStatusAttempts()
-PersonalizedProgramAttemptFactory.createTimeSeriesAttempts()
-```
-
-- **今後の対応**: 新機能のテスト実装時は必ずファクトリーパターンを採用
-
-#### パフォーマンス最適化の知見
-
-- **統計情報計算**: サービス層で効率的に計算し、将来的なキャッシュ導入を考慮
-- **N+1問題回避**: Prismaの適切な使用でデータベースクエリを最適化
-- **ページネーション**: 大量データに対する適切な制限（最大100件/ページ）
-
-### 問題解決の記録
-
-#### 問題1: 命名の混在
-
-- **症状**: PersonalizedFeedHistoryとPersonalizedProgramAttemptsの命名が混在
-- **解決策**: データベーステーブル名に合わせて全体を統一
-- **学び**: 事前の命名規則策定の重要性
-
-#### 問題2: インターフェイスの不整合
-
-- **症状**: 他のサービスクラスではインターフェイスを使用していない
-- **解決策**: インターフェイスを削除し、直接クラス定義に統一
-- **学び**: プロジェクト全体の一貫性を保つことの重要性
-
-#### 問題3: テストデータの直接記載
-
-- **症状**: プロジェクトルール「テストデータは必ずファクトリクラスから取得」に違反
-- **解決策**: PersonalizedProgramAttemptFactoryを作成し、全テストを更新
-- **学び**: プロジェクトルールの事前確認と遵守の重要性
-
-### 将来のための提案
-
-#### 機能拡張
-
-1. **フィルタリング機能**: 期間指定、ステータス別フィルター
-2. **ソート機能**: 日時順、ステータス順ソート
-3. **エクスポート機能**: CSV形式でのデータエクスポート
-
-#### パフォーマンス改善
-
-1. **キャッシュ機能**: Redis使用の統計情報キャッシュ
-2. **バックグラウンド処理**: 統計情報の事前計算
-
-#### 開発プロセス改善
-
-1. **事前設計レビュー**: データベース設計とドメインモデル設計の整合性確認
-2. **既存パターン調査**: 実装前の類似機能コードレビュー
-3. **プロジェクトルール確認**: 実装開始前のルール確認プロセス
+- **セキュリティファースト**: リソースアクセス時の所有者確認は必須
+- **情報漏洩防止**: エラーメッセージからリソース存在有無を推測させない
+- **DTO設計の重要性**: フロントエンドでの使いやすさを考慮した構造設計
+- **段階的アクセス制御**: 履歴表示と詳細アクセスで異なる制御レベル
+- **有効期限考慮**: 時間経過による状態変化を適切にハンドリング
 
 ### 関連タスク
 
-- TPC-101: ユーザーダッシュボードの実装
-- フィード別番組生成履歴API実装（Phase 1-5）
-
-### メタデータ
-
-- **技術スタック**: NestJS, Prisma, TypeScript, Jest
-- **コンポーネント**: API Backend, Database
-- **ビジネス要件**: ユーザーダッシュボード、履歴管理
-- **作成日**: 2024-01-27
-- **最終更新日**: 2024-01-27
+TPC-101 ユーザーダッシュボードの実装
 
 ## フロントエンド・バックエンド連携パターン (2025-01-23)
 
@@ -669,7 +587,7 @@ TPC-101 ユーザーダッシュボードの実装
 
 ### 決定事項と理由
 
-**階層化バリデーション + Composable パターンを採用**
+#### 階層化バリデーション + Composable パターンを採用
 
 - フィールド別バリデーション関数で個別検証
 - 全体バリデーション関数でフィールド間の関連性を検証
