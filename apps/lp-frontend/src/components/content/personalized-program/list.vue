@@ -41,19 +41,18 @@ v-card.ma-1.pa-3.pa-md-4.mb-6.mb-md-8.bg-white(flat, rounded='lg', elevation='2'
       span 紹介記事数：{{ program.postsCount }}件
 
   // 追加情報（音声時間・有効期限）
-  v-card-text.pt-0.pb-3(v-if='program.audioDuration || program.expiresAt')
-    .d-flex.flex-column.flex-md-row.align-start.align-md-center.ga-2.ga-md-4.text-caption.text-md-body-2
-      // 音声時間
-      .d-flex.align-center(v-if='program.audioDuration')
-        v-icon.mr-2(size='16') mdi-clock
-        span 番組時間：{{ formatDuration(program.audioDuration) }}
+  v-card-text.pt-0.pb-3(v-if='program.audioDuration || (program.expiresAt && program.expiresAt.trim())')
+    // 音声時間
+    .d-flex.align-center.text-caption.text-md-body-2.mb-2(v-if='program.audioDuration')
+      v-icon.mr-2(size='16') mdi-clock
+      span 番組時間：{{ formatDuration(program.audioDuration) }}
 
-      // 有効期限
-      .d-flex.align-center(v-if='program.expiresAt')
-        v-icon.mr-2(size='16', :color='program.isExpired ? "error" : "success"') mdi-calendar-clock
-        span(
-          :class='program.isExpired ? "text-error" : "text-success"'
-        ) {{ program.isExpired ? '期限切れ' : `${formatExpiryDate(program.expiresAt)}まで有効` }}
+    // 有効期限
+    .d-flex.align-center.text-caption.text-md-body-2(v-if='program.expiresAt && program.expiresAt.trim()')
+      v-icon.mr-2(size='16', :color='program.isExpired ? "error" : "success"') mdi-calendar-clock
+      span(
+        :class='program.isExpired ? "text-error" : "text-success"'
+      ) {{ program.isExpired ? '期限切れ' : `${formatExpiryDate(program.expiresAt)}まで有効` }}
 
   // 6. 番組詳細ボタン（目立つblock表示）
   v-card-actions.pt-0

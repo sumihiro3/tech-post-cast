@@ -11,6 +11,21 @@ v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-white(flat, rounded='lg')
     a.text-decoration-none.font-weight-medium(
       @click="goToFeedEdit"
     ) {{ program.feedName }}
+
+  // 追加情報（音声時間・有効期限）
+  v-card-text.pt-0.pb-3(v-if='program.audioDuration || (program.expiresAt && program.expiresAt.trim())')
+    // 音声時間
+    .d-flex.align-center.text-caption.text-md-body-2.mb-2(v-if='program.audioDuration')
+      v-icon.mr-2(size='16') mdi-clock
+      span 番組時間：{{ formatDuration(program.audioDuration) }}
+
+    // 有効期限
+    .d-flex.align-center.text-caption.text-md-body-2(v-if='program.expiresAt && program.expiresAt.trim()')
+      v-icon.mr-2(size='16', :color='program.isExpired ? "error" : "success"') mdi-calendar-clock
+      span(
+        :class='program.isExpired ? "text-error" : "text-success"'
+      ) {{ program.isExpired ? '期限切れ' : `${formatExpiryDate(program.expiresAt)}まで有効` }}
+
   v-card-text.mt-2.mt-md-4.mb-2.mb-md-4
     audio(
       ref='player',
@@ -145,6 +160,24 @@ const player = ref<HTMLAudioElement | null>(null);
 const isPlaying = ref(false);
 // 現在のチャプターインデックス
 const currentChapterIndex = ref(-1);
+
+/**
+ * 音声時間をフォーマット
+ */
+const formatDuration = (duration: number): string => {
+  const seconds = Math.floor(duration / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
+/**
+ * 有効期限をフォーマット
+ */
+const formatExpiryDate = (expiresAt: string | null): string => {
+  if (!expiresAt) return '';
+  return utcToJstDateString(expiresAt, 'M月D日');
+};
 
 /**
  * 番組台本データを取得するcomputed property

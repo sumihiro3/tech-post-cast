@@ -116,6 +116,27 @@ const formatProgramSubtitle = (program: PersonalizedProgramSummaryDto): string =
     parts.push(`${minutes}分`);
   }
 
+  // 有効期限
+  if (program.expiresAt) {
+    if (program.isExpired) {
+      parts.push('期限切れ');
+    } else {
+      const expiresAt = new Date(program.expiresAt);
+      const now = new Date();
+      const diffDays = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (diffDays <= 1) {
+        parts.push('本日まで有効');
+      } else if (diffDays <= 3) {
+        parts.push(`あと${diffDays}日有効`);
+      } else {
+        const month = expiresAt.getMonth() + 1;
+        const day = expiresAt.getDate();
+        parts.push(`${month}/${day}まで有効`);
+      }
+    }
+  }
+
   // 作成日時
   const createdAt = new Date(program.createdAt);
   const timeAgo = formatDistanceToNow(createdAt, {
