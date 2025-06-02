@@ -4,7 +4,7 @@ v-card
   v-card-title.d-flex.align-center.justify-space-between
     .d-flex.align-center
       v-icon.me-2 mdi-history
-      | 番組生成履歴
+      | パーソナルプログラム生成履歴
 
   //- フィルター（パーソナルフィードが2件以上の場合のみ表示）
   v-card-text(v-if="shouldShowFilter")
@@ -167,7 +167,7 @@ const { feeds } = useDashboardFeeds();
 // テーブルヘッダー（記事数を最後に移動）
 const headers = [
   {
-    title: '実行日付',
+    title: '日付',
     key: 'createdAt',
     sortable: false,
     width: '120px',
@@ -179,19 +179,19 @@ const headers = [
     width: '200px',
   },
   {
-    title: 'ステータス',
+    title: '結果',
     key: 'status',
     sortable: false,
     width: '120px',
   },
   {
-    title: '理由',
+    title: '失敗理由',
     key: 'reason',
     sortable: false,
     width: '200px',
   },
   {
-    title: '番組',
+    title: 'タイトル',
     key: 'program',
     sortable: false,
   },
