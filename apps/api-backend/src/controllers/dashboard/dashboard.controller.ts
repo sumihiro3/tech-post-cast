@@ -22,6 +22,8 @@ import {
   GetDashboardPersonalizedProgramDetailResponseDto,
   GetDashboardPersonalizedProgramsRequestDto,
   GetDashboardPersonalizedProgramsResponseDto,
+  GetDashboardProgramGenerationHistoryRequestDto,
+  GetDashboardProgramGenerationHistoryResponseDto,
   GetDashboardStatsResponseDto,
   GetDashboardSubscriptionResponseDto,
 } from './dto';
@@ -235,5 +237,66 @@ export class DashboardController {
       userId,
       programId,
     );
+  }
+
+  /**
+   * 番組生成履歴を取得する
+   */
+  @Get('program-generation-history')
+  @ApiOperation({
+    operationId: 'getDashboardProgramGenerationHistory',
+    summary: 'ダッシュボード用番組生成履歴取得',
+    description:
+      'ダッシュボード表示用の番組生成履歴一覧を取得します。フィードIDでフィルタリング可能です。',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '番組生成履歴一覧',
+    type: GetDashboardProgramGenerationHistoryResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'ユーザーが見つかりません',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'サーバーエラー',
+  })
+  async getDashboardProgramGenerationHistory(
+    @CurrentUserId() userId: string,
+    @Query() query: GetDashboardProgramGenerationHistoryRequestDto,
+  ): Promise<GetDashboardProgramGenerationHistoryResponseDto> {
+    this.logger.debug(
+      'DashboardController.getDashboardProgramGenerationHistory called',
+      { userId, query },
+    );
+
+    try {
+      const history = await this.dashboardService.getProgramGenerationHistory(
+        userId,
+        query,
+      );
+
+      this.logger.log('番組生成履歴を取得しました', {
+        userId,
+        feedId: query.feedId,
+        historyCount: history.history.length,
+        totalCount: history.totalCount,
+        limit: history.limit,
+        offset: history.offset,
+        hasNext: history.hasNext,
+      });
+
+      return history;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        this.logger.warn(`AppUser [${userId}] が見つかりません`, { userId });
+        throw error;
+      }
+
+      const errorMessage = '番組生成履歴の取得に失敗しました';
+      this.logger.error(errorMessage, { userId, query, error }, error.stack);
+      throw new InternalServerErrorException(errorMessage);
+    }
   }
 }

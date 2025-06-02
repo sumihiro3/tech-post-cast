@@ -43,6 +43,7 @@ describe('PersonalizedProgramAttemptsService', () => {
       countByFeedId: jest.fn(),
       findByUserIdWithPagination: jest.fn(),
       findById: jest.fn(),
+      findByUserIdWithRelationsForDashboard: jest.fn(),
     };
 
     feedsRepository = {

@@ -13,6 +13,8 @@ import { DashboardController } from './dashboard.controller';
 import {
   GetDashboardPersonalizedProgramsRequestDto,
   GetDashboardPersonalizedProgramsResponseDto,
+  GetDashboardProgramGenerationHistoryRequestDto,
+  GetDashboardProgramGenerationHistoryResponseDto,
   GetDashboardStatsResponseDto,
   GetDashboardSubscriptionResponseDto,
 } from './dto';
@@ -29,6 +31,7 @@ describe('DashboardController', () => {
       getDashboardStats: jest.fn(),
       getPersonalizedPrograms: jest.fn(),
       getDashboardSubscription: jest.fn(),
+      getProgramGenerationHistory: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -59,7 +62,7 @@ describe('DashboardController', () => {
       const userId = 'user-1';
       const mockStats: GetDashboardStatsResponseDto = {
         activeFeedsCount: 5,
-        monthlyEpisodesCount: 12,
+        totalEpisodesCount: 12,
         totalProgramDuration: '2.5h',
       };
 
@@ -294,6 +297,219 @@ describe('DashboardController', () => {
 
       expect(dashboardService.getDashboardSubscription).toHaveBeenCalledWith(
         userId,
+      );
+    });
+  });
+
+  describe('getDashboardProgramGenerationHistory', () => {
+    it('番組生成履歴を正常に取得できること', async () => {
+      const userId = 'user-1';
+      const query: GetDashboardProgramGenerationHistoryRequestDto = {
+        limit: 20,
+        offset: 0,
+      };
+      const mockHistory: GetDashboardProgramGenerationHistoryResponseDto = {
+        history: [
+          {
+            id: 'attempt-1',
+            createdAt: new Date('2024-01-01'),
+            feed: {
+              id: 'feed-1',
+              name: 'テストフィード1',
+            },
+            status: 'SUCCESS',
+            reason: null,
+            postCount: 3,
+            program: {
+              id: 'program-1',
+              title: 'テスト番組1',
+            },
+          },
+          {
+            id: 'attempt-2',
+            createdAt: new Date('2024-01-02'),
+            feed: {
+              id: 'feed-2',
+              name: 'テストフィード2',
+            },
+            status: 'FAILED',
+            reason: 'NOT_ENOUGH_POSTS',
+            postCount: 1,
+            program: null,
+          },
+        ],
+        totalCount: 2,
+        limit: 20,
+        offset: 0,
+        hasNext: false,
+      };
+
+      dashboardService.getProgramGenerationHistory.mockResolvedValue(
+        mockHistory,
+      );
+
+      const result = await controller.getDashboardProgramGenerationHistory(
+        userId,
+        query,
+      );
+
+      expect(result).toEqual(mockHistory);
+      expect(dashboardService.getProgramGenerationHistory).toHaveBeenCalledWith(
+        userId,
+        query,
+      );
+    });
+
+    it('feedIdが指定された場合、フィルタリングされること', async () => {
+      const userId = 'user-1';
+      const query: GetDashboardProgramGenerationHistoryRequestDto = {
+        feedId: 'feed-1',
+        limit: 10,
+        offset: 0,
+      };
+      const mockHistory: GetDashboardProgramGenerationHistoryResponseDto = {
+        history: [
+          {
+            id: 'attempt-1',
+            createdAt: new Date('2024-01-01'),
+            feed: {
+              id: 'feed-1',
+              name: 'テストフィード1',
+            },
+            status: 'SUCCESS',
+            reason: null,
+            postCount: 3,
+            program: {
+              id: 'program-1',
+              title: 'テスト番組1',
+            },
+          },
+        ],
+        totalCount: 1,
+        limit: 10,
+        offset: 0,
+        hasNext: false,
+      };
+
+      dashboardService.getProgramGenerationHistory.mockResolvedValue(
+        mockHistory,
+      );
+
+      const result = await controller.getDashboardProgramGenerationHistory(
+        userId,
+        query,
+      );
+
+      expect(result).toEqual(mockHistory);
+      expect(dashboardService.getProgramGenerationHistory).toHaveBeenCalledWith(
+        userId,
+        query,
+      );
+    });
+
+    it('AppUserが見つからない場合、NotFoundExceptionを投げること', async () => {
+      const userId = 'non-existent-user';
+      const query: GetDashboardProgramGenerationHistoryRequestDto = {
+        limit: 20,
+        offset: 0,
+      };
+      const notFoundError = new NotFoundException(
+        `User with ID ${userId} not found`,
+      );
+
+      dashboardService.getProgramGenerationHistory.mockRejectedValue(
+        notFoundError,
+      );
+
+      await expect(
+        controller.getDashboardProgramGenerationHistory(userId, query),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        controller.getDashboardProgramGenerationHistory(userId, query),
+      ).rejects.toThrow(`User with ID ${userId} not found`);
+
+      expect(dashboardService.getProgramGenerationHistory).toHaveBeenCalledWith(
+        userId,
+        query,
+      );
+    });
+
+    it('指定されたfeedIdが存在しない場合、NotFoundExceptionを投げること', async () => {
+      const userId = 'user-1';
+      const feedId = 'non-existent-feed';
+      const query: GetDashboardProgramGenerationHistoryRequestDto = {
+        feedId,
+        limit: 20,
+        offset: 0,
+      };
+      const notFoundError = new NotFoundException(
+        `Feed with ID ${feedId} not found`,
+      );
+
+      dashboardService.getProgramGenerationHistory.mockRejectedValue(
+        notFoundError,
+      );
+
+      await expect(
+        controller.getDashboardProgramGenerationHistory(userId, query),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        controller.getDashboardProgramGenerationHistory(userId, query),
+      ).rejects.toThrow(`Feed with ID ${feedId} not found`);
+
+      expect(dashboardService.getProgramGenerationHistory).toHaveBeenCalledWith(
+        userId,
+        query,
+      );
+    });
+
+    it('サービスでエラーが発生した場合、InternalServerErrorExceptionを投げること', async () => {
+      const userId = 'user-1';
+      const query: GetDashboardProgramGenerationHistoryRequestDto = {
+        limit: 20,
+        offset: 0,
+      };
+      const error = new Error('Database error');
+
+      dashboardService.getProgramGenerationHistory.mockRejectedValue(error);
+
+      await expect(
+        controller.getDashboardProgramGenerationHistory(userId, query),
+      ).rejects.toThrow(InternalServerErrorException);
+      await expect(
+        controller.getDashboardProgramGenerationHistory(userId, query),
+      ).rejects.toThrow('番組生成履歴の取得に失敗しました');
+
+      expect(dashboardService.getProgramGenerationHistory).toHaveBeenCalledWith(
+        userId,
+        query,
+      );
+    });
+
+    it('空のクエリパラメータでも正常に動作すること', async () => {
+      const userId = 'user-1';
+      const query: GetDashboardProgramGenerationHistoryRequestDto = {};
+      const mockHistory: GetDashboardProgramGenerationHistoryResponseDto = {
+        history: [],
+        totalCount: 0,
+        limit: 20,
+        offset: 0,
+        hasNext: false,
+      };
+
+      dashboardService.getProgramGenerationHistory.mockResolvedValue(
+        mockHistory,
+      );
+
+      const result = await controller.getDashboardProgramGenerationHistory(
+        userId,
+        query,
+      );
+
+      expect(result).toEqual(mockHistory);
+      expect(dashboardService.getProgramGenerationHistory).toHaveBeenCalledWith(
+        userId,
+        query,
       );
     });
   });

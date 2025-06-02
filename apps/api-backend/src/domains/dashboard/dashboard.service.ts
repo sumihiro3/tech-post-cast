@@ -3,15 +3,19 @@ import {
   GetDashboardPersonalizedProgramDetailResponseDto,
   GetDashboardPersonalizedProgramsRequestDto,
   GetDashboardPersonalizedProgramsResponseDto,
+  GetDashboardProgramGenerationHistoryRequestDto,
+  GetDashboardProgramGenerationHistoryResponseDto,
   GetDashboardStatsResponseDto,
   GetDashboardSubscriptionResponseDto,
   PersonalizedProgramSummaryDto,
   ProgramChapterDto,
+  ProgramGenerationHistoryDto,
   ProgramPostDto,
   SubscriptionFeatureDto,
   UsageItemDto,
 } from '@/controllers/dashboard/dto';
 import { IAppUsersRepository } from '@/domains/app-users/app-users.repository.interface';
+import { IPersonalizedProgramAttemptsRepository } from '@/domains/personalized-program-attempts/personalized-program-attempts.repository.interface';
 import { IPersonalizedProgramsRepository } from '@/domains/personalized-programs/personalized-programs.repository.interface';
 import { PersonalizedFeedsRepository } from '@/infrastructure/database/personalized-feeds/personalized-feeds.repository';
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
@@ -32,6 +36,8 @@ export class DashboardService {
     private readonly personalizedProgramsRepository: IPersonalizedProgramsRepository,
     @Inject('AppUsersRepository')
     private readonly appUsersRepository: IAppUsersRepository,
+    @Inject('PersonalizedProgramAttemptsRepository')
+    private readonly personalizedProgramAttemptsRepository: IPersonalizedProgramAttemptsRepository,
   ) {}
 
   /**
@@ -375,6 +381,21 @@ export class DashboardService {
         throw new NotFoundException(`Program with ID ${programId} not found`);
       }
 
+      // フィードのアクティブ状態確認
+      // 非アクティブフィードの番組詳細へのアクセスを制限
+      if (!program.feed.isActive) {
+        this.logger.warn(
+          `非アクティブフィードの番組詳細へのアクセスが拒否されました`,
+          {
+            userId,
+            programId,
+            feedId: program.feedId,
+            feedName: program.feed.name,
+          },
+        );
+        throw new NotFoundException(`Program with ID ${programId} not found`);
+      }
+
       // チャプター情報の変換
       const chapters: ProgramChapterDto[] = Array.isArray(program.chapters)
         ? (program.chapters as any[]).map((chapter) => ({
@@ -434,6 +455,107 @@ export class DashboardService {
       this.logger.error('Failed to get personalized program detail', {
         userId,
         programId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * 番組生成履歴を取得する
+   * @param userId ユーザーID
+   * @param query クエリ
+   * @returns 番組生成履歴
+   */
+  async getProgramGenerationHistory(
+    userId: string,
+    query: GetDashboardProgramGenerationHistoryRequestDto,
+  ): Promise<GetDashboardProgramGenerationHistoryResponseDto> {
+    this.logger.debug('DashboardService.getProgramGenerationHistory called', {
+      userId,
+      query,
+    });
+
+    try {
+      // ユーザーの存在確認
+      const user = await this.appUsersRepository.findOne(userId);
+      if (!user) {
+        throw new NotFoundException(`User with ID ${userId} not found`);
+      }
+
+      const { feedId, limit = 20, offset = 0 } = query;
+
+      // feedIdが指定された場合、そのfeedIdがuserIdの所有者かどうかをチェック
+      if (feedId) {
+        const feed = await this.personalizedFeedsRepository.findById(feedId);
+        if (!feed) {
+          throw new NotFoundException(
+            `パーソナルフィード [${feedId}] が見つかりません`,
+          );
+        }
+        if (feed.userId !== userId) {
+          throw new NotFoundException(
+            `ユーザー [${userId}] は、パーソナルフィード [${feedId}] を所有していません`,
+          );
+        }
+      }
+
+      // 番組生成履歴を関連データ付きで取得
+      const { attempts, totalCount } =
+        await this.personalizedProgramAttemptsRepository.findByUserIdWithRelationsForDashboard(
+          userId,
+          feedId,
+          {
+            limit,
+            offset,
+            orderBy: { createdAt: 'desc' },
+          },
+        );
+
+      // DTOに変換
+      const historyDtoList: ProgramGenerationHistoryDto[] = attempts.map(
+        (attempt) => ({
+          id: attempt.id,
+          createdAt: attempt.createdAt,
+          feed: {
+            id: attempt.feed.id,
+            name: attempt.feed.name,
+          },
+          status: attempt.status as 'SUCCESS' | 'SKIPPED' | 'FAILED',
+          reason: attempt.reason,
+          postCount: attempt.postCount,
+          program: attempt.program
+            ? {
+                id: attempt.program.id,
+                title: attempt.program.title,
+              }
+            : null,
+        }),
+      );
+
+      const hasNext = offset + limit < totalCount;
+
+      const result: GetDashboardProgramGenerationHistoryResponseDto = {
+        history: historyDtoList,
+        totalCount,
+        limit,
+        offset,
+        hasNext,
+      };
+
+      this.logger.debug('番組生成履歴を取得しました', {
+        userId,
+        feedId,
+        totalCount,
+        retrievedCount: historyDtoList.length,
+        hasNext,
+      });
+
+      return result;
+    } catch (error) {
+      this.logger.error('番組生成履歴の取得に失敗しました', {
+        userId,
+        query,
         error: error.message,
       });
       throw error;

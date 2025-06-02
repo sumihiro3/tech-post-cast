@@ -10,6 +10,7 @@ import {
   suppressLogOutput,
 } from '../../test/helpers/logger.helper';
 import { IAppUsersRepository } from '../app-users/app-users.repository.interface';
+import { IPersonalizedProgramAttemptsRepository } from '../personalized-program-attempts/personalized-program-attempts.repository.interface';
 import { IPersonalizedProgramsRepository } from '../personalized-programs/personalized-programs.repository.interface';
 import { DashboardService } from './dashboard.service';
 
@@ -20,12 +21,14 @@ describe('DashboardService', () => {
   let appUsersRepository: jest.Mocked<IAppUsersRepository>;
   let appConfigService: jest.Mocked<AppConfigService>;
   let logSpies: jest.SpyInstance[];
+  let personalizedProgramAttemptsRepository: jest.Mocked<IPersonalizedProgramAttemptsRepository>;
 
   beforeEach(async () => {
     logSpies = suppressLogOutput();
 
     const mockPersonalizedFeedsRepository = {
       findByUserIdWithFilters: jest.fn(),
+      findById: jest.fn(),
     };
 
     const mockPersonalizedProgramsRepository = {
@@ -44,6 +47,10 @@ describe('DashboardService', () => {
 
     const mockAppConfigService = {
       FreePlanId: 'free-plan-id',
+    };
+
+    const mockPersonalizedProgramAttemptsRepository = {
+      findByUserIdWithRelationsForDashboard: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -65,6 +72,10 @@ describe('DashboardService', () => {
           provide: AppConfigService,
           useValue: mockAppConfigService,
         },
+        {
+          provide: 'PersonalizedProgramAttemptsRepository',
+          useValue: mockPersonalizedProgramAttemptsRepository,
+        },
       ],
     }).compile();
 
@@ -79,6 +90,9 @@ describe('DashboardService', () => {
       'AppUsersRepository',
     ) as jest.Mocked<IAppUsersRepository>;
     appConfigService = module.get(AppConfigService);
+    personalizedProgramAttemptsRepository = module.get(
+      'PersonalizedProgramAttemptsRepository',
+    ) as jest.Mocked<IPersonalizedProgramAttemptsRepository>;
   });
 
   afterEach(() => {
@@ -974,6 +988,441 @@ describe('DashboardService', () => {
       );
 
       expect(result.chapters).toEqual([]);
+    });
+
+    it('非アクティブフィードの番組詳細へのアクセスを拒否すること', async () => {
+      const userId = 'user-1';
+      const programId = 'program-1';
+
+      // ユーザーの存在確認のモック
+      const mockUser = AppUserFactory.createAppUser({ id: userId });
+      appUsersRepository.findOne.mockResolvedValue(mockUser);
+
+      // 非アクティブフィードの番組のモック
+      const mockProgram = PersonalizedProgramFactory.createPersonalizedProgram({
+        id: programId,
+        userId,
+        feedId: 'feed-1',
+        feed: {
+          id: 'feed-1',
+          name: 'Test Feed',
+          dataSource: 'qiita',
+          isActive: false, // 非アクティブフィード
+        },
+      });
+      personalizedProgramsRepository.findById.mockResolvedValue(mockProgram);
+
+      await expect(
+        service.getPersonalizedProgramDetail(userId, programId),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.getPersonalizedProgramDetail(userId, programId),
+      ).rejects.toThrow(`Program with ID ${programId} not found`);
+
+      expect(personalizedProgramsRepository.findById).toHaveBeenCalledWith(
+        programId,
+      );
+    });
+
+    it('アクティブフィードの番組詳細を正常に取得できること', async () => {
+      const userId = 'user-1';
+      const programId = 'program-1';
+
+      // ユーザーの存在確認のモック
+      const mockUser = AppUserFactory.createAppUser({ id: userId });
+      appUsersRepository.findOne.mockResolvedValue(mockUser);
+
+      // アクティブフィードの番組のモック
+      const mockProgram = PersonalizedProgramFactory.createPersonalizedProgram({
+        id: programId,
+        userId,
+        feedId: 'feed-1',
+        feed: {
+          id: 'feed-1',
+          name: 'Test Feed',
+          dataSource: 'qiita',
+          isActive: true, // アクティブフィード
+        },
+      });
+      personalizedProgramsRepository.findById.mockResolvedValue(mockProgram);
+
+      const result = await service.getPersonalizedProgramDetail(
+        userId,
+        programId,
+      );
+
+      expect(result).toBeDefined();
+      expect(result.id).toBe(programId);
+      expect(result.feedId).toBe('feed-1');
+      expect(result.feedName).toBe('Test Feed');
+      expect(personalizedProgramsRepository.findById).toHaveBeenCalledWith(
+        programId,
+      );
+    });
+  });
+
+  describe('getProgramGenerationHistory', () => {
+    it('番組生成履歴を正常に取得できること', async () => {
+      const userId = 'user-1';
+      const query = { limit: 20, offset: 0 };
+
+      // ユーザーの存在確認のモック
+      const mockUser = AppUserFactory.createAppUser({ id: userId });
+      appUsersRepository.findOne.mockResolvedValue(mockUser);
+
+      // 番組生成履歴のモック
+      const mockAttemptsResult = {
+        attempts: [
+          {
+            id: 'attempt-1',
+            userId: 'user-1',
+            status: 'SUCCESS',
+            reason: null,
+            postCount: 3,
+            createdAt: new Date('2024-01-01'),
+            feed: {
+              id: 'feed-1',
+              name: 'テストフィード1',
+            },
+            program: {
+              id: 'program-1',
+              title: 'テスト番組1',
+            },
+          },
+          {
+            id: 'attempt-2',
+            userId: 'user-1',
+            status: 'FAILED',
+            reason: 'NOT_ENOUGH_POSTS',
+            postCount: 1,
+            createdAt: new Date('2024-01-02'),
+            feed: {
+              id: 'feed-2',
+              name: 'テストフィード2',
+            },
+            program: null,
+          },
+        ],
+        totalCount: 2,
+      };
+
+      personalizedProgramAttemptsRepository.findByUserIdWithRelationsForDashboard.mockResolvedValue(
+        mockAttemptsResult,
+      );
+
+      const result = await service.getProgramGenerationHistory(userId, query);
+
+      expect(result).toBeDefined();
+      expect(result.history).toHaveLength(2);
+      expect(result.history[0].id).toBe('attempt-1');
+      expect(result.history[0].status).toBe('SUCCESS');
+      expect(result.history[0].feed.id).toBe('feed-1');
+      expect(result.history[0].feed.name).toBe('テストフィード1');
+      expect(result.history[0].program).toEqual({
+        id: 'program-1',
+        title: 'テスト番組1',
+      });
+      expect(result.history[1].id).toBe('attempt-2');
+      expect(result.history[1].status).toBe('FAILED');
+      expect(result.history[1].reason).toBe('NOT_ENOUGH_POSTS');
+      expect(result.history[1].program).toBeNull();
+      expect(result.totalCount).toBe(2);
+      expect(result.limit).toBe(20);
+      expect(result.offset).toBe(0);
+      expect(result.hasNext).toBe(false);
+
+      expect(appUsersRepository.findOne).toHaveBeenCalledWith(userId);
+      expect(
+        personalizedProgramAttemptsRepository.findByUserIdWithRelationsForDashboard,
+      ).toHaveBeenCalledWith(userId, undefined, {
+        limit: 20,
+        offset: 0,
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('feedIdが指定された場合、フィードの所有者確認を行うこと', async () => {
+      const userId = 'user-1';
+      const feedId = 'feed-1';
+      const query = { feedId, limit: 20, offset: 0 };
+
+      // ユーザーの存在確認のモック
+      const mockUser = AppUserFactory.createAppUser({ id: userId });
+      appUsersRepository.findOne.mockResolvedValue(mockUser);
+
+      // フィードの存在確認と所有者確認のモック
+      const mockFeed =
+        PersonalizedFeedFactory.createPersonalizedFeedWithFilters({
+          id: feedId,
+          userId,
+        });
+      personalizedFeedsRepository.findById.mockResolvedValue(mockFeed);
+
+      // 番組生成履歴のモック
+      const mockAttemptsResult = {
+        attempts: [
+          {
+            id: 'attempt-1',
+            userId: 'user-1',
+            status: 'SUCCESS',
+            reason: null,
+            postCount: 3,
+            createdAt: new Date('2024-01-01'),
+            feed: {
+              id: 'feed-1',
+              name: 'テストフィード1',
+            },
+            program: {
+              id: 'program-1',
+              title: 'テスト番組1',
+            },
+          },
+        ],
+        totalCount: 1,
+      };
+
+      personalizedProgramAttemptsRepository.findByUserIdWithRelationsForDashboard.mockResolvedValue(
+        mockAttemptsResult,
+      );
+
+      const result = await service.getProgramGenerationHistory(userId, query);
+
+      expect(result).toBeDefined();
+      expect(result.history).toHaveLength(1);
+      expect(result.totalCount).toBe(1);
+
+      expect(appUsersRepository.findOne).toHaveBeenCalledWith(userId);
+      expect(personalizedFeedsRepository.findById).toHaveBeenCalledWith(feedId);
+      expect(
+        personalizedProgramAttemptsRepository.findByUserIdWithRelationsForDashboard,
+      ).toHaveBeenCalledWith(userId, feedId, {
+        limit: 20,
+        offset: 0,
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('デフォルトのページネーション値を使用すること', async () => {
+      const userId = 'user-1';
+      const query = {}; // limit, offsetを指定しない
+
+      // ユーザーの存在確認のモック
+      const mockUser = AppUserFactory.createAppUser({ id: userId });
+      appUsersRepository.findOne.mockResolvedValue(mockUser);
+
+      const mockAttemptsResult = {
+        attempts: [],
+        totalCount: 0,
+      };
+
+      personalizedProgramAttemptsRepository.findByUserIdWithRelationsForDashboard.mockResolvedValue(
+        mockAttemptsResult,
+      );
+
+      const result = await service.getProgramGenerationHistory(userId, query);
+
+      expect(result).toBeDefined();
+      expect(result.limit).toBe(20); // デフォルト値
+      expect(result.offset).toBe(0); // デフォルト値
+      expect(result.hasNext).toBe(false);
+
+      expect(
+        personalizedProgramAttemptsRepository.findByUserIdWithRelationsForDashboard,
+      ).toHaveBeenCalledWith(userId, undefined, {
+        limit: 20,
+        offset: 0,
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('hasNextフラグを正しく計算すること', async () => {
+      const userId = 'user-1';
+      const query = { limit: 5, offset: 0 };
+
+      // ユーザーの存在確認のモック
+      const mockUser = AppUserFactory.createAppUser({ id: userId });
+      appUsersRepository.findOne.mockResolvedValue(mockUser);
+
+      const mockAttemptsResult = {
+        attempts: [
+          {
+            id: 'attempt-1',
+            userId: 'user-1',
+            status: 'SUCCESS',
+            reason: null,
+            postCount: 3,
+            createdAt: new Date('2024-01-01'),
+            feed: {
+              id: 'feed-1',
+              name: 'テストフィード1',
+            },
+            program: {
+              id: 'program-1',
+              title: 'テスト番組1',
+            },
+          },
+          {
+            id: 'attempt-2',
+            userId: 'user-1',
+            status: 'SUCCESS',
+            reason: null,
+            postCount: 2,
+            createdAt: new Date('2024-01-02'),
+            feed: {
+              id: 'feed-2',
+              name: 'テストフィード2',
+            },
+            program: {
+              id: 'program-2',
+              title: 'テスト番組2',
+            },
+          },
+          {
+            id: 'attempt-3',
+            userId: 'user-1',
+            status: 'FAILED',
+            reason: 'NOT_ENOUGH_POSTS',
+            postCount: 1,
+            createdAt: new Date('2024-01-03'),
+            feed: {
+              id: 'feed-3',
+              name: 'テストフィード3',
+            },
+            program: null,
+          },
+          {
+            id: 'attempt-4',
+            userId: 'user-1',
+            status: 'SKIPPED',
+            reason: 'NO_NEW_POSTS',
+            postCount: 0,
+            createdAt: new Date('2024-01-04'),
+            feed: {
+              id: 'feed-4',
+              name: 'テストフィード4',
+            },
+            program: null,
+          },
+          {
+            id: 'attempt-5',
+            userId: 'user-1',
+            status: 'SUCCESS',
+            reason: null,
+            postCount: 4,
+            createdAt: new Date('2024-01-05'),
+            feed: {
+              id: 'feed-5',
+              name: 'テストフィード5',
+            },
+            program: {
+              id: 'program-5',
+              title: 'テスト番組5',
+            },
+          },
+        ],
+        totalCount: 12, // 5 + 0 < 12 なので hasNext = true
+      };
+
+      personalizedProgramAttemptsRepository.findByUserIdWithRelationsForDashboard.mockResolvedValue(
+        mockAttemptsResult,
+      );
+
+      const result = await service.getProgramGenerationHistory(userId, query);
+
+      expect(result.hasNext).toBe(true);
+      expect(result.totalCount).toBe(12);
+    });
+
+    it('履歴が存在しない場合でも正常に動作すること', async () => {
+      const userId = 'user-empty';
+      const query = { limit: 20, offset: 0 };
+
+      // ユーザーの存在確認のモック
+      const mockUser = AppUserFactory.createAppUser({ id: userId });
+      appUsersRepository.findOne.mockResolvedValue(mockUser);
+
+      const mockAttemptsResult = {
+        attempts: [],
+        totalCount: 0,
+      };
+
+      personalizedProgramAttemptsRepository.findByUserIdWithRelationsForDashboard.mockResolvedValue(
+        mockAttemptsResult,
+      );
+
+      const result = await service.getProgramGenerationHistory(userId, query);
+
+      expect(result).toBeDefined();
+      expect(result.history).toHaveLength(0);
+      expect(result.totalCount).toBe(0);
+      expect(result.hasNext).toBe(false);
+    });
+
+    it('ユーザーが存在しない場合、NotFoundExceptionを投げること', async () => {
+      const userId = 'non-existent-user';
+      const query = { limit: 20, offset: 0 };
+
+      appUsersRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.getProgramGenerationHistory(userId, query),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.getProgramGenerationHistory(userId, query),
+      ).rejects.toThrow(`User with ID ${userId} not found`);
+
+      expect(appUsersRepository.findOne).toHaveBeenCalledWith(userId);
+    });
+
+    it('指定されたfeedIdが存在しない場合、NotFoundExceptionを投げること', async () => {
+      const userId = 'user-1';
+      const feedId = 'non-existent-feed';
+      const query = { feedId, limit: 20, offset: 0 };
+
+      // ユーザーの存在確認のモック
+      const mockUser = AppUserFactory.createAppUser({ id: userId });
+      appUsersRepository.findOne.mockResolvedValue(mockUser);
+
+      // フィードが存在しない場合のモック
+      personalizedFeedsRepository.findById.mockResolvedValue(null);
+
+      await expect(
+        service.getProgramGenerationHistory(userId, query),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.getProgramGenerationHistory(userId, query),
+      ).rejects.toThrow(`パーソナルフィード [${feedId}] が見つかりません`);
+
+      expect(personalizedFeedsRepository.findById).toHaveBeenCalledWith(feedId);
+    });
+
+    it('指定されたfeedIdが他のユーザーの所有である場合、NotFoundExceptionを投げること', async () => {
+      const userId = 'user-1';
+      const feedId = 'feed-1';
+      const query = { feedId, limit: 20, offset: 0 };
+
+      // ユーザーの存在確認のモック
+      const mockUser = AppUserFactory.createAppUser({ id: userId });
+      appUsersRepository.findOne.mockResolvedValue(mockUser);
+
+      // 他のユーザーが所有するフィードのモック
+      const mockFeed =
+        PersonalizedFeedFactory.createPersonalizedFeedWithFilters({
+          id: feedId,
+          userId: 'other-user', // 異なるユーザーID
+        });
+      personalizedFeedsRepository.findById.mockResolvedValue(mockFeed);
+
+      await expect(
+        service.getProgramGenerationHistory(userId, query),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.getProgramGenerationHistory(userId, query),
+      ).rejects.toThrow(
+        `ユーザー [${userId}] は、パーソナルフィード [${feedId}] を所有していません`,
+      );
+
+      expect(personalizedFeedsRepository.findById).toHaveBeenCalledWith(feedId);
     });
   });
 });

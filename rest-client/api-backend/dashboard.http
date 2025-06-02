@@ -6,12 +6,22 @@
 @jwtToken = {{$dotenv JWT_TOKEN}}
 
 ##################################################
-# パーソナルフィード概要情報取得
+# ダッシュボード統計情報取得
 ##################################################
 
-### ダッシュボード用パーソナルフィード概要取得
-# アクティブなフィード数、総フィード数、最近作成されたフィード（最新5件）、総フィルター条件数を取得
-GET {{baseUrl}}/dashboard/personalized-feeds/summary
+### ダッシュボード統計情報取得
+# アクティブなフィード数、総配信番組数、総番組時間を取得
+GET {{baseUrl}}/dashboard/stats
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+##################################################
+# サブスクリプション情報取得
+##################################################
+
+### ダッシュボード用サブスクリプション情報取得
+# プラン情報、機能一覧、使用量情報を取得
+GET {{baseUrl}}/dashboard/subscription
 Content-Type: application/json
 Authorization: Bearer {{jwtToken}}
 
@@ -43,15 +53,74 @@ GET {{baseUrl}}/dashboard/personalized-programs?limit=50&offset=0
 Content-Type: application/json
 Authorization: Bearer {{jwtToken}}
 
-### ダッシュボード用パーソナルプログラム一覧取得（3ページ目、少ない件数）
-# 3ページ目、3件取得
-GET {{baseUrl}}/dashboard/personalized-programs?limit=3&offset=6
+##################################################
+# パーソナルプログラム詳細取得
+##################################################
+
+### パーソナルプログラム詳細取得
+# 指定したプログラムIDの詳細情報を取得
+# @programId = 実際のプログラムIDに置き換えてください
+@programId = program-id-here
+GET {{baseUrl}}/dashboard/personalized-programs/{{programId}}
 Content-Type: application/json
 Authorization: Bearer {{jwtToken}}
 
-### ダッシュボード用パーソナルプログラム一覧取得（最小件数）
+##################################################
+# 番組生成履歴取得（新機能）
+##################################################
+
+### 番組生成履歴取得（デフォルト）
+# デフォルト: limit=20, offset=0, 全フィード対象
+GET {{baseUrl}}/dashboard/program-generation-history
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+### 番組生成履歴取得（ページネーション指定）
+# 1ページ目、10件取得
+GET {{baseUrl}}/dashboard/program-generation-history?limit=10&offset=0
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+### 番組生成履歴取得（2ページ目）
+# 2ページ目、10件取得
+GET {{baseUrl}}/dashboard/program-generation-history?limit=10&offset=10
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+### 番組生成履歴取得（フィードフィルター指定）
+# 特定のフィードIDでフィルタリング
+# @feedId = 実際のフィードIDに置き換えてください
+# @feedId = feed_cmaamvdxs00003x3j5ywgcll7
+@feedId = feed_cmamcgw9900018p3j62n1293n
+GET {{baseUrl}}/dashboard/program-generation-history?feedId={{feedId}}&limit=20&offset=0
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+### 番組生成履歴取得（フィードフィルター + ページネーション）
+# 特定のフィードIDでフィルタリング + ページネーション
+GET {{baseUrl}}/dashboard/program-generation-history?feedId={{feedId}}&limit=5&offset=0
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+### 番組生成履歴取得（最大件数）
+# 最大件数（50件）を取得
+GET {{baseUrl}}/dashboard/program-generation-history?limit=50&offset=0
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+### 番組生成履歴取得（最小件数）
 # 最小件数（1件）を取得
-GET {{baseUrl}}/dashboard/personalized-programs?limit=1&offset=0
+GET {{baseUrl}}/dashboard/program-generation-history?limit=1&offset=0
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+##################################################
+# パーソナルフィード概要情報取得（既存API）
+##################################################
+
+### ダッシュボード用パーソナルフィード概要取得
+# アクティブなフィード数、総フィード数、最近作成されたフィード（最新5件）、総フィルター条件数を取得
+GET {{baseUrl}}/dashboard/personalized-feeds/summary
 Content-Type: application/json
 Authorization: Bearer {{jwtToken}}
 
@@ -60,11 +129,11 @@ Authorization: Bearer {{jwtToken}}
 ##################################################
 
 ### 認証なしでアクセス（401エラーが期待される）
-GET {{baseUrl}}/dashboard/personalized-feeds/summary
+GET {{baseUrl}}/dashboard/stats
 Content-Type: application/json
 
 ### 無効な認証トークンでアクセス（401エラーが期待される）
-GET {{baseUrl}}/dashboard/personalized-feeds/summary
+GET {{baseUrl}}/dashboard/stats
 Content-Type: application/json
 Authorization: Bearer invalid_token
 
@@ -83,30 +152,185 @@ GET {{baseUrl}}/dashboard/personalized-programs?limit=10&offset=-1
 Content-Type: application/json
 Authorization: Bearer {{jwtToken}}
 
+### 存在しないプログラムIDでアクセス（404エラーが期待される）
+GET {{baseUrl}}/dashboard/personalized-programs/non-existent-program-id
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+### 存在しないフィードIDで番組生成履歴取得（404エラーが期待される）
+GET {{baseUrl}}/dashboard/program-generation-history?feedId=non-existent-feed-id
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+### 他のユーザーのフィードIDで番組生成履歴取得（404エラーが期待される）
+GET {{baseUrl}}/dashboard/program-generation-history?feedId=other-user-feed-id
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+### 番組生成履歴取得で無効なlimitパラメータ（400エラーが期待される）
+GET {{baseUrl}}/dashboard/program-generation-history?limit=0&offset=0
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+### 番組生成履歴取得で無効なlimitパラメータ（上限超過、400エラーが期待される）
+GET {{baseUrl}}/dashboard/program-generation-history?limit=100&offset=0
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
 ##################################################
-# 認証トークンの取得方法
+# 認証トークンの取得方法とレスポンス例
 ##################################################
 ###
+# 認証トークンの取得方法:
 # 1. フロントエンドアプリケーション（http://localhost:3000）にログイン
 # 2. ブラウザの開発者ツールでネットワークタブを開く
 # 3. APIリクエストのAuthorizationヘッダーからトークンをコピー
 # 4. 上記の @jwtToken 変数に設定
 #
+# 環境変数の設定方法:
+# 1. rest-client/api-backend/.env ファイルを作成
+# 2. 以下の内容を記述:
+#    BASE_URL=http://localhost:8080/api
+#    JWT_TOKEN=your_jwt_token_here
+#
 # レスポンス例:
+#
+# ダッシュボード統計情報:
+# {
+#   "activeFeedsCount": 5,
+#   "totalEpisodesCount": 12,
+#   "totalProgramDuration": "2.5h"
+# }
+#
+# サブスクリプション情報:
+# {
+#   "planName": "Free",
+#   "planColor": "grey",
+#   "features": [
+#     { "name": "パーソナルフィード作成", "available": true },
+#     { "name": "日次配信", "available": true }
+#   ],
+#   "usageItems": [
+#     {
+#       "label": "フィード数",
+#       "current": 2,
+#       "limit": 1,
+#       "showPercentage": true,
+#       "warningThreshold": 70,
+#       "dangerThreshold": 90
+#     }
+#   ],
+#   "showUpgradeButton": true
+# }
+#
+# パーソナルプログラム一覧:
+# {
+#   "programs": [
+#     {
+#       "id": "program-1",
+#       "title": "今週のReact記事まとめ",
+#       "feedId": "feed-1",
+#       "feedName": "React技術記事",
+#       "audioUrl": "https://example.com/audio1.mp3",
+#       "audioDuration": 300000,
+#       "imageUrl": "https://example.com/image1.jpg",
+#       "postsCount": 5,
+#       "expiresAt": "2024-02-01T00:00:00.000Z",
+#       "isExpired": false,
+#       "createdAt": "2024-01-25T10:00:00.000Z",
+#       "updatedAt": "2024-01-25T10:00:00.000Z"
+#     }
+#   ],
+#   "totalCount": 25,
+#   "limit": 10,
+#   "offset": 0,
+#   "hasNext": true
+# }
+#
+# パーソナルプログラム詳細:
+# {
+#   "id": "program-1",
+#   "title": "今週のReact記事まとめ",
+#   "feedId": "feed-1",
+#   "feedName": "React技術記事",
+#   "dataSource": "qiita",
+#   "audioUrl": "https://example.com/audio1.mp3",
+#   "audioDuration": 300000,
+#   "imageUrl": "https://example.com/image1.jpg",
+#   "script": {
+#     "opening": "こんにちは、今週のReact記事をお届けします。",
+#     "sections": [...]
+#   },
+#   "chapters": [
+#     {
+#       "title": "オープニング",
+#       "startTime": 0,
+#       "endTime": 30
+#     }
+#   ],
+#   "posts": [
+#     {
+#       "id": "post-1",
+#       "title": "React 18の新機能",
+#       "url": "https://qiita.com/example/items/react18",
+#       "authorName": "example_user",
+#       "authorId": "example_user_id",
+#       "likesCount": 50,
+#       "stocksCount": 25,
+#       "summary": "React 18で追加された新機能について...",
+#       "createdAt": "2024-01-20T10:00:00.000Z",
+#       "updatedAt": "2024-01-20T10:00:00.000Z",
+#       "private": false
+#     }
+#   ],
+#   "expiresAt": "2024-02-01T00:00:00.000Z",
+#   "isExpired": false,
+#   "createdAt": "2024-01-25T10:00:00.000Z",
+#   "updatedAt": "2024-01-25T10:00:00.000Z"
+# }
+#
+# 番組生成履歴:
+# {
+#   "history": [
+#     {
+#       "id": "attempt-1",
+#       "createdAt": "2024-01-25T10:00:00.000Z",
+#       "feed": {
+#         "id": "feed-1",
+#         "name": "React技術記事"
+#       },
+#       "status": "SUCCESS",
+#       "reason": null,
+#       "postCount": 5,
+#       "program": {
+#         "id": "program-1",
+#         "title": "今週のReact記事まとめ"
+#       }
+#     },
+#     {
+#       "id": "attempt-2",
+#       "createdAt": "2024-01-24T10:00:00.000Z",
+#       "feed": {
+#         "id": "feed-2",
+#         "name": "Vue.js技術記事"
+#       },
+#       "status": "FAILED",
+#       "reason": "NOT_ENOUGH_POSTS",
+#       "postCount": 1,
+#       "program": null
+#     }
+#   ],
+#   "totalCount": 25,
+#   "limit": 20,
+#   "offset": 0,
+#   "hasNext": true
+# }
+#
 # パーソナルフィード概要:
 # {
 #   "activeFeedsCount": 5,
 #   "totalFeedsCount": 8,
 #   "recentFeeds": [...],
 #   "totalFiltersCount": 25
-# }
-#
-# パーソナルプログラム一覧:
-# {
-#   "programs": [...],
-#   "totalCount": 25,
-#   "limit": 10,
-#   "offset": 0,
-#   "hasNext": true
 # }
 ###

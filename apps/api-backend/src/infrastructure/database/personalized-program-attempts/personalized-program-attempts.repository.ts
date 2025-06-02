@@ -2,6 +2,7 @@ import {
   IPersonalizedProgramAttemptsRepository,
   PaginationOptions,
   PersonalizedProgramAttemptsResult,
+  PersonalizedProgramAttemptsWithRelationsResult,
 } from '@/domains/personalized-program-attempts/personalized-program-attempts.repository.interface';
 import {
   PersonalizedProgramAttemptDatabaseError,
@@ -193,7 +194,82 @@ export class PersonalizedProgramAttemptsRepository
         id,
       });
       this.logger.error(error.message, error.stack);
-      throw new PersonalizedProgramAttemptDatabaseError(errorMessage, {
+      throw new PersonalizedProgramAttemptRetrievalError(errorMessage, {
+        cause: error,
+      });
+    }
+  }
+
+  /**
+   * ダッシュボード用：指定ユーザーIDの番組生成試行履歴一覧を関連データ付きで取得する
+   */
+  async findByUserIdWithRelationsForDashboard(
+    userId: string,
+    feedId: string | undefined,
+    options: PaginationOptions,
+  ): Promise<PersonalizedProgramAttemptsWithRelationsResult> {
+    this.logger.debug(
+      'PersonalizedProgramAttemptsRepository.findByUserIdWithRelationsForDashboard called',
+      { userId, feedId, options },
+    );
+
+    try {
+      const client = this.prisma.getClient();
+
+      // WHERE条件を構築
+      const whereCondition: any = { userId };
+      if (feedId) {
+        whereCondition.feedId = feedId;
+      }
+
+      // 総件数を取得
+      const totalCount = await client.personalizedProgramAttempt.count({
+        where: whereCondition,
+      });
+
+      // 試行履歴一覧を関連データ付きで取得
+      const attempts = await client.personalizedProgramAttempt.findMany({
+        where: whereCondition,
+        include: {
+          feed: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          program: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+        orderBy: options.orderBy || { createdAt: 'desc' },
+        take: options.limit,
+        skip: options.offset,
+      });
+
+      this.logger.log('ダッシュボード用番組生成試行履歴一覧を取得しました', {
+        userId,
+        feedId,
+        totalCount,
+        retrievedCount: attempts.length,
+      });
+
+      return {
+        attempts,
+        totalCount,
+      };
+    } catch (error) {
+      const errorMessage = `ユーザー [${userId}] のダッシュボード用番組生成試行履歴一覧の取得に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        userId,
+        feedId,
+        options,
+      });
+      this.logger.error(error.message, error.stack);
+      throw new PersonalizedProgramAttemptRetrievalError(errorMessage, {
         cause: error,
       });
     }

@@ -30,6 +30,7 @@ export class PersonalizedProgramFactory {
         id: 'feed-1',
         name: 'テストフィード1',
         dataSource: 'qiita',
+        isActive: true,
       },
       posts: [
         {
@@ -52,7 +53,10 @@ export class PersonalizedProgramFactory {
     return {
       ...defaultProgram,
       ...overrides,
-      feed: overrides.feed || defaultProgram.feed,
+      feed: {
+        ...defaultProgram.feed,
+        ...overrides.feed,
+      },
       posts: overrides.posts || defaultProgram.posts,
     };
   }
@@ -80,6 +84,7 @@ export class PersonalizedProgramFactory {
           id: `feed-${index + 1}`,
           name: `テストフィード${index + 1}`,
           dataSource: 'qiita',
+          isActive: true,
         },
         posts: [
           {

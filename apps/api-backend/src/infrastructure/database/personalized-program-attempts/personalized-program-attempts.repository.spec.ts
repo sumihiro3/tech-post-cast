@@ -205,7 +205,7 @@ describe('PersonalizedProgramAttemptsRepository', () => {
       });
     });
 
-    it('試行履歴が見つからない場合、nullが返されること', async () => {
+    it('指定IDの番組生成試行履歴が存在しない場合、nullを返すこと', async () => {
       mockPrismaClient.personalizedProgramAttempt.findUnique.mockResolvedValue(
         null,
       );
@@ -213,17 +213,200 @@ describe('PersonalizedProgramAttemptsRepository', () => {
       const result = await repository.findById(attemptId);
 
       expect(result).toBeNull();
+      expect(
+        mockPrismaClient.personalizedProgramAttempt.findUnique,
+      ).toHaveBeenCalledWith({
+        where: { id: attemptId },
+      });
     });
 
-    it('データベースエラーが発生した場合、PersonalizedProgramAttemptDatabaseErrorがスローされること', async () => {
+    it('データベースエラーが発生した場合、PersonalizedProgramAttemptRetrievalErrorがスローされること', async () => {
       const error = new Error('Database connection failed');
       mockPrismaClient.personalizedProgramAttempt.findUnique.mockRejectedValue(
         error,
       );
 
       await expect(repository.findById(attemptId)).rejects.toThrow(
-        PersonalizedProgramAttemptDatabaseError,
+        PersonalizedProgramAttemptRetrievalError,
       );
+    });
+  });
+
+  describe('findByUserIdWithRelationsForDashboard', () => {
+    const userId = 'user-1';
+    const options = {
+      limit: 10,
+      offset: 0,
+      orderBy: { createdAt: 'desc' as const },
+    };
+
+    it('指定ユーザーIDの番組生成試行履歴一覧を関連データ付きで正常に取得できること', async () => {
+      const mockAttemptsWithRelations = [
+        {
+          id: 'attempt-1',
+          userId: 'user-1',
+          status: 'SUCCESS',
+          reason: null,
+          postCount: 3,
+          createdAt: new Date('2024-01-01'),
+          feed: {
+            id: 'feed-1',
+            name: 'テストフィード1',
+          },
+          program: {
+            id: 'program-1',
+            title: 'テスト番組1',
+          },
+        },
+        {
+          id: 'attempt-2',
+          userId: 'user-1',
+          status: 'FAILED',
+          reason: 'NOT_ENOUGH_POSTS',
+          postCount: 1,
+          createdAt: new Date('2024-01-02'),
+          feed: {
+            id: 'feed-2',
+            name: 'テストフィード2',
+          },
+          program: null,
+        },
+      ];
+
+      mockPrismaClient.personalizedProgramAttempt.count.mockResolvedValue(2);
+      mockPrismaClient.personalizedProgramAttempt.findMany.mockResolvedValue(
+        mockAttemptsWithRelations,
+      );
+
+      const result = await repository.findByUserIdWithRelationsForDashboard(
+        userId,
+        undefined,
+        options,
+      );
+
+      expect(result.attempts).toEqual(mockAttemptsWithRelations);
+      expect(result.totalCount).toBe(2);
+      expect(
+        mockPrismaClient.personalizedProgramAttempt.count,
+      ).toHaveBeenCalledWith({
+        where: { userId },
+      });
+      expect(
+        mockPrismaClient.personalizedProgramAttempt.findMany,
+      ).toHaveBeenCalledWith({
+        where: { userId },
+        include: {
+          feed: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          program: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        skip: 0,
+      });
+    });
+
+    it('feedIdが指定された場合、そのfeedIdでフィルタリングされること', async () => {
+      const feedId = 'feed-1';
+      const mockAttemptsWithRelations = [
+        {
+          id: 'attempt-1',
+          userId: 'user-1',
+          status: 'SUCCESS',
+          reason: null,
+          postCount: 3,
+          createdAt: new Date('2024-01-01'),
+          feed: {
+            id: 'feed-1',
+            name: 'テストフィード1',
+          },
+          program: {
+            id: 'program-1',
+            title: 'テスト番組1',
+          },
+        },
+      ];
+
+      mockPrismaClient.personalizedProgramAttempt.count.mockResolvedValue(1);
+      mockPrismaClient.personalizedProgramAttempt.findMany.mockResolvedValue(
+        mockAttemptsWithRelations,
+      );
+
+      const result = await repository.findByUserIdWithRelationsForDashboard(
+        userId,
+        feedId,
+        options,
+      );
+
+      expect(result.attempts).toEqual(mockAttemptsWithRelations);
+      expect(result.totalCount).toBe(1);
+      expect(
+        mockPrismaClient.personalizedProgramAttempt.count,
+      ).toHaveBeenCalledWith({
+        where: { userId, feedId },
+      });
+      expect(
+        mockPrismaClient.personalizedProgramAttempt.findMany,
+      ).toHaveBeenCalledWith({
+        where: { userId, feedId },
+        include: {
+          feed: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          program: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        skip: 0,
+      });
+    });
+
+    it('データが存在しない場合でも正常に動作すること', async () => {
+      mockPrismaClient.personalizedProgramAttempt.count.mockResolvedValue(0);
+      mockPrismaClient.personalizedProgramAttempt.findMany.mockResolvedValue(
+        [],
+      );
+
+      const result = await repository.findByUserIdWithRelationsForDashboard(
+        userId,
+        undefined,
+        options,
+      );
+
+      expect(result.attempts).toEqual([]);
+      expect(result.totalCount).toBe(0);
+    });
+
+    it('データベースエラーが発生した場合、PersonalizedProgramAttemptRetrievalErrorがスローされること', async () => {
+      const error = new Error('Database connection failed');
+      mockPrismaClient.personalizedProgramAttempt.count.mockRejectedValue(
+        error,
+      );
+
+      await expect(
+        repository.findByUserIdWithRelationsForDashboard(
+          userId,
+          undefined,
+          options,
+        ),
+      ).rejects.toThrow(PersonalizedProgramAttemptRetrievalError);
     });
   });
 });

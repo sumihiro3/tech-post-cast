@@ -12,6 +12,7 @@ const personalizedFeedProgramWithDetails =
           id: true,
           name: true,
           dataSource: true,
+          isActive: true,
         },
       },
       posts: {
