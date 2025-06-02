@@ -356,6 +356,43 @@ export interface GetDashboardPersonalizedProgramsResponseDto {
 /**
  * 
  * @export
+ * @interface GetDashboardProgramGenerationHistoryResponseDto
+ */
+export interface GetDashboardProgramGenerationHistoryResponseDto {
+    /**
+     * 番組生成履歴一覧
+     * @type {Array<ProgramGenerationHistoryDto>}
+     * @memberof GetDashboardProgramGenerationHistoryResponseDto
+     */
+    'history': Array<ProgramGenerationHistoryDto>;
+    /**
+     * 総件数
+     * @type {number}
+     * @memberof GetDashboardProgramGenerationHistoryResponseDto
+     */
+    'totalCount': number;
+    /**
+     * 取得件数
+     * @type {number}
+     * @memberof GetDashboardProgramGenerationHistoryResponseDto
+     */
+    'limit': number;
+    /**
+     * オフセット
+     * @type {number}
+     * @memberof GetDashboardProgramGenerationHistoryResponseDto
+     */
+    'offset': number;
+    /**
+     * 次のページが存在するか
+     * @type {boolean}
+     * @memberof GetDashboardProgramGenerationHistoryResponseDto
+     */
+    'hasNext': boolean;
+}
+/**
+ * 
+ * @export
  * @interface GetDashboardStatsResponseDto
  */
 export interface GetDashboardStatsResponseDto {
@@ -1042,6 +1079,64 @@ export interface ProgramChapterDto {
      */
     'endTime': number;
 }
+/**
+ * 
+ * @export
+ * @interface ProgramGenerationHistoryDto
+ */
+export interface ProgramGenerationHistoryDto {
+    /**
+     * 試行履歴ID
+     * @type {string}
+     * @memberof ProgramGenerationHistoryDto
+     */
+    'id': string;
+    /**
+     * 実行日時
+     * @type {string}
+     * @memberof ProgramGenerationHistoryDto
+     */
+    'createdAt': string;
+    /**
+     * フィード情報
+     * @type {object}
+     * @memberof ProgramGenerationHistoryDto
+     */
+    'feed': object;
+    /**
+     * 実行ステータス
+     * @type {string}
+     * @memberof ProgramGenerationHistoryDto
+     */
+    'status': ProgramGenerationHistoryDtoStatusEnum;
+    /**
+     * 失敗・スキップの理由
+     * @type {string}
+     * @memberof ProgramGenerationHistoryDto
+     */
+    'reason': string | null;
+    /**
+     * 対象記事数
+     * @type {number}
+     * @memberof ProgramGenerationHistoryDto
+     */
+    'postCount': number;
+    /**
+     * 生成された番組情報
+     * @type {object}
+     * @memberof ProgramGenerationHistoryDto
+     */
+    'program': object | null;
+}
+
+export const ProgramGenerationHistoryDtoStatusEnum = {
+    Success: 'SUCCESS',
+    Skipped: 'SKIPPED',
+    Failed: 'FAILED'
+} as const;
+
+export type ProgramGenerationHistoryDtoStatusEnum = typeof ProgramGenerationHistoryDtoStatusEnum[keyof typeof ProgramGenerationHistoryDtoStatusEnum];
+
 /**
  * 
  * @export
@@ -2511,6 +2606,51 @@ export const DashboardApiAxiosParamCreator = function (configuration?: Configura
             };
         },
         /**
+         * ダッシュボード表示用の番組生成履歴一覧を取得します。フィードIDでフィルタリング可能です。
+         * @summary ダッシュボード用番組生成履歴取得
+         * @param {string} [feedId] フィードID（指定した場合、そのフィードの履歴のみを取得）
+         * @param {number} [limit] 取得件数（デフォルト: 20, 最大: 100）
+         * @param {number} [offset] オフセット（デフォルト: 0）
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDashboardProgramGenerationHistory: async (feedId?: string, limit?: number, offset?: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/dashboard/program-generation-history`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            if (feedId !== undefined) {
+                localVarQueryParameter['feedId'] = feedId;
+            }
+
+            if (limit !== undefined) {
+                localVarQueryParameter['limit'] = limit;
+            }
+
+            if (offset !== undefined) {
+                localVarQueryParameter['offset'] = offset;
+            }
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
          * ダッシュボード表示用の統計情報（アクティブフィード数、総配信数、総番組時間）を取得します
          * @summary ダッシュボード統計情報取得
          * @param {*} [options] Override http request option.
@@ -2629,6 +2769,21 @@ export const DashboardApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
+         * ダッシュボード表示用の番組生成履歴一覧を取得します。フィードIDでフィルタリング可能です。
+         * @summary ダッシュボード用番組生成履歴取得
+         * @param {string} [feedId] フィードID（指定した場合、そのフィードの履歴のみを取得）
+         * @param {number} [limit] 取得件数（デフォルト: 20, 最大: 100）
+         * @param {number} [offset] オフセット（デフォルト: 0）
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getDashboardProgramGenerationHistory(feedId?: string, limit?: number, offset?: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GetDashboardProgramGenerationHistoryResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getDashboardProgramGenerationHistory(feedId, limit, offset, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['DashboardApi.getDashboardProgramGenerationHistory']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
          * ダッシュボード表示用の統計情報（アクティブフィード数、総配信数、総番組時間）を取得します
          * @summary ダッシュボード統計情報取得
          * @param {*} [options] Override http request option.
@@ -2687,6 +2842,18 @@ export const DashboardApiFactory = function (configuration?: Configuration, base
             return localVarFp.getDashboardPersonalizedPrograms(limit, offset, options).then((request) => request(axios, basePath));
         },
         /**
+         * ダッシュボード表示用の番組生成履歴一覧を取得します。フィードIDでフィルタリング可能です。
+         * @summary ダッシュボード用番組生成履歴取得
+         * @param {string} [feedId] フィードID（指定した場合、そのフィードの履歴のみを取得）
+         * @param {number} [limit] 取得件数（デフォルト: 20, 最大: 100）
+         * @param {number} [offset] オフセット（デフォルト: 0）
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDashboardProgramGenerationHistory(feedId?: string, limit?: number, offset?: number, options?: RawAxiosRequestConfig): AxiosPromise<GetDashboardProgramGenerationHistoryResponseDto> {
+            return localVarFp.getDashboardProgramGenerationHistory(feedId, limit, offset, options).then((request) => request(axios, basePath));
+        },
+        /**
          * ダッシュボード表示用の統計情報（アクティブフィード数、総配信数、総番組時間）を取得します
          * @summary ダッシュボード統計情報取得
          * @param {*} [options] Override http request option.
@@ -2735,6 +2902,20 @@ export class DashboardApi extends BaseAPI {
      */
     public getDashboardPersonalizedPrograms(limit?: number, offset?: number, options?: RawAxiosRequestConfig) {
         return DashboardApiFp(this.configuration).getDashboardPersonalizedPrograms(limit, offset, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * ダッシュボード表示用の番組生成履歴一覧を取得します。フィードIDでフィルタリング可能です。
+     * @summary ダッシュボード用番組生成履歴取得
+     * @param {string} [feedId] フィードID（指定した場合、そのフィードの履歴のみを取得）
+     * @param {number} [limit] 取得件数（デフォルト: 20, 最大: 100）
+     * @param {number} [offset] オフセット（デフォルト: 0）
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DashboardApi
+     */
+    public getDashboardProgramGenerationHistory(feedId?: string, limit?: number, offset?: number, options?: RawAxiosRequestConfig) {
+        return DashboardApiFp(this.configuration).getDashboardProgramGenerationHistory(feedId, limit, offset, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

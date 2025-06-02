@@ -17,6 +17,9 @@ DashboardLayout
       :error="programsError"
     )
 
+    // 番組生成履歴セクション
+    ProgramGenerationHistoryTable.mb-6
+
     // パーソナルフィード一覧セクション
     FeedListCard(
       :feeds="feeds"
@@ -51,17 +54,18 @@ DashboardLayout
 </template>
 
 <script setup lang="ts">
-import DashboardLayout from '@/components/dashboard/DashboardLayout.vue';
-import FeedListCard from '@/components/dashboard/FeedListCard.vue';
-import ProgramListCard from '@/components/dashboard/ProgramListCard.vue';
-import QuickActions from '@/components/dashboard/QuickActions.vue';
-import StatsCardGrid from '@/components/dashboard/StatsCardGrid.vue';
-import SubscriptionCard from '@/components/dashboard/SubscriptionCard.vue';
-import { useDashboardFeeds } from '@/composables/dashboard/useDashboardFeeds';
-import { useDashboardPrograms } from '@/composables/dashboard/useDashboardPrograms';
-import { useDashboardStats } from '@/composables/dashboard/useDashboardStats';
-import { useUIState } from '@/composables/useUIState';
 import { computed, ref, watch } from 'vue';
+import DashboardLayout from '~/components/dashboard/DashboardLayout.vue';
+import FeedListCard from '~/components/dashboard/FeedListCard.vue';
+import ProgramGenerationHistoryTable from '~/components/dashboard/ProgramGenerationHistoryTable.vue';
+import ProgramListCard from '~/components/dashboard/ProgramListCard.vue';
+import QuickActions from '~/components/dashboard/QuickActions.vue';
+import StatsCardGrid from '~/components/dashboard/StatsCardGrid.vue';
+import SubscriptionCard from '~/components/dashboard/SubscriptionCard.vue';
+import { useDashboardFeeds } from '~/composables/dashboard/useDashboardFeeds';
+import { useDashboardPrograms } from '~/composables/dashboard/useDashboardPrograms';
+import { useDashboardStats } from '~/composables/dashboard/useDashboardStats';
+import { useUIState } from '~/composables/useUIState';
 
 // レイアウトをuser-appにする
 definePageMeta({
