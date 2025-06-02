@@ -86,7 +86,7 @@ const progress = useProgress();
 
 #### UI状態管理のベストプラクティス
 
-1. **統一インターフェースの使用**
+1. **統一インターフェイスの使用**
    - `useUIState`を通じてすべてのUI状態を管理してください
    - 個別のcomposable（`useSnackbar`, `useProgress`）の直接使用は避けてください
 
@@ -147,7 +147,7 @@ const progress = useProgress();
    };
    ```
 
-2. **インターフェースの定義**
+2. **インターフェイスの定義**
 
    ```typescript
    interface UIStateReturn {
@@ -160,12 +160,12 @@ const progress = useProgress();
 
 ## Composable設計ルール
 
-### 統一インターフェースパターン
+### 統一インターフェイスパターン
 
-複数の関連するcomposableがある場合は、統一インターフェースを提供してください：
+複数の関連するcomposableがある場合は、統一インターフェイスを提供してください：
 
 ```typescript
-// 統一インターフェース
+// 統一インターフェイス
 export const useUIState = (): UIStateReturn => {
   const snackbar = useSnackbar(); // 既存composableを活用
   const progress = useProgress();  // 既存composableを活用
@@ -183,7 +183,7 @@ export const useUIState = (): UIStateReturn => {
 
 1. **段階的統一化**: 既存の動作するcomposableは削除せず、上位レイヤーで統一してください
 2. **後方互換性**: 既存のAPIを破壊せずに新しいAPIを提供してください
-3. **文書化**: 統一インターフェースの使用方法をREADMEで明確に説明してください
+3. **文書化**: 統一インターフェイスの使用方法をREADMEで明確に説明してください
 
 ## フォーム実装
 
@@ -342,6 +342,172 @@ const { startStep, completeStep, showProgress } = useProgressiveLoading();
 - **保存ボタン位置**: フォーム下部など、ユーザーが期待する位置に配置してください
 - **フィードバック**: 操作結果を明確にユーザーに伝えてください
 - **プログレス表示**: 長時間の処理では適切なローディング表示を行ってください
+
+### 条件付きUI表示
+
+#### データ量に応じた適応的UI
+
+データの量や状況に応じてUIを動的に制御し、不要な要素を非表示にしてユーザビリティを向上させる：
+
+```typescript
+// フィルター表示の条件付き制御例
+const shouldShowFilter = computed(() => {
+  return personalizedFeeds.value.length >= 2;
+});
+```
+
+```vue
+<!-- テンプレートでの条件付き表示 -->
+<v-select
+  v-if="shouldShowFilter"
+  v-model="selectedFeedId"
+  :items="feedOptions"
+  label="フィード"
+  clearable
+  variant="outlined"
+  density="compact"
+/>
+```
+
+#### 状態に応じた視認性制御
+
+リソースの状態（期限切れ、非アクティブ等）に応じて適切な視覚的フィードバックを提供する：
+
+```typescript
+// 期限切れ番組の表示制御
+const getProgramDisplayProps = (program: ProgramDto | null) => {
+  if (!program) return null;
+
+  return {
+    text: program.title,
+    color: program.isExpired ? 'grey' : 'black',
+    size: 'default', // 読みやすさを優先
+    textTransform: 'none', // 日本語の場合は大文字変換を無効
+  };
+};
+```
+
+### テーブル設計ベストプラクティス
+
+#### 列の配置とレイアウト
+
+- **数値データ**: 右端に配置し、右寄せで表示
+- **アクションリンク**: 主要な情報（番組名）に配置
+- **ステータス表示**: v-chipを使用した視覚的な表現
+- **日時表示**: 統一されたフォーマット関数を使用
+
+```typescript
+// テーブル列定義の例
+const headers = [
+  { title: '実行日時', key: 'executedAt', sortable: false },
+  { title: 'フィード', key: 'feed', sortable: false },
+  { title: 'ステータス', key: 'status', sortable: false },
+  { title: '理由', key: 'reason', sortable: false },
+  { title: '記事数', key: 'articlesCount', sortable: false, align: 'end' },
+  { title: '番組', key: 'program', sortable: false },
+];
+```
+
+#### 空状態とローディング状態
+
+適切な空状態とローディング状態を提供し、ユーザーに現在の状況を明確に伝える：
+
+```vue
+<template>
+  <v-data-table
+    :headers="headers"
+    :items="history"
+    :loading="loading"
+    loading-text="履歴を読み込み中..."
+    no-data-text="番組生成履歴がありません"
+  >
+    <!-- テーブル内容 -->
+  </v-data-table>
+</template>
+```
+
+### 日本語化とローカライゼーション
+
+#### エラーメッセージの日本語化
+
+技術的なエラーコードも含めて、すべてのメッセージを日本語化する：
+
+```typescript
+const getStatusText = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    'SUCCESS': '成功',
+    'FAILED': '失敗',
+    'IN_PROGRESS': '実行中',
+    'CANCELLED': 'キャンセル',
+    'TIMEOUT': 'タイムアウト',
+    'INSUFFICIENT_ARTICLES': '記事不足',
+    'GENERATION_ERROR': '生成エラー',
+  };
+  return statusMap[status] || status;
+};
+```
+
+#### 直感的なナビゲーション
+
+関連リソースへの効率的なアクセスを提供する：
+
+```vue
+<!-- フィード名にリンクを追加 -->
+<template #item.feed="{ item }">
+  <nuxt-link
+    :to="`/dashboard/personalized-feeds/${item.feed.id}`"
+    class="text-decoration-none"
+  >
+    {{ item.feed.name }}
+  </nuxt-link>
+</template>
+```
+
+### レスポンシブデザイン考慮事項
+
+#### モバイル対応
+
+テーブルコンポーネントでモバイル表示を考慮した設計を行う：
+
+```vue
+<v-data-table
+  :headers="headers"
+  :items="history"
+  :mobile-breakpoint="0"
+  class="elevation-1"
+>
+  <!-- モバイル表示用のカスタマイズ -->
+</v-data-table>
+```
+
+### パフォーマンス最適化
+
+#### ページネーション実装
+
+大量データの効率的な表示のためのページネーション：
+
+```vue
+<v-pagination
+  v-if="totalPages > 1"
+  v-model="currentPage"
+  :length="totalPages"
+  :total-visible="7"
+  class="mt-4"
+/>
+```
+
+#### 条件付きレンダリング
+
+不要な要素の描画を避けるための条件付きレンダリング：
+
+```vue
+<template #item.program="{ item }">
+  <div v-if="item.program" class="d-flex align-center justify-end">
+    <!-- 番組情報の表示 -->
+  </div>
+  <span v-else class="text-grey text-right">-</span>
+</template>
+```
 
 ## パフォーマンス最適化
 

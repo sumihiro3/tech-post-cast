@@ -528,3 +528,143 @@ NestJSバックエンドでは、OpenAPI仕様に基づいたAPI定義を自動�
     // ...
   }
   ```
+
+## セキュリティ実装ガイドライン
+
+### リソースアクセス制御
+
+#### 所有者確認パターン（必須）
+
+ユーザーが所有するリソースにアクセスする際は、必ず所有者確認を実装する：
+
+```typescript
+// Service層での所有者確認実装例
+async getProgramGenerationHistory(userId: string, request: GetDashboardProgramGenerationHistoryRequestDto) {
+  // 1. ユーザー存在確認
+  await this.validateUserExists(userId);
+
+  // 2. リソース所有者確認（feedIdが指定された場合）
+  if (request.feedId) {
+    const feed = await this.personalizedFeedsRepository.findById(request.feedId);
+    if (!feed || feed.userId !== userId) {
+      throw new NotFoundException('指定されたフィードが見つかりません');
+    }
+  }
+
+  // 3. データ取得処理
+  // ...
+}
+```
+
+#### 情報漏洩防止
+
+エラーメッセージからリソースの存在有無を推測できないよう統一する：
+
+```typescript
+// ❌ 悪い例：リソース存在有無が推測可能
+if (!feed) {
+  throw new NotFoundException('フィードが存在しません');
+}
+if (feed.userId !== userId) {
+  throw new ForbiddenException('このフィードにアクセスする権限がありません');
+}
+
+// ✅ 良い例：統一されたエラーメッセージ
+if (!feed || feed.userId !== userId) {
+  throw new NotFoundException('指定されたフィードが見つかりません');
+}
+```
+
+### 段階的アクセス制御
+
+リソースの状態に応じた段階的なアクセス制御を実装する：
+
+```typescript
+// 非アクティブリソースの制御例
+async getPersonalizedProgramDetail(userId: string, programId: string) {
+  const program = await this.repository.findByIdWithFeed(programId);
+
+  // 所有者確認
+  if (!program || program.feed.userId !== userId) {
+    throw new NotFoundException('指定された番組が見つかりません');
+  }
+
+  // 非アクティブフィードの番組詳細アクセス制限
+  if (!program.feed.isActive) {
+    throw new ForbiddenException('非アクティブなフィードの番組詳細にはアクセスできません');
+  }
+
+  return program;
+}
+```
+
+## DTO設計ガイドライン
+
+### ネスト構造による一貫性
+
+関連データは適切にネスト構造で表現し、フロントエンドでの使いやすさを考慮する：
+
+```typescript
+// ✅ 推奨：ネスト構造
+export class ProgramGenerationHistoryDto {
+  id: string;
+  executedAt: Date;
+  status: string;
+  reason: string | null;
+  articlesCount: number;
+
+  feed: {
+    id: string;
+    name: string;
+  };
+
+  program: {
+    id: string;
+    title: string;
+    expiresAt: Date;
+    isExpired: boolean;
+  } | null;
+}
+
+// ❌ 非推奨：フラット構造
+export class ProgramGenerationHistoryDto {
+  id: string;
+  executedAt: Date;
+  status: string;
+  reason: string | null;
+  articlesCount: number;
+  feedId: string;
+  feedName: string;
+  programId: string | null;
+  programTitle: string | null;
+  programExpiresAt: Date | null;
+  programIsExpired: boolean | null;
+}
+```
+
+### 時間経過による状態変化への対応
+
+時間経過により状態が変化するリソースは、現在の状態を含める：
+
+```typescript
+export class ProgramDto {
+  id: string;
+  title: string;
+  expiresAt: Date;
+  isExpired: boolean; // 現在時刻での期限切れ状態
+}
+```
+
+### レスポンス構造の標準化
+
+ページネーション対応APIのレスポンス構造を統一する：
+
+```typescript
+export class GetDashboardProgramGenerationHistoryResponseDto {
+  history: ProgramGenerationHistoryDto[];
+  totalCount: number;
+  limit: number;
+  offset: number;
+  hasNext: boolean;
+}
+```
