@@ -528,6 +528,8 @@ export class DashboardService {
             ? {
                 id: attempt.program.id,
                 title: attempt.program.title,
+                expiresAt: attempt.program.expiresAt,
+                isExpired: attempt.program.isExpired,
               }
             : null,
         }),

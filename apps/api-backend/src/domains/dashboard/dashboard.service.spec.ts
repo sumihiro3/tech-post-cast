@@ -1087,6 +1087,8 @@ describe('DashboardService', () => {
             program: {
               id: 'program-1',
               title: 'テスト番組1',
+              expiresAt: new Date('2024-02-01'),
+              isExpired: false,
             },
           },
           {
@@ -1121,6 +1123,8 @@ describe('DashboardService', () => {
       expect(result.history[0].program).toEqual({
         id: 'program-1',
         title: 'テスト番組1',
+        expiresAt: new Date('2024-02-01'),
+        isExpired: false,
       });
       expect(result.history[1].id).toBe('attempt-2');
       expect(result.history[1].status).toBe('FAILED');
@@ -1175,6 +1179,8 @@ describe('DashboardService', () => {
             program: {
               id: 'program-1',
               title: 'テスト番組1',
+              expiresAt: new Date('2024-02-01'),
+              isExpired: false,
             },
           },
         ],
@@ -1259,6 +1265,8 @@ describe('DashboardService', () => {
             program: {
               id: 'program-1',
               title: 'テスト番組1',
+              expiresAt: new Date('2024-02-01'),
+              isExpired: false,
             },
           },
           {
@@ -1275,6 +1283,8 @@ describe('DashboardService', () => {
             program: {
               id: 'program-2',
               title: 'テスト番組2',
+              expiresAt: new Date('2024-02-02'),
+              isExpired: false,
             },
           },
           {
@@ -1317,6 +1327,8 @@ describe('DashboardService', () => {
             program: {
               id: 'program-5',
               title: 'テスト番組5',
+              expiresAt: new Date('2024-02-05'),
+              isExpired: false,
             },
           },
         ],

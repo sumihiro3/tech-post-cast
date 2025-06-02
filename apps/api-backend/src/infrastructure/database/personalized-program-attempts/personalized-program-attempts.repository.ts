@@ -241,6 +241,8 @@ export class PersonalizedProgramAttemptsRepository
             select: {
               id: true,
               title: true,
+              expiresAt: true,
+              isExpired: true,
             },
           },
         },

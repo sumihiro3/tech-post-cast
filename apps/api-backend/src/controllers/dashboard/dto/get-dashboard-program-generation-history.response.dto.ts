@@ -50,12 +50,16 @@ export class ProgramGenerationHistoryDto {
     example: {
       id: 'program_123',
       title: 'React最新情報 - 2025年3月25日',
+      expiresAt: '2025-04-01T23:59:59Z',
+      isExpired: false,
     },
     nullable: true,
   })
   program: {
     id: string;
     title: string;
+    expiresAt: Date | null;
+    isExpired: boolean;
   } | null;
 }
 

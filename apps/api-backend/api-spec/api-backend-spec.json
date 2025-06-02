@@ -1082,6 +1082,69 @@
         ]
       }
     },
+    "/dashboard/program-generation-history": {
+      "get": {
+        "description": "ダッシュボード表示用の番組生成履歴一覧を取得します。フィードIDでフィルタリング可能です。",
+        "operationId": "getDashboardProgramGenerationHistory",
+        "parameters": [
+          {
+            "name": "feedId",
+            "required": false,
+            "in": "query",
+            "description": "フィードID（指定した場合、そのフィードの履歴のみを取得）",
+            "schema": {
+              "example": "feed_123",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "取得件数（デフォルト: 20, 最大: 100）",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "example": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "description": "オフセット（デフォルト: 0）",
+            "schema": {
+              "minimum": 0,
+              "example": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "番組生成履歴一覧",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetDashboardProgramGenerationHistoryResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ユーザーが見つかりません"
+          },
+          "500": {
+            "description": "サーバーエラー"
+          }
+        },
+        "summary": "ダッシュボード用番組生成履歴取得",
+        "tags": [
+          "Dashboard"
+        ]
+      }
+    },
     "/user-settings": {
       "get": {
         "description": "認証ユーザーのユーザー設定（表示名、Slack通知設定など）を取得します。",
@@ -2917,6 +2980,110 @@
           "isExpired",
           "createdAt",
           "updatedAt"
+        ]
+      },
+      "ProgramGenerationHistoryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "試行履歴ID",
+            "example": "attempt_123"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "実行日時",
+            "example": "2025-03-25T10:00:00Z"
+          },
+          "feed": {
+            "type": "object",
+            "description": "フィード情報",
+            "example": {
+              "id": "feed_123",
+              "name": "Nuxt関連記事フィード"
+            }
+          },
+          "status": {
+            "type": "string",
+            "description": "実行ステータス",
+            "example": "SUCCESS",
+            "enum": [
+              "SUCCESS",
+              "SKIPPED",
+              "FAILED"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "description": "失敗・スキップの理由",
+            "example": "記事が不足しています",
+            "nullable": true
+          },
+          "postCount": {
+            "type": "number",
+            "description": "対象記事数",
+            "example": 5
+          },
+          "program": {
+            "type": "object",
+            "description": "生成された番組情報",
+            "example": {
+              "id": "program_123",
+              "title": "React最新情報 - 2025年3月25日",
+              "expiresAt": "2025-04-01T23:59:59Z",
+              "isExpired": false
+            },
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "feed",
+          "status",
+          "reason",
+          "postCount",
+          "program"
+        ]
+      },
+      "GetDashboardProgramGenerationHistoryResponseDto": {
+        "type": "object",
+        "properties": {
+          "history": {
+            "description": "番組生成履歴一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProgramGenerationHistoryDto"
+            }
+          },
+          "totalCount": {
+            "type": "number",
+            "description": "総件数",
+            "example": 50
+          },
+          "limit": {
+            "type": "number",
+            "description": "取得件数",
+            "example": 20
+          },
+          "offset": {
+            "type": "number",
+            "description": "オフセット",
+            "example": 0
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "次のページが存在するか",
+            "example": true
+          }
+        },
+        "required": [
+          "history",
+          "totalCount",
+          "limit",
+          "offset",
+          "hasNext"
         ]
       },
       "GetUserSettingsResponseDto": {

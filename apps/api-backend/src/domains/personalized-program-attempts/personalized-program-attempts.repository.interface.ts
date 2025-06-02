@@ -53,6 +53,10 @@ export interface PersonalizedProgramAttemptWithRelations {
     id: string;
     /** 番組のタイトル */
     title: string;
+    /** 番組の有効期限日時（設定されていない場合はnull） */
+    expiresAt: Date | null;
+    /** 番組の有効期限切れフラグ */
+    isExpired: boolean;
   } | null;
 }
 

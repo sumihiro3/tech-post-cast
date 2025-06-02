@@ -323,6 +323,8 @@ describe('DashboardController', () => {
             program: {
               id: 'program-1',
               title: 'テスト番組1',
+              expiresAt: new Date('2024-02-01'),
+              isExpired: false,
             },
           },
           {
@@ -382,6 +384,8 @@ describe('DashboardController', () => {
             program: {
               id: 'program-1',
               title: 'テスト番組1',
+              expiresAt: new Date('2024-02-01'),
+              isExpired: false,
             },
           },
         ],
