@@ -7,7 +7,8 @@ div(v-if='result && result.target')
       ContentHeadlineTopicProgram(
         :key='result.target.id',
         :program='result.target',
-        :showScript='true'
+        :showScript='true',
+        :showDetailButton='false'
       )
       a(:href='`/headline-topic-programs/embed/${result.target.id}`' style="display: none;")
         | {{ result.target.title }}
@@ -26,7 +27,7 @@ div(v-if='result && result.target')
         ContentHeadlineTopicProgramSmall(v-for="program in result.similar", :key='program.id', :program='program')
       v-col(cols='0', sm='2').ma-0.pa-0
   //- 前後の番組
-  div().pa-0.ma-0
+  div(v-if="result.previous || result.next").pa-0.ma-0
     v-row(align='center')
       v-col(cols='0', sm='2').mb-0.pb-0
       v-col(cols='12', sm='8').mb-0.pb-0
@@ -40,11 +41,11 @@ div(v-if='result && result.target')
           v-col(cols='1').mb-0.pb-0
             v-icon(v-if="result.next" color='primary', size='64' icon="mdi-chevron-left").pr-12.pb-4
           v-col(cols='11').mb-0.pb-0
-            ContentHeadlineTopicProgramSmall(v-if="result.next" :key='result.next?.id', :program='result.next')
+            ContentHeadlineTopicProgramSmall(v-if="result.next" :key='result.next.id', :program='result.next')
       v-col(cols='12', sm='4').mb-0.pb-0
         v-row.d-flex.align-center.justify-center.fill-height
           v-col(cols='11').mb-0.pb-0
-            ContentHeadlineTopicProgramSmall(v-if="result.previous" :key='result.previous?.id', :program='result.previous')
+            ContentHeadlineTopicProgramSmall(v-if="result.previous" :key='result.previous.id', :program='result.previous')
           v-col(cols='1').mb-0.pb-0
             v-icon(v-if="result.previous" color='primary', size='64' icon="mdi-chevron-right").pr-12.pb-4
       v-col(cols='0', sm='2').mb-0.pb-0
@@ -65,9 +66,8 @@ const { data: result } = await useAsyncData<HeadlineTopicProgramWithSimilarAndNe
     try {
       // 指定されたIDの番組情報と、前後の日付の番組情報を取得
       const dto = await useGetHeadlineTopicProgramWithSimilarAndNeighbors(app, programId);
-      return { target: dto.target, similar: dto.similar, previous: dto.previous, next: dto.next };
-    }
-    catch (error) {
+      return dto;
+    } catch (error) {
       console.error(`番組 [${programId}] の取得に失敗しました。`, error);
       if (error instanceof Error) {
         console.error(error.message, error.stack);
@@ -99,11 +99,13 @@ useSeoMeta({
 // oEmbed 用のリンクを設定
 const siteUrl = app.$config.public.lpUrl;
 useHead({
-  link: [{
-    rel: 'alternate',
-    type: 'application/json+oembed',
-    href: `${siteUrl}/oembed/headline-topic-programs/${programId}.json`,
-    title: `${title}`,
-  }],
+  link: [
+    {
+      rel: 'alternate',
+      type: 'application/json+oembed',
+      href: `${siteUrl}/oembed/headline-topic-programs/${programId}.json`,
+      title: `${title}`,
+    },
+  ],
 });
 </script>

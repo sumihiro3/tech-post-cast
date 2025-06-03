@@ -84,6 +84,11 @@ const specialThanks = [
     icon: 'mdi-music-box',
     link: 'https://musmus.main.jp',
   },
+  {
+    title: 'BGM：OtoLogic(CC BY 4.0)',
+    icon: 'mdi-music-box-outline',
+    link: 'https://otologic.jp',
+  },
 ];
 </script>
 

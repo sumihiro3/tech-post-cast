@@ -147,9 +147,9 @@ export class HeadlineTopicProgramChapterDto {
 }
 
 /**
- * Qiita の記事を表すDTO
+ * ヘッドライントピック番組で紹介するQiita記事を表すDTO
  */
-export class QiitaPostDto {
+export class HeadlineTopicProgramPostDto {
   /**
    * Qiita 記事ID
    */
@@ -310,10 +310,10 @@ export class HeadlineTopicProgramDto {
   @ApiProperty({
     description: '紹介している投稿の一覧',
     required: true,
-    type: [QiitaPostDto],
+    type: [HeadlineTopicProgramPostDto],
   })
   @IsObject()
-  posts: QiitaPostDto[];
+  posts: HeadlineTopicProgramPostDto[];
 
   /**
    * HeadlineTopicProgramWithQiitaPosts から生成する
@@ -357,7 +357,7 @@ export class HeadlineTopicProgramDto {
     });
     // Qiita 記事
     dto.posts = entity.posts.map((p) => {
-      const post = new QiitaPostDto();
+      const post = new HeadlineTopicProgramPostDto();
       post.id = p.id;
       post.title = p.title;
       post.url = p.url;
@@ -397,11 +397,12 @@ export class HeadlineTopicProgramWithSimilarAndNeighborsDto {
 
   @ApiProperty({
     description: '前日のヘッドライントピック番組',
-    required: true,
+    required: false,
     type: HeadlineTopicProgramDto,
   })
   @IsObject()
-  previous: HeadlineTopicProgramDto;
+  @IsOptional()
+  previous?: HeadlineTopicProgramDto | null;
 
   @ApiProperty({
     description: '指定のヘッドライントピック番組',
@@ -413,11 +414,12 @@ export class HeadlineTopicProgramWithSimilarAndNeighborsDto {
 
   @ApiProperty({
     description: '翌日のヘッドライントピック番組',
-    required: true,
+    required: false,
     type: HeadlineTopicProgramDto,
   })
   @IsObject()
-  next: HeadlineTopicProgramDto;
+  @IsOptional()
+  next?: HeadlineTopicProgramDto | null;
 
   /**
    * HeadlineTopicProgramWithNeighbors から生成する

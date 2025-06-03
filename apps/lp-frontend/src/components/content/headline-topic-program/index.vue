@@ -77,6 +77,20 @@ v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-white(flat, rounded='lg')
         :class='{ "active-chapter-script": currentChapterIndex === program.script.posts.length + 2 }'
       )
         | {{ program.script.ending }}
+
+  //- 番組詳細ページへのボタン（表示制御付き）
+  v-card-actions.pt-2.pb-2(v-if='showDetailButton')
+    v-spacer
+    v-btn(
+      :href='`/headline-topic-programs/${program.id}`'
+      color='primary'
+      variant='elevated'
+      size='default'
+      prepend-icon='mdi-play-circle-outline'
+      style='width: 50%;'
+    )
+      | 番組詳細を見る
+    v-spacer
 </template>
 
 <script lang="ts" setup>
@@ -89,6 +103,8 @@ interface Properties {
   showScript?: boolean;
   /** ページ初期表示のタブ */
   initialTab?: string;
+  /** 詳細ページへのボタンを表示するか */
+  showDetailButton?: boolean;
 }
 
 /** コンポーネントのプロパティ */
@@ -96,6 +112,7 @@ const props = withDefaults(defineProps<Properties>(), {
   showScript: false,
   initialTab: 'posts',
   autoPlay: false,
+  showDetailButton: true,
 });
 
 const { utcToJstDateString } = useDateUtil();
@@ -162,7 +179,8 @@ ol.chapter-list {
   list-style-position: outside;
   padding-left: 10px;
 }
-li.active-chapter, p.active-chapter-script {
+li.active-chapter,
+p.active-chapter-script {
   background-color: #edeeee;
   font-weight: bold;
 }

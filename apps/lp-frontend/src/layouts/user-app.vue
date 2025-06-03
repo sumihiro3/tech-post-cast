@@ -28,7 +28,7 @@
     v-main
       v-container(fluid :class="{'pl-0 pr-0': $vuetify.display.mdAndUp && drawer}")
         slot.ma-0.pa-0
-    Footer
+    Footer.mt-10
 </template>
 
 <script setup lang="ts">

@@ -729,10 +729,53 @@ export interface HeadlineTopicProgramDto {
     'updatedAt': string;
     /**
      * 紹介している投稿の一覧
-     * @type {Array<QiitaPostDto>}
+     * @type {Array<HeadlineTopicProgramPostDto>}
      * @memberof HeadlineTopicProgramDto
      */
-    'posts': Array<QiitaPostDto>;
+    'posts': Array<HeadlineTopicProgramPostDto>;
+}
+/**
+ * 
+ * @export
+ * @interface HeadlineTopicProgramPostDto
+ */
+export interface HeadlineTopicProgramPostDto {
+    /**
+     * Qiita 記事ID
+     * @type {string}
+     * @memberof HeadlineTopicProgramPostDto
+     */
+    'id': string;
+    /**
+     * タイトル
+     * @type {string}
+     * @memberof HeadlineTopicProgramPostDto
+     */
+    'title': string;
+    /**
+     * URL
+     * @type {string}
+     * @memberof HeadlineTopicProgramPostDto
+     */
+    'url': string;
+    /**
+     * 記事が作成された日時
+     * @type {string}
+     * @memberof HeadlineTopicProgramPostDto
+     */
+    'createdAt': string;
+    /**
+     * 記事投稿者のユーザ名
+     * @type {string}
+     * @memberof HeadlineTopicProgramPostDto
+     */
+    'authorName': string;
+    /**
+     * 記事投稿者のユーザID
+     * @type {string}
+     * @memberof HeadlineTopicProgramPostDto
+     */
+    'authorId': string;
 }
 /**
  * 
@@ -782,7 +825,7 @@ export interface HeadlineTopicProgramWithSimilarAndNeighborsDto {
      * @type {HeadlineTopicProgramDto}
      * @memberof HeadlineTopicProgramWithSimilarAndNeighborsDto
      */
-    'previous': HeadlineTopicProgramDto;
+    'previous'?: HeadlineTopicProgramDto;
     /**
      * 指定のヘッドライントピック番組
      * @type {HeadlineTopicProgramDto}
@@ -794,7 +837,7 @@ export interface HeadlineTopicProgramWithSimilarAndNeighborsDto {
      * @type {HeadlineTopicProgramDto}
      * @memberof HeadlineTopicProgramWithSimilarAndNeighborsDto
      */
-    'next': HeadlineTopicProgramDto;
+    'next'?: HeadlineTopicProgramDto;
 }
 /**
  * 
