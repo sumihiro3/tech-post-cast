@@ -4,7 +4,7 @@ v-app
     v-container.ma-0.pa-0(fluid)
       Header
       slot.ma-0.pa-0
-      Footer
+      Footer.mt-10
 </template>
 
 <script setup lang="ts">
