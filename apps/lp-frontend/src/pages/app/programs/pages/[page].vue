@@ -10,7 +10,8 @@ v-container(class="max-width-container")
     Pagination.mb-4(
       :currentPage='currentPage',
       :pages='pages || 0',
-      linkPrefix='/app/programs/pages'
+      linkPrefix='/app/programs/pages',
+      mode='ssr'
     )
 
     // プログラム一覧（幅広表示）
@@ -28,7 +29,8 @@ v-container(class="max-width-container")
     Pagination(
       :currentPage='currentPage',
       :pages='pages || 0',
-      linkPrefix='/app/programs/pages'
+      linkPrefix='/app/programs/pages',
+      mode='ssr'
     )
 </template>
 
