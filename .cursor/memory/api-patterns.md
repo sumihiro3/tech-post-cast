@@ -724,3 +724,155 @@ class DashboardService {
 - 統計情報は変更頻度が低いため、キャッシュ導入を検討
 - 大量データの場合は、事前計算とスナップショット保存を検討
 - 統計専用のインデックス設計を検討
+
+## Vue.js + Clerkでの認証トークン管理パターン (2024-12-19)
+
+### 背景と課題
+
+パーソナルプログラム一覧のAPIリクエストで401認証エラーが発生。Clerkの認証トークンがAPIリクエストに含まれていないことが原因。
+
+**技術的制約**
+
+- Vueのコンポーザブル（`useAuth()`）はsetup関数内でのみ使用可能
+- プラグインやコンポーザブル関数内では直接使用できない
+- `inject() can only be used inside setup() or functional components`エラーが発生
+
+### 検討したアプローチ
+
+1. **プラグインレベルでのaxiosインターセプター設定**
+
+   ```typescript
+   // 失敗例
+   axiosInstance.interceptors.request.use(async (config) => {
+     const { getToken } = useAuth(); // エラー: setup関数外での使用
+     const token = await getToken({ template: 'default' });
+     config.headers.Authorization = `Bearer ${token}`;
+     return config;
+   });
+   ```
+
+   - 利点: 全APIリクエストに自動適用
+   - 欠点: Vueのコンポーザブル制約により実装不可
+
+2. **認証ヘルパーコンポーザブルの作成**
+
+   ```typescript
+   // 失敗例
+   export const useAuthenticatedApi = () => {
+     const { getToken } = useAuth(); // エラー: setup関数外での使用
+     return { createAuthConfig };
+   };
+   ```
+
+   - 利点: 再利用可能な認証ロジック
+   - 欠点: 同様のVue制約により実装不可
+
+3. **コンポーネントレベルでの認証トークン取得（採用）**
+
+   ```typescript
+   // 成功例
+   // コンポーネント内
+   const { getToken } = useAuth();
+   const token = await getToken({ template: 'default' });
+
+   // コンポーザブルに渡す
+   const result = await useGetCurrentPagePersonalizedPrograms(app, page, token);
+   ```
+
+   - 利点: Vueの制約に準拠、シンプルで理解しやすい
+   - 欠点: 各コンポーネントで認証処理が必要
+
+### 決定事項と理由
+
+**採用したパターン**
+
+```typescript
+// コンポーザブル関数
+export const useGetPersonalizedPrograms = async (
+  app: NuxtApp,
+  page: number,
+  limit: number,
+  token: string | null, // 認証トークンをパラメータとして受け取る
+): Promise<PersonalizedProgramSummaryDto[]> => {
+  const { $dashboardApi } = app;
+  const dashboardApi = $dashboardApi as DashboardApi;
+
+  const response = await dashboardApi.getDashboardPersonalizedPrograms(limit, offset, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data.programs;
+};
+
+// コンポーネント内
+const { getToken } = useAuth();
+const token = await getToken({ template: 'default' });
+const programs = await useGetPersonalizedPrograms(app, page, limit, token);
+```
+
+**決定理由**
+
+1. **Vue.jsの制約への準拠**: setup関数内でのみコンポーザブルを使用
+2. **明示的な依存関係**: 認証が必要なAPIが明確
+3. **テスタビリティ**: トークンをパラメーターとして渡すことでテストが容易
+4. **エラーハンドリング**: 認証エラーをコンポーネントレベルで適切に処理可能
+
+### 学んだ教訓
+
+#### KEY INSIGHT: Vue.jsコンポーザブルの使用制約
+
+1. **setup関数の制約**
+   - `useAuth()`などのコンポーザブルはsetup関数内でのみ使用可能
+   - プラグインや他のコンポーザブル関数内では使用不可
+   - この制約を理解した設計が重要
+
+2. **認証トークンの取得タイミング**
+   - コンポーネントレベルでの取得がもっとも安全
+   - 必要な時点での取得により、トークンの有効性を確保
+
+3. **依存関係の明示化**
+   - 認証が必要なAPIを明示的に示すことで、コードの理解性向上
+   - デバッグ時の問題特定が容易
+
+#### ベストプラクティス
+
+1. **認証が必要なコンポーザブルの設計**
+
+   ```typescript
+   // 推奨パターン
+   export const useAuthenticatedApiCall = async (
+     token: string | null,
+     // その他のパラメータ
+   ) => {
+     // API呼び出し処理
+   };
+   ```
+
+2. **エラーハンドリング**
+
+   ```typescript
+   // コンポーネント内
+   try {
+     const token = await getToken({ template: 'default' });
+     if (!token) {
+       throw new Error('認証トークンの取得に失敗しました');
+     }
+     const result = await useAuthenticatedApiCall(token);
+   } catch (error) {
+     // 適切なエラー処理
+   }
+   ```
+
+3. **型安全性の確保**
+
+   ```typescript
+   // トークンの型を明示
+   token: string | null
+   ```
+
+### 関連タスク
+
+- TPC-117: パーソナルプログラム一覧でページングが機能しない
+- 認証が必要な他のAPIエンドポイントでの同様パターンの適用検討

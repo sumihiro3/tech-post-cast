@@ -232,6 +232,66 @@ describe('UsersRepository', () => {
 });
 ```
 
+### Repository インターフェイス分離の原則（必須）
+
+Repository パターンでは必ずインターフェイスを定義し、依存性逆転の原則を適用してください：
+
+```typescript
+// ドメイン層インターフェイス
+// src/domains/{domain-name}/{domain-name}.repository.interface.ts
+export interface I{DomainName}Repository {
+  findByUserId(userId: string, options: PaginationOptions): Promise<PaginatedResult>;
+  findById(id: string): Promise<{DomainName}WithDetails | null>;
+}
+
+// インフラ層実装
+// src/infrastructure/database/{domain-name}/{domain-name}.repository.ts
+@Injectable()
+export class {DomainName}Repository implements I{DomainName}Repository {
+  // 実装
+}
+
+// DI設定
+providers: [
+  {
+    provide: '{DomainName}Repository',
+    useClass: {DomainName}Repository,
+  },
+]
+```
+
+#### 設計理由
+
+1. **クリーンアーキテクチャの維持**: ドメイン層がインフラ層に依存しない設計
+2. **テスタビリティの向上**: モックオブジェクトの作成が容易
+3. **将来の拡張性**: データアクセス層の実装変更が容易
+4. **一貫性の確保**: プロジェクト全体でのアーキテクチャ統一
+
+#### 型定義の共有戦略
+
+複雑なPrisma型（リレーション含む）は`packages/database/src/types/`で統一管理してください：
+
+```typescript
+// packages/database/src/types/{domain-name}.ts
+import { Prisma } from '@prisma/client';
+
+const {domainName}WithDetailsValidator = Prisma.validator<Prisma.{DomainName}DefaultArgs>()({
+  include: {
+    relatedEntity: {
+      select: {
+        id: true,
+        name: true,
+        // bodyフィールドは除外（egress節約）
+      },
+    },
+  },
+});
+
+export type {DomainName}WithDetails = Prisma.{DomainName}GetPayload<
+  typeof {domainName}WithDetailsValidator
+>;
+```
+
 ## NestJS固有のガイドライン
 
 ### 基本原則
@@ -244,15 +304,15 @@ describe('UsersRepository', () => {
     - データ型用のmodelsフォルダー。
         - 入力用のclass-validatorでバリデーションされたDTO。
         - 出力用のシンプルな型の宣言。
-    - ビジネスロジックと永続化用のservicesモジュール。
-        - Prismaを使用したデータ永続化。
-            - `packages/database/prisma/schema.prisma`にデータモデルを定義。
-            - 各モデルに対応するRepositoryクラスを実装（命名規則：`{モデル名}Repository`）。
-            - ビジネスロジックはServiceクラスに実装（命名規則：`{モデル名}Service`）。
-            - トランザクション処理には`$transaction`を使用。
-            - リレーションの取得には`include`を使用。
-            - クエリの最適化には`select`を使用。
-        - エンティティごとに1つのRepositoryとService。
+        - ビジネスロジックと永続化用のservicesモジュール。
+            - Prismaを使用したデータ永続化。
+                - `packages/database/prisma/schema.prisma`にデータモデルを定義。
+                - 各モデルに対応するRepositoryクラスを実装（命名規則：`{モデル名}Repository`）。
+                - ビジネスロジックはServiceクラスに実装（命名規則：`{モデル名}Service`）。
+                - トランザクション処理には`$transaction`を使用。
+                - リレーションの取得には`include`を使用。
+                - クエリの最適化には`select`を使用。
+            - エンティティごとに1つのRepositoryとService。
 - NestJSアーティファクト用のcoreモジュール
     - 例外処理用のグローバルフィルター。
     - リクエスト管理用のグローバルミドルウェア。
@@ -261,133 +321,6 @@ describe('UsersRepository', () => {
 - モジュール間で共有されるサービス用のsharedモジュール。
     - ユーティリティ
     - 共有ビジネスロジック
-
-### Prismaの使用ガイドライン
-
-#### アーキテクチャ原則
-
-- **依存性逆転の原則**: Repositoryクラスは必ずインターフェイスを定義し、ドメイン層とインフラ層を分離する
-    - ドメイン層: `src/domains/{domain-name}/{domain-name}.repository.interface.ts` にインターフェイスを定義
-    - インフラ層: `src/infrastructure/database/{domain-name}/{domain-name}.repository.ts` に実装クラスを配置
-    - サービス層: インターフェイスに依存し、DIコンテナーで実装クラスを注入
-
-- **型定義の共有**: 複雑なPrisma型は`packages/database/src/types/`で定義し、アプリケーション間で共有する
-
-#### Repositoryインターフェイスの実装例
-
-```typescript
-// src/domains/users/users.repository.interface.ts
-export interface IUsersRepository {
-  findById(id: string): Promise<UserWithDetails | null>;
-  findByEmail(email: string): Promise<User | null>;
-  create(data: CreateUserParams): Promise<UserWithDetails>;
-  update(id: string, data: UpdateUserParams): Promise<UserWithDetails>;
-  delete(id: string): Promise<User>;
-}
-```
-
-```typescript
-// src/infrastructure/database/users/users.repository.ts
-import { IUsersRepository } from '@/domains/users/users.repository.interface';
-
-@Injectable()
-export class UsersRepository implements IUsersRepository {
-  constructor(private prisma: PrismaService) {}
-
-  async findById(id: string): Promise<UserWithDetails | null> {
-    return this.prisma.client.user.findUnique({
-      where: { id },
-      include: { posts: true },
-    });
-  }
-  // ... 他のメソッド実装
-}
-```
-
-```typescript
-// src/domains/users/users.service.ts
-@Injectable()
-export class UsersService {
-  constructor(
-    @Inject('UsersRepository')
-    private readonly usersRepository: IUsersRepository,
-  ) {}
-  // ... サービス実装
-}
-```
-
-```typescript
-// src/controllers/users/users.module.ts
-@Module({
-  controllers: [UsersController],
-  providers: [
-    UsersService,
-    {
-      provide: 'UsersRepository',
-      useClass: UsersRepository,
-    },
-  ],
-})
-export class UsersModule {}
-```
-
-- スキーマ定義
-
-  ```prisma
-  // packages/database/prisma/schema.prisma
-  model User {
-    id        String   @id @default(uuid())
-    email     String   @unique
-    name      String
-    posts     Post[]
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-  }
-  ```
-
-- Repositoryの実装例
-
-  ```typescript
-  // src/users/repositories/user.repository.ts
-  @Injectable()
-  export class UserRepository {
-    constructor(private prisma: PrismaService) {}
-
-    async findById(id: string) {
-      return this.prisma.client.user.findUnique({
-        where: { id },
-        include: { posts: true },
-      });
-    }
-
-    async findByEmail(email: string) {
-      return this.prisma.client.user.findUnique({
-        where: { email },
-      });
-    }
-
-    async create(data: CreateUserDto) {
-      return this.prisma.client.user.create({
-        data,
-        include: { posts: true },
-      });
-    }
-
-    async update(id: string, data: UpdateUserDto) {
-      return this.prisma.client.user.update({
-        where: { id },
-        data,
-        include: { posts: true },
-      });
-    }
-
-    async delete(id: string) {
-      return this.prisma.client.user.delete({
-        where: { id },
-      });
-    }
-  }
-  ```
 
 ## API定義と自動生成コードに関するガイドライン
 
@@ -561,15 +494,7 @@ async getProgramGenerationHistory(userId: string, request: GetDashboardProgramGe
 エラーメッセージからリソースの存在有無を推測できないよう統一する：
 
 ```typescript
-// ❌ 悪い例：リソース存在有無が推測可能
-if (!feed) {
-  throw new NotFoundException('フィードが存在しません');
-}
-if (feed.userId !== userId) {
-  throw new ForbiddenException('このフィードにアクセスする権限がありません');
-}
-
-// ✅ 良い例：統一されたエラーメッセージ
+// ✅ 推奨: 統一されたエラーメッセージ
 if (!feed || feed.userId !== userId) {
   throw new NotFoundException('指定されたフィードが見つかりません');
 }
@@ -668,3 +593,97 @@ export class GetDashboardProgramGenerationHistoryResponseDto {
   hasNext: boolean;
 }
 ```
+
+## API設計パターン
+
+### ダッシュボードAPI設計パターン
+
+ダッシュボード表示用APIでは、用途別に最適化された専用APIを設計してください：
+
+#### 1. 概要情報API（集約型）
+
+```typescript
+// GET /dashboard/{domain-name}/summary
+export class GetDashboard{DomainName}SummaryResponseDto {
+  activeItemsCount: number;        // アクティブアイテム数
+  totalItemsCount: number;         // 総アイテム数
+  recentItems: {DomainName}SummaryDto[]; // 最新5件
+  totalFiltersCount: number;       // 総フィルター数
+}
+```
+
+**設計理念**: ダッシュボード表示に必要な概要情報を1回のAPI呼び出しで取得
+
+#### 2. 一覧取得API（ページネーション型）
+
+```typescript
+// GET /dashboard/{domain-name}
+export class GetDashboard{DomainName}ResponseDto {
+  items: {DomainName}SummaryDto[];
+  totalCount: number;
+  limit: number;
+  offset: number;
+  hasNext: boolean;
+}
+```
+
+**設計理念**: 大量データの効率的な取得とフロントエンドでの段階的表示
+
+#### パフォーマンス最適化
+
+```typescript
+// 大きなページサイズで全件取得（概要情報用）
+const itemsResult = await this.repository.findByUserIdWithFilters(
+  userId,
+  1,
+  1000, // 大きなページサイズ
+);
+
+// 必要なフィールドのみ選択（egress節約）
+relatedEntity: {
+  select: {
+    id: true,
+    title: true,
+    // bodyフィールドは除外
+  },
+},
+```
+
+### 統計情報API設計パターン
+
+統計情報は通常の業務ロジックとは異なる要件を持つため、専用メソッドを作成してください：
+
+#### 統計専用メソッドの分離
+
+```typescript
+// リポジトリインターフェース
+interface I{DomainName}Repository {
+  // 通常の業務用途（有効期限チェックあり）
+  findByUserIdWithPagination(userId: string, options: PaginationOptions): Promise<{DomainName}Result>;
+
+  // 統計用途（有効期限チェックなし）
+  findAllByUserIdForStats(userId: string, options: PaginationOptions): Promise<{DomainName}Result>;
+}
+
+// サービス層での使い分け
+class DashboardService {
+  async getDashboardStats(userId: string) {
+    // 統計専用メソッドを使用
+    const allItems = await this.repository.findAllByUserIdForStats(userId, options);
+    // 統計計算ロジック
+  }
+}
+```
+
+#### 設計理由
+
+1. **単一責任の原則**: 統計用途と業務用途でクエリ条件が異なる
+2. **保守性**: 既存メソッドの変更リスクを回避
+3. **可読性**: メソッド名で用途が明確
+4. **テスタビリティ**: 独立したテストケースで検証可能
+
+#### 統計情報の考慮事項
+
+- 表示文言の変更でも、ビジネスロジックへの影響を事前に確認
+- 統計情報は変更頻度が低いため、キャッシュ導入を検討
+- 大量データの場合は、事前計算とスナップショット保存を検討

@@ -9,6 +9,16 @@ Tech Post Cast LPフロントエンド実装ルール
 Nuxt 3 + Vuetify + TypeScript で実装してください
 Nuxt設定はnuxt.config.tsに集約し、不要な設定は追加しないでください
 
+### SSR/SSG混在環境でのレンダリング戦略
+
+Tech Post CastではSSRとSSGが混在するハイブリッドレンダリング環境を採用しています：
+
+- **パブリックページ（LP、コンテンツページ）**: SSG（SEO最適化）
+- **アプリケーションページ（/app/**）**: SPA（インタラクティブ性）
+- **認証ページ**: SPA（セキュリティ）
+
+`nuxt.config.ts`の`routeRules`で明示的に設定し、各ページタイプに最適化されたレンダリング戦略を使用してください。
+
 ## コンポーネント設計
 
 ### 基本原則
@@ -20,6 +30,53 @@ Nuxt設定はnuxt.config.tsに集約し、不要な設定は追加しないで�
 - テンプレートはPugを使用してください
 - スタイルはSCSSまたはCSSを使用してください
 - Props、Emits、Ref等の型は明示的に指定してください
+
+### SSR/SSG混在環境でのコンポーネント設計
+
+画面遷移を含むコンポーネントは、SSRとSSGの両方に対応できるよう設計してください：
+
+```vue
+<!-- 推奨パターン: レンダリングモード対応 -->
+<template lang="pug">
+nav(v-if='props.pages > 1')
+  ul.pagination
+    // SSRモードの場合
+    template(v-if='props.mode === "ssr"')
+      li
+        button(@click='navigateToPage(page)')
+          | {{ page }}
+
+    // SSGモードの場合（既存の実装）
+    template(v-else)
+      li
+        a(:href='`${props.linkPrefix}/${page}`')
+          | {{ page }}
+</template>
+
+<script setup lang="ts">
+const props = defineProps<{
+  currentPage: number;
+  pages: number;
+  linkPrefix: string;
+  mode?: 'ssr' | 'ssg'; // デフォルトはSSG（後方互換性）
+}>();
+
+const navigateToPage = (page: number): void => {
+  if (props.mode === 'ssr') {
+    navigateTo(`${props.linkPrefix}/${page}`);
+  }
+};
+</script>
+```
+
+#### 設計ガイドライン
+
+1. **モード切り替えパターン**: `mode`プロパティで動作を明示的に制御
+2. **画面遷移方式の使い分け**:
+   - SSG: `href`による従来のHTML遷移
+   - SSR: `navigateTo()`によるSPA的遷移
+3. **後方互換性**: デフォルト値で既存機能への影響を最小化
+4. **明確な責任分離**: テンプレート内での条件分岐により、異なるレンダリングモードに対応
 
 ### 共通コンポーネントの配置と命名規則
 
@@ -110,12 +167,110 @@ const progress = useProgress();
 - 自動生成されたコードは直接編集せず、必要に応じてラッパーを作成してください
 - APIクライアントの初期化と認証トークンの設定はプラグインで行ってください
 
-### エラーハンドリング
+### Vue.js + Clerkでの認証トークン管理
 
-- **詳細なエラー情報**: HTTPステータス、サーバーエラーメッセージを含む詳細な情報を表示してください
-- **ユーザーフレンドリー**: 技術的なエラーメッセージをユーザーが理解しやすい形に変換してください
-- **自動クリア**: 成功時にエラーメッセージを自動的にクリアしてください
-- **エラー状態管理**: composablesでエラー状態を適切に管理してください
+Clerkコンポーザブルには重要な使用制約があります：
+
+#### 制約事項
+
+- `useAuth()`などのClerkコンポーザブルはsetup関数内でのみ使用可能
+- プラグインや他のコンポーザブル関数内では直接使用できません
+- `inject() can only be used inside setup() or functional components`エラーが発生
+
+#### 推奨パターン
+
+認証が必要なAPIコールでは、コンポーネントレベルでトークンを取得し、パラメーターとして渡してください：
+
+```typescript
+// ✅ 推奨パターン: コンポーネントレベルでの認証トークン取得
+// コンポーネント内
+const { getToken } = useAuth();
+const token = await getToken({ template: 'default' });
+
+// コンポーザブルに渡す
+const result = await useAuthenticatedApiCall(app, token, otherParams);
+
+// ❌ 非推奨パターン（エラーになる）
+export const useAuthenticatedApi = () => {
+  const { getToken } = useAuth(); // エラー: setup関数外での使用
+};
+```
+
+#### コンポーザブル設計パターン
+
+```typescript
+// 認証が必要なコンポーザブルの設計
+export const useGetPersonalizedPrograms = async (
+  app: NuxtApp,
+  page: number,
+  limit: number,
+  token: string | null, // 認証トークンをパラメーターとして受け取る
+): Promise<PersonalizedProgramSummaryDto[]> => {
+  const { $dashboardApi } = app;
+  const dashboardApi = $dashboardApi as DashboardApi;
+
+  const response = await dashboardApi.getDashboardPersonalizedPrograms(limit, offset, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data.programs;
+};
+```
+
+#### 利点
+
+1. **Vue.jsの制約への準拠**: setup関数内でのみコンポーザブルを使用
+2. **明示的な依存関係**: 認証が必要なAPIが明確
+3. **テスタビリティ**: トークンをパラメーターとして渡すことでテストが容易
+4. **エラーハンドリング**: 認証エラーをコンポーネントレベルで適切に処理可能
+
+### エラーハンドリング強化
+
+APIエラー時は段階的に情報を抽出し、ユーザーフレンドリーなメッセージを表示してください：
+
+```typescript
+// 推奨パターン: 段階的エラー情報抽出
+const getErrorMessage = (err: any): string => {
+  // 1. サーバーからの詳細メッセージ
+  if (err.response?.data?.message) {
+    return `エラー: ${err.response.data.message}`;
+  }
+
+  // 2. HTTPステータスコード
+  if (err.response?.status) {
+    return `HTTPエラー ${err.response.status}: ${err.message}`;
+  }
+
+  // 3. 汎用エラーメッセージ
+  return `エラーが発生しました: ${err.message}`;
+};
+
+// 使用例
+try {
+  await apiCall();
+} catch (err) {
+  const userMessage = getErrorMessage(err);
+  ui.showError(userMessage);
+
+  // 開発者向けの詳細ログ
+  console.error('API Error Details:', err);
+}
+```
+
+#### エラーハンドリングのベストプラクティス
+
+1. **ユーザビリティとデバッグの両立**:
+   - ユーザー向け: 理解しやすいメッセージを表示
+   - 開発者向け: `console.error`で詳細なログを出力
+
+2. **情報の階層化**:
+   - 第1優先: `response.data.message`（サーバーからの詳細メッセージ）
+   - 第2優先: `response.status`（HTTPステータスコード）
+   - 第3優先: `err.message`（汎用エラーメッセージ）
+
+3. **型安全なエラーハンドリング**: TypeScriptでのエラーオブジェクト型チェック
 
 ### APIクライアント更新
 
