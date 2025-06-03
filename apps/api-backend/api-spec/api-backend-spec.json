@@ -1391,6 +1391,290 @@
           "endTime"
         ]
       },
+      "HeadlineTopicProgramPostDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Qiita 記事ID",
+            "example": "sample-post-id"
+          },
+          "title": {
+            "type": "string",
+            "description": "タイトル",
+            "example": "タイトル"
+          },
+          "url": {
+            "type": "string",
+            "description": "URL",
+            "example": "https://example.com"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "記事が作成された日時",
+            "example": "2021-01-01T00:00:00Z"
+          },
+          "authorName": {
+            "type": "string",
+            "description": "記事投稿者のユーザ名",
+            "example": "user-name"
+          },
+          "authorId": {
+            "type": "string",
+            "description": "記事投稿者のユーザID",
+            "example": "user-id"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "url",
+          "createdAt",
+          "authorName",
+          "authorId"
+        ]
+      },
+      "HeadlineTopicProgramDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "番組ID",
+            "example": "sample-program-id"
+          },
+          "title": {
+            "type": "string",
+            "description": "タイトル",
+            "example": "サンプル番組"
+          },
+          "script": {
+            "description": "台本",
+            "example": "番組の台本",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HeadlineTopicProgramScriptDto"
+              }
+            ]
+          },
+          "chapters": {
+            "description": "ヘッドライントピック番組のチャプター一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HeadlineTopicProgramChapterDto"
+            }
+          },
+          "audioUrl": {
+            "type": "string",
+            "description": "ヘッドライントピックの音声ファイルURL",
+            "example": "https://example.com/sample.mp3"
+          },
+          "audioDuration": {
+            "type": "number",
+            "description": "音声ファイルの長さ（ミリ秒）",
+            "example": 1000
+          },
+          "videoUrl": {
+            "type": "string",
+            "description": "ヘッドライントピックの動画ファイルURL",
+            "example": "https://example.com/sample.mp4"
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "画像URL",
+            "example": "https://example.com/sample.jpg"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "今日のヘッドライントピックが作成された日時",
+            "example": "2021-01-01T00:00:00Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "最終更新日時",
+            "example": "2021-01-01T00:00:00Z"
+          },
+          "posts": {
+            "description": "紹介している投稿の一覧",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HeadlineTopicProgramPostDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "script",
+          "chapters",
+          "audioUrl",
+          "audioDuration",
+          "createdAt",
+          "updatedAt",
+          "posts"
+        ]
+      },
+      "HeadlineTopicProgramWithSimilarAndNeighborsDto": {
+        "type": "object",
+        "properties": {
+          "similar": {
+            "description": "類似のヘッドライントピック番組",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HeadlineTopicProgramDto"
+            }
+          },
+          "previous": {
+            "description": "前日のヘッドライントピック番組",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HeadlineTopicProgramDto"
+              }
+            ]
+          },
+          "target": {
+            "description": "指定のヘッドライントピック番組",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HeadlineTopicProgramDto"
+              }
+            ]
+          },
+          "next": {
+            "description": "翌日のヘッドライントピック番組",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HeadlineTopicProgramDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "similar",
+          "target"
+        ]
+      },
+      "QiitaUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ユーザーの一意なID",
+            "example": "sumihiro3"
+          },
+          "description": {
+            "type": "string",
+            "description": "自己紹介文",
+            "example": "フロントエンド開発者です"
+          },
+          "name": {
+            "type": "string",
+            "description": "ユーザー名",
+            "example": "住廣 陸"
+          },
+          "profile_image_url": {
+            "type": "string",
+            "description": "設定しているプロフィール画像のURL",
+            "example": "https://qiita-image-store.s3.amazonaws.com/0/12345/profile-xxxx.png"
+          },
+          "facebook_id": {
+            "type": "string",
+            "description": "FacebookのID",
+            "example": "facebook123"
+          },
+          "followees_count": {
+            "type": "number",
+            "description": "フォローしているユーザー数",
+            "example": 150
+          },
+          "followers_count": {
+            "type": "number",
+            "description": "フォロワー数",
+            "example": 200
+          },
+          "github_login_name": {
+            "type": "string",
+            "description": "GitHubのログイン名",
+            "example": "sumihiro3"
+          },
+          "items_count": {
+            "type": "number",
+            "description": "投稿した記事数",
+            "example": 42
+          },
+          "linkedin_id": {
+            "type": "string",
+            "description": "LinkedInのID",
+            "example": "linkedin123"
+          },
+          "location": {
+            "type": "string",
+            "description": "居住地",
+            "example": "東京"
+          },
+          "organization": {
+            "type": "string",
+            "description": "所属組織",
+            "example": "テック株式会社"
+          },
+          "permanent_id": {
+            "type": "number",
+            "description": "永続的なID",
+            "example": 123456
+          },
+          "team_only": {
+            "type": "boolean",
+            "description": "チーム限定かどうか",
+            "example": false
+          },
+          "twitter_screen_name": {
+            "type": "string",
+            "description": "Twitterのスクリーン名",
+            "example": "sumihiro3"
+          },
+          "website_url": {
+            "type": "string",
+            "description": "ウェブサイトURL",
+            "example": "https://example.com"
+          }
+        },
+        "required": [
+          "id",
+          "profile_image_url",
+          "followees_count",
+          "followers_count",
+          "items_count",
+          "permanent_id",
+          "team_only"
+        ]
+      },
+      "QiitaTagDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "タグ名",
+            "example": "JavaScript"
+          },
+          "versions": {
+            "description": "バージョン情報",
+            "example": [
+              "0.1",
+              "1.0"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "versions"
+        ]
+      },
       "QiitaPostDto": {
         "type": "object",
         "properties": {
@@ -1516,129 +1800,6 @@
           "likes_count",
           "stocks_count",
           "tags"
-        ]
-      },
-      "HeadlineTopicProgramDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "番組ID",
-            "example": "sample-program-id"
-          },
-          "title": {
-            "type": "string",
-            "description": "タイトル",
-            "example": "サンプル番組"
-          },
-          "script": {
-            "description": "台本",
-            "example": "番組の台本",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/HeadlineTopicProgramScriptDto"
-              }
-            ]
-          },
-          "chapters": {
-            "description": "ヘッドライントピック番組のチャプター一覧",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HeadlineTopicProgramChapterDto"
-            }
-          },
-          "audioUrl": {
-            "type": "string",
-            "description": "ヘッドライントピックの音声ファイルURL",
-            "example": "https://example.com/sample.mp3"
-          },
-          "audioDuration": {
-            "type": "number",
-            "description": "音声ファイルの長さ（ミリ秒）",
-            "example": 1000
-          },
-          "videoUrl": {
-            "type": "string",
-            "description": "ヘッドライントピックの動画ファイルURL",
-            "example": "https://example.com/sample.mp4"
-          },
-          "imageUrl": {
-            "type": "string",
-            "description": "画像URL",
-            "example": "https://example.com/sample.jpg"
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string",
-            "description": "今日のヘッドライントピックが作成された日時",
-            "example": "2021-01-01T00:00:00Z"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": "string",
-            "description": "最終更新日時",
-            "example": "2021-01-01T00:00:00Z"
-          },
-          "posts": {
-            "description": "紹介している投稿の一覧",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/QiitaPostDto"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "title",
-          "script",
-          "chapters",
-          "audioUrl",
-          "audioDuration",
-          "createdAt",
-          "updatedAt",
-          "posts"
-        ]
-      },
-      "HeadlineTopicProgramWithSimilarAndNeighborsDto": {
-        "type": "object",
-        "properties": {
-          "similar": {
-            "description": "類似のヘッドライントピック番組",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HeadlineTopicProgramDto"
-            }
-          },
-          "previous": {
-            "description": "前日のヘッドライントピック番組",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/HeadlineTopicProgramDto"
-              }
-            ]
-          },
-          "target": {
-            "description": "指定のヘッドライントピック番組",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/HeadlineTopicProgramDto"
-              }
-            ]
-          },
-          "next": {
-            "description": "翌日のヘッドライントピック番組",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/HeadlineTopicProgramDto"
-              }
-            ]
-          }
-        },
-        "required": [
-          "similar",
-          "previous",
-          "target",
-          "next"
         ]
       },
       "SearchQiitaPostsResponseDto": {
@@ -3181,125 +3342,6 @@
         "required": [
           "success",
           "responseTime"
-        ]
-      },
-      "QiitaUserDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "ユーザーの一意なID",
-            "example": "sumihiro3"
-          },
-          "description": {
-            "type": "string",
-            "description": "自己紹介文",
-            "example": "フロントエンド開発者です"
-          },
-          "name": {
-            "type": "string",
-            "description": "ユーザー名",
-            "example": "住廣 陸"
-          },
-          "profile_image_url": {
-            "type": "string",
-            "description": "設定しているプロフィール画像のURL",
-            "example": "https://qiita-image-store.s3.amazonaws.com/0/12345/profile-xxxx.png"
-          },
-          "facebook_id": {
-            "type": "string",
-            "description": "FacebookのID",
-            "example": "facebook123"
-          },
-          "followees_count": {
-            "type": "number",
-            "description": "フォローしているユーザー数",
-            "example": 150
-          },
-          "followers_count": {
-            "type": "number",
-            "description": "フォロワー数",
-            "example": 200
-          },
-          "github_login_name": {
-            "type": "string",
-            "description": "GitHubのログイン名",
-            "example": "sumihiro3"
-          },
-          "items_count": {
-            "type": "number",
-            "description": "投稿した記事数",
-            "example": 42
-          },
-          "linkedin_id": {
-            "type": "string",
-            "description": "LinkedInのID",
-            "example": "linkedin123"
-          },
-          "location": {
-            "type": "string",
-            "description": "居住地",
-            "example": "東京"
-          },
-          "organization": {
-            "type": "string",
-            "description": "所属組織",
-            "example": "テック株式会社"
-          },
-          "permanent_id": {
-            "type": "number",
-            "description": "永続的なID",
-            "example": 123456
-          },
-          "team_only": {
-            "type": "boolean",
-            "description": "チーム限定かどうか",
-            "example": false
-          },
-          "twitter_screen_name": {
-            "type": "string",
-            "description": "Twitterのスクリーン名",
-            "example": "sumihiro3"
-          },
-          "website_url": {
-            "type": "string",
-            "description": "ウェブサイトURL",
-            "example": "https://example.com"
-          }
-        },
-        "required": [
-          "id",
-          "profile_image_url",
-          "followees_count",
-          "followers_count",
-          "items_count",
-          "permanent_id",
-          "team_only"
-        ]
-      },
-      "QiitaTagDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "タグ名",
-            "example": "JavaScript"
-          },
-          "versions": {
-            "description": "バージョン情報",
-            "example": [
-              "0.1",
-              "1.0"
-            ],
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "required": [
-          "name",
-          "versions"
         ]
       },
       "GetDashboardPersonalizedProgramsRequestDto": {
