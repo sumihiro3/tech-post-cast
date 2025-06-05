@@ -93,14 +93,16 @@ export class PersonalizedProgramMetadata {
   chapters?: ProgramFileChapter[];
 
   constructor(
-    script: PersonalizedProgramScript,
     artistName: string,
+    script: PersonalizedProgramScript,
+    userName: string,
+    feedName: string,
     programDate: Date,
     fileName: string,
     chapters: ProgramFileChapter[],
   ) {
     this.artist = artistName;
-    this.album = 'パーソナルプログラム';
+    this.album = `${userName}さんのパーソナルプログラム - ${feedName}`;
     this.albumArtist = artistName;
     this.title = `${script.title}（${formatDate(programDate, 'YYYY-MM-DD')}）`;
     this.date = formatDate(programDate, 'YYYY');
