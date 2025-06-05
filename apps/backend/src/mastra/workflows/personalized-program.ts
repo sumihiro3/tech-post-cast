@@ -54,10 +54,19 @@ export const createPersonalizedProgramScriptGenerationWorkflow = new Step({
     const posts = context?.triggerData.posts as QiitaPost[];
     const userName = context?.triggerData.userName as string;
     const programDate = context?.triggerData.programDate as Date;
-    logger.debug(`posts: ${JSON.stringify(posts)}`);
-    logger.debug(`posts length: ${posts.length}`);
-    logger.debug(`userName: ${userName}`);
-    logger.debug(`programDate: ${programDate}`);
+    const feedName = context?.triggerData.personalizedFeedName as string;
+    logger.debug(
+      JSON.stringify({
+        posts: posts.map((post) => ({
+          id: post.id,
+          title: post.title,
+        })),
+        postsLength: posts.length,
+        userName,
+        programDate,
+        feedName,
+      }),
+    );
     const workflow = new Workflow({
       name: PERSONALIZED_PROGRAM_SCRIPT_GENERATION_WORKFLOW,
       triggerSchema: z.object({
@@ -81,7 +90,7 @@ export const createPersonalizedProgramScriptGenerationWorkflow = new Step({
     // 各記事の要約が終了するのを待つ
     workflow.after(summarizeSteps);
     // 要約が終わったら、台本生成のステップを定義
-    workflow.step(createScriptStep(userName, programDate));
+    workflow.step(createScriptStep(userName, programDate, feedName));
     // 動的ワークフローを構築してコミット
     workflow.commit();
     logger.info(
@@ -163,8 +172,13 @@ const createSummarizeStep = (index: number, post: QiitaPost) => {
  * 番組の台本を生成するステップ
  * @param userName ユーザー名
  * @param programDate 番組日
+ * @param feedName パーソナルフィード名
  */
-const createScriptStep = (userName: string, programDate: Date) => {
+const createScriptStep = (
+  userName: string,
+  programDate: Date,
+  feedName: string,
+) => {
   const scriptStep = new Step({
     id: GENERATE_SCRIPT_STEP,
     description: '番組の台本を生成するステップ',
@@ -199,6 +213,7 @@ const createScriptStep = (userName: string, programDate: Date) => {
         summarizedPosts,
         programDate,
         userName,
+        feedName,
       );
       logger.debug(`${agent.name} Instructions: ${instructions}`);
       agent.__updateInstructions(instructions);

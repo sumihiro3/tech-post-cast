@@ -25,6 +25,7 @@ export const getPersonalizedProgramScriptGenerationInstructions = (
   posts: QiitaPostWithSummaryAndKeyPoints[],
   programDate: Date,
   userName: string,
+  feedName: string,
 ): string => {
   const dt = getJapaneseDateStringWithWeekday(programDate);
   const instructions = `
@@ -58,6 +59,7 @@ export const getPersonalizedProgramScriptGenerationInstructions = (
     - 「如月」や「師走」などの和風月名は使わないでください
 - そして、Qiita（キータ） でユーザーのパーソナルフィードに基づいて集めた記事を紹介していることを伝えます
     - ユーザー名は 「${userName}」を使います
+    - パーソナルフィード名は 「${feedName}」を使います
 - 今日紹介する記事の本数（${posts.length} 本）を伝えます
 
 ### 紹介記事の解説
@@ -80,7 +82,8 @@ export const getPersonalizedProgramScriptGenerationInstructions = (
         - 「ポイントごとの解説」では、記事の要点を元に、記事の内容を解説してください
             - テクニカルな内容もやさしく噛み砕いて解説してください
             - ただし、要点はそのまま読み上げないでください
-            - 例え話や比喩を使って、分かりやすく説明してください
+            - 必要に応じて例え話や比喩を使って分かりやすく説明してください
+            - 例え話や比喩は1記事につき最大1つまでとし、特に複雑な概念を説明する際にのみ使用してください
         - 「まとめ」では、記事の内容を簡潔にまとめてください
     - 自然なトークスタイル（MC が1人で話しているイメージ）で、テクニカルな内容もやさしく噛み砕いて解説してください
 - 一つの記事の解説文は必ず1000文字以上にしてください（この文字数は遵守してください）
