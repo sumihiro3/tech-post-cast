@@ -847,6 +847,7 @@ export class PersonalizedFeedsBuilder {
       programDate,
       user,
       limitedPosts,
+      feed,
     );
     this.logger.log(
       `パーソナルフィード [${feed.id}] に基づいた番組の台本を生成しました`,
@@ -934,6 +935,7 @@ export class PersonalizedFeedsBuilder {
     programDate: Date,
     user: AppUser,
     posts: QiitaPostApiResponse[],
+    feed: PersonalizedFeedWithFilters,
   ): Promise<PersonalizedProgramScript> {
     this.logger.debug(
       `PersonalizedFeedsBuilder.runPersonalizedProgramScriptGenerationWorkflow called`,
@@ -944,6 +946,10 @@ export class PersonalizedFeedsBuilder {
           id: post.id,
           title: post.title,
         })),
+        feed: {
+          id: feed.id,
+          name: feed.name,
+        },
       },
     );
     try {
@@ -951,13 +957,13 @@ export class PersonalizedFeedsBuilder {
       const workflow = this.mastra.getWorkflow('personalizedProgramWorkflow');
       const run = workflow.createRun();
       const programPosts = posts.map((post) => this.convertToQiitaPost(post));
-      const userName = `${user.lastName} ${user.firstName}`;
       // ワークフローを実行する
       const result = await run.start({
         triggerData: {
-          userName,
+          userName: user.displayName,
           posts: programPosts,
           programDate,
+          personalizedFeedName: feed.name,
         },
       });
       this.logger.debug(

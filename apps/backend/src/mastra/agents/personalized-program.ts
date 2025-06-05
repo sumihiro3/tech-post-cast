@@ -25,6 +25,7 @@ export const getPersonalizedProgramScriptGenerationInstructions = (
   posts: QiitaPostWithSummaryAndKeyPoints[],
   programDate: Date,
   userName: string,
+  feedName: string,
 ): string => {
   const dt = getJapaneseDateStringWithWeekday(programDate);
   const instructions = `
@@ -58,6 +59,7 @@ export const getPersonalizedProgramScriptGenerationInstructions = (
     - 「如月」や「師走」などの和風月名は使わないでください
 - そして、Qiita（キータ） でユーザーのパーソナルフィードに基づいて集めた記事を紹介していることを伝えます
     - ユーザー名は 「${userName}」を使います
+    - パーソナルフィード名は 「${feedName}」を使います
 - 今日紹介する記事の本数（${posts.length} 本）を伝えます
 
 ### 紹介記事の解説
