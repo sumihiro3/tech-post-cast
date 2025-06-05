@@ -60,8 +60,8 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { title: 'ダッシュボード', icon: 'mdi-view-dashboard', to: '/app/dashboard' },
-  { title: 'パーソナルプログラム', icon: 'mdi-podcast', to: '/app/programs', exact: false },
   { title: 'パーソナルフィード設定', icon: 'mdi-rss', to: '/app/feeds', exact: false },
+  { title: 'パーソナルプログラム', icon: 'mdi-podcast', to: '/app/programs', exact: false },
   { title: 'ユーザー設定', icon: 'mdi-account-cog', to: '/app/settings' },
   // { title: 'サブスクリプション一覧', icon: 'mdi-credit-card-outline', to: '/app/subscriptions' },
 ];
