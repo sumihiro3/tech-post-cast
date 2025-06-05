@@ -514,11 +514,12 @@ export class PersonalizedFeedsBuilder {
       se3FilePath: this.appConfig.PersonalizedProgramSe3FilePath,
     });
 
-    const userName = `${user.lastName} ${user.firstName}さん`;
     // パーソナルプログラムのメタデータ情報
     const metadata = new PersonalizedProgramMetadata(
+      'Tech Post Cast',
       script,
-      `${userName}のパーソナルプログラム`,
+      user.displayName,
+      feed.name,
       programDate,
       programAudioFileName,
       chapters,
