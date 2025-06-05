@@ -49,22 +49,20 @@ v-card
     hide-default-footer
     class="elevation-0"
   )
-    //- 実行日付
+    //- 実行日付（月/日形式）
     template(#item.createdAt="{ item }")
       span.text-body-2 {{ formatDate(item.createdAt) }}
 
-    //- フィード名（編集画面へのリンク付き）
+    //- フィード名（アイコンなし、編集画面へのリンク付き）
     template(#item.feed="{ item }")
-      .d-flex.align-center
-        v-icon.me-2(size="small") mdi-rss
-        v-btn(
-          :to="`/app/feeds/${getFeedId(item.feed)}/edit`"
-          variant="text"
-          size="small"
-          color="primary"
-          class="pa-0"
-          style="min-width: auto; text-transform: none;"
-        ) {{ getFeedName(item.feed) }}
+      v-btn(
+        :to="`/app/feeds/${getFeedId(item.feed)}/edit`"
+        variant="text"
+        size="small"
+        color="primary"
+        class="pa-0"
+        style="min-width: auto; text-transform: none;"
+      ) {{ getFeedName(item.feed) }}
 
     //- ステータス
     template(#item.status="{ item }")
@@ -74,43 +72,26 @@ v-card
         variant="flat"
       ) {{ getStatusText(item.status) }}
 
-    //- 理由（日本語表記）
-    template(#item.reason="{ item }")
-      span.text-body-2.text-medium-emphasis(v-if="item.reason") {{ getReasonText(item.reason) }}
-      span.text-disabled(v-else) -
-
-    //- 番組
+    //- タイトル（アイコンなし、エラー・スキップ時は理由を括弧書きで表示）
     template(#item.program="{ item }")
       div(v-if="item.program && item.status === 'SUCCESS'")
         //- 有効期限内の場合はリンクを表示
-        v-btn(
-          v-if="isProgramLinkEnabled(item.program)"
-          :to="`/app/programs/${getProgramId(item.program)}`"
-          variant="text"
-          size="default"
-          color="primary"
-          style="text-transform: none; font-size: 0.875rem;"
-        )
-          v-icon(start size="small") mdi-play
-          | {{ getProgramTitle(item.program) }}
-        //- 期限切れの場合は黒色で表示
-        div(v-else)
+        div(v-if="isProgramLinkEnabled(item.program)")
           v-btn(
+            :to="`/app/programs/${getProgramId(item.program)}`"
             variant="text"
             size="default"
-            disabled
-            style="color: rgba(0, 0, 0, 0.87) !important; text-transform: none; font-size: 0.875rem;"
-          )
-            v-icon(start size="small") mdi-play-disabled
-            | {{ getProgramTitle(item.program) }}
-          .text-caption.text-error.mt-1.text-right {{ formatExpirationDate(getProgramExpiresAt(item.program)) }}
+            color="primary"
+            class="pa-0"
+            style="min-width: auto; text-transform: none; font-size: 0.875rem;"
+          ) {{ getProgramTitle(item.program) }}
+        //- 期限切れの場合は赤字で「（期限切れ）」を表示
+        div(v-else)
+          span.text-error （期限切れ）
+          span.text-body-2(style="color: rgba(0, 0, 0, 0.87);") {{ getProgramTitle(item.program) }}
+      div(v-else-if="item.status === 'FAILED' || item.status === 'SKIPPED'")
+        span.text-body-2 {{ getFailureDisplayText(item) }}
       span.text-disabled(v-else) -
-
-    //- 記事数（最後の列）
-    template(#item.postCount="{ item }")
-      .d-flex.align-center.justify-end
-        v-icon.me-1(size="small") mdi-file-document-multiple
-        span.text-body-2 {{ item.postCount }}
 
     //- 空の状態
     template(#no-data)
@@ -140,6 +121,7 @@ v-card
 import { computed, onMounted } from 'vue';
 import { useDashboardFeeds } from '~/composables/dashboard/useDashboardFeeds';
 import { useDashboardProgramGenerationHistory } from '~/composables/dashboard/useDashboardProgramGenerationHistory';
+import type { ProgramGenerationHistoryDto } from '~/api';
 
 // コンポーザブル関数
 const {
@@ -164,43 +146,30 @@ const {
 
 const { feeds } = useDashboardFeeds();
 
-// テーブルヘッダー（記事数を最後に移動）
+// テーブルヘッダー（失敗理由と記事数を削除、幅を調整）
 const headers = [
   {
     title: '日付',
     key: 'createdAt',
     sortable: false,
-    width: '120px',
+    width: '80px',
   },
   {
     title: 'フィード',
     key: 'feed',
     sortable: false,
-    width: '200px',
+    width: '150px',
   },
   {
     title: '結果',
     key: 'status',
     sortable: false,
-    width: '120px',
-  },
-  {
-    title: '失敗理由',
-    key: 'reason',
-    sortable: false,
-    width: '200px',
+    width: '100px',
   },
   {
     title: 'タイトル',
     key: 'program',
     sortable: false,
-  },
-  {
-    title: '記事数',
-    key: 'postCount',
-    sortable: false,
-    width: '100px',
-    align: 'end' as const,
   },
 ];
 
@@ -232,13 +201,12 @@ const getProgramTitle = (program: unknown): string => {
   return (program as { title?: string })?.title || '番組タイトル';
 };
 
-// 日付のみをフォーマット（時刻は除く）
+// 日付を月/日形式でフォーマット
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
   return date.toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
+    month: 'numeric',
+    day: 'numeric',
   });
 };
 
@@ -256,6 +224,11 @@ const getReasonText = (reason: string): string => {
   };
 
   return reasonMap[reason] || reason;
+};
+
+// 失敗・スキップ時の表示テキストを生成
+const getFailureDisplayText = (item: ProgramGenerationHistoryDto): string => {
+  return item.reason ? `（${getReasonText(item.reason)}）` : '';
 };
 
 // 初期化

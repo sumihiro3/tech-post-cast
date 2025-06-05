@@ -41,7 +41,7 @@ export function useDashboardSubscription(): UseDashboardSubscriptionReturn {
   // プラン表示名
   const planDisplayName = computed<string>(() => {
     if (!subscription.value) return '';
-    return `${subscription.value.planName}プラン`;
+    return subscription.value.planName;
   });
 
   // プランカラークラス
