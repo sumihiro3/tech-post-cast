@@ -22,6 +22,11 @@ export class PersonalizedProgramAttemptFactory {
       postCount: 3,
       programId: 'program-1',
       createdAt: new Date('2024-01-01'),
+      // 通知関連フィールド
+      notified: false,
+      notifiedAt: null,
+      notificationSuccess: null,
+      notificationError: null,
     };
 
     return {
