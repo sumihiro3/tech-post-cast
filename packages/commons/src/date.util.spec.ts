@@ -7,6 +7,7 @@ import {
   getCronExpression,
   getDates,
   getDurationString,
+  getEndOfDay,
   getFirstDayOfMonth,
   getFirstDayOfPreviousMonth,
   getFirstDayOfPreviousWeek,
@@ -77,6 +78,16 @@ describe('first', () => {
     // verify
     expect(resultUTC).toEqual(dayjs(date).tz(TIME_ZONE_UTC).startOf('day').toDate());
     expect(resultJST).toEqual(dayjs(date).tz(TIME_ZONE_JST).startOf('day').toDate());
+  });
+
+  it('getEndOfDay', () => {
+    const date = new Date('2024-01-01T12:00:00.000Z');
+    // execute
+    const resultUTC = getEndOfDay(date, TIME_ZONE_UTC);
+    const resultJST = getEndOfDay(date, TIME_ZONE_JST);
+    // verify
+    expect(resultUTC).toEqual(dayjs(date).tz(TIME_ZONE_UTC).endOf('day').toDate());
+    expect(resultJST).toEqual(dayjs(date).tz(TIME_ZONE_JST).endOf('day').toDate());
   });
 
   it('getFirstDayOfPreviousMonth', () => {
