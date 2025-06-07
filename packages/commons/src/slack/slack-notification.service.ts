@@ -76,33 +76,41 @@ export class SlackNotificationService {
    * @param userData ユーザーデータ
    * @returns Slackメッセージ
    */
-  static buildPersonalProgramNotificationMessage(userData: {
-    displayName: string;
-    attempts: Array<{
-      feedName: string;
-      status: string;
-      reason: string | null;
-      postCount: number;
-      program?: {
-        title: string;
-        audioUrl: string;
-      } | null;
-    }>;
-  }): SlackMessage {
+  static buildPersonalProgramNotificationMessage(
+    userData: {
+      displayName: string;
+      attempts: Array<{
+        feedName: string;
+        status: string;
+        reason: string | null;
+        postCount: number;
+        program?: {
+          id: string;
+          title: string;
+          audioUrl: string;
+        } | null;
+      }>;
+    },
+    lpBaseUrl: string,
+    audioFileBaseUrl: string,
+  ): SlackMessage {
     const successCount = userData.attempts.filter((a) => a.status === 'SUCCESS').length;
     const skippedCount = userData.attempts.filter((a) => a.status === 'SKIPPED').length;
     const failedCount = userData.attempts.filter((a) => a.status === 'FAILED').length;
 
-    // ヘッダーブロック
+    // 時間帯に応じた挨拶を取得
+    const greeting = this.getTimeBasedGreeting();
+
+    // ヘッダーブロック（より魅力的なメッセージ）
     const headerBlock: SlackBlock = {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `🎙️ *${userData.displayName}さんのパーソナルプログラム生成結果*`,
+        text: `${greeting} *${userData.displayName}さん* ！\n🎧 パーソナルプログラムの配信結果をお知らせします`,
       },
     };
 
-    // サマリーブロック
+    // サマリーブロック（視覚的に改善）
     const summaryBlock: SlackBlock = {
       type: 'section',
       fields: [
@@ -127,53 +135,123 @@ export class SlackNotificationService {
 
     const blocks: SlackBlock[] = [headerBlock, summaryBlock];
 
+    // 区切り線
+    if (userData.attempts.length > 0) {
+      blocks.push({
+        type: 'divider',
+      });
+    }
+
     // 各フィードの詳細
     for (const attempt of userData.attempts) {
       const statusEmoji = this.getStatusEmoji(attempt.status);
       const statusText = this.getStatusText(attempt.status);
 
-      let detailText = `${statusEmoji} *${attempt.feedName}* - ${statusText}`;
-
       if (attempt.status === 'SUCCESS' && attempt.program) {
-        detailText += `\n📝 タイトル: ${attempt.program.title}`;
-        detailText += `\n🎵 <${attempt.program.audioUrl}|音声を聞く>`;
-        detailText += `\n📰 記事数: ${attempt.postCount}件`;
-      } else if (attempt.status === 'SKIPPED' || attempt.status === 'FAILED') {
-        detailText += `\n💬 理由: ${attempt.reason || '不明'}`;
+        // 成功時：リッチなプログラム表示
+        const programUrl = `${lpBaseUrl}/headline-topic-programs/${attempt.program.id}`;
+
+        const programBlock: SlackBlock = {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `${statusEmoji} パーソナルフィード *「${attempt.feedName}」* で新しい番組が生成されました！\n\n <${programUrl}|📄 番組詳細> | 📰 紹介記事数: ${attempt.postCount}件`,
+          },
+          accessory: {
+            type: 'image',
+            image_url: `${audioFileBaseUrl}/ogp_image.png`,
+            alt_text: 'Tech Post Cast',
+          },
+        };
+        blocks.push(programBlock);
+      } else {
+        // スキップ・失敗時：シンプルな表示
+        let detailText = `${statusEmoji} *${attempt.feedName}* - ${statusText}`;
+
+        if (attempt.reason) {
+          detailText += `\n💬 理由: ${attempt.reason}`;
+        }
+
         if (attempt.postCount > 0) {
           detailText += `\n📰 記事数: ${attempt.postCount}件`;
         }
+
+        blocks.push({
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: detailText,
+          },
+        });
       }
 
-      blocks.push({
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: detailText,
-        },
-      });
+      // フィード間の区切り（最後のフィード以外）
+      if (attempt !== userData.attempts[userData.attempts.length - 1]) {
+        blocks.push({
+          type: 'divider',
+        });
+      }
     }
 
-    // フッター
+    // フッター情報
     blocks.push({
       type: 'divider',
     });
 
-    blocks.push({
+    // 詳細なフッター
+    const footerBlock: SlackBlock = {
       type: 'context',
       elements: [
         {
           type: 'mrkdwn',
-          text: `📅 ${new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })} | TechPostCast`,
+          text: `📅 ${new Date().toLocaleString('ja-JP', {
+            timeZone: 'Asia/Tokyo',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })} | <${lpBaseUrl}|TechPostCast>`,
         },
       ],
-    });
+    };
+
+    // 成功した番組がある場合は、サイトへの誘導を追加
+    if (successCount > 0) {
+      blocks.push({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `🌟 *<${lpBaseUrl}|TechPostCast サイト>* で他の番組もチェックしてみてください！`,
+        },
+      });
+    }
+
+    blocks.push(footerBlock);
 
     return {
       username: 'TechPostCast 通知',
       icon_emoji: ':microphone:',
       blocks,
     };
+  }
+
+  /**
+   * 時間帯に応じた挨拶を取得
+   */
+  private static getTimeBasedGreeting(): string {
+    const now = new Date();
+    const hour = now.getHours();
+
+    if (hour >= 5 && hour < 10) {
+      return '🌅 おはようございます';
+    } else if (hour >= 10 && hour < 17) {
+      return '☀️ こんにちは';
+    } else if (hour >= 17 && hour < 21) {
+      return '🌆 こんばんは';
+    } else {
+      return '🌙 お疲れさまです';
+    }
   }
 
   /**
@@ -198,13 +276,13 @@ export class SlackNotificationService {
   private static getStatusText(status: string): string {
     switch (status) {
       case 'SUCCESS':
-        return '生成成功';
+        return '番組生成成功';
       case 'SKIPPED':
-        return 'スキップ';
+        return '番組生成スキップ';
       case 'FAILED':
-        return '生成失敗';
+        return '番組生成失敗';
       default:
-        return '不明';
+        return '状態不明';
     }
   }
 
