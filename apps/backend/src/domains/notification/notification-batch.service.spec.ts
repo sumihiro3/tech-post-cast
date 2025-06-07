@@ -1,3 +1,4 @@
+import { AppConfigService } from '@/app-config/app-config.service';
 import { Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { SlackNotificationService } from '@tech-post-cast/commons';
@@ -16,6 +17,7 @@ jest.mock('@tech-post-cast/commons', () => ({
 describe('NotificationBatchService', () => {
   let service: NotificationBatchService;
   let mockRepository: any;
+  let mockAppConfigService: any;
   let mockSlackService: jest.Mocked<typeof SlackNotificationService>;
 
   beforeEach(async () => {
@@ -24,6 +26,12 @@ describe('NotificationBatchService', () => {
       findUnnotifiedDataByUser: jest.fn(),
       updateNotificationStatus: jest.fn(),
       updateNotificationStatusBatch: jest.fn(),
+    };
+
+    // AppConfigServiceのモック
+    mockAppConfigService = {
+      LpBaseUrl: 'https://techpostcast.com',
+      ProgramAudioFileUrlPrefix: 'https://program-files.techpostcast.com/audio',
     };
 
     // SlackNotificationServiceのモック
@@ -37,6 +45,10 @@ describe('NotificationBatchService', () => {
         {
           provide: 'PersonalizedProgramAttemptsRepository',
           useValue: mockRepository,
+        },
+        {
+          provide: AppConfigService,
+          useValue: mockAppConfigService,
         },
       ],
     }).compile();
@@ -120,22 +132,26 @@ describe('NotificationBatchService', () => {
 
       expect(
         mockSlackService.buildPersonalProgramNotificationMessage,
-      ).toHaveBeenCalledWith({
-        displayName: 'テストユーザー1',
-        attempts: [
-          {
-            feedName: 'テストフィード1',
-            status: 'SUCCESS',
-            reason: null,
-            postCount: 5,
-            program: {
-              id: 'program1',
-              title: 'テストプログラム1',
-              audioUrl: 'https://example.com/audio1.mp3',
+      ).toHaveBeenCalledWith(
+        {
+          displayName: 'テストユーザー1',
+          attempts: [
+            {
+              feedName: 'テストフィード1',
+              status: 'SUCCESS',
+              reason: null,
+              postCount: 5,
+              program: {
+                id: 'program1',
+                title: 'テストプログラム1',
+                audioUrl: 'https://example.com/audio1.mp3',
+              },
             },
-          },
-        ],
-      });
+          ],
+        },
+        'https://techpostcast.com',
+        'https://program-files.techpostcast.com/audio',
+      );
 
       expect(mockSlackService.sendNotification).toHaveBeenCalledWith(
         'https://hooks.slack.com/test1',
