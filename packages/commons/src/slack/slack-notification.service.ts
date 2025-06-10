@@ -169,7 +169,7 @@ export class SlackNotificationService {
         let detailText = `${statusEmoji} *${attempt.feedName}* - ${statusText}`;
 
         if (attempt.reason) {
-          detailText += `\n💬 理由: ${attempt.reason}`;
+          detailText += `\n💬 理由: ${this.getReasonText(attempt.reason)}`;
         }
 
         if (attempt.postCount > 0) {
@@ -283,6 +283,24 @@ export class SlackNotificationService {
         return '番組生成失敗';
       default:
         return '状態不明';
+    }
+  }
+
+  /**
+   * 失敗理由コードを日本語に変換
+   */
+  private static getReasonText(reason: string): string {
+    switch (reason) {
+      case 'NOT_ENOUGH_POSTS':
+        return '紹介記事数が不足';
+      case 'UPLOAD_ERROR':
+        return 'アップロードエラー';
+      case 'PERSISTENCE_ERROR':
+        return 'データ保存エラー';
+      case 'OTHER':
+        return 'エラー';
+      default:
+        return reason; // 未知の理由コードの場合はそのまま表示
     }
   }
 
