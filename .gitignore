@@ -12,3 +12,5 @@ envs_develop.env
 envs_main.env
 
 postgres_data/
+
+out/
