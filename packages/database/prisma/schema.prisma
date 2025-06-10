@@ -507,6 +507,12 @@ model PersonalizedProgramAttempt {
   postCount Int      @default(0)
   createdAt DateTime @default(now()) @map("created_at")
 
+  // 通知関連フィールド
+  notified            Boolean   @default(false) // 通知送信試行済みフラグ
+  notifiedAt          DateTime? @map("notified_at") // 通知送信試行日時
+  notificationSuccess Boolean?  @map("notification_success") // 通知送信成功/失敗
+  notificationError   String?   @map("notification_error") @db.VarChar(255) // 失敗理由
+
   user      AppUser                  @relation(fields: [userId], references: [id])
   feed      PersonalizedFeed         @relation(fields: [feedId], references: [id])
   program   PersonalizedFeedProgram? @relation(fields: [programId], references: [id])

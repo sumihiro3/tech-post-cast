@@ -14,11 +14,17 @@
 # @baseUrl = {{$dotenv BACKEND_BASE_URL_PROD}}
 # @apiToken = {{$dotenv BACKEND_API_TOKEN_PROD}}
 
+# Feed ID
+# Test user
+@feedId = feed_cmaamvdxs00003x3j5ywgcll7
+# sumihiro@gmail.com
+# @feedId = feed_cmamcgw9900018p3j62n1293n
+
 POST {{baseUrl}}/personalized-feeds/generate-program
 Content-Type: application/json
 Authorization: Bearer {{apiToken}}
 
 {
-  "daysAgo": 10,
-  "feedId": "feed_cmamcgw9900018p3j62n1293n"
+  "daysAgo": 1,
+  "feedId": "{{feedId}}"
 }

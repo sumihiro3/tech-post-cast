@@ -62,3 +62,23 @@ export class PersonalizedProgramAttemptPersistenceError extends PersonalizeProgr
     super(message, options);
   }
 }
+
+/**
+ * パーソナライズプログラム通知データの取得に失敗したエラー
+ */
+export class PersonalizedProgramNotificationDataError extends PersonalizeProgramError {
+  override name = 'PersonalizedProgramNotificationDataError';
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}
+
+/**
+ * パーソナライズプログラム通知ステータスの更新に失敗したエラー
+ */
+export class PersonalizedProgramNotificationStatusUpdateError extends PersonalizeProgramError {
+  override name = 'PersonalizedProgramNotificationStatusUpdateError';
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}

@@ -95,6 +95,16 @@ export function getStartOfDay(date: Date, timezone: string = TIME_ZONE_UTC): Dat
 }
 
 /**
+ * 指定日 23:59:59.999 の日時を返す
+ * @param date 対象日時
+ * @param timezone タイムゾーン
+ * @returns 指定日 23:59:59.999 の日時
+ */
+export function getEndOfDay(date: Date, timezone: string = TIME_ZONE_UTC): Date {
+  return dayjs(date).tz(timezone).endOf('day').toDate();
+}
+
+/**
  * 指定日時を基準にした前月の月初日を返す
  * @param date 対象日時
  * @param timezone タイムゾーン
