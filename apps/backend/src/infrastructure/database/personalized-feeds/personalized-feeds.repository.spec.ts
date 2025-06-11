@@ -29,6 +29,11 @@ const mockAppUser: AppUser = {
   defaultPaymentMethodId: 'default_payment_method_id',
   slackWebhookUrl: null,
   notificationEnabled: false,
+  // RSS機能関連フィールド
+  rssToken: null,
+  rssEnabled: false,
+  rssCreatedAt: null,
+  rssUpdatedAt: null,
 };
 
 const mockSubscription: Subscription = {

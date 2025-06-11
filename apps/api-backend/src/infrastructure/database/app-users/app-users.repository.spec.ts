@@ -114,6 +114,11 @@ describe('AppUsersRepository', () => {
         defaultPaymentMethodId: null,
         slackWebhookUrl: null,
         notificationEnabled: false,
+        // RSS機能関連フィールド
+        rssToken: null,
+        rssEnabled: false,
+        rssCreatedAt: null,
+        rssUpdatedAt: null,
       };
 
       const mockUser = {
@@ -175,6 +180,11 @@ describe('AppUsersRepository', () => {
         defaultPaymentMethodId: null,
         slackWebhookUrl: null,
         notificationEnabled: false,
+        // RSS機能関連フィールド
+        rssToken: null,
+        rssEnabled: false,
+        rssCreatedAt: null,
+        rssUpdatedAt: null,
       };
 
       const mockExistingUser = {
@@ -192,6 +202,11 @@ describe('AppUsersRepository', () => {
         defaultPaymentMethodId: null,
         slackWebhookUrl: null,
         notificationEnabled: false,
+        // RSS機能関連フィールド
+        rssToken: null,
+        rssEnabled: false,
+        rssCreatedAt: null,
+        rssUpdatedAt: null,
       };
 
       mockPrismaClient.appUser.findUnique.mockResolvedValue(mockExistingUser);
@@ -224,6 +239,11 @@ describe('AppUsersRepository', () => {
         defaultPaymentMethodId: null,
         slackWebhookUrl: null,
         notificationEnabled: false,
+        // RSS機能関連フィールド
+        rssToken: null,
+        rssEnabled: false,
+        rssCreatedAt: null,
+        rssUpdatedAt: null,
       };
 
       mockPrismaClient.appUser.findUnique.mockResolvedValue(null);

@@ -42,6 +42,11 @@ describe('PersonalizedFeedsService', () => {
     defaultPaymentMethodId: 'pm_123456',
     slackWebhookUrl: null,
     notificationEnabled: false,
+    // RSS機能関連フィールド
+    rssToken: null,
+    rssEnabled: false,
+    rssCreatedAt: null,
+    rssUpdatedAt: null,
   };
 
   const mockPersonalizedFeed = {
