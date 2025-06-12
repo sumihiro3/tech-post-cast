@@ -181,6 +181,14 @@ export class AppConfigService {
     if (!this.ProPlanId) {
       throw new AppConfigValidationError('PRO_PLAN_ID が設定されていません');
     }
+    if (!this.RssBucketName) {
+      throw new AppConfigValidationError(
+        'RSS_BUCKET_NAME が設定されていません',
+      );
+    }
+    if (!this.RssUrlPrefix) {
+      throw new AppConfigValidationError('RSS_URL_PREFIX が設定されていません');
+    }
     // 設定値のログ出力
     this.logger.log('AppConfigService initialized', {
       V1ApiToken: this.V1ApiToken,
@@ -230,6 +238,8 @@ export class AppConfigService {
       XApiAccessSecret: this.XApiAccessSecret,
       FreePlanId: this.FreePlanId,
       ProPlanId: this.ProPlanId,
+      RssBucketName: this.RssBucketName,
+      RssUrlPrefix: this.RssUrlPrefix,
     });
   }
 
@@ -528,5 +538,19 @@ export class AppConfigService {
    */
   get ProPlanId(): string {
     return this.config.get<string>('PRO_PLAN_ID');
+  }
+
+  /**
+   * RSS用バケット名
+   */
+  get RssBucketName(): string {
+    return this.config.get<string>('RSS_BUCKET_NAME');
+  }
+
+  /**
+   * RSS用URLプレフィックス
+   */
+  get RssUrlPrefix(): string {
+    return this.config.get<string>('RSS_URL_PREFIX');
   }
 }
