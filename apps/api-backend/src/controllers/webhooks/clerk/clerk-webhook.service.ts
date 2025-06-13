@@ -73,6 +73,10 @@ export class ClerkWebhookService {
         defaultPaymentMethodId: undefined,
         slackWebhookUrl: undefined,
         notificationEnabled: false,
+        rssToken: null,
+        rssEnabled: false,
+        rssCreatedAt: null,
+        rssUpdatedAt: null,
         createdAt: new Date(userJson.created_at),
         updatedAt: new Date(userJson.updated_at),
       });
@@ -117,6 +121,10 @@ export class ClerkWebhookService {
         defaultPaymentMethodId: appUser.defaultPaymentMethodId,
         slackWebhookUrl: appUser.slackWebhookUrl,
         notificationEnabled: appUser.notificationEnabled,
+        rssToken: appUser.rssToken,
+        rssEnabled: appUser.rssEnabled,
+        rssCreatedAt: appUser.rssCreatedAt,
+        rssUpdatedAt: appUser.rssUpdatedAt,
         createdAt: new Date(userJson.created_at),
         updatedAt: new Date(userJson.updated_at),
       });
