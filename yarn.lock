@@ -6543,7 +6543,7 @@
 
 "@types/rss@^0.0.32":
   version "0.0.32"
-  resolved "https://registry.npmjs.org/@types/rss/-/rss-0.0.32.tgz"
+  resolved "https://registry.yarnpkg.com/@types/rss/-/rss-0.0.32.tgz#19de5179a8160455c2f46a7699391ebacd4853cc"
   integrity sha512-2oKNqKyUY4RSdvl5eZR1n2Q9yvw3XTe3mQHsFPn9alaNBxfPnbXBtGP8R0SV8pK1PrVnLul0zx7izbm5/gF5Qw==
 
 "@types/send@*":
@@ -14542,7 +14542,7 @@ rollup@^4.24.3, rollup@^4.30.1:
 
 rss@^1.2.2:
   version "1.2.2"
-  resolved "https://registry.npmjs.org/rss/-/rss-1.2.2.tgz"
+  resolved "https://registry.yarnpkg.com/rss/-/rss-1.2.2.tgz#50a1698876138133a74f9a05d2bdc8db8d27a921"
   integrity sha512-xUhRTgslHeCBeHAqaWSbOYTydN2f0tAzNXvzh3stjz7QDhQMzdgHf3pfgNIngeytQflrFPfy6axHilTETr6gDg==
   dependencies:
     mime-types "2.1.13"
