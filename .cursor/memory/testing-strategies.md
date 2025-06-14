@@ -594,3 +594,107 @@ it('should return program generation history', async () => {
 TPC-101 ユーザーダッシュボードの実装
 
 ---
+
+## RSS機能の包括的テスト戦略 (2024-12-19)
+
+### 背景と課題
+
+- RSS機能は複数のサービス層（UserSettingsService、RssFileService）と外部依存（S3RssFileUploader、PersonalizedProgramsRepository）を持つ複雑な機能
+- ファイル操作、非同期処理、エラーハンドリングを含む包括的なテストが必要
+- 実際のファイルシステムやクラウドストレージに依存しないテスト環境の構築が課題
+
+### 検討したアプローチ
+
+1. **統合テスト中心**: 実際の依存関係を使用したテスト
+   - 利点: 実環境に近いテスト
+   - 欠点: テスト実行が重い、外部依存に影響される
+
+2. **ユニットテスト中心**: モックを活用した単体テスト
+   - 利点: 高速、独立性、細かい制御
+   - 欠点: 統合部分のテストが不十分
+
+3. **ハイブリッドアプローチ**: ユニットテスト + 必要最小限の統合テスト
+   - 利点: バランスの取れたテスト戦略
+   - 欠点: テスト設計の複雑さ
+
+### 決定事項と理由
+
+**ハイブリッドアプローチを採用**
+
+**実装したテスト戦略:**
+
+#### 1. サービス層のユニットテスト
+
+- **RssFileService**: 16テスト
+    - RSS生成、アップロード、削除の各機能
+    - エラーハンドリング（生成失敗、アップロード失敗、削除失敗）
+    - 一時ファイルのクリーンアップ検証
+
+- **UserSettingsService**: 31テスト
+    - RSS設定更新（有効化/無効化）
+    - RSSトークン再生成
+    - 自動ファイル管理の検証
+    - エラー時の処理継続検証
+
+#### 2. コントローラー層のテスト
+
+- **UserSettingsController**: 13テスト
+    - エンドポイントの正常系・異常系
+    - 認証・認可の検証
+    - レスポンス形式の検証
+
+#### 3. モック戦略
+
+```typescript
+// 外部依存のモック化
+const mockRssFileUploader = {
+  upload: jest.fn(),
+  delete: jest.fn(),
+};
+
+const mockPersonalizedProgramsRepository = {
+  findByUserId: jest.fn(),
+};
+
+// ファイルシステム操作のモック
+jest.mock('fs/promises');
+jest.mock('node:fs/promises');
+```
+
+### 学んだ教訓
+
+1. **KEY INSIGHT**: 非同期ファイル操作を含む機能では、一時ファイルのクリーンアップ検証が重要
+2. エラーハンドリングのテストでは、「主要処理は成功、サブ処理は失敗」のシナリオを必ず含める
+3. モック設定時は、実際の戻り値の型と構造を正確に再現することが重要
+4. セキュリティ関連機能（トークンマスク等）は専用のテストケースを作成する
+
+**テストパターンの例:**
+
+```typescript
+// エラー処理継続のテスト
+it('RSSファイル生成・アップロードでエラーが発生しても、RSS設定更新は成功すること', async () => {
+  // モック設定: ファイル操作は失敗、DB操作は成功
+  mockRssFileService.generateAndUploadUserRss.mockRejectedValue(new Error('Upload failed'));
+  mockUserSettingsRepository.updateRssSettings.mockResolvedValue(mockUpdatedSettings);
+
+  // 実行: エラーが発生しても例外はスローされない
+  const result = await service.updateRssSettings(userId, { rssEnabled: true });
+
+  // 検証: 設定更新は成功
+  expect(result.rssEnabled).toBe(true);
+  expect(mockLogger.warn).toHaveBeenCalled(); // 警告ログが出力される
+});
+```
+
+**テスト結果:**
+
+- 総テスト数: 321テスト（27スイート）
+- 成功率: 100%
+- カバレッジ: 主要機能の網羅的テスト
+
+### 関連タスク
+
+- TPC-92: パーソナルプログラムのRSSを出力できるようにする
+- UserSettingsController拡張タスク
+
+---

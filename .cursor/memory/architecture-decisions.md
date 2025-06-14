@@ -646,3 +646,52 @@ const navigateToPage = (page: number): void => {
 - パーソナルプログラム生成履歴のページング検証（対応不要と判定）
 
 ---
+
+## IRssFileUploaderインターフェイス分離によるClean Architecture準拠 (2024-12-19)
+
+### 背景と課題
+
+- 初期実装では`IRssFileUploader`インターフェイスと`S3RssFileUploader`実装クラスが同一ファイルに配置されていた
+- これはClean Architectureの原則に反し、ドメイン層とインフラストラクチャ層の境界が曖昧になっていた
+- 既存の`S3ProgramFileUploader`（backend）では適切にインターフェイスがドメイン層に分離されており、一貫性の問題があった
+
+### 検討したアプローチ
+
+1. **現状維持**: インターフェイスと実装を同一ファイルに保持
+   - 利点: ファイル数が少なく、シンプル
+   - 欠点: Clean Architectureに反する、テスタビリティが低い、一貫性がない
+
+2. **インターフェイス分離**: ドメイン層にインターフェイス、インフラ層に実装を配置
+   - 利点: Clean Architecture準拠、テスタビリティ向上、既存パターンとの一貫性
+   - 欠点: ファイル数が増加、初期の学習コストがわずかに増加
+
+### 決定事項と理由
+
+**インターフェイス分離アプローチを採用**
+
+**決定理由:**
+
+- Clean Architectureの依存関係逆転原則に準拠
+- 既存の`S3ProgramFileUploader`パターンとの一貫性確保
+- テスタビリティの向上（モック作成が容易）
+- 将来的な実装変更（AWS S3からCloudflare R2への切り替えなど）への対応力向上
+
+**実装詳細:**
+
+- `apps/api-backend/src/domains/user-settings/rss-file-uploader.interface.ts`: インターフェイス定義
+- `apps/api-backend/src/infrastructure/external-api/aws/s3/rss-file-uploader.ts`: 具体実装
+- 関連する型定義（`RssFileUploadCommand`, `RssFileUploadResult`, `RssFileDeleteCommand`）もインターフェイスファイルに集約
+
+### 学んだ教訓
+
+1. **KEY INSIGHT**: 初期実装時からアーキテクチャパターンの一貫性を保つことの重要性
+2. インターフェイス分離は後からでも比較的容易に実施可能だが、最初から適切に設計する方が効率的
+3. 既存のコードベースにおけるパターンの調査と踏襲が、一貫性のあるアーキテクチャ構築に重要
+4. TypeScriptの型システムを活用することで、インターフェイス分離時のリファクタリングが安全に実行可能
+
+### 関連タスク
+
+- TPC-92: パーソナルプログラムのRSSを出力できるようにする
+- UserSettingsController拡張タスク
+
+---
