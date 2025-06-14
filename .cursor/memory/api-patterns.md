@@ -940,68 +940,164 @@ const programs = await useGetPersonalizedPrograms(app, page, limit, token);
 - TPC-117: パーソナルプログラム一覧でページングが機能しない
 - 認証が必要な他のAPIエンドポイントでの同様パターンの適用検討
 
-## RSS機能のAPI設計パターン (2024-12-19)
+## RSS管理API統合パターン (2024-12-11)
 
 ### 背景と課題
 
-- パーソナルプログラムのRSS配信機能を実装する際、以下の要件を満たす必要があった：
-    - RSS機能の有効化/無効化
-    - RSSトークンの生成・再生成
-    - RSSファイルの自動生成・アップロード・削除
-    - セキュリティを考慮したトークン管理
+lp-frontendでRSS管理機能を実装する際、api-backendとの統合において効率的なAPIクライアント生成と型安全な通信パターンを確立する必要があった。
 
 ### 検討したアプローチ
 
-1. **単一エンドポイントアプローチ**: 全てのRSS操作を1つのエンドポイントで処理
-   - 利点: エンドポイント数が少ない
-   - 欠点: 責任が曖昧、RESTful設計に反する
+#### APIクライアント生成戦略
 
-2. **機能別エンドポイント分離**: 各機能を独立したエンドポイントに分離
-   - 利点: 単一責任原則、RESTful設計、明確なAPI仕様
-   - 欠点: エンドポイント数が増加
+1. **手動型定義**: 各APIエンドポイントの型を手動で定義
+   - 利点: 完全な制御、カスタマイズ可能
+   - 欠点: メンテナンス負荷、型の不整合リスク
+2. **自動生成**: OpenAPI仕様からの自動生成
+   - 利点: 型安全性、メンテナンス効率
+   - 欠点: 生成タイミングの管理が必要
+
+#### Composable設計パターン
+
+1. **単一責任Composable**: 各機能ごとに独立したcomposable
+2. **統合Composable**: 関連機能をまとめた大きなcomposable
 
 ### 決定事項と理由
 
-**機能別エンドポイント分離アプローチを採用**
+#### KEY INSIGHT: APIクライアント自動生成の活用
 
-**実装したエンドポイント:**
+**決定**: `yarn generate:api-client`による自動生成を採用
+**理由**:
 
-1. `GET /user-settings`: RSS設定を含むユーザー設定取得
-2. `PUT /user-settings`: RSS有効化/無効化を含む設定更新
-3. `POST /user-settings/rss/regenerate-token`: RSSトークン再生成専用
+- バックエンドのDTO変更が自動的にフロントエンドに反映
+- 型安全性の確保とランタイムエラーの削減
+- 開発効率の向上
 
-**設計原則:**
+#### Composable拡張パターン
 
-- **単一責任原則**: 各エンドポイントが明確な責任を持つ
-- **RESTful設計**: HTTPメソッドとリソースの適切な対応
-- **セキュリティ配慮**: RSSトークンのマスク表示、適切なエラーハンドリング
+**決定**: 既存の`useUserSettings`を拡張してRSS機能を統合
+**理由**:
+
+- 設定関連機能の一元管理
+- 状態管理の複雑化を避ける
+- 既存のパターンとの一貫性
 
 ### 学んだ教訓
 
-1. **KEY INSIGHT**: RSS機能のライフサイクル管理（有効化→ファイル生成、無効化→ファイル削除、トークン再生成→古いファイル削除＋新しいファイル生成）を自動化することで、ユーザビリティが大幅に向上
-2. エラーハンドリングにおいて、主要な処理（設定更新）とサブ処理（ファイル操作）を分離し、サブ処理のエラーが主要処理を阻害しないよう設計することが重要
-3. セキュリティトークンのログ出力時は必ずマスク処理を実装する
-4. 非同期ファイル操作（生成・アップロード・削除）の適切なエラーハンドリングとリソース管理が重要
+#### GLOBAL LEARNING: モノレポでのAPI型共有
 
-**実装パターン:**
+- ルートディレクトリでの`yarn generate:api-client`実行により、全アプリケーションで一貫した型定義を共有
+- バックエンドのDTO変更時は必ずAPIクライアント再生成が必要
+- 型定義の変更は段階的にデプロイする必要がある
+
+#### Composable設計の原則
 
 ```typescript
-// RSS設定更新時の自動ファイル管理
-if (rssEnabled && !existingRssToken) {
-  // 新規有効化: トークン生成 + ファイル生成・アップロード
-} else if (!rssEnabled && existingRssToken) {
-  // 無効化: 古いファイル削除
+// 良い例: 機能拡張時の既存パターン踏襲
+interface UserSettings {
+  // 既存フィールド
+  userName?: string;
+  slackWebhookUrl?: string;
+  slackEnabled: boolean;
+
+  // 新規RSS関連フィールド
+  rssEnabled: boolean;
+  rssToken?: string;
+  rssUrl?: string;
 }
 
-// エラーハンドリング: 主要処理は継続、サブ処理エラーは警告ログ
-try {
-  await this.rssFileService.deleteUserRssFile(userId, existingRssToken);
-} catch (error) {
-  this.logger.warn('RSS無効化時の古いファイル削除に失敗しましたが、RSS設定更新は継続します', { userId, error: error.message });
+// 機能追加時の一貫したパターン
+const regenerateRssToken = async (): Promise<RegenerateRssTokenResponseDto> => {
+  try {
+    loading.value = true;
+    const response = await $api.userSettings.regenerateRssToken();
+    // 成功時の状態更新
+    await fetchUserSettings();
+    return response.data;
+  } catch (error) {
+    // エラーハンドリング
+    throw error;
+  } finally {
+    loading.value = false;
+  }
+};
+```
+
+#### エラーハンドリングの統一
+
+- 各API呼び出しで一貫したエラーハンドリングパターンを適用
+- ローディング状態の適切な管理
+- ユーザーフィードバックの統一
+
+### 技術的発見
+
+#### TypeScript型安全性の活用
+
+```typescript
+// DTOの型安全な利用
+interface RegenerateRssTokenResponseDto {
+  rssToken: string;
+  rssUrl: string;
+}
+
+// オプショナルプロパティの適切な処理
+const copyRssUrl = async (): Promise<void> => {
+  if (!props.rssUrl) return; // 型ガードによる安全性確保
+  // ...
+};
+```
+
+#### Vue 3 Composition APIでの非同期処理
+
+- `ref`による状態管理と非同期処理の組み合わせ
+- `watch`を使用したリアクティブな状態同期
+- エラー境界の適切な設定
+
+### APIエンドポイント設計パターン
+
+#### RESTful設計の踏襲
+
+```typescript
+// 一貫したエンドポイント命名
+GET    /api/user-settings          // 設定取得
+PUT    /api/user-settings          // 設定更新
+POST   /api/user-settings/rss/regenerate-token  // 特定操作
+```
+
+#### レスポンス構造の統一
+
+```typescript
+// 成功レスポンス
+interface ApiResponse<T> {
+  data: T;
+  message?: string;
+}
+
+// エラーレスポンス
+interface ApiError {
+  error: string;
+  message: string;
+  statusCode: number;
 }
 ```
+
+### 将来のための提案
+
+#### API設計改善案
+
+1. **バージョニング戦略**: API v2への移行計画
+2. **キャッシュ戦略**: 設定データのクライアントサイドキャッシュ
+3. **リアルタイム更新**: WebSocketによる設定変更の即座反映
+
+#### 開発効率向上案
+
+1. **API Mock**: 開発時のモックサーバー活用
+2. **型生成の自動化**: CI/CDパイプラインでの自動生成
+3. **エラー処理の共通化**: 共通エラーハンドリングミドルウェア
 
 ### 関連タスク
 
 - TPC-92: パーソナルプログラムのRSSを出力できるようにする
-- UserSettingsController拡張タスク
+- APIクライアント自動生成の実装
+- useUserSettings composable拡張
+- RSS関連DTO定義と統合

@@ -695,3 +695,156 @@ const navigateToPage = (page: number): void => {
 - UserSettingsController拡張タスク
 
 ---
+
+## RSS管理機能のアーキテクチャ設計 (2024-12-11)
+
+### 背景と課題
+
+TPC-92チケットの実装において、lp-frontendにRSS管理機能を追加する際、既存のアーキテクチャとの整合性を保ちながら、新機能を効率的に統合する必要があった。
+
+### 検討したアプローチ
+
+#### コンポーネント設計戦略
+
+1. **単一コンポーネントアプローチ**: 設定画面に直接RSS機能を埋め込み
+   - 利点: シンプルな構造
+   - 欠点: 責任の分離不足、再利用性の低下
+2. **分離コンポーネントアプローチ**: RSS機能を独立したコンポーネントとして実装
+   - 利点: 単一責任原則、再利用性、テスタビリティ
+   - 欠点: 若干の複雑性増加
+
+#### 状態管理戦略
+
+1. **新規Composable作成**: RSS専用のcomposableを作成
+2. **既存Composable拡張**: `useUserSettings`を拡張してRSS機能を統合
+
+### 決定事項と理由
+
+#### KEY INSIGHT: コンポーネント分離による責任の明確化
+
+**決定**: `RssSettingsSection`として独立したコンポーネントを作成
+**理由**:
+
+- 単一責任原則の遵守（RSS機能のみに特化）
+- 既存の設定セクション（`SlackWebhookSection`）との一貫性
+- 将来的な機能拡張や他画面での再利用可能性
+- テストの独立性とメンテナンス性の向上
+
+#### 状態管理の統合
+
+**決定**: 既存の`useUserSettings`を拡張
+**理由**:
+
+- 設定関連機能の一元管理
+- 既存のパターンとの一貫性
+- 状態管理の複雑化を避ける
+
+#### Props/Emitsインターフェース設計
+
+```typescript
+interface Props {
+  modelValue: boolean;        // v-model対応
+  rssUrl?: string;           // オプショナルなURL
+  disabled?: boolean;        // 全体無効化制御
+  onRegenerateToken?: () => Promise<RegenerateRssTokenResponseDto>;
+}
+
+interface Emits {
+  (e: 'update:modelValue', value: boolean): void;  // v-model更新
+}
+```
+
+### 学んだ教訓
+
+#### GLOBAL LEARNING: Vue 3コンポーネント設計パターン
+
+- **Props設計**: オプショナルプロパティの適切な使用とデフォルト値設定
+- **v-model実装**: `modelValue`/`update:modelValue`パターンの標準化
+- **型安全性**: TypeScriptインターフェースによる厳密な型定義
+- **責任分離**: 各コンポーネントが明確な責任を持つ設計
+
+#### コンポーネント間通信パターン
+
+```typescript
+// 親コンポーネント（settings.vue）
+const handleRegenerateRssToken = async (): Promise<RegenerateRssTokenResponseDto> => {
+  return await regenerateRssToken();
+};
+
+// 子コンポーネント（RssSettingsSection.vue）
+const handleRegenerateToken = async (): Promise<void> => {
+  if (!props.onRegenerateToken) return;
+  const result = await props.onRegenerateToken();
+  // 結果の処理
+};
+```
+
+#### 既存パターンとの一貫性
+
+- 設定セクションの統一されたカード形式レイアウト
+- スイッチコンポーネントによる有効/無効切り替え
+- 説明文とアクションボタンの配置パターン
+
+### アーキテクチャ原則の適用
+
+#### Clean Architecture準拠
+
+- **UI層**: Vue 3コンポーネント（表示とユーザー操作）
+- **Application層**: Composable（ビジネスロジックと状態管理）
+- **Infrastructure層**: APIクライアント（外部システムとの通信）
+
+#### 依存関係逆転原則
+
+```typescript
+// 良い例: 抽象に依存
+interface Props {
+  onRegenerateToken?: () => Promise<RegenerateRssTokenResponseDto>;
+}
+
+// 悪い例: 具象に依存
+// 直接APIクライアントを呼び出すのではなく、関数を受け取る
+```
+
+### 技術的決定
+
+#### Vuetifyコンポーネントの活用
+
+- `v-card`: 統一されたセクション表示
+- `v-switch`: 機能の有効/無効切り替え
+- `v-text-field`: URL表示（readonly）
+- `v-btn`: アクションボタン
+- `v-tooltip`: ユーザビリティ向上
+
+#### レスポンシブ対応
+
+```vue
+<template>
+  <div class="d-flex align-center ga-2">
+    <v-text-field ... />
+    <v-btn size="small" ... />
+  </div>
+</template>
+```
+
+### 将来のための提案
+
+#### スケーラビリティ考慮
+
+1. **設定セクションの共通化**: 設定セクションの基底コンポーネント作成
+2. **状態管理の最適化**: Pinia導入による大規模状態管理
+3. **コンポーネントライブラリ**: 共通UIコンポーネントの体系化
+
+#### パフォーマンス最適化
+
+1. **遅延ローディング**: 設定画面の動的インポート
+2. **メモ化**: 計算プロパティの最適化
+3. **バンドルサイズ**: 不要な依存関係の削除
+
+### 関連タスク
+
+- TPC-92: パーソナルプログラムのRSSを出力できるようにする
+- RssSettingsSection コンポーネント実装
+- useUserSettings composable拡張
+- 設定画面統合
+
+---

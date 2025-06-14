@@ -698,3 +698,182 @@ it('RSSファイル生成・アップロードでエラーが発生しても、R
 - UserSettingsController拡張タスク
 
 ---
+
+## RSS管理機能のテスト戦略 (2024-12-11)
+
+### 背景と課題
+
+lp-frontendにRSS管理機能を実装する際、フロントエンド特有のテスト課題（ユーザー操作、非同期処理、クリップボードAPI、ブラウザ互換性）に対する効果的なテスト戦略を確立する必要があった。
+
+### 検討したテストアプローチ
+
+#### コンポーネントテスト戦略
+
+1. **単体テスト重視**: 各コンポーネントを独立してテスト
+2. **統合テスト重視**: 親子コンポーネント間の連携をテスト
+3. **E2Eテスト重視**: 実際のユーザー操作をシミュレート
+
+#### モック戦略
+
+1. **APIモック**: バックエンドAPIの完全モック
+2. **ブラウザAPIモック**: クリップボードAPI等のブラウザ機能モック
+3. **最小モック**: 必要最小限のモックのみ使用
+
+### 決定事項と理由
+
+#### KEY INSIGHT: フロントエンド特有のテスト課題への対応
+
+**決定**: 段階的テスト戦略を採用
+
+1. **単体テスト**: コンポーネントの基本機能
+2. **統合テスト**: API連携とcomposable
+3. **E2Eテスト**: 実際のユーザーフロー
+
+**理由**:
+
+- 各レベルで異なる種類のバグを効率的に検出
+- 開発速度とテスト品質のバランス
+- メンテナンス性の確保
+
+#### ブラウザAPI対応テスト
+
+**決定**: モックとフォールバック両方のテスト実装
+
+```typescript
+// クリップボードAPIのテスト例
+describe('copyRssUrl', () => {
+  it('navigator.clipboardが利用可能な場合', async () => {
+    const mockWriteText = jest.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText: mockWriteText }
+    });
+
+    await copyRssUrl();
+    expect(mockWriteText).toHaveBeenCalledWith(expectedUrl);
+  });
+
+  it('フォールバック機能のテスト', async () => {
+    // navigator.clipboardが未対応の場合のテスト
+    Object.assign(navigator, { clipboard: undefined });
+
+    const mockExecCommand = jest.fn().mockReturnValue(true);
+    document.execCommand = mockExecCommand;
+
+    await copyRssUrl();
+    expect(mockExecCommand).toHaveBeenCalledWith('copy');
+  });
+});
+```
+
+### 学んだ教訓
+
+#### GLOBAL LEARNING: フロントエンドテストの複雑性管理
+
+- **ブラウザAPI依存**: 実際のブラウザ環境でしか動作しない機能のテスト戦略
+- **非同期処理**: Promise、async/awaitの適切なテスト方法
+- **ユーザー操作**: クリック、入力等のイベントシミュレーション
+- **状態管理**: リアクティブな状態変更のテスト
+
+#### テスト可能な設計パターン
+
+```typescript
+// 良い例: テスト可能な関数分離
+const copyToClipboard = async (text: string): Promise<void> => {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (err) {
+    // フォールバック処理
+    fallbackCopy(text);
+  }
+};
+
+// テストしやすい純粋関数
+const fallbackCopy = (text: string): void => {
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  // DOM操作...
+};
+```
+
+#### モックの適切な使用
+
+- **過度なモック**: テストが実装詳細に依存しすぎる
+- **適切なモック**: 外部依存のみをモック、ビジネスロジックは実際に実行
+
+### テスト実装パターン
+
+#### Composableのテスト
+
+```typescript
+describe('useUserSettings', () => {
+  it('RSS設定の更新', async () => {
+    const { updateSettings, userSettings } = useUserSettings();
+
+    await updateSettings({ rssEnabled: true });
+
+    expect(userSettings.value.rssEnabled).toBe(true);
+    expect(mockApiCall).toHaveBeenCalledWith({
+      rssEnabled: true
+    });
+  });
+});
+```
+
+#### コンポーネントのテスト
+
+```typescript
+describe('RssSettingsSection', () => {
+  it('RSS有効化スイッチの動作', async () => {
+    const wrapper = mount(RssSettingsSection, {
+      props: { modelValue: false }
+    });
+
+    await wrapper.find('[data-testid="rss-switch"]').trigger('click');
+
+    expect(wrapper.emitted('update:modelValue')).toEqual([[true]]);
+  });
+});
+```
+
+### 課題と制約
+
+#### 現在の制約
+
+1. **E2Eテスト未実装**: 実際のユーザーフローのテストが不足
+2. **ブラウザ互換性テスト**: 複数ブラウザでの動作確認が手動
+3. **パフォーマンステスト**: レンダリング性能の自動テストなし
+
+#### 技術的課題
+
+- クリップボードAPIの制限（HTTPSでのみ動作）
+- ブラウザ間の実装差異
+- 非同期処理のタイミング問題
+
+### 将来のための提案
+
+#### テスト自動化の拡張
+
+1. **E2Eテスト導入**: Playwright/Cypressによる実際のユーザーフローテスト
+2. **ビジュアルリグレッションテスト**: UIの視覚的変更の検出
+3. **アクセシビリティテスト**: スクリーンリーダー対応等の自動テスト
+
+#### CI/CD統合
+
+1. **並列テスト実行**: テスト時間の短縮
+2. **ブラウザマトリックステスト**: 複数ブラウザでの自動テスト
+3. **カバレッジ監視**: テストカバレッジの継続的監視
+
+#### テスト品質向上
+
+1. **テストデータ管理**: ファクトリパターンの活用
+2. **テストユーティリティ**: 共通テスト機能の整備
+3. **テストドキュメント**: テスト仕様書の体系化
+
+### 関連タスク
+
+- TPC-92: パーソナルプログラムのRSSを出力できるようにする
+- RssSettingsSection コンポーネントテスト
+- useUserSettings composable テスト
+- クリップボード機能テスト
+
+---
