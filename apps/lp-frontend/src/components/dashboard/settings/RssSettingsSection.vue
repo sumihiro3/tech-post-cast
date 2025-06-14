@@ -49,12 +49,33 @@ v-card.mb-6(elevation="2")
           .text-caption.text-medium-emphasis.mt-1
             | このURLをポッドキャストアプリに登録してください
 
-        // トークン再生成ボタン
+        // 対応アプリ案内（RSS有効時）
+        .mb-4
+          .text-subtitle-2.mb-2 対応ポッドキャストアプリ
+          .text-caption.text-medium-emphasis.mb-2
+            | 以下のアプリでRSSフィードを登録できます。各アプリ名をクリックして設定方法をご確認ください：
+          .d-flex.flex-wrap.ga-2
+            v-chip.mb-1(
+              v-for="app in podcastApps"
+              :key="app.name"
+              size="small"
+              variant="outlined"
+              :href="app.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              clickable
+            )
+              | {{ app.name }}
+              v-icon.ml-1(size="x-small") mdi-open-in-new
+              v-tooltip(activator="parent" location="top")
+                | {{ app.description }}
+
+        // RSS URL再生成ボタン
         .d-flex.justify-space-between.align-center
           div
-            .text-subtitle-2 セキュリティトークン
+            .text-subtitle-2 RSS URL再生成
             .text-caption.text-medium-emphasis
-              | セキュリティ上の理由でURLを変更したい場合は、新しいトークンを生成できます
+              | セキュリティ上の理由でRSS URLを変更したい場合は、新しいURLを生成できます
           v-btn(
             :loading="regenerating"
             :disabled="disabled"
@@ -62,7 +83,7 @@ v-card.mb-6(elevation="2")
             variant="outlined"
             prepend-icon="mdi-refresh"
             @click="handleRegenerateToken"
-          ) トークン再生成
+          ) URL再生成
 
     // RSS無効時の説明
     v-expand-transition
@@ -78,12 +99,21 @@ v-card.mb-6(elevation="2")
           .text-body-2
             | RSS配信を有効にすると、以下のポッドキャストアプリでパーソナルプログラムを聴くことができます：
           .mt-2
-            v-chip.mr-2.mb-1(
-              v-for="app in podcastApps"
-              :key="app.name"
-              size="small"
-              variant="outlined"
-            ) {{ app.name }}
+            .d-flex.flex-wrap.ga-2
+              v-chip.mb-1(
+                v-for="app in podcastApps"
+                :key="app.name"
+                size="small"
+                variant="outlined"
+                :href="app.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                clickable
+              )
+                | {{ app.name }}
+                v-icon.ml-1(size="x-small") mdi-open-in-new
+                v-tooltip(activator="parent" location="top")
+                  | {{ app.description }}
 </template>
 
 <script setup lang="ts">
@@ -125,10 +155,26 @@ const regenerating = ref<boolean>(false);
 
 // 対応ポッドキャストアプリ一覧
 const podcastApps = ref([
-  { name: 'Apple Podcasts' },
-  { name: 'YouTube Music' },
-  { name: 'Overcast' },
-  { name: 'Pocket Casts' },
+  {
+    name: 'Apple Podcasts',
+    url: 'https://podcasters.apple.com/ja-jp/support/5108-how-apple-podcasts-distributes-your-shows-to-listeners',
+    description: 'RSSフィードURLを使って番組をライブラリに追加',
+  },
+  {
+    name: 'YouTube Music',
+    url: 'https://support.google.com/youtubemusic/answer/13946190?hl=ja',
+    description: 'RSSフィードを使用してポッドキャストをライブラリに追加',
+  },
+  {
+    name: 'Overcast',
+    url: 'https://overcast.fm/podcasterinfo',
+    description: 'RSS URLを使用してポッドキャストを追加',
+  },
+  {
+    name: 'Pocket Casts',
+    url: 'https://support.pocketcasts.com/knowledge-base/submitting-podcasts/',
+    description: 'カスタムRSSフィードの追加方法',
+  },
 ]);
 
 // 親コンポーネントからの値の変更を監視
@@ -200,12 +246,12 @@ const copyRssUrl = async (): Promise<void> => {
 };
 
 /**
- * RSSトークン再生成のハンドラ
+ * RSS URL再生成のハンドラ
  *
- * 実行タイミング: ユーザーがトークン再生成ボタンをクリックした際
+ * 実行タイミング: ユーザーがURL再生成ボタンをクリックした際
  * 処理内容:
  * 1. 確認ダイアログを表示
- * 2. ユーザーが確認した場合、トークン再生成を実行
+ * 2. ユーザーが確認した場合、URL再生成を実行
  * 3. 成功時は成功メッセージを表示
  */
 const handleRegenerateToken = async (): Promise<void> => {
@@ -213,9 +259,9 @@ const handleRegenerateToken = async (): Promise<void> => {
 
   // 確認ダイアログを表示
   const confirmed = confirm(
-    'RSSトークンを再生成すると、現在のRSS URLが無効になります。\n' +
-      'ポッドキャストアプリに登録済みの場合は、新しいURLで再登録が必要です。\n\n' +
-      '続行しますか？',
+    'RSS URLを再生成すると、現在のRSS URLが無効になります。\n' +
+    'ポッドキャストアプリに登録済みの場合は、新しいURLで再登録が必要です。\n\n' +
+    '続行しますか？',
   );
 
   if (!confirmed) return;
@@ -227,15 +273,15 @@ const handleRegenerateToken = async (): Promise<void> => {
 
     // 成功メッセージを表示（useUIStateを使用）
     const ui = useUIState();
-    ui.showSuccess('RSSトークンを再生成しました。新しいURLをご利用ください。');
+    ui.showSuccess('RSS URLを再生成しました。新しいURLをご利用ください。');
 
-    console.log('RSSトークン再生成成功:', result);
+    console.log('RSS URL再生成成功:', result);
   } catch (err) {
-    console.error('RSSトークン再生成エラー:', err);
+    console.error('RSS URL再生成エラー:', err);
 
     // エラーメッセージを表示
     const ui = useUIState();
-    ui.showError('RSSトークンの再生成に失敗しました');
+    ui.showError('RSS URLの再生成に失敗しました');
   } finally {
     regenerating.value = false;
   }
