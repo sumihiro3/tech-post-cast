@@ -20,6 +20,16 @@
 # sumihiro@gmail.com
 # @feedId = feed_cmamcgw9900018p3j62n1293n
 
+# User ID (RSS生成用)
+# Test user
+@userId = user_cmaamvdxs00003x3j5ywgcll7
+# sumihiro@gmail.com
+# @userId = user_cmamcgw9900018p3j62n1293n
+
+##################################################
+# パーソナルフィード番組生成
+##################################################
+
 POST {{baseUrl}}/personalized-feeds/generate-program
 Content-Type: application/json
 Authorization: Bearer {{apiToken}}
@@ -27,4 +37,30 @@ Authorization: Bearer {{apiToken}}
 {
   "daysAgo": 1,
   "feedId": "{{feedId}}"
+}
+
+##################################################
+# RSS一括生成・アップロード
+##################################################
+
+### RSS機能が有効な全ユーザーのRSSを一括生成・アップロード
+POST {{baseUrl}}/personalized-feeds/rss/generate-all
+Content-Type: application/json
+Authorization: Bearer {{apiToken}}
+
+{
+  "force": false
+}
+
+##################################################
+# 個別ユーザーRSS生成・アップロード
+##################################################
+
+### 指定ユーザーのRSSを生成・アップロード
+POST {{baseUrl}}/personalized-feeds/rss/generate-user
+Content-Type: application/json
+Authorization: Bearer {{apiToken}}
+
+{
+  "userId": "{{userId}}"
 }
