@@ -78,6 +78,9 @@ describe('AppConfigService', () => {
                 PRO_PLAN_ID: 'pro-plan',
                 RSS_BUCKET_NAME: 'rss-bucket-name',
                 RSS_URL_PREFIX: 'https://rss.techpostcast.com',
+                PODCAST_IMAGE_URL: 'podcast-image-url',
+                PODCAST_AUTHOR_EMAIL: 'podcast-author-email',
+                PODCAST_AUTHOR_NAME: 'podcast-author-name',
               };
               return configKeys[key];
             }),
@@ -596,5 +599,52 @@ describe('AppConfigService', () => {
     expect(service.ProPlanId).toBe('pro-plan');
     expect(service.RssBucketName).toBe('rss-bucket-name');
     expect(service.RssUrlPrefix).toBe('https://rss.techpostcast.com');
+    expect(service.PodcastImageUrl).toBe('podcast-image-url');
+    expect(service.PodcastAuthorEmail).toBe('podcast-author-email');
+    expect(service.PodcastAuthorName).toBe('podcast-author-name');
+  });
+
+  describe('新しく追加されたPodcast関連のgetterメソッド', () => {
+    it('PodcastImageUrl が正しい値を返すべき', () => {
+      expect(service.PodcastImageUrl).toBe('podcast-image-url');
+    });
+
+    it('PodcastAuthorEmail が正しい値を返すべき', () => {
+      expect(service.PodcastAuthorEmail).toBe('podcast-author-email');
+    });
+
+    it('PodcastAuthorName が正しい値を返すべき', () => {
+      expect(service.PodcastAuthorName).toBe('podcast-author-name');
+    });
+
+    it('PODCAST_IMAGE_URL が未設定でもエラーにならないべき', () => {
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+        if (key === 'PODCAST_IMAGE_URL') return null;
+        return 'some-value';
+      });
+
+      const appConfigService = new AppConfigService(configService);
+      expect(appConfigService.PodcastImageUrl).toBeNull();
+    });
+
+    it('PODCAST_AUTHOR_EMAIL が未設定でもエラーにならないべき', () => {
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+        if (key === 'PODCAST_AUTHOR_EMAIL') return null;
+        return 'some-value';
+      });
+
+      const appConfigService = new AppConfigService(configService);
+      expect(appConfigService.PodcastAuthorEmail).toBeNull();
+    });
+
+    it('PODCAST_AUTHOR_NAME が未設定でもエラーにならないべき', () => {
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+        if (key === 'PODCAST_AUTHOR_NAME') return null;
+        return 'some-value';
+      });
+
+      const appConfigService = new AppConfigService(configService);
+      expect(appConfigService.PodcastAuthorName).toBeNull();
+    });
   });
 });

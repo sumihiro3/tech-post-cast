@@ -52,7 +52,7 @@ export class PersonalRssGenerator {
     // フィードのタイトルと説明
     const title = `Tech Post Cast - ${user.displayName}のパーソナルプログラム`;
     const description = `${user.displayName}さん専用のパーソナルプログラムフィードです。あなたの興味に合わせた技術記事を音声でお届けします。`;
-    const author = 'Tech Post Cast';
+    const author = options.authorName || 'Tech Post Cast';
     const category = 'Technology';
     const authorEmail = options.authorEmail || 'info@techpostcast.com';
 

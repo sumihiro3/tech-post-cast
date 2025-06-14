@@ -6,5 +6,6 @@ export * from './openai-api.error';
 export * from './personalized-feed.error';
 export * from './personalized-program.error';
 export * from './program-file-maker.error';
+export * from './rss.error';
 export * from './text-to-speech.error';
 export * from './twitter-api.error';

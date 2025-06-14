@@ -181,6 +181,7 @@ const mockClient = {
   },
   personalizedFeedProgram: {
     create: jest.fn(),
+    findMany: jest.fn(),
   },
 };
 
@@ -467,6 +468,89 @@ describe('PersonalizedFeedsRepository', () => {
 
       // 結果が正しいことを確認
       expect(result).toEqual([mockPersonalizedFeed]);
+    });
+  });
+
+  describe('findProgramsByUserId', () => {
+    const mockPrograms = [
+      {
+        id: 'program1',
+        userId: 'user1',
+        feedId: 'feed1',
+        title: 'テスト番組1',
+        audioUrl: 'https://example.com/audio1.mp3',
+        audioDuration: 1000,
+        createdAt: new Date('2025-01-01'),
+        updatedAt: new Date('2025-01-01'),
+        programDate: new Date('2025-01-01'),
+        script: {},
+        chapters: [],
+        imageUrl: 'https://example.com/image1.jpg',
+        expiresAt: new Date('2025-12-31'), // 有効期限内
+        isExpired: false,
+      },
+      {
+        id: 'program2',
+        userId: 'user1',
+        feedId: 'feed1',
+        title: 'テスト番組2',
+        audioUrl: 'https://example.com/audio2.mp3',
+        audioDuration: 1200,
+        createdAt: new Date('2025-01-02'),
+        updatedAt: new Date('2025-01-02'),
+        programDate: new Date('2025-01-02'),
+        script: {},
+        chapters: [],
+        imageUrl: 'https://example.com/image2.jpg',
+        expiresAt: null, // 有効期限なし
+        isExpired: false,
+      },
+    ];
+
+    it('指定ユーザーのパーソナルプログラム一覧を取得すること（有効期限切れを除外）', async () => {
+      // findManyメソッドのモック応答を設定
+      mockClient.personalizedFeedProgram.findMany.mockResolvedValue(
+        mockPrograms,
+      );
+
+      // テスト対象のメソッドを呼び出し
+      const result = await repository.findProgramsByUserId('user1', 10);
+
+      // getClientが呼ばれたことを確認
+      expect(mockPrismaClientManager.getClient).toHaveBeenCalled();
+
+      // findManyメソッドが正しいパラメータで呼ばれたことを確認
+      expect(mockClient.personalizedFeedProgram.findMany).toHaveBeenCalledWith({
+        where: {
+          userId: 'user1',
+          isExpired: false,
+          OR: [
+            { expiresAt: null }, // 有効期限が設定されていない場合
+            { expiresAt: { gt: expect.any(Date) } }, // 有効期限が現在時刻より後の場合
+          ],
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 10,
+      });
+
+      // 結果が正しいことを確認
+      expect(result).toEqual(mockPrograms);
+    });
+
+    it('DBエラー時にPersonalizedProgramPersistenceErrorをスローすること', async () => {
+      // findManyメソッドがエラーをスローするように設定
+      const mockError = new Error('DB error');
+      mockClient.personalizedFeedProgram.findMany.mockRejectedValue(mockError);
+
+      // テスト対象のメソッドを呼び出し、エラーをキャッチ
+      await expect(
+        repository.findProgramsByUserId('user1', 10),
+      ).rejects.toThrow(PersonalizedProgramPersistenceError);
+
+      // getClientが呼ばれたことを確認
+      expect(mockPrismaClientManager.getClient).toHaveBeenCalled();
     });
   });
 });

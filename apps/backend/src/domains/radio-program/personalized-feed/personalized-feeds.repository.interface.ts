@@ -137,4 +137,15 @@ export interface IPersonalizedFeedsRepository {
     postCount: number,
     reason: PersonalizedProgramAttemptFailureReason,
   ): Promise<PersonalizedProgramAttempt>;
+
+  /**
+   * 指定ユーザーのパーソナルプログラム一覧を取得する
+   * @param userId ユーザーID
+   * @param limit 取得件数上限
+   * @returns パーソナルプログラム一覧
+   */
+  findProgramsByUserId(
+    userId: string,
+    limit: number,
+  ): Promise<PersonalizedFeedProgram[]>;
 }

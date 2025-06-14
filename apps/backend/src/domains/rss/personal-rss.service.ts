@@ -1,5 +1,6 @@
 import { AppConfigService } from '@/app-config/app-config.service';
-import { IPersonalizedProgramsRepository } from '@/domains/personalized-programs/personalized-programs.repository.interface';
+import { IAppUsersRepository } from '@/domains/app-user/app-users.repository.interface';
+import { IPersonalizedFeedsRepository } from '@/domains/radio-program/personalized-feed/personalized-feeds.repository.interface';
 import { RssFileGenerationError, RssFileUploadError } from '@/types/errors';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { AppUser } from '@prisma/client';
@@ -44,16 +45,34 @@ export interface RssFileUploadResult {
 }
 
 /**
- * RSSファイルの生成とアップロードを管理するサービス
+ * RSS一括生成結果
+ */
+export interface RssBatchResult {
+  /** 成功件数 */
+  successCount: number;
+  /** 失敗件数 */
+  failureCount: number;
+  /** 失敗したユーザーID一覧 */
+  failedUserIds: string[];
+  /** 処理開始時刻 */
+  startedAt: Date;
+  /** 処理完了時刻 */
+  completedAt: Date;
+}
+
+/**
+ * パーソナルRSSの生成とアップロードを管理するサービス
  */
 @Injectable()
-export class RssFileService {
-  private readonly logger = new Logger(RssFileService.name);
+export class PersonalRssService {
+  private readonly logger = new Logger(PersonalRssService.name);
 
   constructor(
     private readonly appConfigService: AppConfigService,
-    @Inject('PersonalizedProgramsRepository')
-    private readonly personalizedProgramsRepository: IPersonalizedProgramsRepository,
+    @Inject('AppUsersRepository')
+    private readonly appUsersRepository: IAppUsersRepository,
+    @Inject('PersonalizedFeedsRepository')
+    private readonly personalizedFeedsRepository: IPersonalizedFeedsRepository,
     @Inject('RssFileUploader')
     private readonly rssFileUploader: IRssFileUploader,
   ) {}
@@ -77,27 +96,21 @@ export class RssFileService {
       }
 
       // ユーザーのパーソナルプログラム一覧を取得（最新30件）
-      const programsResult =
-        await this.personalizedProgramsRepository.findByUserIdWithPagination(
+      const programs =
+        await this.personalizedFeedsRepository.findProgramsByUserId(
           appUser.id,
-          {
-            limit: 30,
-            offset: 0,
-            orderBy: { createdAt: 'desc' },
-          },
+          30,
         );
 
       // RSSプログラム形式に変換
-      const rssPrograms: RssProgram[] = programsResult.programs.map(
-        (program) => ({
-          id: program.id,
-          title: program.title,
-          audioUrl: program.audioUrl,
-          audioDuration: program.audioDuration,
-          createdAt: program.createdAt,
-          imageUrl: program.imageUrl || undefined,
-        }),
-      );
+      const rssPrograms: RssProgram[] = programs.map((program) => ({
+        id: program.id,
+        title: program.title,
+        audioUrl: program.audioUrl,
+        audioDuration: program.audioDuration,
+        createdAt: program.createdAt,
+        imageUrl: program.imageUrl || undefined,
+      }));
 
       // RSSユーザー情報
       const rssUser: RssUser = {
@@ -211,20 +224,22 @@ export class RssFileService {
 
   /**
    * ユーザーのRSSファイルを生成してアップロードする
-   * @param appUser 対象ユーザー
+   * @param userId 対象ユーザーID
    * @returns アップロード結果
    * @throws RssFileGenerationError RSS生成に失敗した場合
    * @throws RssFileUploadError アップロードに失敗した場合
    */
-  async generateAndUploadUserRss(
-    appUser: AppUser,
-  ): Promise<RssFileUploadResult> {
+  async generateAndUploadUserRss(userId: string): Promise<RssFileUploadResult> {
     let tempFilePath: string | undefined;
 
     try {
-      this.logger.log(
-        `RSSファイル生成・アップロードを開始します: ${appUser.id}`,
-      );
+      this.logger.log(`RSSファイル生成・アップロードを開始します: ${userId}`);
+
+      // ユーザー情報を取得
+      const appUser = await this.appUsersRepository.findOne(userId);
+      if (!appUser) {
+        throw new RssFileGenerationError(`ユーザーが見つかりません: ${userId}`);
+      }
 
       // RSSファイル生成
       const generationResult = await this.generateUserRssFile(appUser);
@@ -233,7 +248,7 @@ export class RssFileService {
       // RSSファイルアップロード
       const uploadResult = await this.uploadRssFile(generationResult, appUser);
 
-      this.logger.log(`RSSファイル生成・アップロード完了: ${appUser.id}`);
+      this.logger.log(`RSSファイル生成・アップロード完了: ${userId}`);
 
       return uploadResult;
     } finally {
@@ -253,45 +268,73 @@ export class RssFileService {
   }
 
   /**
-   * 指定されたRSSトークンのRSSファイルを削除する
-   * @param rssToken 削除対象のRSSトークン
-   * @param userId ユーザーID（ログ用）
-   * @throws RssFileUploadError 削除に失敗した場合
+   * RSS機能が有効な全ユーザーのRSSを一括生成・アップロードする
+   * @returns 一括生成結果
    */
-  async deleteUserRssFile(rssToken: string, userId?: string): Promise<void> {
+  async generateAndUploadAllUserRss(): Promise<RssBatchResult> {
+    const startedAt = new Date();
+    let successCount = 0;
+    const failedUserIds: string[] = [];
+
     try {
-      const logUserId = userId || 'unknown';
-      this.logger.log(
-        `RSSファイル削除を開始します: ${logUserId}, token: ${this.maskRssToken(rssToken)}`,
-      );
+      this.logger.log('RSS一括生成・アップロードを開始します');
 
-      // 削除対象のパスを構築
-      const bucketName = this.appConfigService.RssBucketName;
-      const deletePath = `u/${rssToken}/rss.xml`;
+      // RSS機能が有効なユーザー一覧を取得
+      const rssEnabledUsers = await this.getRssEnabledUsers();
+      this.logger.log(`RSS機能が有効なユーザー: ${rssEnabledUsers.length}件`);
 
-      // RssFileUploaderを使用してファイル削除
-      await this.rssFileUploader.delete({
-        bucketName,
-        filePath: deletePath,
+      // 各ユーザーのRSSを並列で生成・アップロード
+      const promises = rssEnabledUsers.map(async (user) => {
+        try {
+          await this.generateAndUploadUserRss(user.id);
+          successCount++;
+          this.logger.debug(`RSS生成成功: ${user.id}`);
+        } catch (error) {
+          failedUserIds.push(user.id);
+          this.logger.error(`RSS生成失敗: ${user.id}`, error);
+        }
       });
 
-      this.logger.log(
-        `RSSファイル削除完了: ${logUserId}, token: ${this.maskRssToken(rssToken)}`,
-      );
+      await Promise.all(promises);
+
+      const completedAt = new Date();
+      const result: RssBatchResult = {
+        successCount,
+        failureCount: failedUserIds.length,
+        failedUserIds,
+        startedAt,
+        completedAt,
+      };
+
+      this.logger.log('RSS一括生成・アップロード完了', {
+        successCount: result.successCount,
+        failureCount: result.failureCount,
+        totalUsers: rssEnabledUsers.length,
+        duration: completedAt.getTime() - startedAt.getTime(),
+      });
+
+      return result;
     } catch (error) {
-      const errorMessage = `RSSファイル削除に失敗しました: ${userId || 'unknown'}, token: ${this.maskRssToken(rssToken)}`;
+      const errorMessage = 'RSS一括生成・アップロードでエラーが発生しました';
       this.logger.error(errorMessage, error);
-      throw new RssFileUploadError(errorMessage, { cause: error });
+      throw new RssFileGenerationError(errorMessage, { cause: error });
     }
   }
 
   /**
-   * ログ出力用にRSSトークンをマスクする
-   * @param rssToken マスクするRSSトークン
-   * @returns マスクされたRSSトークン
+   * RSS機能が有効なユーザー一覧を取得する
+   * @returns RSS機能が有効なユーザー一覧
    */
-  private maskRssToken(rssToken: string): string {
-    if (!rssToken || rssToken.length < 12) return '***';
-    return `${rssToken.substring(0, 8)}***${rssToken.substring(rssToken.length - 4)}`;
+  async getRssEnabledUsers(): Promise<AppUser[]> {
+    try {
+      // RSS機能が有効（rssEnabled=true かつ rssToken が設定済み）なユーザーを取得
+      const users = await this.appUsersRepository.findRssEnabledUsers();
+      this.logger.debug(`RSS機能が有効なユーザー: ${users.length}件`);
+      return users;
+    } catch (error) {
+      const errorMessage = 'RSS機能が有効なユーザーの取得に失敗しました';
+      this.logger.error(errorMessage, error);
+      throw new RssFileGenerationError(errorMessage, { cause: error });
+    }
   }
 }

@@ -553,4 +553,25 @@ export class AppConfigService {
   get RssUrlPrefix(): string {
     return this.config.get<string>('RSS_URL_PREFIX');
   }
+
+  /**
+   * ポッドキャスト画像URL
+   */
+  get PodcastImageUrl(): string {
+    return this.config.get<string>('PODCAST_IMAGE_URL');
+  }
+
+  /**
+   * ポッドキャスト著者メールアドレス
+   */
+  get PodcastAuthorEmail(): string {
+    return this.config.get<string>('PODCAST_AUTHOR_EMAIL');
+  }
+
+  /**
+   * ポッドキャスト著者名
+   */
+  get PodcastAuthorName(): string {
+    return this.config.get<string>('PODCAST_AUTHOR_NAME');
+  }
 }

@@ -58,6 +58,8 @@ export interface RssGenerationOptions {
   defaultImageUrl: string;
   /** 著者のメールアドレス */
   authorEmail?: string;
+  /** 著者名 */
+  authorName?: string;
 }
 
 /**

@@ -1,26 +1,24 @@
 import {
+  AppUserNotFoundError,
+  PersonalizedFeedNotFoundError,
+  PersonalizedProgramAlreadyExistsError,
+  RssFileGenerationError,
+  RssFileUploadError,
+} from '@/types/errors';
+import {
   BadRequestException,
   ConflictException,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { MockFunctionMetadata, ModuleMocker } from 'jest-mock';
-import { AppConfigService } from '../../app-config/app-config.service';
-import {
-  AppUserNotFoundError,
-  PersonalizedFeedNotFoundError,
-  PersonalizedProgramAlreadyExistsError,
-} from '@/types/errors';
-import { PersonalizedFeedsBuilder } from '../../domains/radio-program/personalized-feed/personalized-feeds-builder';
-import {
-  ActiveFeedDto,
-  GenerateProgramResponseDto,
-  PersonalizedFeedCreateRequestDto,
-} from './dto/personalized-feed.dto';
-import { PersonalizedFeedsController } from './personalized-feeds.controller';
 import { JsonValue } from '@prisma/client/runtime/library';
 import { PersonalizedFeedWithFilters } from '@tech-post-cast/database';
+import { MockFunctionMetadata, ModuleMocker } from 'jest-mock';
+import { AppConfigService } from '../../app-config/app-config.service';
+import { PersonalizedFeedsBuilder } from '../../domains/radio-program/personalized-feed/personalized-feeds-builder';
+import { PersonalizedFeedCreateRequestDto } from './dto/personalized-feed.dto';
+import { PersonalizedFeedsController } from './personalized-feeds.controller';
 
 const moduleMocker = new ModuleMocker(global);
 
@@ -94,7 +92,7 @@ describe('PersonalizedFeedsController', () => {
           isActive: true,
         },
       ] as unknown as PersonalizedFeedWithFilters[];
-      
+
       jest
         .spyOn(personalizedFeedsBuilder, 'getActiveFeeds')
         .mockResolvedValue(mockActiveFeeds);
@@ -201,7 +199,10 @@ describe('PersonalizedFeedsController', () => {
       jest
         .spyOn(personalizedFeedsBuilder, 'buildProgramByFeed')
         .mockRejectedValue(
-          new PersonalizedProgramAlreadyExistsError('Program already exists', programDate),
+          new PersonalizedProgramAlreadyExistsError(
+            'Program already exists',
+            programDate,
+          ),
         );
 
       await expect(controller.generateProgramByFeed(dto)).rejects.toThrow(
@@ -253,14 +254,18 @@ describe('PersonalizedFeedsController', () => {
       };
 
       const originalWebhookUrl = appConfigService.SlackIncomingWebhookUrl;
-      Object.defineProperty(appConfigService, 'SlackIncomingWebhookUrl', { value: '' });
+      Object.defineProperty(appConfigService, 'SlackIncomingWebhookUrl', {
+        value: '',
+      });
       global.fetch = jest.fn();
-      
+
       try {
         await controller.notifyError(body);
         expect(fetch).not.toHaveBeenCalled();
       } finally {
-        Object.defineProperty(appConfigService, 'SlackIncomingWebhookUrl', { value: originalWebhookUrl });
+        Object.defineProperty(appConfigService, 'SlackIncomingWebhookUrl', {
+          value: originalWebhookUrl,
+        });
       }
     });
   });
@@ -297,12 +302,144 @@ describe('PersonalizedFeedsController', () => {
         failedFeedIds: ['feed-5'],
       };
 
-      Object.defineProperty(appConfigService, 'SlackIncomingWebhookUrl', { value: '' });
+      Object.defineProperty(appConfigService, 'SlackIncomingWebhookUrl', {
+        value: '',
+      });
       global.fetch = jest.fn();
 
       await controller.finalize(body);
 
       expect(fetch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('RSS関連エンドポイント', () => {
+    let personalRssService: any;
+
+    beforeEach(() => {
+      personalRssService = {
+        generateAndUploadAllUserRss: jest.fn(),
+        generateAndUploadUserRss: jest.fn(),
+      };
+
+      // PersonalRssServiceのモックを設定
+      (controller as any).personalRssService = personalRssService;
+    });
+
+    describe('generateAllRss', () => {
+      it('RSS一括生成が正常に完了する', async () => {
+        const mockResult = {
+          successCount: 5,
+          failureCount: 1,
+          failedUserIds: ['user-failed'],
+          startedAt: new Date('2024-12-10T10:00:00Z'),
+          completedAt: new Date('2024-12-10T10:05:00Z'),
+        };
+
+        personalRssService.generateAndUploadAllUserRss.mockResolvedValue(
+          mockResult,
+        );
+
+        global.fetch = jest.fn().mockResolvedValue({ ok: true });
+
+        const result = await controller.generateAllUserRss({});
+
+        expect(
+          personalRssService.generateAndUploadAllUserRss,
+        ).toHaveBeenCalled();
+        expect(result.successCount).toBe(5);
+        expect(result.failureCount).toBe(1);
+        expect(result.failedUserIds).toEqual(['user-failed']);
+        expect(result.durationMs).toBe(300000); // 5分
+        expect(fetch).toHaveBeenCalled(); // Slack通知が送信される
+      });
+
+      it('RSS一括生成でエラーが発生した場合はInternalServerErrorExceptionを投げる', async () => {
+        personalRssService.generateAndUploadAllUserRss.mockRejectedValue(
+          new Error('RSS generation failed'),
+        );
+
+        await expect(controller.generateAllUserRss({})).rejects.toThrow(
+          InternalServerErrorException,
+        );
+      });
+    });
+
+    describe('generateUserRss', () => {
+      it('個別ユーザーRSS生成が正常に完了する', async () => {
+        const dto = { userId: 'user-123' };
+        const mockResult = {
+          userId: 'user-123',
+          rssUrl: 'https://rss.techpostcast.com/u/token-123/rss.xml',
+          episodeCount: 10,
+          generatedAt: new Date('2024-12-10T10:00:00Z'),
+        };
+
+        personalRssService.generateAndUploadUserRss.mockResolvedValue(
+          mockResult,
+        );
+
+        const result = await controller.generateUserRss(dto);
+
+        expect(
+          personalRssService.generateAndUploadUserRss,
+        ).toHaveBeenCalledWith('user-123');
+        expect(result.rssUrl).toBe(
+          'https://rss.techpostcast.com/u/token-123/rss.xml',
+        );
+        expect(result.episodeCount).toBe(10);
+        expect(result.generatedAt).toBe('2024-12-10T10:00:00.000Z');
+      });
+
+      it('ユーザーが見つからない場合はNotFoundExceptionを投げる', async () => {
+        const dto = { userId: 'non-existent-user' };
+
+        personalRssService.generateAndUploadUserRss.mockRejectedValue(
+          new AppUserNotFoundError(
+            'ユーザーが見つかりません: non-existent-user',
+          ),
+        );
+
+        await expect(controller.generateUserRss(dto)).rejects.toThrow(
+          NotFoundException,
+        );
+      });
+
+      it('RSS生成エラーの場合はBadRequestExceptionを投げる', async () => {
+        const dto = { userId: 'user-123' };
+
+        personalRssService.generateAndUploadUserRss.mockRejectedValue(
+          new RssFileGenerationError('RSS機能が無効またはトークンが未設定です'),
+        );
+
+        await expect(controller.generateUserRss(dto)).rejects.toThrow(
+          BadRequestException,
+        );
+      });
+
+      it('RSSアップロードエラーの場合はInternalServerErrorExceptionを投げる', async () => {
+        const dto = { userId: 'user-123' };
+
+        personalRssService.generateAndUploadUserRss.mockRejectedValue(
+          new RssFileUploadError('RSS upload failed'),
+        );
+
+        await expect(controller.generateUserRss(dto)).rejects.toThrow(
+          InternalServerErrorException,
+        );
+      });
+
+      it('その他のエラーの場合はInternalServerErrorExceptionを投げる', async () => {
+        const dto = { userId: 'user-123' };
+
+        personalRssService.generateAndUploadUserRss.mockRejectedValue(
+          new Error('Unknown error'),
+        );
+
+        await expect(controller.generateUserRss(dto)).rejects.toThrow(
+          InternalServerErrorException,
+        );
+      });
     });
   });
 });

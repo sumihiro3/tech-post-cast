@@ -1,3 +1,4 @@
+import { PersonalRssService } from '@/domains/rss/personal-rss.service';
 import { PersonalizedFeedFilterMapper } from '@domains/radio-program/personalized-feed/personalized-feed-filter.mapper';
 import { PersonalizedFeedsBuilder } from '@domains/radio-program/personalized-feed/personalized-feeds-builder';
 import { AppUsersRepository } from '@infrastructure/database/app-users/app-users.repository';
@@ -5,6 +6,7 @@ import { PersonalizedFeedsRepository } from '@infrastructure/database/personaliz
 import { QiitaPostsRepository } from '@infrastructure/database/qiita-posts/qiita-posts.repository';
 import { TermsRepository } from '@infrastructure/database/terms/terms.repository';
 import { S3ProgramFileUploader } from '@infrastructure/external-api/aws/s3';
+import { S3RssFileUploader } from '@infrastructure/external-api/aws/s3/rss-file-uploader';
 import { TextToSpeechClient } from '@infrastructure/external-api/google/text-to-speech';
 import { QiitaPostsApiClient } from '@infrastructure/external-api/qiita-api/qiita-posts.api.client';
 import { FfmpegProgramFileMaker } from '@infrastructure/ffmpeg/program-file-maker';
@@ -18,6 +20,7 @@ import { PersonalizedFeedsController } from './personalized-feeds.controller';
   providers: [
     PersonalizedFeedsBuilder,
     PersonalizedFeedFilterMapper,
+    PersonalRssService,
     TermsRepository,
     {
       provide: 'PersonalizedFeedsRepository',
@@ -38,6 +41,10 @@ import { PersonalizedFeedsController } from './personalized-feeds.controller';
     {
       provide: 'ProgramFileUploader',
       useClass: S3ProgramFileUploader,
+    },
+    {
+      provide: 'RssFileUploader',
+      useClass: S3RssFileUploader,
     },
     {
       provide: 'TextToSpeechClient',

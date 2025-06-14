@@ -18,4 +18,10 @@ export interface IAppUsersRepository {
    * @returns ユーザー情報とサブスクリプション情報
    */
   findOneWithSubscription(userId: string): Promise<UserWithSubscription>;
+
+  /**
+   * RSS機能が有効なユーザー一覧を取得する
+   * @returns RSS機能が有効なユーザー一覧
+   */
+  findRssEnabledUsers(): Promise<AppUser[]>;
 }

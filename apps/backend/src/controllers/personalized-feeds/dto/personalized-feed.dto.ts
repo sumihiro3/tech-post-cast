@@ -84,3 +84,121 @@ export class GenerateProgramResponseDto {
   @IsNumber()
   qiitaApiRateReset: number;
 }
+
+/**
+ * RSS一括生成要求DTO
+ */
+export class RssBatchGenerateRequestDto {
+  @ApiProperty({
+    description: '強制実行フラグ（通常は不要）',
+    example: false,
+    default: false,
+    required: false,
+  })
+  @IsOptional()
+  force?: boolean;
+}
+
+/**
+ * RSS一括生成結果DTO
+ */
+export class RssBatchGenerateResponseDto {
+  @ApiProperty({
+    description: '成功件数',
+    example: 15,
+    required: true,
+  })
+  @IsNumber()
+  successCount: number;
+
+  @ApiProperty({
+    description: '失敗件数',
+    example: 2,
+    required: true,
+  })
+  @IsNumber()
+  failureCount: number;
+
+  @ApiProperty({
+    description: '失敗したユーザーID一覧',
+    example: ['user-1', 'user-2'],
+    required: true,
+  })
+  @IsString({ each: true })
+  failedUserIds: string[];
+
+  @ApiProperty({
+    description: '処理開始時刻（ISO文字列）',
+    example: '2024-01-01T00:00:00.000Z',
+    required: true,
+  })
+  @IsString()
+  startedAt: string;
+
+  @ApiProperty({
+    description: '処理完了時刻（ISO文字列）',
+    example: '2024-01-01T00:05:30.000Z',
+    required: true,
+  })
+  @IsString()
+  completedAt: string;
+
+  @ApiProperty({
+    description: '処理時間（ミリ秒）',
+    example: 330000,
+    required: true,
+  })
+  @IsNumber()
+  durationMs: number;
+}
+
+/**
+ * 個別ユーザーRSS生成要求DTO
+ */
+export class RssUserGenerateRequestDto {
+  @ApiProperty({
+    description: 'ユーザーID',
+    example: 'user-123',
+    required: true,
+  })
+  @IsString()
+  userId: string;
+}
+
+/**
+ * 個別ユーザーRSS生成結果DTO
+ */
+export class RssUserGenerateResponseDto {
+  @ApiProperty({
+    description: 'ユーザーID',
+    example: 'user-123',
+    required: true,
+  })
+  @IsString()
+  userId: string;
+
+  @ApiProperty({
+    description: 'アップロードされたRSS URL',
+    example:
+      'https://rss.techpostcast.com/u/550e8400-e29b-41d4-a716-446655440000/rss.xml',
+    required: true,
+  })
+  @IsString()
+  rssUrl: string;
+
+  @ApiProperty({
+    description: 'エピソード数',
+    example: 25,
+    required: true,
+  })
+  @IsNumber()
+  episodeCount: number;
+
+  @ApiProperty({
+    description: '生成日時（ISO文字列）',
+    example: '2024-01-01T00:00:00.000Z',
+    required: true,
+  })
+  @IsString()
+  generatedAt: string;
+}

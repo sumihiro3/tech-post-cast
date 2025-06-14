@@ -32,6 +32,7 @@ describe('PersonalRssGenerator', () => {
     rssUrlPrefix: 'https://rss.techpostcast.com',
     defaultImageUrl: 'https://techpostcast.com/images/tech-post-cast-logo.png',
     authorEmail: 'test@techpostcast.com',
+    authorName: 'Test Author',
   };
 
   describe('generateUserRss', () => {
@@ -129,6 +130,36 @@ describe('PersonalRssGenerator', () => {
       );
 
       expect(result.xml).toContain('info@techpostcast.com');
+    });
+
+    it('authorNameが指定された場合は指定された値が使用される', () => {
+      const optionsWithAuthorName: RssGenerationOptions = {
+        ...mockOptions,
+        authorName: 'カスタム著者名',
+      };
+
+      const result = PersonalRssGenerator.generateUserRss(
+        mockUser,
+        mockPrograms,
+        optionsWithAuthorName,
+      );
+
+      expect(result.xml).toContain('カスタム著者名');
+    });
+
+    it('authorNameが未指定の場合はデフォルト値が使用される', () => {
+      const optionsWithoutAuthorName: RssGenerationOptions = {
+        ...mockOptions,
+        authorName: undefined,
+      };
+
+      const result = PersonalRssGenerator.generateUserRss(
+        mockUser,
+        mockPrograms,
+        optionsWithoutAuthorName,
+      );
+
+      expect(result.xml).toContain('Tech Post Cast');
     });
 
     it('プログラム固有の画像URLが優先される', () => {
