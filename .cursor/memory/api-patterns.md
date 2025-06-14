@@ -1101,3 +1101,97 @@ interface ApiError {
 - APIクライアント自動生成の実装
 - useUserSettings composable拡張
 - RSS関連DTO定義と統合
+
+## 統計データ取得APIの設計パターン (2024-12-19)
+
+### 背景と課題
+
+PersonalizedFeedsController.finalizeメソッドにおいて、外部から渡された統計データではなく、データベースから直接統計を取得する必要があった。
+
+### 検討したアプローチ
+
+1. **外部データ依存パターン**
+   - 利点: 実装が簡単、外部システムとの結合度が高い
+   - 欠点: データの整合性が保証されない、外部システムの障害に依存
+
+2. **データベース直接取得パターン**
+   - 利点: データの整合性が保証される、単一の真実の源泉
+   - 欠点: データベースアクセスのオーバーヘッド
+
+### 決定事項と理由
+
+データベースから直接統計を取得するパターンを採用。
+
+**理由:**
+
+- データの整合性と信頼性を重視
+- 外部システムの障害や不整合から独立
+- 将来的な統計データの拡張が容易
+
+### 実装パターン
+
+```typescript
+// DTOで日付指定を受け取る
+class FinalizeRequestDto {
+  daysAgo?: number;
+
+  getTargetDate(): Date {
+    const daysAgo = this.daysAgo ?? 0;
+    return getStartOfDay(subtractDays(new Date(), daysAgo), TIME_ZONE_JST);
+  }
+}
+
+// Serviceで統計計算を実行
+async getGenerationStatsByDaysAgo(daysAgo: number = 0): Promise<ProgramGenerationStats>
+```
+
+### 学んだ教訓
+
+- **KEY INSIGHT**: 統計データは可能な限り単一の真実の源泉から取得すべき
+- 日付計算はDTOまたはServiceで行い、Controllerには含めない
+- 統計データの構造は将来の拡張を考慮して設計する
+
+### 関連タスク
+
+PersonalizedFeedsController.finalize実装変更
+
+## ステータス管理とメッセージング (2024-12-19)
+
+### 背景と課題
+
+番組生成結果にSUCCESS/SKIPPED/FAILEDの3つのステータスがあるが、当初はSUCCESS/FAILEDのみを考慮していた。
+
+### 決定事項と理由
+
+全てのステータスを適切に処理し、ユーザーに分かりやすい形で通知する。
+
+**実装パターン:**
+
+```typescript
+interface ProgramGenerationStats {
+  totalFeeds: number;
+  successCount: number;
+  skippedCount: number;  // 追加
+  failedFeedIds: string[]; // 失敗のみIDを保持
+  timestamp: number;
+}
+```
+
+**通知メッセージ:**
+
+```
+- 成功: X 件
+- スキップ: Y 件  // 新規追加
+- 失敗: Z 件
+- 失敗したパーソナルフィードID: [IDリスト]
+```
+
+### 学んだ教訓
+
+- **GLOBAL LEARNING**: ステータス設計時は全ての可能な状態を考慮すべき
+- エラー情報（フィードID）は失敗時のみ必要、スキップ時は不要
+- ユーザー向けメッセージは業務的な意味を正確に反映すべき
+
+### 関連タスク
+
+PersonalizedFeedsController.finalize実装変更
