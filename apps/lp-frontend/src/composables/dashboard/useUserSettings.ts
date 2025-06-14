@@ -7,6 +7,7 @@
  */
 
 import type {
+  RegenerateRssTokenResponseDto,
   TestSlackWebhookRequestDto,
   TestSlackWebhookResponseDto,
   UpdateUserSettingsRequestDto,
@@ -23,6 +24,12 @@ export interface UserSettings {
   slackWebhookUrl: string;
   /** 通知有効フラグ - Slack通知が有効かどうかを示すフラグ */
   notificationEnabled: boolean;
+  /** RSS機能有効フラグ - RSS機能が有効かどうかを示すフラグ */
+  rssEnabled: boolean;
+  /** RSSトークン - RSS配信用のトークン（RSS機能が有効な場合のみ） */
+  rssToken?: string;
+  /** RSS URL - RSS配信URL（RSS機能が有効な場合のみ） */
+  rssUrl?: string;
 }
 
 /**
@@ -51,6 +58,8 @@ export interface UseUserSettingsReturn {
   validateSlackWebhookUrl: (url: string) => string | null;
   /** Webhook URLテスト関数 - 指定されたWebhook URLにテスト送信を行う */
   testSlackWebhook: (webhookUrl: string) => Promise<TestSlackWebhookResponseDto>;
+  /** RSSトークン再生成関数 - 新しいRSSトークンを生成し、新しいRSS URLを発行する */
+  regenerateRssToken: () => Promise<RegenerateRssTokenResponseDto>;
 }
 
 /**
@@ -66,12 +75,18 @@ export const useUserSettings = (): UseUserSettingsReturn => {
     displayName: '',
     slackWebhookUrl: '',
     notificationEnabled: false,
+    rssEnabled: false,
+    rssToken: undefined,
+    rssUrl: undefined,
   });
 
   const originalSettings = ref<UserSettings>({
     displayName: '',
     slackWebhookUrl: '',
     notificationEnabled: false,
+    rssEnabled: false,
+    rssToken: undefined,
+    rssUrl: undefined,
   });
 
   const loading = ref<boolean>(false);
@@ -84,7 +99,8 @@ export const useUserSettings = (): UseUserSettingsReturn => {
     return (
       settings.value.displayName !== originalSettings.value.displayName ||
       settings.value.slackWebhookUrl !== originalSettings.value.slackWebhookUrl ||
-      settings.value.notificationEnabled !== originalSettings.value.notificationEnabled
+      settings.value.notificationEnabled !== originalSettings.value.notificationEnabled ||
+      settings.value.rssEnabled !== originalSettings.value.rssEnabled
     );
   });
 
@@ -104,6 +120,9 @@ export const useUserSettings = (): UseUserSettingsReturn => {
         displayName: response.data.displayName,
         slackWebhookUrl: response.data.slackWebhookUrl || '',
         notificationEnabled: response.data.notificationEnabled,
+        rssEnabled: response.data.rssEnabled,
+        rssToken: response.data.rssToken,
+        rssUrl: response.data.rssUrl,
       };
 
       settings.value = { ...fetchedSettings };
@@ -159,6 +178,9 @@ export const useUserSettings = (): UseUserSettingsReturn => {
       if (data.notificationEnabled !== undefined) {
         requestData.notificationEnabled = data.notificationEnabled;
       }
+      if (data.rssEnabled !== undefined) {
+        requestData.rssEnabled = data.rssEnabled;
+      }
 
       const response = await $userSettingsApi.updateUserSettings(requestData);
 
@@ -166,6 +188,9 @@ export const useUserSettings = (): UseUserSettingsReturn => {
         displayName: response.data.displayName,
         slackWebhookUrl: response.data.slackWebhookUrl || '',
         notificationEnabled: response.data.notificationEnabled,
+        rssEnabled: response.data.rssEnabled,
+        rssToken: response.data.rssToken,
+        rssUrl: response.data.rssUrl,
       };
 
       settings.value = { ...updatedSettings };
@@ -269,6 +294,51 @@ export const useUserSettings = (): UseUserSettingsReturn => {
     return response.data;
   };
 
+  /**
+   * RSSトークンの再生成
+   *
+   * @returns {Promise<RegenerateRssTokenResponseDto>} 再生成結果
+   * @throws {Error} API呼び出しに失敗した場合
+   */
+  const regenerateRssToken = async (): Promise<RegenerateRssTokenResponseDto> => {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const response = await $userSettingsApi.regenerateRssToken();
+
+      // 設定を更新（新しいトークンとURLを反映）
+      settings.value.rssToken = response.data.rssToken;
+      settings.value.rssUrl = response.data.rssUrl;
+      originalSettings.value.rssToken = response.data.rssToken;
+      originalSettings.value.rssUrl = response.data.rssUrl;
+
+      return response.data;
+    } catch (err: unknown) {
+      console.error('RSSトークンの再生成に失敗しました:', err);
+
+      // より詳細なエラーメッセージを生成
+      let errorMessage = 'RSSトークンの再生成に失敗しました';
+
+      if (err && typeof err === 'object' && 'response' in err) {
+        const response = (err as { response?: { data?: { message?: string }; status?: number } })
+          .response;
+        if (response?.data?.message) {
+          errorMessage = `再生成エラー: ${response.data.message}`;
+        } else if (response?.status) {
+          errorMessage = `再生成エラー: HTTPステータス ${response.status}`;
+        }
+      } else if (err instanceof Error) {
+        errorMessage = `再生成エラー: ${err.message}`;
+      }
+
+      error.value = errorMessage;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
   return {
     settings,
     originalSettings,
@@ -281,5 +351,6 @@ export const useUserSettings = (): UseUserSettingsReturn => {
     validateDisplayName,
     validateSlackWebhookUrl,
     testSlackWebhook,
+    regenerateRssToken,
   };
 };

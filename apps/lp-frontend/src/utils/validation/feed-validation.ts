@@ -323,10 +323,10 @@ export const createDebouncedValidator = (
   ) => ValidationResult,
   delay: number = 500,
 ): ((
-  data: InputPersonalizedFeedData,
-  callback: (result: ValidationResult) => void,
-  options?: { maxTags?: number; maxAuthors?: number },
-) => void) => {
+    data: InputPersonalizedFeedData,
+    callback: (result: ValidationResult) => void,
+    options?: { maxTags?: number; maxAuthors?: number },
+  ) => void) => {
   let timeoutId: NodeJS.Timeout;
 
   return (
