@@ -49,6 +49,7 @@ export class AppUsersRepository implements IAppUsersRepository {
       return result;
     } catch (error) {
       const errorMessage = `ユーザー [${userId}] の取得に失敗しました`;
+      this.logger.error(errorMessage, error.message, error.stack);
       throw new AppUserFindError(errorMessage, {
         cause: error,
       });
@@ -97,6 +98,7 @@ export class AppUsersRepository implements IAppUsersRepository {
       return result;
     } catch (error) {
       const errorMessage = `ユーザー [${appUser.id}] の作成に失敗しました`;
+      this.logger.error(errorMessage, error.message, error.stack);
       throw new AppUserCreateError(errorMessage, {
         cause: error,
       });
@@ -130,6 +132,7 @@ export class AppUsersRepository implements IAppUsersRepository {
       return result;
     } catch (error) {
       const errorMessage = `ユーザー [${appUser.id}] の更新に失敗しました`;
+      this.logger.error(errorMessage, error.message, error.stack);
       throw new AppUserUpdateError(errorMessage, {
         cause: error,
       });
@@ -164,6 +167,7 @@ export class AppUsersRepository implements IAppUsersRepository {
       this.logger.debug('AppUserRepository.delete succeeded', { userId });
     } catch (error) {
       const errorMessage = `ユーザー [${userId}] の削除に失敗しました`;
+      this.logger.error(errorMessage, error.message, error.stack);
       throw new AppUserDeleteError(errorMessage, {
         cause: error,
       });
@@ -234,7 +238,158 @@ export class AppUsersRepository implements IAppUsersRepository {
       };
     } catch (error) {
       const errorMessage = `ユーザー [${userId}] のサブスクリプション情報の取得に失敗しました`;
+      this.logger.error(errorMessage, error.message, error.stack);
       throw new AppUserFindError(errorMessage, {
+        cause: error,
+      });
+    }
+  }
+
+  /**
+   * RSSトークンでユーザーを検索する
+   * @param rssToken - RSSトークン
+   * @returns 該当するユーザー（見つからない場合はnull）
+   * @throws AppUserFindError - 検索に失敗した場合
+   */
+  async findByRssToken(rssToken: string): Promise<AppUser | null> {
+    this.logger.debug('AppUserRepository.findByRssToken called', { rssToken });
+
+    try {
+      const client = this.prisma.getClient();
+      const result = await client.appUser.findUnique({
+        where: {
+          rssToken: rssToken,
+          rssEnabled: true, // RSS機能が有効なユーザーのみ
+        },
+      });
+
+      return result;
+    } catch (error) {
+      const errorMessage = `RSSトークン [${rssToken}] でのユーザー検索に失敗しました`;
+      this.logger.error(errorMessage, error.message, error.stack);
+      throw new AppUserFindError(errorMessage, {
+        cause: error,
+      });
+    }
+  }
+
+  /**
+   * ユーザーのRSS設定を更新する
+   * @param userId - ユーザーID
+   * @param rssEnabled - RSS機能の有効/無効
+   * @param rssToken - RSSトークン（新規生成時のみ）
+   * @returns 更新されたユーザー
+   * @throws AppUserUpdateError - 更新に失敗した場合
+   */
+  async updateRssSettings(
+    userId: string,
+    rssEnabled: boolean,
+    rssToken?: string,
+  ): Promise<AppUser> {
+    this.logger.debug('AppUserRepository.updateRssSettings called', {
+      userId,
+      rssEnabled,
+      hasRssToken: !!rssToken,
+    });
+
+    try {
+      const client = this.prisma.getClient();
+      const user = await this.findOne(userId);
+      if (!user) {
+        const errorMessage = `更新対象ユーザー [${userId}] は登録されていません`;
+        throw new AppUserUpdateError(errorMessage);
+      }
+
+      const now = new Date();
+      const updateData: any = {
+        rssEnabled,
+        rssUpdatedAt: now,
+        updatedAt: now,
+      };
+
+      // RSS機能を有効にする場合
+      if (rssEnabled) {
+        if (rssToken) {
+          // 新しいトークンが提供された場合
+          updateData.rssToken = rssToken;
+          updateData.rssCreatedAt = now;
+        } else if (!user.rssToken) {
+          // トークンが未設定の場合はエラー
+          const errorMessage = `RSS機能を有効にするにはRSSトークンが必要です`;
+          throw new AppUserUpdateError(errorMessage);
+        }
+      } else {
+        // RSS機能を無効にする場合はトークンをクリア
+        updateData.rssToken = null;
+        updateData.rssCreatedAt = null;
+      }
+
+      const result = await client.appUser.update({
+        where: { id: userId },
+        data: updateData,
+      });
+
+      this.logger.debug(`ユーザー [${userId}] のRSS設定を更新しました`, {
+        rssEnabled,
+        hasRssToken: !!result.rssToken,
+      });
+
+      return result;
+    } catch (error) {
+      const errorMessage = `ユーザー [${userId}] のRSS設定更新に失敗しました`;
+      this.logger.error(errorMessage, error.message, error.stack);
+      throw new AppUserUpdateError(errorMessage, {
+        cause: error,
+      });
+    }
+  }
+
+  /**
+   * ユーザーのRSSトークンを再生成する
+   * @param userId - ユーザーID
+   * @param newRssToken - 新しいRSSトークン
+   * @returns 更新されたユーザー
+   * @throws AppUserUpdateError - 更新に失敗した場合
+   */
+  async regenerateRssToken(
+    userId: string,
+    newRssToken: string,
+  ): Promise<AppUser> {
+    this.logger.debug('AppUserRepository.regenerateRssToken called', {
+      userId,
+    });
+
+    try {
+      const client = this.prisma.getClient();
+      const user = await this.findOne(userId);
+      if (!user) {
+        const errorMessage = `更新対象ユーザー [${userId}] は登録されていません`;
+        throw new AppUserUpdateError(errorMessage);
+      }
+
+      if (!user.rssEnabled) {
+        const errorMessage = `ユーザー [${userId}] のRSS機能が無効です`;
+        throw new AppUserUpdateError(errorMessage);
+      }
+
+      const now = new Date();
+      const result = await client.appUser.update({
+        where: { id: userId },
+        data: {
+          rssToken: newRssToken,
+          rssCreatedAt: now,
+          rssUpdatedAt: now,
+          updatedAt: now,
+        },
+      });
+
+      this.logger.debug(`ユーザー [${userId}] のRSSトークンを再生成しました`);
+
+      return result;
+    } catch (error) {
+      const errorMessage = `ユーザー [${userId}] のRSSトークン再生成に失敗しました`;
+      this.logger.error(errorMessage, error.message, error.stack);
+      throw new AppUserUpdateError(errorMessage, {
         cause: error,
       });
     }

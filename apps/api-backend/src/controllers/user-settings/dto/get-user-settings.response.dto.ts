@@ -31,6 +31,27 @@ export class GetUserSettingsResponseDto {
   notificationEnabled: boolean;
 
   @ApiProperty({
+    description: 'RSS機能が有効かどうかを表すフラグ',
+    example: false,
+  })
+  rssEnabled: boolean;
+
+  @ApiProperty({
+    description: 'RSS配信用のトークン（RSS機能が有効な場合のみ）',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+    required: false,
+  })
+  rssToken?: string;
+
+  @ApiProperty({
+    description: 'RSS配信URL（RSS機能が有効な場合のみ）',
+    example:
+      'https://rss.techpostcast.com/u/550e8400-e29b-41d4-a716-446655440000/rss.xml',
+    required: false,
+  })
+  rssUrl?: string;
+
+  @ApiProperty({
     description: '設定の最終更新日時',
     example: '2024-01-15T10:30:00.000Z',
   })

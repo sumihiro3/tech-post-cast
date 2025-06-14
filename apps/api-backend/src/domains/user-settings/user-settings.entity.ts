@@ -1,6 +1,6 @@
 /**
  * ユーザー設定エンティティ
- * パーソナルプログラム用のユーザー名やSlack通知設定を管理する
+ * パーソナルプログラム用のユーザー名やSlack通知設定、RSS設定を管理する
  */
 export interface UserSettings {
   /** ユーザーID */
@@ -11,6 +11,10 @@ export interface UserSettings {
   slackWebhookUrl?: string;
   /** 通知が有効かどうかを表すフラグ */
   notificationEnabled: boolean;
+  /** RSS機能が有効かどうか */
+  rssEnabled: boolean;
+  /** RSSトークン作成日時（RSS有効時のみ） */
+  rssCreatedAt?: Date;
   /** 設定の最終更新日時 */
   updatedAt: Date;
 }
@@ -25,6 +29,8 @@ export interface UpdateUserSettingsParams {
   slackWebhookUrl?: string;
   /** 通知が有効かどうかを表すフラグ */
   notificationEnabled?: boolean;
+  /** RSS機能が有効かどうか */
+  rssEnabled?: boolean;
 }
 
 /**
@@ -37,4 +43,24 @@ export interface SlackWebhookTestResult {
   errorMessage?: string;
   /** レスポンス時間（ミリ秒） */
   responseTime: number;
+}
+
+/**
+ * RSS設定更新パラメータ
+ */
+export interface UpdateRssSettingsParams {
+  /** RSS機能が有効かどうか */
+  rssEnabled: boolean;
+}
+
+/**
+ * RSSトークン再生成結果
+ */
+export interface RssTokenRegenerationResult {
+  /** 新しいRSSトークン */
+  rssToken: string;
+  /** 新しいRSS配信URL */
+  rssUrl: string;
+  /** トークン作成日時 */
+  rssCreatedAt: Date;
 }

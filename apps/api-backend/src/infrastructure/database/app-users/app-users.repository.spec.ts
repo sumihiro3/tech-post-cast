@@ -357,4 +357,234 @@ describe('AppUsersRepository', () => {
       expect(result.subscription).toBeNull();
     });
   });
+
+  describe('findByRssToken', () => {
+    it('RSSトークンでユーザーを検索できること', async () => {
+      const rssToken = 'test-rss-token';
+      const mockUser = {
+        id: 'user-1',
+        email: 'user@example.com',
+        displayName: 'Test User',
+        rssToken,
+        rssEnabled: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockPrismaClient.appUser.findUnique.mockResolvedValue(mockUser);
+
+      const result = await repository.findByRssToken(rssToken);
+
+      expect(result).toBeDefined();
+      expect(result?.id).toBe('user-1');
+      expect(result?.rssToken).toBe(rssToken);
+      expect(mockPrismaClient.appUser.findUnique).toHaveBeenCalledWith({
+        where: {
+          rssToken,
+          rssEnabled: true,
+        },
+      });
+    });
+
+    it('該当するユーザーが存在しない場合、nullを返すこと', async () => {
+      const rssToken = 'non-existent-token';
+
+      mockPrismaClient.appUser.findUnique.mockResolvedValue(null);
+
+      const result = await repository.findByRssToken(rssToken);
+
+      expect(result).toBeNull();
+      expect(mockPrismaClient.appUser.findUnique).toHaveBeenCalledWith({
+        where: {
+          rssToken,
+          rssEnabled: true,
+        },
+      });
+    });
+  });
+
+  describe('updateRssSettings', () => {
+    it('RSS機能を有効にできること（新しいトークン付き）', async () => {
+      const userId = 'user-1';
+      const rssToken = 'new-rss-token';
+      const mockExistingUser = {
+        id: userId,
+        email: 'user@example.com',
+        displayName: 'Test User',
+        rssToken: null,
+        rssEnabled: false,
+        rssCreatedAt: null,
+        rssUpdatedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const mockUpdatedUser = {
+        ...mockExistingUser,
+        rssToken,
+        rssEnabled: true,
+        rssCreatedAt: new Date(),
+        rssUpdatedAt: new Date(),
+      };
+
+      mockPrismaClient.appUser.findUnique.mockResolvedValue(mockExistingUser);
+      mockPrismaClient.appUser.update.mockResolvedValue(mockUpdatedUser);
+
+      const result = await repository.updateRssSettings(userId, true, rssToken);
+
+      expect(result).toBeDefined();
+      expect(result.rssEnabled).toBe(true);
+      expect(result.rssToken).toBe(rssToken);
+      expect(mockPrismaClient.appUser.update).toHaveBeenCalledWith({
+        where: { id: userId },
+        data: expect.objectContaining({
+          rssEnabled: true,
+          rssToken,
+          rssCreatedAt: expect.any(Date),
+          rssUpdatedAt: expect.any(Date),
+        }),
+      });
+    });
+
+    it('RSS機能を無効にできること', async () => {
+      const userId = 'user-1';
+      const mockExistingUser = {
+        id: userId,
+        email: 'user@example.com',
+        displayName: 'Test User',
+        rssToken: 'existing-token',
+        rssEnabled: true,
+        rssCreatedAt: new Date(),
+        rssUpdatedAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const mockUpdatedUser = {
+        ...mockExistingUser,
+        rssToken: null,
+        rssEnabled: false,
+        rssCreatedAt: null,
+        rssUpdatedAt: new Date(),
+      };
+
+      mockPrismaClient.appUser.findUnique.mockResolvedValue(mockExistingUser);
+      mockPrismaClient.appUser.update.mockResolvedValue(mockUpdatedUser);
+
+      const result = await repository.updateRssSettings(userId, false);
+
+      expect(result).toBeDefined();
+      expect(result.rssEnabled).toBe(false);
+      expect(result.rssToken).toBeNull();
+      expect(mockPrismaClient.appUser.update).toHaveBeenCalledWith({
+        where: { id: userId },
+        data: expect.objectContaining({
+          rssEnabled: false,
+          rssToken: null,
+          rssCreatedAt: null,
+          rssUpdatedAt: expect.any(Date),
+        }),
+      });
+    });
+
+    it('既存のトークンがある場合、RSS機能を有効にできること', async () => {
+      const userId = 'user-1';
+      const mockExistingUser = {
+        id: userId,
+        email: 'user@example.com',
+        displayName: 'Test User',
+        rssToken: 'existing-token',
+        rssEnabled: false,
+        rssCreatedAt: new Date(),
+        rssUpdatedAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const mockUpdatedUser = {
+        ...mockExistingUser,
+        rssEnabled: true,
+        rssUpdatedAt: new Date(),
+      };
+
+      mockPrismaClient.appUser.findUnique.mockResolvedValue(mockExistingUser);
+      mockPrismaClient.appUser.update.mockResolvedValue(mockUpdatedUser);
+
+      const result = await repository.updateRssSettings(userId, true);
+
+      expect(result).toBeDefined();
+      expect(result.rssEnabled).toBe(true);
+      expect(result.rssToken).toBe('existing-token');
+      expect(mockPrismaClient.appUser.update).toHaveBeenCalledWith({
+        where: { id: userId },
+        data: expect.objectContaining({
+          rssEnabled: true,
+          rssUpdatedAt: expect.any(Date),
+        }),
+      });
+    });
+  });
+
+  describe('regenerateRssToken', () => {
+    it('RSSトークンを再生成できること', async () => {
+      const userId = 'user-1';
+      const newRssToken = 'new-rss-token';
+      const mockExistingUser = {
+        id: userId,
+        email: 'user@example.com',
+        displayName: 'Test User',
+        rssToken: 'old-token',
+        rssEnabled: true,
+        rssCreatedAt: new Date(),
+        rssUpdatedAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const mockUpdatedUser = {
+        ...mockExistingUser,
+        rssToken: newRssToken,
+        rssCreatedAt: new Date(),
+        rssUpdatedAt: new Date(),
+      };
+
+      mockPrismaClient.appUser.findUnique.mockResolvedValue(mockExistingUser);
+      mockPrismaClient.appUser.update.mockResolvedValue(mockUpdatedUser);
+
+      const result = await repository.regenerateRssToken(userId, newRssToken);
+
+      expect(result).toBeDefined();
+      expect(result.rssToken).toBe(newRssToken);
+      expect(mockPrismaClient.appUser.update).toHaveBeenCalledWith({
+        where: { id: userId },
+        data: expect.objectContaining({
+          rssToken: newRssToken,
+          rssCreatedAt: expect.any(Date),
+          rssUpdatedAt: expect.any(Date),
+        }),
+      });
+    });
+
+    it('RSS機能が無効なユーザーの場合、エラーをスローすること', async () => {
+      const userId = 'user-1';
+      const newRssToken = 'new-rss-token';
+      const mockExistingUser = {
+        id: userId,
+        email: 'user@example.com',
+        displayName: 'Test User',
+        rssToken: null,
+        rssEnabled: false,
+        rssCreatedAt: null,
+        rssUpdatedAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockPrismaClient.appUser.findUnique.mockResolvedValue(mockExistingUser);
+
+      await expect(
+        repository.regenerateRssToken(userId, newRssToken),
+      ).rejects.toThrow('RSSトークン再生成に失敗しました');
+    });
+  });
 });

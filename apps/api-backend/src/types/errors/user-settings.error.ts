@@ -50,3 +50,33 @@ export class SlackWebhookTestError extends UserSettingsError {
     super(message, options);
   }
 }
+
+/**
+ * RSSトークン再生成処理でエラーが発生した場合
+ */
+export class RssTokenRegenerationError extends UserSettingsError {
+  override name = 'RssTokenRegenerationError';
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}
+
+/**
+ * RSSファイル生成処理でエラーが発生した場合
+ */
+export class RssFileGenerationError extends UserSettingsError {
+  override name = 'RssFileGenerationError';
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}
+
+/**
+ * RSSファイルアップロード処理でエラーが発生した場合
+ */
+export class RssFileUploadError extends UserSettingsError {
+  override name = 'RssFileUploadError';
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}
