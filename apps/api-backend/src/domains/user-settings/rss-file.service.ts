@@ -111,7 +111,7 @@ export class RssFileService {
         maxEpisodes: 30,
         baseUrl: this.appConfigService.LpBaseUrl,
         rssUrlPrefix: this.appConfigService.RssUrlPrefix,
-        defaultImageUrl: this.appConfigService.DefaultProgramImageUrl,
+        defaultImageUrl: this.appConfigService.PodcastImageUrl,
         authorEmail: this.appConfigService.PodcastAuthorEmail,
       };
 

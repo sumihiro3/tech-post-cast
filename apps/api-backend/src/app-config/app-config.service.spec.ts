@@ -163,30 +163,67 @@ describe('AppConfigService', () => {
     });
   });
 
-  describe('DefaultProgramImageUrl', () => {
-    it('環境変数から値を取得できること', () => {
-      const mockValue = 'https://custom.example.com/image.jpg';
-      jest.spyOn(configService, 'get').mockReturnValue(mockValue);
+  describe('PodcastImageUrl', () => {
+    it('環境変数が設定されている場合、その値を返すこと', () => {
+      // Arrange
+      const expectedUrl = 'https://example.com/custom-image.jpg';
+      jest.spyOn(configService, 'get').mockReturnValue(expectedUrl);
 
-      const result = service.DefaultProgramImageUrl;
+      // Act
+      const result = service.PodcastImageUrl;
 
+      // Assert
+      expect(result).toBe(expectedUrl);
       expect(configService.get).toHaveBeenCalledWith(
-        'DEFAULT_PROGRAM_IMAGE_URL',
-        'https://techpostcast.com/images/default-program.jpg',
+        'PODCAST_IMAGE_URL',
+        'https://program-files.techpostcast.com/TechPostCast_Podcast.png',
       );
-      expect(result).toBe(mockValue);
     });
 
-    it('環境変数が未設定の場合、デフォルト値を返すこと', () => {
+    it('環境変数が設定されていない場合、デフォルト値を返すこと', () => {
+      // Arrange
       jest
         .spyOn(configService, 'get')
-        .mockReturnValue('https://techpostcast.com/images/default-program.jpg');
+        .mockReturnValue(
+          'https://program-files.techpostcast.com/TechPostCast_Podcast.png',
+        );
 
-      const result = service.DefaultProgramImageUrl;
+      // Act
+      const result = service.PodcastImageUrl;
 
+      // Assert
       expect(result).toBe(
-        'https://techpostcast.com/images/default-program.jpg',
+        'https://program-files.techpostcast.com/TechPostCast_Podcast.png',
       );
+    });
+  });
+
+  describe('PodcastAuthorName', () => {
+    it('環境変数が設定されている場合、その値を返すこと', () => {
+      // Arrange
+      const expectedName = 'Custom Podcast Author';
+      jest.spyOn(configService, 'get').mockReturnValue(expectedName);
+
+      // Act
+      const result = service.PodcastAuthorName;
+
+      // Assert
+      expect(result).toBe(expectedName);
+      expect(configService.get).toHaveBeenCalledWith(
+        'PODCAST_AUTHOR_NAME',
+        'TEP Lab',
+      );
+    });
+
+    it('環境変数が設定されていない場合、デフォルト値を返すこと', () => {
+      // Arrange
+      jest.spyOn(configService, 'get').mockReturnValue('TEP Lab');
+
+      // Act
+      const result = service.PodcastAuthorName;
+
+      // Assert
+      expect(result).toBe('TEP Lab');
     });
   });
 
@@ -199,7 +236,7 @@ describe('AppConfigService', () => {
 
       expect(configService.get).toHaveBeenCalledWith(
         'PODCAST_AUTHOR_EMAIL',
-        'info@techpostcast.com',
+        'tpc@tep-lab.com',
       );
       expect(result).toBe(mockValue);
     });

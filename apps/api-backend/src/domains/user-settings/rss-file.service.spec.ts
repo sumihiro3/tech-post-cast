@@ -41,10 +41,11 @@ describe('RssFileService', () => {
 
     const mockAppConfigService = {
       LpBaseUrl: 'https://techpostcast.com',
-      DefaultProgramImageUrl: 'https://techpostcast.com/images/default.jpg',
-      PodcastAuthorEmail: 'info@techpostcast.com',
-      RssBucketName: 'test-rss-bucket',
       RssUrlPrefix: 'https://rss.techpostcast.com',
+      RssBucketName: 'test-bucket',
+      PodcastImageUrl: 'https://techpostcast.com/images/default.jpg',
+      PodcastAuthorName: 'Tech Post Cast',
+      PodcastAuthorEmail: 'info@techpostcast.com',
     };
 
     const mockPersonalizedProgramsRepository = {
@@ -307,7 +308,7 @@ describe('RssFileService', () => {
       expect(rssFileUploader.upload).toHaveBeenCalledWith({
         userId: appUser.id,
         rssToken: appUser.rssToken,
-        bucketName: 'test-rss-bucket',
+        bucketName: 'test-bucket',
         uploadPath: `u/${appUser.rssToken}/rss.xml`,
         filePath: mockGenerationResult.tempFilePath,
       } as RssFileUploadCommand);
@@ -474,7 +475,7 @@ describe('RssFileService', () => {
 
       // Assert
       expect(rssFileUploader.delete).toHaveBeenCalledWith({
-        bucketName: 'test-rss-bucket',
+        bucketName: 'test-bucket',
         filePath: `u/${rssToken}/rss.xml`,
       });
     });
@@ -490,7 +491,7 @@ describe('RssFileService', () => {
 
       // Assert
       expect(rssFileUploader.delete).toHaveBeenCalledWith({
-        bucketName: 'test-rss-bucket',
+        bucketName: 'test-bucket',
         filePath: `u/${rssToken}/rss.xml`,
       });
     });
@@ -507,7 +508,7 @@ describe('RssFileService', () => {
         RssFileUploadError,
       );
       expect(rssFileUploader.delete).toHaveBeenCalledWith({
-        bucketName: 'test-rss-bucket',
+        bucketName: 'test-bucket',
         filePath: `u/${rssToken}/rss.xml`,
       });
     });

@@ -57,13 +57,20 @@ export class AppConfigService {
   }
 
   /**
-   * デフォルトの番組画像URL
+   * ポッドキャスト画像URL
    */
-  get DefaultProgramImageUrl(): string {
+  get PodcastImageUrl(): string {
     return this.configService.get<string>(
-      'DEFAULT_PROGRAM_IMAGE_URL',
-      'https://techpostcast.com/images/default-program.jpg',
+      'PODCAST_IMAGE_URL',
+      'https://program-files.techpostcast.com/TechPostCast_Podcast.png',
     );
+  }
+
+  /**
+   * ポッドキャスト著者名
+   */
+  get PodcastAuthorName(): string {
+    return this.configService.get<string>('PODCAST_AUTHOR_NAME', 'TEP Lab');
   }
 
   /**
@@ -72,7 +79,7 @@ export class AppConfigService {
   get PodcastAuthorEmail(): string {
     return this.configService.get<string>(
       'PODCAST_AUTHOR_EMAIL',
-      'info@techpostcast.com',
+      'tpc@tep-lab.com',
     );
   }
 
