@@ -83,6 +83,14 @@ export class GenerateProgramResponseDto {
   })
   @IsNumber()
   qiitaApiRateReset: number;
+
+  @ApiProperty({
+    description: '番組生成日時',
+    example: '2024-01-01T00:00:00.000Z',
+    required: true,
+  })
+  @IsString()
+  generatedAt: string;
 }
 
 /**
@@ -201,4 +209,33 @@ export class RssUserGenerateResponseDto {
   })
   @IsString()
   generatedAt: string;
+}
+
+/**
+ * 終了通知要求DTO
+ */
+export class FinalizeRequestDto {
+  @ApiProperty({
+    description: '作成する番組の対象日付。要求日からの過去日数を指定する',
+    example: 0,
+    default: 0,
+    required: false,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  daysAgo?: number;
+
+  /**
+   * 対象日付を取得する
+   * @returns 対象日付（JST）
+   */
+  getTargetDate(): Date {
+    const daysAgo = this.daysAgo ?? 0;
+    const targetDate = getStartOfDay(
+      subtractDays(new Date(), daysAgo),
+      TIME_ZONE_JST,
+    );
+    return targetDate;
+  }
 }

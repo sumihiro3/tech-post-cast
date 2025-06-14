@@ -27,6 +27,17 @@ export interface NotificationStatusUpdate {
 }
 
 /**
+ * 番組生成統計データ
+ */
+export interface ProgramGenerationStats {
+  totalFeeds: number;
+  successCount: number;
+  skippedCount: number;
+  failedFeedIds: string[];
+  timestamp: number;
+}
+
+/**
  * PersonalizedProgramAttemptリポジトリインターフェース
  */
 export interface IPersonalizedProgramAttemptsRepository {
@@ -54,4 +65,11 @@ export interface IPersonalizedProgramAttemptsRepository {
     success: boolean,
     error?: string,
   ): Promise<void>;
+
+  /**
+   * 指定日の番組生成統計を取得する
+   * @param targetDate 対象日
+   * @returns 番組生成統計データ
+   */
+  getGenerationStatsByDate(targetDate: Date): Promise<ProgramGenerationStats>;
 }

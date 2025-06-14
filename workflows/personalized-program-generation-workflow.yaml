@@ -7,6 +7,8 @@ main:
           - apiBaseUrl: ${sys.get_env("API_BASE_URL")}
           # APIトークン
           - apiToken: ${"Bearer " + sys.get_env("API_TOKEN")}
+          # 作成する番組の対象日付。要求日からの過去日数を指定する
+          - daysAgo: 0
           # 並列処理の最大数
           - concurrencyLimit: 3
           # Qiita APIのレートリミットがこの値を下回ると停止する
@@ -55,6 +57,7 @@ main:
                               Authorization: ${apiToken}
                             body:
                               feedId: ${feed.id}
+                              daysAgo: ${daysAgo}
                           result: programResult
                       # 番組生成結果をログに出力する
                       - logProgramResult:
@@ -125,14 +128,8 @@ main:
                 headers:
                   Authorization: ${apiToken}
                 body:
-                  # 処理完了時間
-                  timestamp: ${sys.now()}
-                  # 処理対象のパーソナルフィード数
-                  totalFeeds: ${len(feeds.body)}
-                  # 番組生成に成功した件数
-                  successCount: ${successCount}
-                  # 番組生成に失敗したフィードID
-                  failedFeedIds: ${failedFeedIds}
+                  # 対象日付の過去日数を指定
+                  daysAgo: ${daysAgo}
               result: finalizeResult
           - logCompletion:
               call: sys.log

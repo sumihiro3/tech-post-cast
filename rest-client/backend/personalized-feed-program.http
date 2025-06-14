@@ -16,9 +16,9 @@
 
 # Feed ID
 # Test user
-@feedId = feed_cmaamvdxs00003x3j5ywgcll7
+# @feedId = feed_cmaamvdxs00003x3j5ywgcll7
 # sumihiro@gmail.com
-# @feedId = feed_cmamcgw9900018p3j62n1293n
+@feedId = feed_cmamcgw9900018p3j62n1293n
 
 # User ID (RSS生成用)
 # Test user
@@ -35,8 +35,20 @@ Content-Type: application/json
 Authorization: Bearer {{apiToken}}
 
 {
-  "daysAgo": 1,
+  "daysAgo": 3,
   "feedId": "{{feedId}}"
+}
+
+##################################################
+# パーソナルフィード番組生成の終了通知
+##################################################
+
+POST {{baseUrl}}/personalized-feeds/finalize
+Content-Type: application/json
+Authorization: Bearer {{apiToken}}
+
+{
+  "daysAgo": 3
 }
 
 ##################################################
