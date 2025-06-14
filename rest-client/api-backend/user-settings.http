@@ -74,6 +74,76 @@ Authorization: Bearer {{authToken}}
 }
 
 ##################################################
+# RSS機能設定
+##################################################
+
+### ユーザー設定更新（RSS機能有効化）
+# RSS機能を有効にする
+PATCH {{apiBaseUrl}}/user-settings
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "rssEnabled": true
+}
+
+### ユーザー設定更新（RSS機能無効化）
+# RSS機能を無効にする
+PATCH {{apiBaseUrl}}/user-settings
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "rssEnabled": false
+}
+
+### ユーザー設定更新（RSS機能とその他設定の同時更新）
+# RSS機能と表示名を同時に更新
+PATCH {{apiBaseUrl}}/user-settings
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "displayName": "RSS配信ユーザー",
+  "rssEnabled": true,
+  "notificationEnabled": true
+}
+
+##################################################
+# RSSトークン管理
+##################################################
+
+### RSSトークン再生成
+# 新しいRSSトークンを生成し、RSS URLを更新
+POST {{apiBaseUrl}}/user-settings/rss/regenerate-token
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+##################################################
+# RSS機能エラーケースのテスト
+##################################################
+
+### RSSトークン再生成（RSS機能無効時）
+# RSS機能が無効な状態でトークン再生成を試行（400エラーが期待される）
+POST {{apiBaseUrl}}/user-settings/rss/regenerate-token
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+### RSSトークン再生成（認証なし）
+# 認証なしでトークン再生成を試行（401エラーが期待される）
+POST {{apiBaseUrl}}/user-settings/rss/regenerate-token
+Content-Type: application/json
+
+### 無効なrssEnabledタイプ（400エラーが期待される）
+PATCH {{apiBaseUrl}}/user-settings
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "rssEnabled": "invalid-boolean"
+}
+
+##################################################
 # Slack Webhook URLテスト
 ##################################################
 
@@ -169,22 +239,45 @@ Authorization: Bearer {{authToken}}
 #
 # レスポンス例:
 #
-# ユーザー設定取得:
+# ユーザー設定取得（RSS機能有効）:
 # {
 #   "userId": "user_01234567890abcdef",
 #   "displayName": "田中 太郎",
 #   "slackWebhookUrl": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXX",
 #   "notificationEnabled": true,
+#   "rssEnabled": true,
+#   "rssToken": "550e8400-e29b-41d4-a716-446655440000",
+#   "rssUrl": "https://rss.techpostcast.com/u/550e8400-e29b-41d4-a716-446655440000/rss.xml",
 #   "updatedAt": "2024-01-15T10:30:00.000Z"
 # }
 #
-# ユーザー設定更新:
+# ユーザー設定取得（RSS機能無効）:
+# {
+#   "userId": "user_01234567890abcdef",
+#   "displayName": "田中 太郎",
+#   "slackWebhookUrl": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXX",
+#   "notificationEnabled": true,
+#   "rssEnabled": false,
+#   "updatedAt": "2024-01-15T10:30:00.000Z"
+# }
+#
+# ユーザー設定更新（RSS機能有効化）:
 # {
 #   "userId": "user_01234567890abcdef",
 #   "displayName": "新しい表示名",
 #   "slackWebhookUrl": "https://hooks.slack.com/services/T11111111/B11111111/YYYYYYYYYYYYYYYYYYYYYYYY",
 #   "notificationEnabled": true,
+#   "rssEnabled": true,
+#   "rssToken": "550e8400-e29b-41d4-a716-446655440000",
+#   "rssUrl": "https://rss.techpostcast.com/u/550e8400-e29b-41d4-a716-446655440000/rss.xml",
 #   "updatedAt": "2024-01-15T10:35:00.000Z"
+# }
+#
+# RSSトークン再生成:
+# {
+#   "rssToken": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+#   "rssUrl": "https://rss.techpostcast.com/u/6ba7b810-9dad-11d1-80b4-00c04fd430c8/rss.xml",
+#   "updatedAt": "2024-01-15T10:40:00.000Z"
 # }
 #
 # Slack Webhook URLテスト（成功）:
@@ -215,5 +308,26 @@ Authorization: Bearer {{authToken}}
 #   "statusCode": 401,
 #   "message": "Unauthorized",
 #   "error": "Unauthorized"
+# }
+#
+# RSS関連エラーレスポンス例（RSS機能無効時のトークン再生成）:
+# {
+#   "statusCode": 400,
+#   "message": "RSS機能が無効です。RSS機能を有効にしてからトークンを再生成してください。",
+#   "error": "Bad Request"
+# }
+#
+# RSS関連エラーレスポンス例（ユーザー未発見）:
+# {
+#   "statusCode": 404,
+#   "message": "ユーザーが見つかりません",
+#   "error": "Not Found"
+# }
+#
+# RSS関連エラーレスポンス例（トークン再生成失敗）:
+# {
+#   "statusCode": 500,
+#   "message": "RSSトークンの再生成に失敗しました",
+#   "error": "Internal Server Error"
 # }
 ###

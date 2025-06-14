@@ -1,3 +1,5 @@
+import { AppConfigService } from '@/app-config/app-config.service';
+import { IAppUsersRepository } from '@/domains/app-users/app-users.repository.interface';
 import { AppUserFactory, UserSettingsFactory } from '@/test/factories';
 import {
   SlackWebhookTestError,
@@ -6,7 +8,11 @@ import {
   UserSettingsUpdateError,
 } from '@/types/errors';
 import { Test, TestingModule } from '@nestjs/testing';
-import { UpdateUserSettingsParams } from './user-settings.entity';
+import { RssFileService } from './rss-file.service';
+import {
+  UpdateRssSettingsParams,
+  UpdateUserSettingsParams,
+} from './user-settings.entity';
 import { IUserSettingsRepository } from './user-settings.repository.interface';
 import { UserSettingsService } from './user-settings.service';
 
@@ -16,6 +22,9 @@ global.fetch = jest.fn();
 describe('UserSettingsService', () => {
   let service: UserSettingsService;
   let mockRepository: jest.Mocked<IUserSettingsRepository>;
+  let mockAppUserRepository: jest.Mocked<IAppUsersRepository>;
+  let mockAppConfigService: any;
+  let mockRssFileService: jest.Mocked<RssFileService>;
 
   beforeEach(async () => {
     // リポジトリのモック作成
@@ -24,12 +33,46 @@ describe('UserSettingsService', () => {
       updateByAppUser: jest.fn(),
     };
 
+    mockAppUserRepository = {
+      findOne: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      findOneWithSubscription: jest.fn(),
+      findByRssToken: jest.fn(),
+      updateRssSettings: jest.fn(),
+      regenerateRssToken: jest.fn(),
+    };
+
+    mockAppConfigService = {
+      RssUrlPrefix: 'https://rss.techpostcast.com',
+    };
+
+    mockRssFileService = {
+      generateUserRssFile: jest.fn(),
+      uploadRssFile: jest.fn(),
+      generateAndUploadUserRss: jest.fn(),
+      deleteUserRssFile: jest.fn(),
+    } as any;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UserSettingsService,
         {
           provide: 'UserSettingsRepository',
           useValue: mockRepository,
+        },
+        {
+          provide: 'AppUserRepository',
+          useValue: mockAppUserRepository,
+        },
+        {
+          provide: AppConfigService,
+          useValue: mockAppConfigService,
+        },
+        {
+          provide: RssFileService,
+          useValue: mockRssFileService,
         },
       ],
     }).compile();
@@ -338,6 +381,396 @@ describe('UserSettingsService', () => {
 
       // Assert
       expect(result).toBe('https://***');
+    });
+  });
+
+  describe('updateRssSettings', () => {
+    it('RSS機能を有効化し、新しいトークンを生成してRSSファイルを生成・アップロードすること', async () => {
+      // Arrange
+      const appUser = AppUserFactory.createAppUser({
+        rssEnabled: false,
+        rssToken: null,
+      });
+      const params: UpdateRssSettingsParams = { rssEnabled: true };
+
+      const updatedAppUser = AppUserFactory.createUserWithRssEnabled();
+      mockAppUserRepository.updateRssSettings.mockResolvedValue(updatedAppUser);
+      mockAppUserRepository.findOne.mockResolvedValue(updatedAppUser);
+
+      const expectedUserSettings =
+        UserSettingsFactory.createUserSettingsWithRssEnabled();
+      mockRepository.findByAppUser.mockResolvedValue(expectedUserSettings);
+
+      const mockUploadResult = {
+        rssUrl: 'https://rss.techpostcast.com/u/test-token/rss.xml',
+        episodeCount: 5,
+        generatedAt: new Date(),
+      };
+      mockRssFileService.generateAndUploadUserRss.mockResolvedValue(
+        mockUploadResult,
+      );
+
+      // Act
+      const result = await service.updateRssSettings(appUser, params);
+
+      // Assert
+      expect(result).toEqual(expectedUserSettings);
+      expect(mockAppUserRepository.updateRssSettings).toHaveBeenCalledWith(
+        appUser.id,
+        true,
+        expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+        ),
+      );
+      expect(mockRssFileService.generateAndUploadUserRss).toHaveBeenCalledWith(
+        updatedAppUser,
+      );
+    });
+
+    it('RSS機能を無効化すること（RSSファイル生成・アップロードは実行されない）', async () => {
+      // Arrange
+      const appUser = AppUserFactory.createUserWithRssEnabled();
+      const params: UpdateRssSettingsParams = { rssEnabled: false };
+
+      const updatedAppUser = AppUserFactory.createUserWithRssDisabled();
+      mockAppUserRepository.updateRssSettings.mockResolvedValue(updatedAppUser);
+      mockAppUserRepository.findOne.mockResolvedValue(updatedAppUser);
+
+      const expectedUserSettings =
+        UserSettingsFactory.createUserSettingsWithRssDisabled();
+      mockRepository.findByAppUser.mockResolvedValue(expectedUserSettings);
+
+      mockRssFileService.deleteUserRssFile.mockResolvedValue(undefined);
+
+      // Act
+      const result = await service.updateRssSettings(appUser, params);
+
+      // Assert
+      expect(result).toEqual(expectedUserSettings);
+      expect(mockAppUserRepository.updateRssSettings).toHaveBeenCalledWith(
+        appUser.id,
+        false,
+        undefined,
+      );
+      expect(
+        mockRssFileService.generateAndUploadUserRss,
+      ).not.toHaveBeenCalled();
+      expect(mockRssFileService.deleteUserRssFile).toHaveBeenCalledWith(
+        appUser.rssToken,
+        updatedAppUser.id,
+      );
+    });
+
+    it('RSS機能無効化時に古いファイル削除でエラーが発生しても、RSS設定更新は成功すること', async () => {
+      // Arrange
+      const appUser = AppUserFactory.createUserWithRssEnabled();
+      const params: UpdateRssSettingsParams = { rssEnabled: false };
+
+      const updatedAppUser = AppUserFactory.createUserWithRssDisabled();
+      mockAppUserRepository.updateRssSettings.mockResolvedValue(updatedAppUser);
+      mockAppUserRepository.findOne.mockResolvedValue(updatedAppUser);
+
+      const expectedUserSettings =
+        UserSettingsFactory.createUserSettingsWithRssDisabled();
+      mockRepository.findByAppUser.mockResolvedValue(expectedUserSettings);
+
+      // 古いファイル削除でエラーが発生
+      mockRssFileService.deleteUserRssFile.mockRejectedValue(
+        new Error('Delete failed'),
+      );
+
+      // Act
+      const result = await service.updateRssSettings(appUser, params);
+
+      // Assert
+      expect(result).toEqual(expectedUserSettings);
+      expect(mockAppUserRepository.updateRssSettings).toHaveBeenCalledWith(
+        appUser.id,
+        false,
+        undefined,
+      );
+      expect(mockRssFileService.deleteUserRssFile).toHaveBeenCalledWith(
+        appUser.rssToken,
+        updatedAppUser.id,
+      );
+    });
+
+    it('既存のRSSトークンがある場合、再利用すること（RSSファイル生成・アップロードは実行されない）', async () => {
+      // Arrange
+      const appUser = AppUserFactory.createUserWithRssEnabled();
+      const params: UpdateRssSettingsParams = { rssEnabled: true };
+
+      const updatedAppUser = AppUserFactory.createUserWithRssEnabled();
+      mockAppUserRepository.updateRssSettings.mockResolvedValue(updatedAppUser);
+      mockAppUserRepository.findOne.mockResolvedValue(updatedAppUser);
+
+      const expectedUserSettings =
+        UserSettingsFactory.createUserSettingsWithRssEnabled();
+      mockRepository.findByAppUser.mockResolvedValue(expectedUserSettings);
+
+      // Act
+      const result = await service.updateRssSettings(appUser, params);
+
+      // Assert
+      expect(result).toEqual(expectedUserSettings);
+      expect(mockAppUserRepository.updateRssSettings).toHaveBeenCalledWith(
+        appUser.id,
+        true,
+        undefined, // 既存トークンがある場合はundefined
+      );
+      expect(
+        mockRssFileService.generateAndUploadUserRss,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('RSSファイル生成・アップロードでエラーが発生しても、RSS設定更新は成功すること', async () => {
+      // Arrange
+      const appUser = AppUserFactory.createAppUser({
+        rssEnabled: false,
+        rssToken: null,
+      });
+      const params: UpdateRssSettingsParams = { rssEnabled: true };
+
+      const updatedAppUser = AppUserFactory.createUserWithRssEnabled();
+      mockAppUserRepository.updateRssSettings.mockResolvedValue(updatedAppUser);
+      mockAppUserRepository.findOne.mockResolvedValue(updatedAppUser);
+
+      const expectedUserSettings =
+        UserSettingsFactory.createUserSettingsWithRssEnabled();
+      mockRepository.findByAppUser.mockResolvedValue(expectedUserSettings);
+
+      // RSSファイル生成・アップロードでエラーが発生
+      mockRssFileService.generateAndUploadUserRss.mockRejectedValue(
+        new Error('RSS file generation failed'),
+      );
+
+      // Act
+      const result = await service.updateRssSettings(appUser, params);
+
+      // Assert
+      expect(result).toEqual(expectedUserSettings);
+      expect(mockAppUserRepository.updateRssSettings).toHaveBeenCalledWith(
+        appUser.id,
+        true,
+        expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+        ),
+      );
+      expect(mockRssFileService.generateAndUploadUserRss).toHaveBeenCalledWith(
+        updatedAppUser,
+      );
+    });
+
+    it('データベースエラーが発生した場合、UserSettingsUpdateErrorをスローすること', async () => {
+      // Arrange
+      const appUser = AppUserFactory.createAppUser();
+      const params: UpdateRssSettingsParams = { rssEnabled: true };
+
+      mockAppUserRepository.updateRssSettings.mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      // Act & Assert
+      await expect(service.updateRssSettings(appUser, params)).rejects.toThrow(
+        UserSettingsUpdateError,
+      );
+      expect(
+        mockRssFileService.generateAndUploadUserRss,
+      ).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('regenerateRssToken', () => {
+    it('RSS機能が有効なユーザーのトークンを再生成し、古いファイルを削除して新しいファイルを生成すること', async () => {
+      // Arrange
+      const appUser = AppUserFactory.createUserWithRssEnabled();
+      const newToken = '550e8400-e29b-41d4-a716-446655440001';
+      const updatedAppUser = AppUserFactory.createUserWithRssEnabled({
+        rssToken: newToken,
+        rssCreatedAt: new Date('2024-01-01'),
+      });
+
+      mockAppUserRepository.regenerateRssToken.mockResolvedValue(
+        updatedAppUser,
+      );
+
+      const mockUploadResult = {
+        rssUrl: 'https://rss.techpostcast.com/u/new-token/rss.xml',
+        episodeCount: 5,
+        generatedAt: new Date(),
+      };
+      mockRssFileService.deleteUserRssFile.mockResolvedValue(undefined);
+      mockRssFileService.generateAndUploadUserRss.mockResolvedValue(
+        mockUploadResult,
+      );
+
+      // Act
+      const result = await service.regenerateRssToken(appUser);
+
+      // Assert
+      expect(result.rssToken).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+      );
+      expect(result.rssUrl).toBe(
+        `https://rss.techpostcast.com/u/${result.rssToken}/rss.xml`,
+      );
+      expect(result.rssCreatedAt).toEqual(new Date('2024-01-01'));
+      expect(mockAppUserRepository.regenerateRssToken).toHaveBeenCalledWith(
+        appUser.id,
+        expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+        ),
+      );
+      expect(mockRssFileService.deleteUserRssFile).toHaveBeenCalledWith(
+        appUser.rssToken,
+        updatedAppUser.id,
+      );
+      expect(mockRssFileService.generateAndUploadUserRss).toHaveBeenCalledWith(
+        updatedAppUser,
+      );
+    });
+
+    it('古いファイル削除でエラーが発生しても、RSSトークン再生成は成功すること', async () => {
+      // Arrange
+      const appUser = AppUserFactory.createUserWithRssEnabled();
+      const newToken = '550e8400-e29b-41d4-a716-446655440001';
+      const updatedAppUser = AppUserFactory.createUserWithRssEnabled({
+        rssToken: newToken,
+        rssCreatedAt: new Date('2024-01-01'),
+      });
+
+      mockAppUserRepository.regenerateRssToken.mockResolvedValue(
+        updatedAppUser,
+      );
+
+      const mockUploadResult = {
+        rssUrl: 'https://rss.techpostcast.com/u/new-token/rss.xml',
+        episodeCount: 5,
+        generatedAt: new Date(),
+      };
+      // 古いファイル削除でエラーが発生
+      mockRssFileService.deleteUserRssFile.mockRejectedValue(
+        new Error('Delete failed'),
+      );
+      mockRssFileService.generateAndUploadUserRss.mockResolvedValue(
+        mockUploadResult,
+      );
+
+      // Act
+      const result = await service.regenerateRssToken(appUser);
+
+      // Assert
+      expect(result.rssToken).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+      );
+      expect(mockRssFileService.deleteUserRssFile).toHaveBeenCalledWith(
+        appUser.rssToken,
+        updatedAppUser.id,
+      );
+      expect(mockRssFileService.generateAndUploadUserRss).toHaveBeenCalledWith(
+        updatedAppUser,
+      );
+    });
+
+    it('新しいファイル生成でエラーが発生しても、RSSトークン再生成は成功すること', async () => {
+      // Arrange
+      const appUser = AppUserFactory.createUserWithRssEnabled();
+      const newToken = '550e8400-e29b-41d4-a716-446655440001';
+      const updatedAppUser = AppUserFactory.createUserWithRssEnabled({
+        rssToken: newToken,
+        rssCreatedAt: new Date('2024-01-01'),
+      });
+
+      mockAppUserRepository.regenerateRssToken.mockResolvedValue(
+        updatedAppUser,
+      );
+
+      mockRssFileService.deleteUserRssFile.mockResolvedValue(undefined);
+      // 新しいファイル生成でエラーが発生
+      mockRssFileService.generateAndUploadUserRss.mockRejectedValue(
+        new Error('RSS generation failed'),
+      );
+
+      // Act
+      const result = await service.regenerateRssToken(appUser);
+
+      // Assert
+      expect(result.rssToken).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+      );
+      expect(mockRssFileService.deleteUserRssFile).toHaveBeenCalledWith(
+        appUser.rssToken,
+        updatedAppUser.id,
+      );
+      expect(mockRssFileService.generateAndUploadUserRss).toHaveBeenCalledWith(
+        updatedAppUser,
+      );
+    });
+
+    it('RSS機能が無効なユーザーの場合、UserSettingsUpdateErrorをスローすること', async () => {
+      // Arrange
+      const appUser = AppUserFactory.createUserWithRssDisabled();
+
+      // Act & Assert
+      await expect(service.regenerateRssToken(appUser)).rejects.toThrow(
+        UserSettingsUpdateError,
+      );
+    });
+
+    it('データベースエラーが発生した場合、UserSettingsUpdateErrorをスローすること', async () => {
+      // Arrange
+      const appUser = AppUserFactory.createUserWithRssEnabled();
+
+      mockAppUserRepository.regenerateRssToken.mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      // Act & Assert
+      await expect(service.regenerateRssToken(appUser)).rejects.toThrow(
+        UserSettingsUpdateError,
+      );
+    });
+  });
+
+  describe('getRssUrl', () => {
+    it('RSS機能が有効でトークンがある場合、RSS URLを返すこと', () => {
+      // Arrange
+      const appUser = AppUserFactory.createUserWithRssEnabled({
+        rssToken: 'test-token-123',
+      });
+
+      // Act
+      const result = service.getRssUrl(appUser);
+
+      // Assert
+      expect(result).toBe(
+        'https://rss.techpostcast.com/u/test-token-123/rss.xml',
+      );
+    });
+
+    it('RSS機能が無効な場合、undefinedを返すこと', () => {
+      // Arrange
+      const appUser = AppUserFactory.createUserWithRssDisabled();
+
+      // Act
+      const result = service.getRssUrl(appUser);
+
+      // Assert
+      expect(result).toBeUndefined();
+    });
+
+    it('RSS機能が有効でもトークンがない場合、undefinedを返すこと', () => {
+      // Arrange
+      const appUser = AppUserFactory.createAppUser({
+        rssEnabled: true,
+        rssToken: null,
+      });
+
+      // Act
+      const result = service.getRssUrl(appUser);
+
+      // Assert
+      expect(result).toBeUndefined();
     });
   });
 });

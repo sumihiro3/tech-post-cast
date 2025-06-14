@@ -1147,7 +1147,7 @@
     },
     "/user-settings": {
       "get": {
-        "description": "認証ユーザーのユーザー設定（表示名、Slack通知設定など）を取得します。",
+        "description": "認証ユーザーのユーザー設定（表示名、Slack通知設定、RSS設定など）を取得します。",
         "operationId": "getUserSettings",
         "parameters": [],
         "responses": {
@@ -1182,7 +1182,7 @@
         ]
       },
       "patch": {
-        "description": "認証ユーザーのユーザー設定（表示名、Slack通知設定など）を更新します。",
+        "description": "認証ユーザーのユーザー設定（表示名、Slack通知設定、RSS設定など）を更新します。",
         "operationId": "updateUserSettings",
         "parameters": [],
         "requestBody": {
@@ -1225,6 +1225,46 @@
           }
         ],
         "summary": "ユーザー設定更新",
+        "tags": [
+          "user-settings"
+        ]
+      }
+    },
+    "/user-settings/rss/regenerate-token": {
+      "post": {
+        "description": "RSS機能が有効なユーザーのRSSトークンを再生成し、新しいRSS URLを発行します。",
+        "operationId": "regenerateRssToken",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "RSSトークンの再生成に成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegenerateRssTokenResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "RSS機能が無効、またはリクエストパラメータが不正です"
+          },
+          "401": {
+            "description": "認証が必要です"
+          },
+          "404": {
+            "description": "ユーザーが見つかりません"
+          },
+          "500": {
+            "description": "サーバー内部エラー"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "RSSトークン再生成",
         "tags": [
           "user-settings"
         ]
@@ -3270,6 +3310,21 @@
             "description": "通知が有効かどうかを表すフラグ",
             "example": true
           },
+          "rssEnabled": {
+            "type": "boolean",
+            "description": "RSS機能が有効かどうかを表すフラグ",
+            "example": false
+          },
+          "rssToken": {
+            "type": "string",
+            "description": "RSS配信用のトークン（RSS機能が有効な場合のみ）",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "rssUrl": {
+            "type": "string",
+            "description": "RSS配信URL（RSS機能が有効な場合のみ）",
+            "example": "https://rss.techpostcast.com/u/550e8400-e29b-41d4-a716-446655440000/rss.xml"
+          },
           "updatedAt": {
             "format": "date-time",
             "type": "string",
@@ -3281,6 +3336,7 @@
           "userId",
           "displayName",
           "notificationEnabled",
+          "rssEnabled",
           "updatedAt"
         ]
       },
@@ -3303,8 +3359,39 @@
             "type": "boolean",
             "description": "通知が有効かどうかを表すフラグ",
             "example": true
+          },
+          "rssEnabled": {
+            "type": "boolean",
+            "description": "RSS機能が有効かどうかを表すフラグ",
+            "example": false
           }
         }
+      },
+      "RegenerateRssTokenResponseDto": {
+        "type": "object",
+        "properties": {
+          "rssToken": {
+            "type": "string",
+            "description": "新しく生成されたRSS配信用トークン",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "rssUrl": {
+            "type": "string",
+            "description": "新しいRSS配信URL",
+            "example": "https://rss.techpostcast.com/u/550e8400-e29b-41d4-a716-446655440000/rss.xml"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "トークン更新日時",
+            "example": "2024-01-15T10:30:00.000Z"
+          }
+        },
+        "required": [
+          "rssToken",
+          "rssUrl",
+          "updatedAt"
+        ]
       },
       "TestSlackWebhookRequestDto": {
         "type": "object",

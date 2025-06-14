@@ -5,6 +5,7 @@ import {
 import {
   IPersonalizedProgramAttemptsRepository,
   NotificationStatusUpdate,
+  ProgramGenerationStats,
   UserNotificationData,
 } from '@domains/radio-program/personalized-feed/personalized-program-attempts.repository.interface';
 import { Injectable, Logger } from '@nestjs/common';
@@ -280,5 +281,99 @@ export class PersonalizedProgramAttemptsRepository
     }
 
     return notifiableUsers;
+  }
+
+  /**
+   * 指定日の番組生成統計を取得する
+   * @param targetDate 対象日
+   * @returns 番組生成統計データ
+   */
+  async getGenerationStatsByDate(
+    targetDate: Date,
+  ): Promise<ProgramGenerationStats> {
+    this.logger.debug(
+      `PersonalizedProgramAttemptsRepository.getGenerationStatsByDate called`,
+      { targetDate },
+    );
+
+    // 日付範囲を計算
+    const startOfDay = getStartOfDay(targetDate, TIME_ZONE_JST);
+    const endOfDay = getEndOfDay(targetDate, TIME_ZONE_JST);
+    this.logger.debug(
+      `番組生成統計取得: ${startOfDay.toISOString()} - ${endOfDay.toISOString()}`,
+    );
+
+    try {
+      const client = this.prisma.getClient();
+
+      // 指定日の全ての試行履歴を取得
+      const attempts = await client.personalizedProgramAttempt.findMany({
+        where: {
+          createdAt: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
+        },
+        select: {
+          id: true,
+          feedId: true,
+          status: true,
+          createdAt: true,
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+
+      this.logger.debug(`取得した試行履歴数: ${attempts.length}`);
+
+      // 統計を計算
+      const totalFeeds = attempts.length;
+      const successCount = attempts.filter(
+        (attempt) => attempt.status === 'SUCCESS',
+      ).length;
+      const skippedCount = attempts.filter(
+        (attempt) => attempt.status === 'SKIPPED',
+      ).length;
+      const failedFeedIds = attempts
+        .filter((attempt) => attempt.status === 'FAILED')
+        .map((attempt) => attempt.feedId);
+
+      // 最初の試行の時刻をタイムスタンプとして使用（Unix時間）
+      const timestamp =
+        attempts.length > 0
+          ? Math.floor(attempts[0].createdAt.getTime() / 1000)
+          : Math.floor(Date.now() / 1000);
+
+      const stats: ProgramGenerationStats = {
+        totalFeeds,
+        successCount,
+        skippedCount,
+        failedFeedIds,
+        timestamp,
+      };
+
+      this.logger.log(`番組生成統計を取得しました`, {
+        totalFeeds: stats.totalFeeds,
+        successCount: stats.successCount,
+        skippedCount: stats.skippedCount,
+        failedCount: stats.failedFeedIds.length,
+        timestamp: stats.timestamp,
+      });
+
+      return stats;
+    } catch (error) {
+      const errorMessage = `番組生成統計取得に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        targetDate,
+      });
+      if (error instanceof Error) {
+        this.logger.error(error.message, error.stack);
+      }
+      throw new PersonalizedProgramNotificationDataError(errorMessage, {
+        cause: error,
+      });
+    }
   }
 }

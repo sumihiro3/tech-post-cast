@@ -251,6 +251,16 @@ model AppUser {
   // 通知が有効かどうかを表すフラグ
   notificationEnabled Boolean @default(false) @map("notification_enabled")
 
+  // RSS機能関連フィールド
+  // RSS配信用の一意トークン（UUIDv4形式）
+  rssToken     String?   @unique @map("rss_token") @db.VarChar(36)
+  // RSS機能が有効かどうかを表すフラグ
+  rssEnabled   Boolean   @default(false) @map("rss_enabled")
+  // RSS機能を有効化した日時
+  rssCreatedAt DateTime? @map("rss_created_at")
+  // RSS設定の最終更新日時
+  rssUpdatedAt DateTime? @map("rss_updated_at")
+
   // リレーション
   personalizedProgramFilters  PersonalizedFeed[]
   personalizedPrograms        PersonalizedFeedProgram[]

@@ -99,4 +99,36 @@ export class AppUsersRepository implements IAppUsersRepository {
       });
     }
   }
+
+  /**
+   * RSS機能が有効なユーザー一覧を取得する
+   * @returns RSS機能が有効なユーザー一覧
+   */
+  async findRssEnabledUsers(): Promise<AppUser[]> {
+    this.logger.debug('AppUserRepository.findRssEnabledUsers called');
+    try {
+      const client = this.prisma.getClient();
+      const users = await client.appUser.findMany({
+        where: {
+          rssEnabled: true,
+          rssToken: {
+            not: null,
+          },
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+
+      this.logger.debug(`RSS機能が有効なユーザー: ${users.length}件`);
+      return users;
+    } catch (error) {
+      const errorMessage = `RSS機能が有効なユーザーの取得に失敗しました`;
+      this.logger.error(errorMessage, { error });
+      this.logger.error(error.message, error.stack);
+      throw new AppUserFindError(errorMessage, {
+        cause: error,
+      });
+    }
+  }
 }

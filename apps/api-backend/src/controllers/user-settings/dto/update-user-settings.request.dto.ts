@@ -47,4 +47,13 @@ export class UpdateUserSettingsRequestDto {
   @IsOptional()
   @IsBoolean()
   notificationEnabled?: boolean;
+
+  @ApiProperty({
+    description: 'RSS機能が有効かどうかを表すフラグ',
+    example: false,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  rssEnabled?: boolean;
 }

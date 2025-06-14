@@ -2,6 +2,11 @@ import { IAppUsersRepository } from '@/domains/app-users/app-users.repository.in
 import { UserSettingsService } from '@/domains/user-settings/user-settings.service';
 import { AppUserFactory, UserSettingsFactory } from '@/test/factories';
 import {
+  setupLogSuppression,
+  teardownLogSuppression,
+} from '@/test/helpers/logger.helper';
+import {
+  RssTokenRegenerationError,
   SlackWebhookTestError,
   UserSettingsNotFoundError,
   UserSettingsRetrievalError,
@@ -23,12 +28,18 @@ describe('UserSettingsController', () => {
   let controller: UserSettingsController;
   let mockUserSettingsService: jest.Mocked<UserSettingsService>;
   let mockAppUsersRepository: jest.Mocked<IAppUsersRepository>;
+  let logSpies: jest.SpyInstance[];
 
   beforeEach(async () => {
+    logSpies = setupLogSuppression();
+
     // サービスのモック作成
     mockUserSettingsService = {
       getUserSettings: jest.fn(),
       updateUserSettings: jest.fn(),
+      updateRssSettings: jest.fn(),
+      regenerateRssToken: jest.fn(),
+      getRssUrl: jest.fn(),
       testSlackWebhook: jest.fn(),
     } as any;
 
@@ -61,6 +72,7 @@ describe('UserSettingsController', () => {
   });
 
   afterEach(() => {
+    teardownLogSuppression(logSpies);
     jest.clearAllMocks();
   });
 
@@ -75,8 +87,11 @@ describe('UserSettingsController', () => {
         userId: appUser.id,
         displayName: appUser.displayName,
       });
+      const rssUrl = 'https://rss.techpostcast.com/u/test-token/rss.xml';
+
       mockAppUsersRepository.findOne.mockResolvedValue(appUser);
       mockUserSettingsService.getUserSettings.mockResolvedValue(userSettings);
+      mockUserSettingsService.getRssUrl.mockReturnValue(rssUrl);
 
       // Act
       const result = await controller.getUserSettings(userId);
@@ -86,11 +101,17 @@ describe('UserSettingsController', () => {
       expect(result.displayName).toBe(userSettings.displayName);
       expect(result.slackWebhookUrl).toBe(userSettings.slackWebhookUrl);
       expect(result.notificationEnabled).toBe(userSettings.notificationEnabled);
+      expect(result.rssEnabled).toBe(appUser.rssEnabled);
+      expect(result.rssToken).toBe(
+        appUser.rssEnabled ? appUser.rssToken : undefined,
+      );
+      expect(result.rssUrl).toBe(rssUrl);
       expect(result.updatedAt).toBe(userSettings.updatedAt);
       expect(mockAppUsersRepository.findOne).toHaveBeenCalledWith(userId);
       expect(mockUserSettingsService.getUserSettings).toHaveBeenCalledWith(
         appUser,
       );
+      expect(mockUserSettingsService.getRssUrl).toHaveBeenCalledWith(appUser);
     });
 
     it('ユーザーが見つからない場合、NotFoundExceptionが発生すること', async () => {
@@ -168,6 +189,7 @@ describe('UserSettingsController', () => {
       mockUserSettingsService.updateUserSettings.mockResolvedValue(
         updatedSettings,
       );
+      mockUserSettingsService.getRssUrl.mockReturnValue(undefined);
 
       // Act
       const result = await controller.updateUserSettings(userId, requestDto);
@@ -179,6 +201,11 @@ describe('UserSettingsController', () => {
       expect(result.notificationEnabled).toBe(
         updatedSettings.notificationEnabled,
       );
+      expect(result.rssEnabled).toBe(appUser.rssEnabled);
+      expect(result.rssToken).toBe(
+        appUser.rssEnabled ? appUser.rssToken : undefined,
+      );
+      expect(result.rssUrl).toBeUndefined();
       expect(mockAppUsersRepository.findOne).toHaveBeenCalledWith(userId);
       expect(mockUserSettingsService.updateUserSettings).toHaveBeenCalledWith(
         appUser,
@@ -207,6 +234,48 @@ describe('UserSettingsController', () => {
       ).rejects.toThrow(BadRequestException);
       expect(mockAppUsersRepository.findOne).toHaveBeenCalledWith(userId);
       expect(mockUserSettingsService.updateUserSettings).toHaveBeenCalled();
+    });
+
+    it('RSS設定を含むユーザー設定を正常に更新できること', async () => {
+      // Arrange
+      const userId = 'user-1';
+      const appUser = AppUserFactory.createUserWithRssDisabled({ id: userId });
+      const updatedAppUser = AppUserFactory.createUserWithRssEnabled({
+        id: userId,
+      });
+      const requestDto = new UpdateUserSettingsRequestDto();
+      requestDto.displayName = 'Updated User';
+      requestDto.rssEnabled = true;
+
+      const updatedSettings = UserSettingsFactory.createUserSettings({
+        userId: appUser.id,
+        displayName: requestDto.displayName,
+        updatedAt: new Date(),
+      });
+      const rssUrl = 'https://rss.techpostcast.com/u/test-token/rss.xml';
+
+      mockAppUsersRepository.findOne
+        .mockResolvedValueOnce(appUser)
+        .mockResolvedValueOnce(updatedAppUser);
+      mockUserSettingsService.updateUserSettings.mockResolvedValue(
+        updatedSettings,
+      );
+      mockUserSettingsService.updateRssSettings.mockResolvedValue(
+        UserSettingsFactory.createUserSettingsWithRssEnabled(),
+      );
+      mockUserSettingsService.getRssUrl.mockReturnValue(rssUrl);
+
+      // Act
+      const result = await controller.updateUserSettings(userId, requestDto);
+
+      // Assert
+      expect(result.rssEnabled).toBe(true);
+      expect(result.rssToken).toBe(updatedAppUser.rssToken);
+      expect(result.rssUrl).toBe(rssUrl);
+      expect(mockUserSettingsService.updateRssSettings).toHaveBeenCalledWith(
+        appUser,
+        { rssEnabled: true },
+      );
     });
   });
 
@@ -252,6 +321,75 @@ describe('UserSettingsController', () => {
       expect(result.responseTime).toBe(0);
       expect(mockUserSettingsService.testSlackWebhook).toHaveBeenCalledWith(
         requestDto.webhookUrl,
+      );
+    });
+  });
+
+  describe('regenerateRssToken', () => {
+    const userId = 'test-user-id';
+
+    it('RSSトークンを正常に再生成できること', async () => {
+      // Arrange
+      const appUser = AppUserFactory.createUserWithRssEnabled();
+      const regenerationResult = {
+        rssToken: 'new-rss-token',
+        rssUrl: 'https://rss.techpostcast.com/u/new-rss-token/rss.xml',
+        rssCreatedAt: new Date(),
+      };
+
+      mockAppUsersRepository.findOne.mockResolvedValue(appUser);
+      mockUserSettingsService.regenerateRssToken.mockResolvedValue(
+        regenerationResult,
+      );
+
+      // Act
+      const result = await controller.regenerateRssToken(userId);
+
+      // Assert
+      expect(result).toEqual({
+        rssToken: regenerationResult.rssToken,
+        rssUrl: regenerationResult.rssUrl,
+        updatedAt: regenerationResult.rssCreatedAt,
+      });
+
+      expect(mockUserSettingsService.regenerateRssToken).toHaveBeenCalledWith(
+        appUser,
+      );
+    });
+
+    it('RSS機能が無効な場合、BadRequestExceptionがスローされること', async () => {
+      // Arrange
+      const appUser = AppUserFactory.createUserWithRssDisabled();
+      mockAppUsersRepository.findOne.mockResolvedValue(appUser);
+
+      // Act & Assert
+      await expect(controller.regenerateRssToken(userId)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockUserSettingsService.regenerateRssToken).not.toHaveBeenCalled();
+    });
+
+    it('ユーザーが見つからない場合、NotFoundExceptionがスローされること', async () => {
+      // Arrange
+      mockAppUsersRepository.findOne.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(controller.regenerateRssToken(userId)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('RssTokenRegenerationErrorの場合、InternalServerErrorExceptionがスローされること', async () => {
+      // Arrange
+      const appUser = AppUserFactory.createUserWithRssEnabled();
+      mockAppUsersRepository.findOne.mockResolvedValue(appUser);
+      mockUserSettingsService.regenerateRssToken.mockRejectedValue(
+        new RssTokenRegenerationError('再生成エラー'),
+      );
+
+      // Act & Assert
+      await expect(controller.regenerateRssToken(userId)).rejects.toThrow(
+        InternalServerErrorException,
       );
     });
   });

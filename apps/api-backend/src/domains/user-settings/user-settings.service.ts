@@ -1,3 +1,5 @@
+import { AppConfigService } from '@/app-config/app-config.service';
+import { IAppUsersRepository } from '@/domains/app-users/app-users.repository.interface';
 import {
   SlackWebhookTestError,
   UserSettingsNotFoundError,
@@ -6,8 +8,12 @@ import {
 } from '@/types/errors';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { AppUser } from '@prisma/client';
+import { v4 as uuidv4 } from 'uuid';
+import { RssFileService } from './rss-file.service';
 import {
+  RssTokenRegenerationResult,
   SlackWebhookTestResult,
+  UpdateRssSettingsParams,
   UpdateUserSettingsParams,
   UserSettings,
 } from './user-settings.entity';
@@ -15,7 +21,7 @@ import { IUserSettingsRepository } from './user-settings.repository.interface';
 
 /**
  * ユーザー設定サービス
- * ユーザー設定の取得・更新・Slack通知テストなどのビジネスロジックを管理
+ * ユーザー設定の取得・更新・Slack通知テスト・RSS設定管理などのビジネスロジックを管理
  */
 @Injectable()
 export class UserSettingsService {
@@ -24,6 +30,10 @@ export class UserSettingsService {
   constructor(
     @Inject('UserSettingsRepository')
     private readonly userSettingsRepository: IUserSettingsRepository,
+    @Inject('AppUserRepository')
+    private readonly appUserRepository: IAppUsersRepository,
+    private readonly appConfigService: AppConfigService,
+    private readonly rssFileService: RssFileService,
   ) {}
 
   /**
@@ -225,5 +235,206 @@ export class UserSettingsService {
       parts[parts.length - 1] = '***';
     }
     return parts.join('/');
+  }
+
+  /**
+   * RSS設定を更新する
+   * @param appUser 対象ユーザー
+   * @param params RSS設定更新パラメータ
+   * @returns 更新後のユーザー設定
+   * @throws UserSettingsUpdateError 更新に失敗した場合
+   */
+  async updateRssSettings(
+    appUser: AppUser,
+    params: UpdateRssSettingsParams,
+  ): Promise<UserSettings> {
+    try {
+      this.logger.log(
+        `RSS設定を更新します: ${appUser.id}, enabled: ${params.rssEnabled}`,
+      );
+
+      let rssToken: string | undefined;
+      const wasRssEnabled = appUser.rssEnabled;
+      const oldRssToken = appUser.rssToken;
+
+      if (params.rssEnabled) {
+        // RSS有効化の場合
+        if (!appUser.rssToken) {
+          // 新規トークン生成
+          rssToken = uuidv4();
+          this.logger.log(`新しいRSSトークンを生成しました: ${appUser.id}`);
+        }
+        // 既存トークンがある場合はundefinedのまま（更新しない）
+      } else {
+        // RSS無効化の場合はundefinedを渡してクリア
+        rssToken = undefined;
+      }
+
+      await this.appUserRepository.updateRssSettings(
+        appUser.id,
+        params.rssEnabled,
+        rssToken,
+      );
+
+      // 更新後のユーザー情報を取得
+      const updatedAppUser = await this.appUserRepository.findOne(appUser.id);
+      if (!updatedAppUser) {
+        throw new UserSettingsUpdateError(
+          `ユーザーが見つかりません: ${appUser.id}`,
+        );
+      }
+
+      // RSS無効化時に古いRSSファイルを削除
+      if (!params.rssEnabled && wasRssEnabled && oldRssToken) {
+        try {
+          this.logger.log(
+            `RSS無効化により古いRSSファイルを削除します: ${updatedAppUser.id}`,
+          );
+          await this.rssFileService.deleteUserRssFile(
+            oldRssToken,
+            updatedAppUser.id,
+          );
+          this.logger.log(
+            `古いRSSファイルの削除が完了しました: ${updatedAppUser.id}`,
+          );
+        } catch (deleteError) {
+          // RSSファイル削除エラーは警告レベルでログ出力し、設定更新は継続
+          this.logger.warn(
+            `古いRSSファイルの削除に失敗しましたが、RSS設定は無効化されました: ${updatedAppUser.id}`,
+            deleteError,
+          );
+        }
+      }
+
+      // RSS有効化時にRSSファイルを生成・アップロード
+      if (params.rssEnabled && !wasRssEnabled) {
+        try {
+          this.logger.log(
+            `RSS有効化によりRSSファイルを生成・アップロードします: ${updatedAppUser.id}`,
+          );
+          await this.rssFileService.generateAndUploadUserRss(updatedAppUser);
+          this.logger.log(
+            `RSSファイルの生成・アップロードが完了しました: ${updatedAppUser.id}`,
+          );
+        } catch (rssError) {
+          // RSSファイル生成・アップロードエラーは警告レベルでログ出力し、設定更新は継続
+          this.logger.warn(
+            `RSSファイルの生成・アップロードに失敗しましたが、RSS設定は有効化されました: ${updatedAppUser.id}`,
+            rssError,
+          );
+        }
+      }
+
+      const userSettings =
+        await this.userSettingsRepository.findByAppUser(updatedAppUser);
+
+      this.logger.log(`RSS設定を更新しました: ${appUser.id}`);
+      return userSettings;
+    } catch (error) {
+      const errorMessage = `RSS設定の更新に失敗しました: ${appUser.id}`;
+      this.logger.error(errorMessage, error);
+      throw new UserSettingsUpdateError(errorMessage, { cause: error });
+    }
+  }
+
+  /**
+   * RSSトークンを再生成する
+   * @param appUser 対象ユーザー
+   * @returns RSSトークン再生成結果
+   * @throws UserSettingsUpdateError RSS機能が無効またはトークン再生成に失敗した場合
+   */
+  async regenerateRssToken(
+    appUser: AppUser,
+  ): Promise<RssTokenRegenerationResult> {
+    try {
+      if (!appUser.rssEnabled) {
+        throw new UserSettingsUpdateError(
+          `RSS機能が無効なユーザーです: ${appUser.id}`,
+        );
+      }
+
+      this.logger.log(`RSSトークンを再生成します: ${appUser.id}`);
+
+      const oldRssToken = appUser.rssToken;
+      const newRssToken = uuidv4();
+      const updatedAppUser = await this.appUserRepository.regenerateRssToken(
+        appUser.id,
+        newRssToken,
+      );
+
+      // 古いRSSファイルを削除（古いトークンが存在する場合）
+      if (oldRssToken) {
+        try {
+          this.logger.log(
+            `RSSトークン再生成により古いRSSファイルを削除します: ${updatedAppUser.id}`,
+          );
+          await this.rssFileService.deleteUserRssFile(
+            oldRssToken,
+            updatedAppUser.id,
+          );
+          this.logger.log(
+            `古いRSSファイルの削除が完了しました: ${updatedAppUser.id}`,
+          );
+        } catch (deleteError) {
+          // RSSファイル削除エラーは警告レベルでログ出力し、処理は継続
+          this.logger.warn(
+            `古いRSSファイルの削除に失敗しましたが、RSSトークン再生成は継続します: ${updatedAppUser.id}`,
+            deleteError,
+          );
+        }
+      }
+
+      // 新しいRSSファイルを生成・アップロード
+      try {
+        this.logger.log(
+          `RSSトークン再生成により新しいRSSファイルを生成・アップロードします: ${updatedAppUser.id}`,
+        );
+        await this.rssFileService.generateAndUploadUserRss(updatedAppUser);
+        this.logger.log(
+          `新しいRSSファイルの生成・アップロードが完了しました: ${updatedAppUser.id}`,
+        );
+      } catch (rssError) {
+        // RSSファイル生成・アップロードエラーは警告レベルでログ出力し、トークン再生成は継続
+        this.logger.warn(
+          `新しいRSSファイルの生成・アップロードに失敗しましたが、RSSトークンは再生成されました: ${updatedAppUser.id}`,
+          rssError,
+        );
+      }
+
+      const result: RssTokenRegenerationResult = {
+        rssToken: updatedAppUser.rssToken!,
+        rssUrl: this.buildRssUrl(updatedAppUser.rssToken!),
+        rssCreatedAt: updatedAppUser.rssCreatedAt!,
+      };
+
+      this.logger.log(`RSSトークンを再生成しました: ${appUser.id}`);
+      return result;
+    } catch (error) {
+      const errorMessage = `RSSトークンの再生成に失敗しました: ${appUser.id}`;
+      this.logger.error(errorMessage, error);
+      throw new UserSettingsUpdateError(errorMessage, { cause: error });
+    }
+  }
+
+  /**
+   * RSS URLを取得する
+   * @param appUser 対象ユーザー
+   * @returns RSS URL（RSS機能が無効またはトークンがない場合はundefined）
+   */
+  getRssUrl(appUser: AppUser): string | undefined {
+    if (!appUser.rssEnabled || !appUser.rssToken) {
+      return undefined;
+    }
+    return this.buildRssUrl(appUser.rssToken);
+  }
+
+  /**
+   * RSSトークンからRSS配信URLを構築する
+   * @param rssToken RSSトークン
+   * @returns RSS配信URL
+   */
+  private buildRssUrl(rssToken: string): string {
+    const rssUrlPrefix = this.appConfigService.RssUrlPrefix;
+    return `${rssUrlPrefix}/u/${rssToken}/rss.xml`;
   }
 }

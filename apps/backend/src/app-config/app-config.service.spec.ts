@@ -76,6 +76,11 @@ describe('AppConfigService', () => {
                 SLACK_INCOMING_WEBHOOK_URL: 'slack-incoming-webhook-url',
                 FREE_PLAN_ID: 'free-plan',
                 PRO_PLAN_ID: 'pro-plan',
+                RSS_BUCKET_NAME: 'rss-bucket-name',
+                RSS_URL_PREFIX: 'https://rss.techpostcast.com',
+                PODCAST_IMAGE_URL: 'podcast-image-url',
+                PODCAST_AUTHOR_EMAIL: 'podcast-author-email',
+                PODCAST_AUTHOR_NAME: 'podcast-author-name',
               };
               return configKeys[key];
             }),
@@ -497,6 +502,28 @@ describe('AppConfigService', () => {
     );
   });
 
+  it('RSS_BUCKET_NAME が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'RSS_BUCKET_NAME') return null;
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
+  it('RSS_URL_PREFIX が設定されていない場合、エラーをスローするべき', () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'RSS_URL_PREFIX') return null;
+      return 'some-value';
+    });
+
+    expect(() => new AppConfigService(configService)).toThrow(
+      AppConfigValidationError,
+    );
+  });
+
   it('ゲッターから正しい値を返すべき', () => {
     expect(service.DatabaseUrl).toBe('https://example-database.url');
     expect(service.ShowQueryLogs).toBe(true);
@@ -570,5 +597,54 @@ describe('AppConfigService', () => {
     expect(service.XApiAccessSecret).toBe('x-api-access-secret');
     expect(service.FreePlanId).toBe('free-plan');
     expect(service.ProPlanId).toBe('pro-plan');
+    expect(service.RssBucketName).toBe('rss-bucket-name');
+    expect(service.RssUrlPrefix).toBe('https://rss.techpostcast.com');
+    expect(service.PodcastImageUrl).toBe('podcast-image-url');
+    expect(service.PodcastAuthorEmail).toBe('podcast-author-email');
+    expect(service.PodcastAuthorName).toBe('podcast-author-name');
+  });
+
+  describe('新しく追加されたPodcast関連のgetterメソッド', () => {
+    it('PodcastImageUrl が正しい値を返すべき', () => {
+      expect(service.PodcastImageUrl).toBe('podcast-image-url');
+    });
+
+    it('PodcastAuthorEmail が正しい値を返すべき', () => {
+      expect(service.PodcastAuthorEmail).toBe('podcast-author-email');
+    });
+
+    it('PodcastAuthorName が正しい値を返すべき', () => {
+      expect(service.PodcastAuthorName).toBe('podcast-author-name');
+    });
+
+    it('PODCAST_IMAGE_URL が未設定でもエラーにならないべき', () => {
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+        if (key === 'PODCAST_IMAGE_URL') return null;
+        return 'some-value';
+      });
+
+      const appConfigService = new AppConfigService(configService);
+      expect(appConfigService.PodcastImageUrl).toBeNull();
+    });
+
+    it('PODCAST_AUTHOR_EMAIL が未設定でもエラーにならないべき', () => {
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+        if (key === 'PODCAST_AUTHOR_EMAIL') return null;
+        return 'some-value';
+      });
+
+      const appConfigService = new AppConfigService(configService);
+      expect(appConfigService.PodcastAuthorEmail).toBeNull();
+    });
+
+    it('PODCAST_AUTHOR_NAME が未設定でもエラーにならないべき', () => {
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+        if (key === 'PODCAST_AUTHOR_NAME') return null;
+        return 'some-value';
+      });
+
+      const appConfigService = new AppConfigService(configService);
+      expect(appConfigService.PodcastAuthorName).toBeNull();
+    });
   });
 });

@@ -630,6 +630,24 @@ export interface GetUserSettingsResponseDto {
      */
     'notificationEnabled': boolean;
     /**
+     * RSS機能が有効かどうかを表すフラグ
+     * @type {boolean}
+     * @memberof GetUserSettingsResponseDto
+     */
+    'rssEnabled': boolean;
+    /**
+     * RSS配信用のトークン（RSS機能が有効な場合のみ）
+     * @type {string}
+     * @memberof GetUserSettingsResponseDto
+     */
+    'rssToken'?: string;
+    /**
+     * RSS配信URL（RSS機能が有効な場合のみ）
+     * @type {string}
+     * @memberof GetUserSettingsResponseDto
+     */
+    'rssUrl'?: string;
+    /**
      * 設定の最終更新日時
      * @type {string}
      * @memberof GetUserSettingsResponseDto
@@ -1505,6 +1523,31 @@ export interface QiitaUserDto {
 /**
  * 
  * @export
+ * @interface RegenerateRssTokenResponseDto
+ */
+export interface RegenerateRssTokenResponseDto {
+    /**
+     * 新しく生成されたRSS配信用トークン
+     * @type {string}
+     * @memberof RegenerateRssTokenResponseDto
+     */
+    'rssToken': string;
+    /**
+     * 新しいRSS配信URL
+     * @type {string}
+     * @memberof RegenerateRssTokenResponseDto
+     */
+    'rssUrl': string;
+    /**
+     * トークン更新日時
+     * @type {string}
+     * @memberof RegenerateRssTokenResponseDto
+     */
+    'updatedAt': string;
+}
+/**
+ * 
+ * @export
  * @interface ResponseAuthorFilterDto
  */
 export interface ResponseAuthorFilterDto {
@@ -1912,6 +1955,12 @@ export interface UpdateUserSettingsRequestDto {
      * @memberof UpdateUserSettingsRequestDto
      */
     'notificationEnabled'?: boolean;
+    /**
+     * RSS機能が有効かどうかを表すフラグ
+     * @type {boolean}
+     * @memberof UpdateUserSettingsRequestDto
+     */
+    'rssEnabled'?: boolean;
 }
 /**
  * 
@@ -4245,7 +4294,7 @@ export class QiitaPostsApi extends BaseAPI {
 export const UserSettingsApiAxiosParamCreator = function (configuration?: Configuration) {
     return {
         /**
-         * 認証ユーザーのユーザー設定（表示名、Slack通知設定など）を取得します。
+         * 認証ユーザーのユーザー設定（表示名、Slack通知設定、RSS設定など）を取得します。
          * @summary ユーザー設定取得
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -4260,6 +4309,36 @@ export const UserSettingsApiAxiosParamCreator = function (configuration?: Config
             }
 
             const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * RSS機能が有効なユーザーのRSSトークンを再生成し、新しいRSS URLを発行します。
+         * @summary RSSトークン再生成
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        regenerateRssToken: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/user-settings/rss/regenerate-token`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
 
@@ -4311,7 +4390,7 @@ export const UserSettingsApiAxiosParamCreator = function (configuration?: Config
             };
         },
         /**
-         * 認証ユーザーのユーザー設定（表示名、Slack通知設定など）を更新します。
+         * 認証ユーザーのユーザー設定（表示名、Slack通知設定、RSS設定など）を更新します。
          * @summary ユーザー設定更新
          * @param {UpdateUserSettingsRequestDto} updateUserSettingsRequestDto 
          * @param {*} [options] Override http request option.
@@ -4357,7 +4436,7 @@ export const UserSettingsApiFp = function(configuration?: Configuration) {
     const localVarAxiosParamCreator = UserSettingsApiAxiosParamCreator(configuration)
     return {
         /**
-         * 認証ユーザーのユーザー設定（表示名、Slack通知設定など）を取得します。
+         * 認証ユーザーのユーザー設定（表示名、Slack通知設定、RSS設定など）を取得します。
          * @summary ユーザー設定取得
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -4366,6 +4445,18 @@ export const UserSettingsApiFp = function(configuration?: Configuration) {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getUserSettings(options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['UserSettingsApi.getUserSettings']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * RSS機能が有効なユーザーのRSSトークンを再生成し、新しいRSS URLを発行します。
+         * @summary RSSトークン再生成
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async regenerateRssToken(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<RegenerateRssTokenResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.regenerateRssToken(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UserSettingsApi.regenerateRssToken']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -4382,7 +4473,7 @@ export const UserSettingsApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * 認証ユーザーのユーザー設定（表示名、Slack通知設定など）を更新します。
+         * 認証ユーザーのユーザー設定（表示名、Slack通知設定、RSS設定など）を更新します。
          * @summary ユーザー設定更新
          * @param {UpdateUserSettingsRequestDto} updateUserSettingsRequestDto 
          * @param {*} [options] Override http request option.
@@ -4405,13 +4496,22 @@ export const UserSettingsApiFactory = function (configuration?: Configuration, b
     const localVarFp = UserSettingsApiFp(configuration)
     return {
         /**
-         * 認証ユーザーのユーザー設定（表示名、Slack通知設定など）を取得します。
+         * 認証ユーザーのユーザー設定（表示名、Slack通知設定、RSS設定など）を取得します。
          * @summary ユーザー設定取得
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
         getUserSettings(options?: RawAxiosRequestConfig): AxiosPromise<GetUserSettingsResponseDto> {
             return localVarFp.getUserSettings(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * RSS機能が有効なユーザーのRSSトークンを再生成し、新しいRSS URLを発行します。
+         * @summary RSSトークン再生成
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        regenerateRssToken(options?: RawAxiosRequestConfig): AxiosPromise<RegenerateRssTokenResponseDto> {
+            return localVarFp.regenerateRssToken(options).then((request) => request(axios, basePath));
         },
         /**
          * 指定されたSlack Webhook URLに対してテスト通知を送信し、接続を確認します。
@@ -4424,7 +4524,7 @@ export const UserSettingsApiFactory = function (configuration?: Configuration, b
             return localVarFp.testSlackWebhook(testSlackWebhookRequestDto, options).then((request) => request(axios, basePath));
         },
         /**
-         * 認証ユーザーのユーザー設定（表示名、Slack通知設定など）を更新します。
+         * 認証ユーザーのユーザー設定（表示名、Slack通知設定、RSS設定など）を更新します。
          * @summary ユーザー設定更新
          * @param {UpdateUserSettingsRequestDto} updateUserSettingsRequestDto 
          * @param {*} [options] Override http request option.
@@ -4444,7 +4544,7 @@ export const UserSettingsApiFactory = function (configuration?: Configuration, b
  */
 export class UserSettingsApi extends BaseAPI {
     /**
-     * 認証ユーザーのユーザー設定（表示名、Slack通知設定など）を取得します。
+     * 認証ユーザーのユーザー設定（表示名、Slack通知設定、RSS設定など）を取得します。
      * @summary ユーザー設定取得
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -4452,6 +4552,17 @@ export class UserSettingsApi extends BaseAPI {
      */
     public getUserSettings(options?: RawAxiosRequestConfig) {
         return UserSettingsApiFp(this.configuration).getUserSettings(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * RSS機能が有効なユーザーのRSSトークンを再生成し、新しいRSS URLを発行します。
+     * @summary RSSトークン再生成
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UserSettingsApi
+     */
+    public regenerateRssToken(options?: RawAxiosRequestConfig) {
+        return UserSettingsApiFp(this.configuration).regenerateRssToken(options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -4467,7 +4578,7 @@ export class UserSettingsApi extends BaseAPI {
     }
 
     /**
-     * 認証ユーザーのユーザー設定（表示名、Slack通知設定など）を更新します。
+     * 認証ユーザーのユーザー設定（表示名、Slack通知設定、RSS設定など）を更新します。
      * @summary ユーザー設定更新
      * @param {UpdateUserSettingsRequestDto} updateUserSettingsRequestDto 
      * @param {*} [options] Override http request option.

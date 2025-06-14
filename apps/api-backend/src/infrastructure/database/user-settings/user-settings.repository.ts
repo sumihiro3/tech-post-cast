@@ -45,6 +45,9 @@ export class UserSettingsRepository implements IUserSettingsRepository {
           displayName: true,
           slackWebhookUrl: true,
           notificationEnabled: true,
+          rssEnabled: true,
+          rssToken: true,
+          rssCreatedAt: true,
           updatedAt: true,
         },
       });
@@ -60,6 +63,8 @@ export class UserSettingsRepository implements IUserSettingsRepository {
         displayName: user.displayName,
         slackWebhookUrl: user.slackWebhookUrl || undefined,
         notificationEnabled: user.notificationEnabled,
+        rssEnabled: user.rssEnabled,
+        rssCreatedAt: user.rssCreatedAt || undefined,
         updatedAt: user.updatedAt,
       };
 
@@ -67,6 +72,8 @@ export class UserSettingsRepository implements IUserSettingsRepository {
         userId: user.id,
         notificationEnabled: user.notificationEnabled,
         hasSlackWebhook: !!user.slackWebhookUrl,
+        rssEnabled: user.rssEnabled,
+        hasRssToken: !!user.rssToken,
       });
 
       return userSettings;
@@ -133,6 +140,9 @@ export class UserSettingsRepository implements IUserSettingsRepository {
           displayName: true,
           slackWebhookUrl: true,
           notificationEnabled: true,
+          rssEnabled: true,
+          rssToken: true,
+          rssCreatedAt: true,
           updatedAt: true,
         },
       });
@@ -142,6 +152,8 @@ export class UserSettingsRepository implements IUserSettingsRepository {
         displayName: updatedUser.displayName,
         slackWebhookUrl: updatedUser.slackWebhookUrl || undefined,
         notificationEnabled: updatedUser.notificationEnabled,
+        rssEnabled: updatedUser.rssEnabled,
+        rssCreatedAt: updatedUser.rssCreatedAt || undefined,
         updatedAt: updatedUser.updatedAt,
       };
 
@@ -149,6 +161,8 @@ export class UserSettingsRepository implements IUserSettingsRepository {
         userId: updatedUser.id,
         notificationEnabled: updatedUser.notificationEnabled,
         hasSlackWebhook: !!updatedUser.slackWebhookUrl,
+        rssEnabled: updatedUser.rssEnabled,
+        hasRssToken: !!updatedUser.rssToken,
       });
 
       return userSettings;

@@ -520,4 +520,51 @@ export class PersonalizedFeedsRepository
       });
     }
   }
+
+  /**
+   * 指定ユーザーのパーソナルプログラム一覧を取得する（有効期限切れを除外）
+   * @param userId ユーザーID
+   * @param limit 取得件数上限
+   * @returns パーソナルプログラム一覧（有効期限内のもののみ）
+   */
+  async findProgramsByUserId(
+    userId: string,
+    limit: number,
+  ): Promise<PersonalizedFeedProgram[]> {
+    this.logger.debug(
+      `PersonalizedFeedsRepository.findProgramsByUserId called`,
+      { userId, limit },
+    );
+    try {
+      const client = this.prisma.getClient();
+      const now = new Date();
+      const programs = await client.personalizedFeedProgram.findMany({
+        where: {
+          userId,
+          isExpired: false,
+          OR: [
+            { expiresAt: null }, // 有効期限が設定されていない場合
+            { expiresAt: { gt: now } }, // 有効期限が現在時刻より後の場合
+          ],
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: limit,
+      });
+
+      this.logger.debug(
+        `指定ユーザーのパーソナルプログラム一覧を取得しました（有効期限内のもののみ）`,
+        { userId, count: programs.length, excludedExpired: true },
+      );
+      return programs;
+    } catch (error) {
+      const errorMessage = `指定ユーザーのパーソナルプログラム一覧の取得に失敗しました`;
+      this.logger.error(errorMessage, { error, userId, limit });
+      this.logger.error(error.message, error.stack);
+      throw new PersonalizedProgramPersistenceError(errorMessage, {
+        cause: error,
+      });
+    }
+  }
 }

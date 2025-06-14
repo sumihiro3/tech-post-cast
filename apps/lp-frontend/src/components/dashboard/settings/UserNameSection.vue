@@ -5,7 +5,7 @@ v-card.mb-6(elevation="2")
     | 表示名設定
   v-card-text
     p.text-body-2.text-medium-emphasis.mb-4
-      | パーソナル番組内で使用される表示名を設定してください。
+      | パーソナルプログラム内で使用される表示名を設定してください。
     v-text-field(
       v-model="localDisplayName"
       label="表示名"
@@ -22,7 +22,7 @@ v-card.mb-6(elevation="2")
     )
       template(#details)
         .text-caption.text-medium-emphasis
-          | 番組内でのナレーションや表示で使用されます
+          | プログラム内でのナレーションや表示で使用されます
 </template>
 
 <script setup lang="ts">

@@ -646,3 +646,267 @@ const navigateToPage = (page: number): void => {
 - パーソナルプログラム生成履歴のページング検証（対応不要と判定）
 
 ---
+
+## IRssFileUploaderインターフェイス分離によるClean Architecture準拠 (2024-12-19)
+
+### 背景と課題
+
+- 初期実装では`IRssFileUploader`インターフェイスと`S3RssFileUploader`実装クラスが同一ファイルに配置されていた
+- これはClean Architectureの原則に反し、ドメイン層とインフラストラクチャ層の境界が曖昧になっていた
+- 既存の`S3ProgramFileUploader`（backend）では適切にインターフェイスがドメイン層に分離されており、一貫性の問題があった
+
+### 検討したアプローチ
+
+1. **現状維持**: インターフェイスと実装を同一ファイルに保持
+   - 利点: ファイル数が少なく、シンプル
+   - 欠点: Clean Architectureに反する、テスタビリティが低い、一貫性がない
+
+2. **インターフェイス分離**: ドメイン層にインターフェイス、インフラ層に実装を配置
+   - 利点: Clean Architecture準拠、テスタビリティ向上、既存パターンとの一貫性
+   - 欠点: ファイル数が増加、初期の学習コストがわずかに増加
+
+### 決定事項と理由
+
+**インターフェイス分離アプローチを採用**
+
+**決定理由:**
+
+- Clean Architectureの依存関係逆転原則に準拠
+- 既存の`S3ProgramFileUploader`パターンとの一貫性確保
+- テスタビリティの向上（モック作成が容易）
+- 将来的な実装変更（AWS S3からCloudflare R2への切り替えなど）への対応力向上
+
+**実装詳細:**
+
+- `apps/api-backend/src/domains/user-settings/rss-file-uploader.interface.ts`: インターフェイス定義
+- `apps/api-backend/src/infrastructure/external-api/aws/s3/rss-file-uploader.ts`: 具体実装
+- 関連する型定義（`RssFileUploadCommand`, `RssFileUploadResult`, `RssFileDeleteCommand`）もインターフェイスファイルに集約
+
+### 学んだ教訓
+
+1. **KEY INSIGHT**: 初期実装時からアーキテクチャパターンの一貫性を保つことの重要性
+2. インターフェイス分離は後からでも比較的容易に実施可能だが、最初から適切に設計する方が効率的
+3. 既存のコードベースにおけるパターンの調査と踏襲が、一貫性のあるアーキテクチャ構築に重要
+4. TypeScriptの型システムを活用することで、インターフェイス分離時のリファクタリングが安全に実行可能
+
+### 関連タスク
+
+- TPC-92: パーソナルプログラムのRSSを出力できるようにする
+- UserSettingsController拡張タスク
+
+---
+
+## RSS管理機能のアーキテクチャ設計 (2024-12-11)
+
+### 背景と課題
+
+TPC-92チケットの実装において、lp-frontendにRSS管理機能を追加する際、既存のアーキテクチャとの整合性を保ちながら、新機能を効率的に統合する必要があった。
+
+### 検討したアプローチ
+
+#### コンポーネント設計戦略
+
+1. **単一コンポーネントアプローチ**: 設定画面に直接RSS機能を埋め込み
+   - 利点: シンプルな構造
+   - 欠点: 責任の分離不足、再利用性の低下
+2. **分離コンポーネントアプローチ**: RSS機能を独立したコンポーネントとして実装
+   - 利点: 単一責任原則、再利用性、テスタビリティ
+   - 欠点: 若干の複雑性増加
+
+#### 状態管理戦略
+
+1. **新規Composable作成**: RSS専用のcomposableを作成
+2. **既存Composable拡張**: `useUserSettings`を拡張してRSS機能を統合
+
+### 決定事項と理由
+
+#### KEY INSIGHT: コンポーネント分離による責任の明確化
+
+**決定**: `RssSettingsSection`として独立したコンポーネントを作成
+**理由**:
+
+- 単一責任原則の遵守（RSS機能のみに特化）
+- 既存の設定セクション（`SlackWebhookSection`）との一貫性
+- 将来的な機能拡張や他画面での再利用可能性
+- テストの独立性とメンテナンス性の向上
+
+#### 状態管理の統合
+
+**決定**: 既存の`useUserSettings`を拡張
+**理由**:
+
+- 設定関連機能の一元管理
+- 既存のパターンとの一貫性
+- 状態管理の複雑化を避ける
+
+#### Props/Emitsインターフェース設計
+
+```typescript
+interface Props {
+  modelValue: boolean;        // v-model対応
+  rssUrl?: string;           // オプショナルなURL
+  disabled?: boolean;        // 全体無効化制御
+  onRegenerateToken?: () => Promise<RegenerateRssTokenResponseDto>;
+}
+
+interface Emits {
+  (e: 'update:modelValue', value: boolean): void;  // v-model更新
+}
+```
+
+### 学んだ教訓
+
+#### GLOBAL LEARNING: Vue 3コンポーネント設計パターン
+
+- **Props設計**: オプショナルプロパティの適切な使用とデフォルト値設定
+- **v-model実装**: `modelValue`/`update:modelValue`パターンの標準化
+- **型安全性**: TypeScriptインターフェースによる厳密な型定義
+- **責任分離**: 各コンポーネントが明確な責任を持つ設計
+
+#### コンポーネント間通信パターン
+
+```typescript
+// 親コンポーネント（settings.vue）
+const handleRegenerateRssToken = async (): Promise<RegenerateRssTokenResponseDto> => {
+  return await regenerateRssToken();
+};
+
+// 子コンポーネント（RssSettingsSection.vue）
+const handleRegenerateToken = async (): Promise<void> => {
+  if (!props.onRegenerateToken) return;
+  const result = await props.onRegenerateToken();
+  // 結果の処理
+};
+```
+
+#### 既存パターンとの一貫性
+
+- 設定セクションの統一されたカード形式レイアウト
+- スイッチコンポーネントによる有効/無効切り替え
+- 説明文とアクションボタンの配置パターン
+
+### アーキテクチャ原則の適用
+
+#### Clean Architecture準拠
+
+- **UI層**: Vue 3コンポーネント（表示とユーザー操作）
+- **Application層**: Composable（ビジネスロジックと状態管理）
+- **Infrastructure層**: APIクライアント（外部システムとの通信）
+
+#### 依存関係逆転原則
+
+```typescript
+// 良い例: 抽象に依存
+interface Props {
+  onRegenerateToken?: () => Promise<RegenerateRssTokenResponseDto>;
+}
+
+// 悪い例: 具象に依存
+// 直接APIクライアントを呼び出すのではなく、関数を受け取る
+```
+
+### 技術的決定
+
+#### Vuetifyコンポーネントの活用
+
+- `v-card`: 統一されたセクション表示
+- `v-switch`: 機能の有効/無効切り替え
+- `v-text-field`: URL表示（readonly）
+- `v-btn`: アクションボタン
+- `v-tooltip`: ユーザビリティ向上
+
+#### レスポンシブ対応
+
+```vue
+<template>
+  <div class="d-flex align-center ga-2">
+    <v-text-field ... />
+    <v-btn size="small" ... />
+  </div>
+</template>
+```
+
+### 将来のための提案
+
+#### スケーラビリティ考慮
+
+1. **設定セクションの共通化**: 設定セクションの基底コンポーネント作成
+2. **状態管理の最適化**: Pinia導入による大規模状態管理
+3. **コンポーネントライブラリ**: 共通UIコンポーネントの体系化
+
+#### パフォーマンス最適化
+
+1. **遅延ローディング**: 設定画面の動的インポート
+2. **メモ化**: 計算プロパティの最適化
+3. **バンドルサイズ**: 不要な依存関係の削除
+
+### 関連タスク
+
+- TPC-92: パーソナルプログラムのRSSを出力できるようにする
+- RssSettingsSection コンポーネント実装
+- useUserSettings composable拡張
+- 設定画面統合
+
+---
+
+## Controller-Service-Repository パターンの適用 (2024-12-19)
+
+### 背景と課題
+
+PersonalizedFeedsController.finalizeメソッドの実装において、ControllerがRepositoryを直接操作する設計が提案されたが、適切なアーキテクチャパターンに従うべきとの指摘があった。
+
+### 検討したアプローチ
+
+1. **Controller → Repository 直接呼び出し**
+   - 利点: 実装が簡単、レイヤー数が少ない
+   - 欠点: 責任分離が不適切、ビジネスロジックがControllerに混在、再利用性が低い
+
+2. **Controller → Service → Repository パターン**
+   - 利点: 適切な責任分離、ビジネスロジックの再利用性、保守性の向上
+   - 欠点: レイヤー数の増加、初期実装コストの増加
+
+### 決定事項と理由
+
+Controller → Service → Repository の3層アーキテクチャパターンを採用。
+
+**理由:**
+
+- Controllerは HTTP リクエスト/レスポンスの処理に専念すべき
+- Serviceはビジネスロジック（日付計算、統計処理等）を担当
+- Repositoryはデータアクセスのみに特化
+- 将来的な機能拡張や他のControllerからの再利用が容易
+
+### 学んだ教訓
+
+- **KEY INSIGHT**: レイヤー間の責任分離は初期コストがかかっても長期的な保守性を重視すべき
+- NestJSの依存性注入を活用することで、適切なレイヤー分離を実現できる
+- モノレポ環境では各アプリケーション間でのアーキテクチャ一貫性が重要
+
+### 関連タスク
+
+PersonalizedFeedsController.finalize実装変更
+
+## モノレポにおけるService層の一貫性確保 (2024-12-19)
+
+### 背景と課題
+
+api-backendとbackendアプリで同名のServiceが存在する場合と存在しない場合があり、実装時に混乱が生じた。
+
+### 決定事項と理由
+
+各アプリケーションで必要なServiceは個別に実装し、共通のビジネスロジックは共有パッケージ化を検討する。
+
+**理由:**
+
+- アプリケーションごとに要求される機能が異なる場合がある
+- 過度な共通化は依存関係を複雑にする可能性がある
+- 必要に応じて段階的に共通化を進める方が安全
+
+### 学んだ教訓
+
+- **GLOBAL LEARNING**: モノレポでは各アプリケーションの独立性と共通化のバランスが重要
+- 新機能実装時は既存の類似機能の実装パターンを確認すべき
+
+### 関連タスク
+
+PersonalizedProgramAttemptsService新規作成

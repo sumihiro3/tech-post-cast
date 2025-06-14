@@ -163,13 +163,13 @@ const quickActions = ref<QuickAction[]>([
 ]);
 
 // 統計カードクリック時の処理
-const handleStatClick = (stat: StatItem): void => {
-  ui.showInfo(`${stat.title}がクリックされました`);
+const handleStatClick = (_stat: StatItem): void => {
+  // ui.showInfo(`${stat.title}がクリックされました`);
 };
 
 // アクションクリック時の処理
-const handleActionClick = (action: QuickAction): void => {
-  ui.showInfo(`${action.title}がクリックされました`);
+const handleActionClick = (_action: QuickAction): void => {
+  // ui.showInfo(`${action.title}がクリックされました`);
 };
 
 // 環境情報表示（開発環境のみ）

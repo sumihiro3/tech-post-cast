@@ -25,6 +25,10 @@ export class AppUserFactory {
       defaultPaymentMethodId: 'default_payment_method_id',
       slackWebhookUrl: null,
       notificationEnabled: false,
+      rssToken: null,
+      rssEnabled: false,
+      rssCreatedAt: null,
+      rssUpdatedAt: null,
       ...overrides,
     };
   }
@@ -75,6 +79,36 @@ export class AppUserFactory {
     return this.createAppUser({
       slackWebhookUrl: null,
       notificationEnabled: false,
+      ...overrides,
+    });
+  }
+
+  /**
+   * RSS機能有効ユーザーを作成する
+   * @param overrides 上書きするプロパティ
+   * @returns AppUser
+   */
+  static createUserWithRssEnabled(overrides: Partial<AppUser> = {}): AppUser {
+    return this.createAppUser({
+      rssToken: '550e8400-e29b-41d4-a716-446655440000',
+      rssEnabled: true,
+      rssCreatedAt: new Date('2023-01-01'),
+      rssUpdatedAt: new Date('2023-01-01'),
+      ...overrides,
+    });
+  }
+
+  /**
+   * RSS機能無効ユーザーを作成する
+   * @param overrides 上書きするプロパティ
+   * @returns AppUser
+   */
+  static createUserWithRssDisabled(overrides: Partial<AppUser> = {}): AppUser {
+    return this.createAppUser({
+      rssToken: null,
+      rssEnabled: false,
+      rssCreatedAt: null,
+      rssUpdatedAt: null,
       ...overrides,
     });
   }

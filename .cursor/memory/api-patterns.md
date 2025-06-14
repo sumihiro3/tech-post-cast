@@ -939,3 +939,259 @@ const programs = await useGetPersonalizedPrograms(app, page, limit, token);
 
 - TPC-117: パーソナルプログラム一覧でページングが機能しない
 - 認証が必要な他のAPIエンドポイントでの同様パターンの適用検討
+
+## RSS管理API統合パターン (2024-12-11)
+
+### 背景と課題
+
+lp-frontendでRSS管理機能を実装する際、api-backendとの統合において効率的なAPIクライアント生成と型安全な通信パターンを確立する必要があった。
+
+### 検討したアプローチ
+
+#### APIクライアント生成戦略
+
+1. **手動型定義**: 各APIエンドポイントの型を手動で定義
+   - 利点: 完全な制御、カスタマイズ可能
+   - 欠点: メンテナンス負荷、型の不整合リスク
+2. **自動生成**: OpenAPI仕様からの自動生成
+   - 利点: 型安全性、メンテナンス効率
+   - 欠点: 生成タイミングの管理が必要
+
+#### Composable設計パターン
+
+1. **単一責任Composable**: 各機能ごとに独立したcomposable
+2. **統合Composable**: 関連機能をまとめた大きなcomposable
+
+### 決定事項と理由
+
+#### KEY INSIGHT: APIクライアント自動生成の活用
+
+**決定**: `yarn generate:api-client`による自動生成を採用
+**理由**:
+
+- バックエンドのDTO変更が自動的にフロントエンドに反映
+- 型安全性の確保とランタイムエラーの削減
+- 開発効率の向上
+
+#### Composable拡張パターン
+
+**決定**: 既存の`useUserSettings`を拡張してRSS機能を統合
+**理由**:
+
+- 設定関連機能の一元管理
+- 状態管理の複雑化を避ける
+- 既存のパターンとの一貫性
+
+### 学んだ教訓
+
+#### GLOBAL LEARNING: モノレポでのAPI型共有
+
+- ルートディレクトリでの`yarn generate:api-client`実行により、全アプリケーションで一貫した型定義を共有
+- バックエンドのDTO変更時は必ずAPIクライアント再生成が必要
+- 型定義の変更は段階的にデプロイする必要がある
+
+#### Composable設計の原則
+
+```typescript
+// 良い例: 機能拡張時の既存パターン踏襲
+interface UserSettings {
+  // 既存フィールド
+  userName?: string;
+  slackWebhookUrl?: string;
+  slackEnabled: boolean;
+
+  // 新規RSS関連フィールド
+  rssEnabled: boolean;
+  rssToken?: string;
+  rssUrl?: string;
+}
+
+// 機能追加時の一貫したパターン
+const regenerateRssToken = async (): Promise<RegenerateRssTokenResponseDto> => {
+  try {
+    loading.value = true;
+    const response = await $api.userSettings.regenerateRssToken();
+    // 成功時の状態更新
+    await fetchUserSettings();
+    return response.data;
+  } catch (error) {
+    // エラーハンドリング
+    throw error;
+  } finally {
+    loading.value = false;
+  }
+};
+```
+
+#### エラーハンドリングの統一
+
+- 各API呼び出しで一貫したエラーハンドリングパターンを適用
+- ローディング状態の適切な管理
+- ユーザーフィードバックの統一
+
+### 技術的発見
+
+#### TypeScript型安全性の活用
+
+```typescript
+// DTOの型安全な利用
+interface RegenerateRssTokenResponseDto {
+  rssToken: string;
+  rssUrl: string;
+}
+
+// オプショナルプロパティの適切な処理
+const copyRssUrl = async (): Promise<void> => {
+  if (!props.rssUrl) return; // 型ガードによる安全性確保
+  // ...
+};
+```
+
+#### Vue 3 Composition APIでの非同期処理
+
+- `ref`による状態管理と非同期処理の組み合わせ
+- `watch`を使用したリアクティブな状態同期
+- エラー境界の適切な設定
+
+### APIエンドポイント設計パターン
+
+#### RESTful設計の踏襲
+
+```typescript
+// 一貫したエンドポイント命名
+GET    /api/user-settings          // 設定取得
+PUT    /api/user-settings          // 設定更新
+POST   /api/user-settings/rss/regenerate-token  // 特定操作
+```
+
+#### レスポンス構造の統一
+
+```typescript
+// 成功レスポンス
+interface ApiResponse<T> {
+  data: T;
+  message?: string;
+}
+
+// エラーレスポンス
+interface ApiError {
+  error: string;
+  message: string;
+  statusCode: number;
+}
+```
+
+### 将来のための提案
+
+#### API設計改善案
+
+1. **バージョニング戦略**: API v2への移行計画
+2. **キャッシュ戦略**: 設定データのクライアントサイドキャッシュ
+3. **リアルタイム更新**: WebSocketによる設定変更の即座反映
+
+#### 開発効率向上案
+
+1. **API Mock**: 開発時のモックサーバー活用
+2. **型生成の自動化**: CI/CDパイプラインでの自動生成
+3. **エラー処理の共通化**: 共通エラーハンドリングミドルウェア
+
+### 関連タスク
+
+- TPC-92: パーソナルプログラムのRSSを出力できるようにする
+- APIクライアント自動生成の実装
+- useUserSettings composable拡張
+- RSS関連DTO定義と統合
+
+## 統計データ取得APIの設計パターン (2024-12-19)
+
+### 背景と課題
+
+PersonalizedFeedsController.finalizeメソッドにおいて、外部から渡された統計データではなく、データベースから直接統計を取得する必要があった。
+
+### 検討したアプローチ
+
+1. **外部データ依存パターン**
+   - 利点: 実装が簡単、外部システムとの結合度が高い
+   - 欠点: データの整合性が保証されない、外部システムの障害に依存
+
+2. **データベース直接取得パターン**
+   - 利点: データの整合性が保証される、単一の真実の源泉
+   - 欠点: データベースアクセスのオーバーヘッド
+
+### 決定事項と理由
+
+データベースから直接統計を取得するパターンを採用。
+
+**理由:**
+
+- データの整合性と信頼性を重視
+- 外部システムの障害や不整合から独立
+- 将来的な統計データの拡張が容易
+
+### 実装パターン
+
+```typescript
+// DTOで日付指定を受け取る
+class FinalizeRequestDto {
+  daysAgo?: number;
+
+  getTargetDate(): Date {
+    const daysAgo = this.daysAgo ?? 0;
+    return getStartOfDay(subtractDays(new Date(), daysAgo), TIME_ZONE_JST);
+  }
+}
+
+// Serviceで統計計算を実行
+async getGenerationStatsByDaysAgo(daysAgo: number = 0): Promise<ProgramGenerationStats>
+```
+
+### 学んだ教訓
+
+- **KEY INSIGHT**: 統計データは可能な限り単一の真実の源泉から取得すべき
+- 日付計算はDTOまたはServiceで行い、Controllerには含めない
+- 統計データの構造は将来の拡張を考慮して設計する
+
+### 関連タスク
+
+PersonalizedFeedsController.finalize実装変更
+
+## ステータス管理とメッセージング (2024-12-19)
+
+### 背景と課題
+
+番組生成結果にSUCCESS/SKIPPED/FAILEDの3つのステータスがあるが、当初はSUCCESS/FAILEDのみを考慮していた。
+
+### 決定事項と理由
+
+全てのステータスを適切に処理し、ユーザーに分かりやすい形で通知する。
+
+**実装パターン:**
+
+```typescript
+interface ProgramGenerationStats {
+  totalFeeds: number;
+  successCount: number;
+  skippedCount: number;  // 追加
+  failedFeedIds: string[]; // 失敗のみIDを保持
+  timestamp: number;
+}
+```
+
+**通知メッセージ:**
+
+```
+- 成功: X 件
+- スキップ: Y 件  // 新規追加
+- 失敗: Z 件
+- 失敗したパーソナルフィードID: [IDリスト]
+```
+
+### 学んだ教訓
+
+- **GLOBAL LEARNING**: ステータス設計時は全ての可能な状態を考慮すべき
+- エラー情報（フィードID）は失敗時のみ必要、スキップ時は不要
+- ユーザー向けメッセージは業務的な意味を正確に反映すべき
+
+### 関連タスク
+
+PersonalizedFeedsController.finalize実装変更

@@ -30,6 +30,14 @@ v-container(fluid class="settings-page")
           @blur="validateSlackWebhook"
         )
 
+        // RSS設定セクション
+        DashboardSettingsRssSettingsSection(
+          v-model="settings.rssEnabled"
+          :rss-url="settings.rssUrl"
+          :disabled="loading"
+          :on-regenerate-token="handleRegenerateRssToken"
+        )
+
         // アクションボタン
         .d-flex.justify-end.gap-2.mt-8
           v-btn(
@@ -51,7 +59,7 @@ v-container(fluid class="settings-page")
 </template>
 
 <script setup lang="ts">
-import type { TestSlackWebhookResponseDto } from '@/api';
+import type { TestSlackWebhookResponseDto, RegenerateRssTokenResponseDto } from '@/api';
 import { useUserSettings } from '@/composables/dashboard/useUserSettings';
 import { useUIState } from '@/composables/useUIState';
 
@@ -76,6 +84,7 @@ const {
   validateDisplayName: validateDisplayNameFn,
   validateSlackWebhookUrl: validateSlackWebhookUrlFn,
   testSlackWebhook,
+  regenerateRssToken,
 } = useUserSettings();
 
 // ローカル状態
@@ -150,6 +159,7 @@ const handleSave = async (): Promise<void> => {
       displayName: settings.value.displayName,
       slackWebhookUrl: webhookUrl,
       notificationEnabled: settings.value.notificationEnabled,
+      rssEnabled: settings.value.rssEnabled,
     });
 
     if (success) {
@@ -238,6 +248,25 @@ const handleTestWebhook = async (
     }
 
     return { success: false, error: errorMessage };
+  }
+};
+
+/**
+ * RSSトークン再生成のハンドラ
+ *
+ * 実行タイミング: RssSettingsSectionコンポーネントでトークン再生成ボタンがクリックされた際
+ * 処理内容:
+ * 1. RSSトークンを再生成
+ * 2. 成功時は新しいトークンとURLを設定に反映
+ * 3. 失敗時はエラーを投げる
+ */
+const handleRegenerateRssToken = async (): Promise<RegenerateRssTokenResponseDto> => {
+  try {
+    const result = await regenerateRssToken();
+    return result;
+  } catch (err) {
+    console.error('RSSトークン再生成エラー:', err);
+    throw err;
   }
 };
 

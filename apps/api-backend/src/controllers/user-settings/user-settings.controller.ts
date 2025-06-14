@@ -3,6 +3,7 @@ import { ClerkJwtGuard } from '@/auth/guards/clerk-jwt.guard';
 import { IAppUsersRepository } from '@/domains/app-users/app-users.repository.interface';
 import { UserSettingsService } from '@/domains/user-settings/user-settings.service';
 import {
+  RssTokenRegenerationError,
   SlackWebhookTestError,
   UserNotFoundError,
   UserSettingsNotFoundError,
@@ -36,6 +37,7 @@ import {
 } from '@nestjs/swagger';
 import {
   GetUserSettingsResponseDto,
+  RegenerateRssTokenResponseDto,
   TestSlackWebhookRequestDto,
   TestSlackWebhookResponseDto,
   UpdateUserSettingsRequestDto,
@@ -43,7 +45,7 @@ import {
 
 /**
  * ユーザー設定コントローラー
- * ユーザー設定の取得・更新・Slack通知テストなどのエンドポイントを提供
+ * ユーザー設定の取得・更新・Slack通知テスト・RSS機能管理などのエンドポイントを提供
  */
 @ApiTags('user-settings')
 @Controller('user-settings')
@@ -65,7 +67,7 @@ export class UserSettingsController {
   @ApiOperation({
     summary: 'ユーザー設定取得',
     description:
-      '認証ユーザーのユーザー設定（表示名、Slack通知設定など）を取得します。',
+      '認証ユーザーのユーザー設定（表示名、Slack通知設定、RSS設定など）を取得します。',
   })
   @ApiOkResponse({
     description: 'ユーザー設定の取得に成功',
@@ -98,11 +100,17 @@ export class UserSettingsController {
       const userSettings =
         await this.userSettingsService.getUserSettings(appUser);
 
+      // RSS URLを取得（RSS機能が有効な場合のみ）
+      const rssUrl = this.userSettingsService.getRssUrl(appUser);
+
       const response: GetUserSettingsResponseDto = {
         userId: userSettings.userId,
         displayName: userSettings.displayName,
         slackWebhookUrl: userSettings.slackWebhookUrl,
         notificationEnabled: userSettings.notificationEnabled,
+        rssEnabled: appUser.rssEnabled,
+        rssToken: appUser.rssEnabled ? appUser.rssToken : undefined,
+        rssUrl: rssUrl,
         updatedAt: userSettings.updatedAt,
       };
 
@@ -110,6 +118,8 @@ export class UserSettingsController {
         userId,
         notificationEnabled: userSettings.notificationEnabled,
         hasSlackWebhook: !!userSettings.slackWebhookUrl,
+        rssEnabled: appUser.rssEnabled,
+        hasRssToken: !!appUser.rssToken,
       });
 
       return response;
@@ -151,7 +161,7 @@ export class UserSettingsController {
   @ApiOperation({
     summary: 'ユーザー設定更新',
     description:
-      '認証ユーザーのユーザー設定（表示名、Slack通知設定など）を更新します。',
+      '認証ユーザーのユーザー設定（表示名、Slack通知設定、RSS設定など）を更新します。',
   })
   @ApiOkResponse({
     description: 'ユーザー設定の更新に成功',
@@ -179,6 +189,7 @@ export class UserSettingsController {
         displayName: updateDto.displayName,
         notificationEnabled: updateDto.notificationEnabled,
         hasSlackWebhook: !!updateDto.slackWebhookUrl,
+        rssEnabled: updateDto.rssEnabled,
       },
     });
 
@@ -195,11 +206,34 @@ export class UserSettingsController {
         updateDto,
       );
 
+      // RSS設定が含まれている場合は更新
+      let updatedAppUser = appUser;
+      if (updateDto.rssEnabled !== undefined) {
+        await this.userSettingsService.updateRssSettings(appUser, {
+          rssEnabled: updateDto.rssEnabled,
+        });
+        // 更新後のAppUserを取得
+        const refreshedAppUser = await this.appUserRepository.findOne(
+          appUser.id,
+        );
+        if (refreshedAppUser) {
+          updatedAppUser = refreshedAppUser;
+        }
+      }
+
+      // RSS URLを取得（RSS機能が有効な場合のみ）
+      const rssUrl = this.userSettingsService.getRssUrl(updatedAppUser);
+
       const response: GetUserSettingsResponseDto = {
         userId: updatedSettings.userId,
         displayName: updatedSettings.displayName,
         slackWebhookUrl: updatedSettings.slackWebhookUrl,
         notificationEnabled: updatedSettings.notificationEnabled,
+        rssEnabled: updatedAppUser.rssEnabled,
+        rssToken: updatedAppUser.rssEnabled
+          ? updatedAppUser.rssToken
+          : undefined,
+        rssUrl: rssUrl,
         updatedAt: updatedSettings.updatedAt,
       };
 
@@ -207,6 +241,8 @@ export class UserSettingsController {
         userId,
         notificationEnabled: updatedSettings.notificationEnabled,
         hasSlackWebhook: !!updatedSettings.slackWebhookUrl,
+        rssEnabled: updatedAppUser.rssEnabled,
+        hasRssToken: !!updatedAppUser.rssToken,
       });
 
       return response;
@@ -244,6 +280,108 @@ export class UserSettingsController {
         });
         throw new InternalServerErrorException(
           'ユーザー設定の更新に失敗しました',
+        );
+      }
+
+      this.logger.error('予期しないエラーが発生しました', {
+        userId,
+        error: error.message,
+        stack: error.stack,
+      });
+      throw new InternalServerErrorException('予期しないエラーが発生しました');
+    }
+  }
+
+  /**
+   * RSSトークンを再生成する
+   */
+  @Post('rss/regenerate-token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'RSSトークン再生成',
+    description:
+      'RSS機能が有効なユーザーのRSSトークンを再生成し、新しいRSS URLを発行します。',
+  })
+  @ApiOkResponse({
+    description: 'RSSトークンの再生成に成功',
+    type: RegenerateRssTokenResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'RSS機能が無効、またはリクエストパラメータが不正です',
+  })
+  @ApiUnauthorizedResponse({
+    description: '認証が必要です',
+  })
+  @ApiNotFoundResponse({
+    description: 'ユーザーが見つかりません',
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'サーバー内部エラー',
+  })
+  async regenerateRssToken(
+    @CurrentUserId() userId: string,
+  ): Promise<RegenerateRssTokenResponseDto> {
+    this.logger.debug('UserSettingsController.regenerateRssToken called', {
+      userId,
+    });
+
+    try {
+      // ユーザー情報を取得
+      const appUser = await this.appUserRepository.findOne(userId);
+      if (!appUser) {
+        throw new UserNotFoundError(`ユーザー [${userId}] が見つかりません`);
+      }
+
+      // RSS機能が有効かチェック
+      if (!appUser.rssEnabled) {
+        this.logger.warn(
+          'RSS機能が無効なユーザーがトークン再生成を試行しました',
+          {
+            userId,
+          },
+        );
+        throw new BadRequestException(
+          'RSS機能が無効です。まずRSS機能を有効にしてください。',
+        );
+      }
+
+      // RSSトークンを再生成
+      const regenerationResult =
+        await this.userSettingsService.regenerateRssToken(appUser);
+
+      const response: RegenerateRssTokenResponseDto = {
+        rssToken: regenerationResult.rssToken,
+        rssUrl: regenerationResult.rssUrl,
+        updatedAt: regenerationResult.rssCreatedAt,
+      };
+
+      this.logger.log('RSSトークンを再生成しました', {
+        userId,
+        newRssToken: this.maskRssToken(regenerationResult.rssToken),
+      });
+
+      return response;
+    } catch (error) {
+      if (error instanceof UserNotFoundError) {
+        this.logger.warn('ユーザーが見つかりません', {
+          userId,
+          error: error.message,
+        });
+        throw new NotFoundException(error.message);
+      }
+
+      if (error instanceof BadRequestException) {
+        // 既にBadRequestExceptionの場合はそのまま再スロー
+        throw error;
+      }
+
+      if (error instanceof RssTokenRegenerationError) {
+        this.logger.error('RSSトークンの再生成に失敗しました', {
+          userId,
+          error: error.message,
+        });
+        throw new InternalServerErrorException(
+          'RSSトークンの再生成に失敗しました',
         );
       }
 
@@ -348,5 +486,20 @@ export class UserSettingsController {
       parts[parts.length - 1] = '***';
     }
     return parts.join('/');
+  }
+
+  /**
+   * ログ出力用にRSSトークンをマスクする
+   * @param rssToken マスクするRSSトークン
+   * @returns マスクされたRSSトークン
+   */
+  private maskRssToken(rssToken: string): string {
+    if (!rssToken) return '';
+
+    // トークンの最初の8文字と最後の4文字を表示し、中間をマスク
+    if (rssToken.length <= 12) {
+      return '***';
+    }
+    return `${rssToken.substring(0, 8)}***${rssToken.substring(rssToken.length - 4)}`;
   }
 }

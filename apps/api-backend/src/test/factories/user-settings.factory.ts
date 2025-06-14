@@ -17,6 +17,8 @@ export class UserSettingsFactory {
       displayName: 'Test User',
       slackWebhookUrl: undefined,
       notificationEnabled: false,
+      rssEnabled: false,
+      rssCreatedAt: undefined,
       updatedAt: new Date('2023-01-01'),
       ...overrides,
     };
@@ -65,6 +67,36 @@ export class UserSettingsFactory {
   ): UserSettings {
     return this.createUserSettings({
       displayName,
+      ...overrides,
+    });
+  }
+
+  /**
+   * RSS機能有効のユーザー設定を作成する
+   * @param overrides 上書きするプロパティ
+   * @returns UserSettings
+   */
+  static createUserSettingsWithRssEnabled(
+    overrides: Partial<UserSettings> = {},
+  ): UserSettings {
+    return this.createUserSettings({
+      rssEnabled: true,
+      rssCreatedAt: new Date('2023-01-01'),
+      ...overrides,
+    });
+  }
+
+  /**
+   * RSS機能無効のユーザー設定を作成する
+   * @param overrides 上書きするプロパティ
+   * @returns UserSettings
+   */
+  static createUserSettingsWithRssDisabled(
+    overrides: Partial<UserSettings> = {},
+  ): UserSettings {
+    return this.createUserSettings({
+      rssEnabled: false,
+      rssCreatedAt: undefined,
       ...overrides,
     });
   }
