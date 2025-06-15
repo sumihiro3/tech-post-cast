@@ -24,7 +24,8 @@ services:
       - '3000:3000'
     env_file:
       - apps/infra/.env.develop
-      - docker_compose.backend.env
+      # - docker_compose.backend.env
+      - apps/backend/.env
     environment:
       - PORT=3000
       - NODE_ENV=development
