@@ -17,7 +17,11 @@ import { PersonalizedFeedWithFilters } from '@tech-post-cast/database';
 import { MockFunctionMetadata, ModuleMocker } from 'jest-mock';
 import { AppConfigService } from '../../app-config/app-config.service';
 import { PersonalizedFeedsBuilder } from '../../domains/radio-program/personalized-feed/personalized-feeds-builder';
-import { PersonalizedFeedCreateRequestDto } from './dto/personalized-feed.dto';
+import { PersonalizedProgramAttemptsService } from '../../domains/radio-program/personalized-feed/personalized-program-attempts.service';
+import {
+  FinalizeRequestDto,
+  PersonalizedFeedCreateRequestDto,
+} from './dto/personalized-feed.dto';
 import { PersonalizedFeedsController } from './personalized-feeds.controller';
 
 const moduleMocker = new ModuleMocker(global);
@@ -26,6 +30,7 @@ describe('PersonalizedFeedsController', () => {
   let controller: PersonalizedFeedsController;
   let personalizedFeedsBuilder: PersonalizedFeedsBuilder;
   let appConfigService: AppConfigService;
+  let personalizedProgramAttemptsService: PersonalizedProgramAttemptsService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -60,6 +65,10 @@ describe('PersonalizedFeedsController', () => {
       PersonalizedFeedsBuilder,
     );
     appConfigService = module.get<AppConfigService>(AppConfigService);
+    personalizedProgramAttemptsService =
+      module.get<PersonalizedProgramAttemptsService>(
+        PersonalizedProgramAttemptsService,
+      );
   });
 
   it('should be defined', () => {
@@ -272,19 +281,30 @@ describe('PersonalizedFeedsController', () => {
 
   describe('finalize', () => {
     it('should send finalization notification to Slack', async () => {
-      const body = {
+      // arrange
+      const dto = new FinalizeRequestDto();
+      dto.daysAgo = 0;
+      // mock
+      const mockGetGenerationStatsByDaysAgo = jest.spyOn(
+        personalizedProgramAttemptsService,
+        'getGenerationStatsByDaysAgo',
+      );
+      mockGetGenerationStatsByDaysAgo.mockResolvedValue({
         totalFeeds: 5,
-        timestamp: 1234567890,
         successCount: 4,
+        skippedCount: 1,
         failedFeedIds: ['feed-5'],
-      };
-
+        timestamp: 1234567890,
+      });
+      // mock fetch
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
       });
-
-      await controller.finalize(body);
-
+      // act
+      await controller.finalize(dto);
+      // assert
+      expect(mockGetGenerationStatsByDaysAgo).toHaveBeenCalledTimes(1);
+      expect(mockGetGenerationStatsByDaysAgo).toHaveBeenCalledWith(0);
       expect(fetch).toHaveBeenCalledWith(
         'https://hooks.slack.com/services/test',
         expect.objectContaining({
@@ -295,20 +315,32 @@ describe('PersonalizedFeedsController', () => {
     });
 
     it('should not send notification when webhook URL is not set', async () => {
-      const body = {
+      // arrange
+      const dto = new FinalizeRequestDto();
+      dto.daysAgo = 0;
+      // mock
+      const mockGetGenerationStatsByDaysAgo = jest.spyOn(
+        personalizedProgramAttemptsService,
+        'getGenerationStatsByDaysAgo',
+      );
+      mockGetGenerationStatsByDaysAgo.mockResolvedValue({
         totalFeeds: 5,
-        timestamp: 1234567890,
         successCount: 4,
+        skippedCount: 1,
         failedFeedIds: ['feed-5'],
-      };
+        timestamp: 1234567890,
+      });
 
       Object.defineProperty(appConfigService, 'SlackIncomingWebhookUrl', {
         value: '',
       });
       global.fetch = jest.fn();
 
-      await controller.finalize(body);
-
+      // act
+      await controller.finalize(dto);
+      // assert
+      expect(mockGetGenerationStatsByDaysAgo).toHaveBeenCalledTimes(1);
+      expect(mockGetGenerationStatsByDaysAgo).toHaveBeenCalledWith(0);
       expect(fetch).not.toHaveBeenCalled();
     });
   });
