@@ -5,7 +5,7 @@ import {
 } from '@/types/errors';
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { DeliveryFrequency } from '@prisma/client';
+import { DeliveryFrequency, SpeakerMode } from '@prisma/client';
 import { SubscriptionInfo, SubscriptionStatus } from '@tech-post-cast/database';
 import { ISubscriptionRepository } from '../subscription/subscription.repository.interface';
 import {
@@ -57,6 +57,7 @@ describe('PersonalizedFeedsService', () => {
     filterConfig: { minLikes: 5 },
     deliveryConfig: { frequency: 'daily', time: '08:00' },
     deliveryFrequency: DeliveryFrequency.WEEKLY,
+    speakerMode: SpeakerMode.SINGLE,
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -194,6 +195,7 @@ describe('PersonalizedFeedsService', () => {
         filterConfig: { minLikes: 5 },
         deliveryConfig: { frequency: 'daily', time: '08:00' },
         deliveryFrequency: DeliveryFrequency.WEEKLY,
+        speakerMode: SpeakerMode.SINGLE,
         isActive: true,
         filterGroups: [filterGroupDto],
       };
@@ -226,6 +228,7 @@ describe('PersonalizedFeedsService', () => {
         filterConfig: {},
         deliveryConfig: {},
         deliveryFrequency: DeliveryFrequency.WEEKLY,
+        speakerMode: SpeakerMode.SINGLE,
         isActive: true,
         filterGroups: [],
       };
@@ -366,6 +369,9 @@ describe('PersonalizedFeedsService', () => {
         ...mockPersonalizedFeedWithFilters,
       };
       delete params['id'];
+      delete params['userId'];
+      delete params['createdAt'];
+      delete params['updatedAt'];
       const createParams: CreatePersonalizedFeedParams = params;
 
       // Act & Assert

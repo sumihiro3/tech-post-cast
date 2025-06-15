@@ -208,6 +208,7 @@ export class PersonalizedFeedsController {
       filterConfig: dto.filterConfig ? 'provided' : 'not provided',
       deliveryConfig: dto.deliveryConfig ? 'provided' : 'not provided',
       deliveryFrequency: dto.deliveryFrequency,
+      speakerMode: dto.speakerMode,
       isActive: dto.isActive,
       hasFilterGroups: dto.filterGroups && dto.filterGroups.length > 0,
       filterGroupsCount: dto.filterGroups?.length || 0,
@@ -231,6 +232,7 @@ export class PersonalizedFeedsController {
         filterConfig: dto.filterConfig || {},
         deliveryConfig: dto.deliveryConfig || {},
         deliveryFrequency: dto.deliveryFrequency,
+        speakerMode: dto.speakerMode,
         isActive: dto.isActive ?? true,
         filterGroups: dto.filterGroups?.map((group) => ({
           name: group.name,
@@ -344,6 +346,7 @@ export class PersonalizedFeedsController {
         filterConfig: dto.filterConfig,
         deliveryConfig: dto.deliveryConfig,
         deliveryFrequency: dto.deliveryFrequency,
+        speakerMode: dto.speakerMode,
         isActive: dto.isActive,
         filterGroups: dto.filterGroups?.map((group) => ({
           name: group.name,

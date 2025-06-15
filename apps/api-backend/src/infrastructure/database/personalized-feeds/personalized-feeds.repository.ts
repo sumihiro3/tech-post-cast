@@ -330,6 +330,7 @@ export class PersonalizedFeedsRepository
           filterConfig: feed.filterConfig,
           deliveryConfig: feed.deliveryConfig,
           deliveryFrequency: feed.deliveryFrequency,
+          speakerMode: feed.speakerMode,
           isActive: feed.isActive,
           createdAt: now,
           updatedAt: now,
@@ -910,6 +911,8 @@ export class PersonalizedFeedsRepository
         updateData.deliveryConfig = params.deliveryConfig;
       if (params.deliveryFrequency !== undefined)
         updateData.deliveryFrequency = params.deliveryFrequency;
+      if (params.speakerMode !== undefined)
+        updateData.speakerMode = params.speakerMode;
       if (params.isActive !== undefined) updateData.isActive = params.isActive;
 
       // パーソナライズフィードを更新
@@ -1117,6 +1120,8 @@ export class PersonalizedFeedsRepository
           updateData.deliveryConfig = params.feed.deliveryConfig;
         if (params.feed.deliveryFrequency !== undefined)
           updateData.deliveryFrequency = params.feed.deliveryFrequency;
+        if (params.feed.speakerMode !== undefined)
+          updateData.speakerMode = params.feed.speakerMode;
         if (params.feed.isActive !== undefined)
           updateData.isActive = params.feed.isActive;
 

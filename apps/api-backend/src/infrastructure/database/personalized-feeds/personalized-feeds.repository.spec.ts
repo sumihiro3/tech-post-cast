@@ -1,11 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { DeliveryFrequency, SpeakerMode } from '@prisma/client';
 import { PrismaClientManager } from '@tech-post-cast/database';
-import { DeliveryFrequency } from '@prisma/client';
-import { PersonalizedFeedsRepository } from './personalized-feeds.repository';
-import { suppressLogOutput, restoreLogOutput } from '../../../test/helpers/logger.helper';
-import { PersonalizedFeedError } from '../../../types/errors/personalized-feed.error';
 import { PersonalizedFeed } from '../../../domains/personalized-feeds/personalized-feeds.entity';
 import { UpdateFeedParams } from '../../../domains/personalized-feeds/personalized-feeds.repository.interface';
+import {
+  restoreLogOutput,
+  suppressLogOutput,
+} from '../../../test/helpers/logger.helper';
+import { PersonalizedFeedsRepository } from './personalized-feeds.repository';
 
 describe('PersonalizedFeedsRepository', () => {
   let repository: PersonalizedFeedsRepository;
@@ -53,7 +55,9 @@ describe('PersonalizedFeedsRepository', () => {
       ],
     }).compile();
 
-    repository = module.get<PersonalizedFeedsRepository>(PersonalizedFeedsRepository);
+    repository = module.get<PersonalizedFeedsRepository>(
+      PersonalizedFeedsRepository,
+    );
   });
 
   afterEach(() => {
@@ -72,6 +76,7 @@ describe('PersonalizedFeedsRepository', () => {
         filterConfig: {},
         deliveryConfig: {},
         deliveryFrequency: DeliveryFrequency.DAILY,
+        speakerMode: SpeakerMode.SINGLE,
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -84,9 +89,11 @@ describe('PersonalizedFeedsRepository', () => {
       expect(result).toBeDefined();
       expect(result.id).toBe(feedId);
       expect(result.name).toBe('テストフィード');
-      expect(mockPrismaClient.personalizedFeed.findUnique).toHaveBeenCalledWith({
-        where: { id: feedId },
-      });
+      expect(mockPrismaClient.personalizedFeed.findUnique).toHaveBeenCalledWith(
+        {
+          where: { id: feedId },
+        },
+      );
     });
 
     it('フィードが存在しない場合、nullを返すこと', async () => {
@@ -97,9 +104,11 @@ describe('PersonalizedFeedsRepository', () => {
       const result = await repository.findById(feedId);
 
       expect(result).toBeNull();
-      expect(mockPrismaClient.personalizedFeed.findUnique).toHaveBeenCalledWith({
-        where: { id: feedId },
-      });
+      expect(mockPrismaClient.personalizedFeed.findUnique).toHaveBeenCalledWith(
+        {
+          where: { id: feedId },
+        },
+      );
     });
   });
 
@@ -116,6 +125,7 @@ describe('PersonalizedFeedsRepository', () => {
           filterConfig: {},
           deliveryConfig: {},
           deliveryFrequency: DeliveryFrequency.DAILY,
+          speakerMode: SpeakerMode.SINGLE,
           isActive: true,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -129,6 +139,7 @@ describe('PersonalizedFeedsRepository', () => {
           filterConfig: {},
           deliveryConfig: {},
           deliveryFrequency: DeliveryFrequency.WEEKLY,
+          speakerMode: SpeakerMode.SINGLE,
           isActive: true,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -167,6 +178,7 @@ describe('PersonalizedFeedsRepository', () => {
           filterConfig: {},
           deliveryConfig: {},
           deliveryFrequency: DeliveryFrequency.DAILY,
+          speakerMode: SpeakerMode.SINGLE,
           isActive: true,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -193,7 +205,7 @@ describe('PersonalizedFeedsRepository', () => {
   describe('countByUserId', () => {
     it('ユーザーIDに基づいてパーソナライズフィードの数を取得できること', async () => {
       const userId = 'user-1';
-      
+
       mockPrismaClient.personalizedFeed.count.mockResolvedValue(5);
 
       const result = await repository.countByUserId(userId);
@@ -214,6 +226,7 @@ describe('PersonalizedFeedsRepository', () => {
         filterConfig: {},
         deliveryConfig: {},
         deliveryFrequency: DeliveryFrequency.DAILY,
+        speakerMode: SpeakerMode.SINGLE,
         isActive: true,
       } as Omit<PersonalizedFeed, 'id' | 'createdAt' | 'updatedAt'>;
 
@@ -239,7 +252,10 @@ describe('PersonalizedFeedsRepository', () => {
           filterConfig: feedData.filterConfig,
           deliveryConfig: feedData.deliveryConfig,
           deliveryFrequency: feedData.deliveryFrequency,
+          speakerMode: feedData.speakerMode,
           isActive: feedData.isActive,
+          createdAt: expect.any(Date),
+          updatedAt: expect.any(Date),
         }),
       });
     });
@@ -343,6 +359,7 @@ describe('PersonalizedFeedsRepository', () => {
         id: feedId,
         name: '更新したフィード',
         deliveryFrequency: DeliveryFrequency.WEEKLY,
+        speakerMode: SpeakerMode.MULTI,
       };
 
       const mockExistingFeed = {
@@ -353,6 +370,7 @@ describe('PersonalizedFeedsRepository', () => {
         filterConfig: {},
         deliveryConfig: {},
         deliveryFrequency: DeliveryFrequency.DAILY,
+        speakerMode: SpeakerMode.SINGLE,
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -362,21 +380,26 @@ describe('PersonalizedFeedsRepository', () => {
         ...mockExistingFeed,
         name: updateData.name,
         deliveryFrequency: updateData.deliveryFrequency,
+        speakerMode: updateData.speakerMode,
         updatedAt: new Date(),
       };
 
-      mockPrismaClient.personalizedFeed.update.mockResolvedValue(mockUpdatedFeed);
+      mockPrismaClient.personalizedFeed.update.mockResolvedValue(
+        mockUpdatedFeed,
+      );
 
       const result = await repository.update(updateData);
 
       expect(result).toBeDefined();
       expect(result.name).toBe('更新したフィード');
       expect(result.deliveryFrequency).toBe('WEEKLY');
+      expect(result.speakerMode).toBe('MULTI');
       expect(mockPrismaClient.personalizedFeed.update).toHaveBeenCalledWith({
         where: { id: feedId },
         data: expect.objectContaining({
           name: updateData.name,
           deliveryFrequency: updateData.deliveryFrequency,
+          speakerMode: updateData.speakerMode,
         }),
       });
     });
@@ -394,6 +417,7 @@ describe('PersonalizedFeedsRepository', () => {
         filterConfig: {},
         deliveryConfig: {},
         deliveryFrequency: DeliveryFrequency.DAILY,
+        speakerMode: SpeakerMode.SINGLE,
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -405,7 +429,9 @@ describe('PersonalizedFeedsRepository', () => {
         updatedAt: new Date(),
       };
 
-      mockPrismaClient.personalizedFeed.update.mockResolvedValue(mockDeletedFeed);
+      mockPrismaClient.personalizedFeed.update.mockResolvedValue(
+        mockDeletedFeed,
+      );
 
       const result = await repository.softDelete(feedId);
 

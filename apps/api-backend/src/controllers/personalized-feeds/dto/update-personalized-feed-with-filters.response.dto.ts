@@ -1,6 +1,7 @@
 // filepath: /Users/sumihiro/projects/TechPostCast/tech-post-cast/apps/api-backend/src/controllers/personalized-feeds/dto/update-personalized-feed-with-filters.response.dto.ts
 import { PersonalizedFeedWithFilters } from '@/domains/personalized-feeds/personalized-feeds.entity';
 import { ApiProperty } from '@nestjs/swagger';
+import { SpeakerMode } from '@prisma/client';
 import { LikesCountFilterDto } from './create-personalized-feed.request.dto';
 
 /**
@@ -142,6 +143,13 @@ export class UpdatePersonalizedFeedWithFiltersResponseDto {
   deliveryConfig: Record<string, any>;
 
   @ApiProperty({
+    description: '話者モード（単一話者/複数話者）',
+    enum: SpeakerMode,
+    example: SpeakerMode.SINGLE,
+  })
+  speakerMode: SpeakerMode;
+
+  @ApiProperty({
     description: '有効かどうか',
     example: true,
   })
@@ -180,6 +188,7 @@ export class UpdatePersonalizedFeedWithFiltersResponseDto {
     dto.dataSource = entity.dataSource;
     dto.filterConfig = entity.filterConfig;
     dto.deliveryConfig = entity.deliveryConfig;
+    dto.speakerMode = entity.speakerMode;
     dto.isActive = entity.isActive;
     dto.createdAt = entity.createdAt;
     dto.updatedAt = entity.updatedAt;

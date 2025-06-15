@@ -1,4 +1,5 @@
 import { PersonalizedFeedWithFilters } from '@/domains/personalized-feeds/personalized-feeds.entity';
+import { SpeakerMode } from '@prisma/client';
 
 /**
  * パーソナライズフィードのモックデータを作成するファクトリークラス
@@ -20,6 +21,7 @@ export class PersonalizedFeedFactory {
       filterConfig: {},
       deliveryConfig: {},
       deliveryFrequency: 'DAILY',
+      speakerMode: SpeakerMode.SINGLE,
       isActive: true,
       createdAt: new Date('2025-01-01'),
       updatedAt: new Date('2025-01-01'),
