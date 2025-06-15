@@ -58,29 +58,35 @@ describe('EventsController', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       const mockRequest = {
-        body: { source: 'aws.events', detail: {} }
+        body: { source: 'aws.events', detail: {} },
       } as Request;
-      
-      jest.spyOn(headlineTopicProgramsService, 'createHeadlineTopicProgram').mockResolvedValue(mockProgram);
-      
+
+      jest
+        .spyOn(headlineTopicProgramsService, 'createHeadlineTopicProgram')
+        .mockResolvedValue(mockProgram);
+
       await controller.receiveEvents(mockRequest);
-      
-      expect(headlineTopicProgramsService.createHeadlineTopicProgram).toHaveBeenCalledWith(
-        expect.any(Date)
-      );
+
+      expect(
+        headlineTopicProgramsService.createHeadlineTopicProgram,
+      ).toHaveBeenCalledWith(expect.any(Date));
     });
-    
+
     it('should throw InternalServerErrorException when service throws an error', async () => {
       const mockRequest = {
-        body: { source: 'aws.events', detail: {} }
+        body: { source: 'aws.events', detail: {} },
       } as Request;
-      
+
       const mockError = new Error('Service error');
-      jest.spyOn(headlineTopicProgramsService, 'createHeadlineTopicProgram').mockRejectedValue(mockError);
-      
-      await expect(controller.receiveEvents(mockRequest)).rejects.toThrow(InternalServerErrorException);
+      jest
+        .spyOn(headlineTopicProgramsService, 'createHeadlineTopicProgram')
+        .mockRejectedValue(mockError);
+
+      await expect(controller.receiveEvents(mockRequest)).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 });

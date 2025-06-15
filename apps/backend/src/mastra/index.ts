@@ -2,6 +2,7 @@ import { OtelConfig } from '@mastra/core';
 import { createLogger } from '@mastra/core/logger';
 import { Mastra } from '@mastra/core/mastra';
 import { Workflow } from '@mastra/core/workflows';
+import { SpeakerMode } from '@prisma/client';
 import { LangfuseExporter } from 'langfuse-vercel';
 import { z } from 'zod';
 import { qiitaPostSummarizeAgent } from './agents';
@@ -26,6 +27,7 @@ const telemetry: OtelConfig = {
 
 /**
  * パーソナルプログラムの台本生成ワークフロー
+ * 注意: 実際の出力は話者モードに応じて PersonalizedProgramScript または MultiSpeakerProgramScript になります
  */
 export const personalizedProgramWorkflow = new Workflow({
   name: 'personalizedProgramWorkflow',
@@ -34,11 +36,17 @@ export const personalizedProgramWorkflow = new Workflow({
     posts: z.array(qiitaPostSchema).describe('記事のリスト'),
     programDate: z.date().describe('番組日'),
     personalizedFeedName: z.string().describe('パーソナルフィード名'),
+    speakerMode: z
+      .nativeEnum(SpeakerMode)
+      .optional()
+      .default(SpeakerMode.SINGLE)
+      .describe('話者モード'),
   }),
   mastra: new Mastra({
     telemetry,
   }),
   result: {
+    // 基本スキーマを使用（実行時に適切な型に変換される）
     schema: personalizedProgramScriptSchema,
   },
 });

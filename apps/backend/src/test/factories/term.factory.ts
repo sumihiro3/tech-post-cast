@@ -26,10 +26,7 @@ export class TermFactory {
    * @param overrides 上書きするプロパティ
    * @returns Term[]
    */
-  static createTerms(
-    count: number,
-    overrides: Partial<Term> = {},
-  ): Term[] {
+  static createTerms(count: number, overrides: Partial<Term> = {}): Term[] {
     return Array.from({ length: count }, (_, index) =>
       this.createTerm({
         id: index + 1,

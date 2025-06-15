@@ -10,7 +10,9 @@ export class HeadlineTopicProgramFactory {
    * @param overrides 上書きするプロパティ
    * @returns HeadlineTopicProgram
    */
-  static createHeadlineTopicProgram(overrides: Partial<HeadlineTopicProgram> = {}): HeadlineTopicProgram {
+  static createHeadlineTopicProgram(
+    overrides: Partial<HeadlineTopicProgram> = {},
+  ): HeadlineTopicProgram {
     return {
       id: 'program-1',
       title: 'テスト番組タイトル',

@@ -9,7 +9,9 @@ export class ListenerLetterFactory {
    * @param overrides 上書きするプロパティ
    * @returns ListenerLetter
    */
-  static createListenerLetter(overrides: Partial<ListenerLetter> = {}): ListenerLetter {
+  static createListenerLetter(
+    overrides: Partial<ListenerLetter> = {},
+  ): ListenerLetter {
     return {
       id: 'letter-1',
       body: 'テストお便り本文',

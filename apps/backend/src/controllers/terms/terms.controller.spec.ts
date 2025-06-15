@@ -69,7 +69,9 @@ describe('TermsController', () => {
       const mockError = new Error('Service error');
       jest.spyOn(termsService, 'createTerm').mockRejectedValue(mockError);
 
-      await expect(controller.createTerm(dto)).rejects.toThrow(InternalServerErrorException);
+      await expect(controller.createTerm(dto)).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 });

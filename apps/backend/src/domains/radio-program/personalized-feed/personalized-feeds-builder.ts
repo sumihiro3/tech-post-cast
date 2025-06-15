@@ -1,6 +1,7 @@
 import { AppConfigService } from '@/app-config/app-config.service';
 import { qiitaPostSummarizeAgent } from '@/mastra/agents';
 import {
+  MultiSpeakerProgramScript,
   PersonalizedProgramScript,
   QiitaPost,
   personalizedProgramScriptSchema,
@@ -26,7 +27,7 @@ import { createLogger } from '@mastra/core/logger';
 import { Mastra } from '@mastra/core/mastra';
 import { Workflow } from '@mastra/core/workflows';
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { AppUser } from '@prisma/client';
+import { AppUser, SpeakerMode } from '@prisma/client';
 import { QiitaPostApiResponse, formatDate } from '@tech-post-cast/commons';
 import {
   PersonalizedProgramAttemptFailureReason as FailureReason,
@@ -52,6 +53,7 @@ import {
 } from '../program-file-maker.interface';
 import {
   ITextToSpeechClient,
+  MultiSpeakerPersonalizedProgramAudioFilesGenerateCommand,
   PersonalizedProgramAudioFilesGenerateCommand,
   PersonalizedProgramAudioFilesGenerateResult,
 } from '../text-to-speech.interface';
@@ -60,7 +62,8 @@ import { PersonalizedFeedFilterMapper } from './personalized-feed-filter.mapper'
 import { IPersonalizedFeedsRepository } from './personalized-feeds.repository.interface';
 
 // パーソナルプログラム生成に必要な最小記事数
-const MIN_POSTS_COUNT = 3;
+const MIN_POSTS_COUNT_FOR_SINGLE_SPEAKER = 3;
+const MIN_POSTS_COUNT_FOR_MULTI_SPEAKER = 2;
 
 @Injectable()
 export class PersonalizedFeedsBuilder {
@@ -424,7 +427,7 @@ export class PersonalizedFeedsBuilder {
     user: AppUser,
     feed: PersonalizedFeedWithFilters,
     programDate: Date,
-    script: PersonalizedProgramScript,
+    script: PersonalizedProgramScript | MultiSpeakerProgramScript,
   ): Promise<PersonalizedProgramAudioFilesGenerateResult> {
     this.logger.debug(
       `PersonalizedFeedsBuilder.generatePersonalizedProgramAudioFiles called`,
@@ -436,18 +439,34 @@ export class PersonalizedFeedsBuilder {
       },
     );
 
-    const command: PersonalizedProgramAudioFilesGenerateCommand = {
-      user,
-      feed,
-      programDate,
-      script,
-      outputDir: this.programAudioFilesOutputDir,
-    };
-
-    const result =
-      await this.textToSpeechClient.generatePersonalizedProgramAudioFiles(
-        command,
-      );
+    // 話者モードに応じて音声ファイルを生成する
+    let result: PersonalizedProgramAudioFilesGenerateResult;
+    if (feed.speakerMode === SpeakerMode.SINGLE) {
+      const command: PersonalizedProgramAudioFilesGenerateCommand = {
+        user,
+        feed,
+        programDate,
+        script: script as PersonalizedProgramScript,
+        outputDir: this.programAudioFilesOutputDir,
+      };
+      result =
+        await this.textToSpeechClient.generatePersonalizedProgramAudioFiles(
+          command,
+        );
+    } else {
+      const command: MultiSpeakerPersonalizedProgramAudioFilesGenerateCommand =
+        {
+          user,
+          feed,
+          programDate,
+          script: script as MultiSpeakerProgramScript,
+          outputDir: this.programAudioFilesOutputDir,
+        };
+      result =
+        await this.textToSpeechClient.generateMultiSpeakerPersonalizedProgramAudioFiles(
+          command,
+        );
+    }
 
     this.logger.debug(`パーソナルプログラムの音声ファイルを生成しました`, {
       result,
@@ -816,7 +835,11 @@ export class PersonalizedFeedsBuilder {
         feed.id,
         filteredPosts,
       );
-    if (notExistsPosts.length < MIN_POSTS_COUNT) {
+    const minPostsCount =
+      feed.speakerMode === SpeakerMode.MULTI
+        ? MIN_POSTS_COUNT_FOR_MULTI_SPEAKER
+        : MIN_POSTS_COUNT_FOR_MULTI_SPEAKER;
+    if (notExistsPosts.length < minPostsCount) {
       const errorMessage = `パーソナルフィード [${feed.id}] に基づいた番組台本の生成に必要な記事が見つかりませんでした`;
       this.logger.error(errorMessage, {
         feedId: feed.id,
@@ -829,7 +852,7 @@ export class PersonalizedFeedsBuilder {
       throw new InsufficientPostsError(errorMessage);
     }
     // 番組で紹介する記事の件数を制限する
-    const limitedPosts = notExistsPosts.slice(0, MIN_POSTS_COUNT);
+    const limitedPosts = notExistsPosts.slice(0, minPostsCount);
     this.logger.log(
       `パーソナルフィード [${feed.id}] に基づいた番組台本の生成を開始します`,
       {
@@ -965,6 +988,7 @@ export class PersonalizedFeedsBuilder {
           posts: programPosts,
           programDate,
           personalizedFeedName: feed.name,
+          speakerMode: feed.speakerMode,
         },
       });
       this.logger.debug(
