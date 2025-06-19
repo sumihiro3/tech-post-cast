@@ -52,6 +52,13 @@ export class GetUserSettingsResponseDto {
   rssUrl?: string;
 
   @ApiProperty({
+    description:
+      '複数話者モードでのパーソナルプログラムを作成できるかどうかを表すフラグ',
+    example: false,
+  })
+  personalizedProgramDialogueEnabled: boolean;
+
+  @ApiProperty({
     description: '設定の最終更新日時',
     example: '2024-01-15T10:30:00.000Z',
   })

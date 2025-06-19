@@ -111,6 +111,8 @@ export class UserSettingsController {
         rssEnabled: appUser.rssEnabled,
         rssToken: appUser.rssEnabled ? appUser.rssToken : undefined,
         rssUrl: rssUrl,
+        personalizedProgramDialogueEnabled:
+          userSettings.personalizedProgramDialogueEnabled,
         updatedAt: userSettings.updatedAt,
       };
 
@@ -234,6 +236,8 @@ export class UserSettingsController {
           ? updatedAppUser.rssToken
           : undefined,
         rssUrl: rssUrl,
+        personalizedProgramDialogueEnabled:
+          updatedSettings.personalizedProgramDialogueEnabled,
         updatedAt: updatedSettings.updatedAt,
       };
 

@@ -106,6 +106,9 @@ describe('UserSettingsController', () => {
         appUser.rssEnabled ? appUser.rssToken : undefined,
       );
       expect(result.rssUrl).toBe(rssUrl);
+      expect(result.personalizedProgramDialogueEnabled).toBe(
+        userSettings.personalizedProgramDialogueEnabled,
+      );
       expect(result.updatedAt).toBe(userSettings.updatedAt);
       expect(mockAppUsersRepository.findOne).toHaveBeenCalledWith(userId);
       expect(mockUserSettingsService.getUserSettings).toHaveBeenCalledWith(

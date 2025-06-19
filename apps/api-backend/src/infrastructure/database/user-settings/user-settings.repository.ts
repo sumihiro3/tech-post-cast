@@ -48,6 +48,7 @@ export class UserSettingsRepository implements IUserSettingsRepository {
           rssEnabled: true,
           rssToken: true,
           rssCreatedAt: true,
+          personalizedProgramDialogueEnabled: true,
           updatedAt: true,
         },
       });
@@ -65,6 +66,8 @@ export class UserSettingsRepository implements IUserSettingsRepository {
         notificationEnabled: user.notificationEnabled,
         rssEnabled: user.rssEnabled,
         rssCreatedAt: user.rssCreatedAt || undefined,
+        personalizedProgramDialogueEnabled:
+          user.personalizedProgramDialogueEnabled,
         updatedAt: user.updatedAt,
       };
 
@@ -143,6 +146,7 @@ export class UserSettingsRepository implements IUserSettingsRepository {
           rssEnabled: true,
           rssToken: true,
           rssCreatedAt: true,
+          personalizedProgramDialogueEnabled: true,
           updatedAt: true,
         },
       });
@@ -154,6 +158,8 @@ export class UserSettingsRepository implements IUserSettingsRepository {
         notificationEnabled: updatedUser.notificationEnabled,
         rssEnabled: updatedUser.rssEnabled,
         rssCreatedAt: updatedUser.rssCreatedAt || undefined,
+        personalizedProgramDialogueEnabled:
+          updatedUser.personalizedProgramDialogueEnabled,
         updatedAt: updatedUser.updatedAt,
       };
 

@@ -52,6 +52,7 @@ describe('UserSettingsRepository', () => {
         rssEnabled: false,
         rssToken: null,
         rssCreatedAt: null,
+        personalizedProgramDialogueEnabled: false,
         updatedAt: new Date('2024-01-01'),
       };
 
@@ -68,6 +69,7 @@ describe('UserSettingsRepository', () => {
         notificationEnabled: true,
         rssEnabled: false,
         rssCreatedAt: undefined,
+        personalizedProgramDialogueEnabled: false,
         updatedAt: new Date('2024-01-01'),
       });
 
@@ -81,6 +83,7 @@ describe('UserSettingsRepository', () => {
           rssEnabled: true,
           rssToken: true,
           rssCreatedAt: true,
+          personalizedProgramDialogueEnabled: true,
           updatedAt: true,
         },
       });
@@ -128,6 +131,7 @@ describe('UserSettingsRepository', () => {
         rssEnabled: false,
         rssToken: null,
         rssCreatedAt: null,
+        personalizedProgramDialogueEnabled: false,
         updatedAt: new Date('2024-01-02'),
       };
 
@@ -144,6 +148,7 @@ describe('UserSettingsRepository', () => {
         notificationEnabled: false,
         rssEnabled: false,
         rssCreatedAt: undefined,
+        personalizedProgramDialogueEnabled: false,
         updatedAt: new Date('2024-01-02'),
       });
 
@@ -161,6 +166,7 @@ describe('UserSettingsRepository', () => {
           rssEnabled: true,
           rssToken: true,
           rssCreatedAt: true,
+          personalizedProgramDialogueEnabled: true,
           updatedAt: true,
         },
       });

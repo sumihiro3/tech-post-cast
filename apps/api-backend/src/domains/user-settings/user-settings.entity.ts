@@ -15,6 +15,8 @@ export interface UserSettings {
   rssEnabled: boolean;
   /** RSSトークン作成日時（RSS有効時のみ） */
   rssCreatedAt?: Date;
+  /** 複数話者モードでのパーソナルプログラムを作成できるかどうかを表すフラグ */
+  personalizedProgramDialogueEnabled: boolean;
   /** 設定の最終更新日時 */
   updatedAt: Date;
 }

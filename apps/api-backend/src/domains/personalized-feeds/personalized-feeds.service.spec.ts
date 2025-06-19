@@ -47,6 +47,8 @@ describe('PersonalizedFeedsService', () => {
     rssEnabled: false,
     rssCreatedAt: null,
     rssUpdatedAt: null,
+    // パーソナルプログラム関連フィールド
+    personalizedProgramDialogueEnabled: false,
   };
 
   const mockPersonalizedFeed = {

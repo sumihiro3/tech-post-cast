@@ -119,6 +119,8 @@ describe('AppUsersRepository', () => {
         rssEnabled: false,
         rssCreatedAt: null,
         rssUpdatedAt: null,
+        // パーソナルプログラム関連フィールド
+        personalizedProgramDialogueEnabled: false,
       };
 
       const mockUser = {
@@ -185,6 +187,8 @@ describe('AppUsersRepository', () => {
         rssEnabled: false,
         rssCreatedAt: null,
         rssUpdatedAt: null,
+        // パーソナルプログラム関連フィールド
+        personalizedProgramDialogueEnabled: false,
       };
 
       const mockExistingUser = {
@@ -207,6 +211,8 @@ describe('AppUsersRepository', () => {
         rssEnabled: false,
         rssCreatedAt: null,
         rssUpdatedAt: null,
+        // パーソナルプログラム関連フィールド
+        personalizedProgramDialogueEnabled: false,
       };
 
       mockPrismaClient.appUser.findUnique.mockResolvedValue(mockExistingUser);
@@ -244,6 +250,8 @@ describe('AppUsersRepository', () => {
         rssEnabled: false,
         rssCreatedAt: null,
         rssUpdatedAt: null,
+        // パーソナルプログラム関連フィールド
+        personalizedProgramDialogueEnabled: false,
       };
 
       mockPrismaClient.appUser.findUnique.mockResolvedValue(null);
