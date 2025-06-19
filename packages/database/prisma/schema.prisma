@@ -277,6 +277,10 @@ model AppUser {
   // RSS設定の最終更新日時
   rssUpdatedAt DateTime? @map("rss_updated_at")
 
+  // パーソナルプログラム関連フィールド
+  // 複数話者モードでのパーソナルプログラムを作成できるかどうかを表すフラグ
+  personalizedProgramDialogueEnabled Boolean @default(false) @map("personalized_program_dialogue_enabled")
+
   // リレーション
   personalizedProgramFilters  PersonalizedFeed[]
   personalizedPrograms        PersonalizedFeedProgram[]
