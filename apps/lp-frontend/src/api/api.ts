@@ -73,6 +73,12 @@ export interface CreatePersonalizedFeedRequestDto {
      */
     'deliveryFrequency'?: CreatePersonalizedFeedRequestDtoDeliveryFrequencyEnum;
     /**
+     * 話者モード（単一話者/複数話者）
+     * @type {string}
+     * @memberof CreatePersonalizedFeedRequestDto
+     */
+    'speakerMode'?: CreatePersonalizedFeedRequestDtoSpeakerModeEnum;
+    /**
      * フィルターグループ一覧
      * @type {Array<FilterGroupDto>}
      * @memberof CreatePersonalizedFeedRequestDto
@@ -93,6 +99,12 @@ export const CreatePersonalizedFeedRequestDtoDeliveryFrequencyEnum = {
 } as const;
 
 export type CreatePersonalizedFeedRequestDtoDeliveryFrequencyEnum = typeof CreatePersonalizedFeedRequestDtoDeliveryFrequencyEnum[keyof typeof CreatePersonalizedFeedRequestDtoDeliveryFrequencyEnum];
+export const CreatePersonalizedFeedRequestDtoSpeakerModeEnum = {
+    Single: 'SINGLE',
+    Multi: 'MULTI'
+} as const;
+
+export type CreatePersonalizedFeedRequestDtoSpeakerModeEnum = typeof CreatePersonalizedFeedRequestDtoSpeakerModeEnum[keyof typeof CreatePersonalizedFeedRequestDtoSpeakerModeEnum];
 
 /**
  * 
@@ -648,6 +660,12 @@ export interface GetUserSettingsResponseDto {
      */
     'rssUrl'?: string;
     /**
+     * 複数話者モードでのパーソナルプログラムを作成できるかどうかを表すフラグ
+     * @type {boolean}
+     * @memberof GetUserSettingsResponseDto
+     */
+    'personalizedProgramDialogueEnabled': boolean;
+    /**
      * 設定の最終更新日時
      * @type {string}
      * @memberof GetUserSettingsResponseDto
@@ -926,6 +944,12 @@ export interface PersonalizedFeedWithFiltersDto {
      */
     'deliveryFrequency': PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum;
     /**
+     * 話者モード（単一話者/複数話者）
+     * @type {string}
+     * @memberof PersonalizedFeedWithFiltersDto
+     */
+    'speakerMode': PersonalizedFeedWithFiltersDtoSpeakerModeEnum;
+    /**
      * 有効かどうか
      * @type {boolean}
      * @memberof PersonalizedFeedWithFiltersDto
@@ -958,6 +982,12 @@ export const PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum = {
 } as const;
 
 export type PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum = typeof PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum[keyof typeof PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum];
+export const PersonalizedFeedWithFiltersDtoSpeakerModeEnum = {
+    Single: 'SINGLE',
+    Multi: 'MULTI'
+} as const;
+
+export type PersonalizedFeedWithFiltersDtoSpeakerModeEnum = typeof PersonalizedFeedWithFiltersDtoSpeakerModeEnum[keyof typeof PersonalizedFeedWithFiltersDtoSpeakerModeEnum];
 
 /**
  * 
@@ -1843,6 +1873,12 @@ export interface UpdatePersonalizedFeedRequestDto {
      */
     'deliveryFrequency'?: UpdatePersonalizedFeedRequestDtoDeliveryFrequencyEnum;
     /**
+     * 話者モード（単一話者/複数話者）
+     * @type {string}
+     * @memberof UpdatePersonalizedFeedRequestDto
+     */
+    'speakerMode'?: UpdatePersonalizedFeedRequestDtoSpeakerModeEnum;
+    /**
      * フィルターグループ一覧
      * @type {Array<FilterGroupDto>}
      * @memberof UpdatePersonalizedFeedRequestDto
@@ -1863,6 +1899,12 @@ export const UpdatePersonalizedFeedRequestDtoDeliveryFrequencyEnum = {
 } as const;
 
 export type UpdatePersonalizedFeedRequestDtoDeliveryFrequencyEnum = typeof UpdatePersonalizedFeedRequestDtoDeliveryFrequencyEnum[keyof typeof UpdatePersonalizedFeedRequestDtoDeliveryFrequencyEnum];
+export const UpdatePersonalizedFeedRequestDtoSpeakerModeEnum = {
+    Single: 'SINGLE',
+    Multi: 'MULTI'
+} as const;
+
+export type UpdatePersonalizedFeedRequestDtoSpeakerModeEnum = typeof UpdatePersonalizedFeedRequestDtoSpeakerModeEnum[keyof typeof UpdatePersonalizedFeedRequestDtoSpeakerModeEnum];
 
 /**
  * 
@@ -1907,6 +1949,12 @@ export interface UpdatePersonalizedFeedWithFiltersResponseDto {
      */
     'deliveryConfig': object;
     /**
+     * 話者モード（単一話者/複数話者）
+     * @type {string}
+     * @memberof UpdatePersonalizedFeedWithFiltersResponseDto
+     */
+    'speakerMode': UpdatePersonalizedFeedWithFiltersResponseDtoSpeakerModeEnum;
+    /**
      * 有効かどうか
      * @type {boolean}
      * @memberof UpdatePersonalizedFeedWithFiltersResponseDto
@@ -1931,6 +1979,14 @@ export interface UpdatePersonalizedFeedWithFiltersResponseDto {
      */
     'filterGroups': Array<FilterGroupDto>;
 }
+
+export const UpdatePersonalizedFeedWithFiltersResponseDtoSpeakerModeEnum = {
+    Single: 'SINGLE',
+    Multi: 'MULTI'
+} as const;
+
+export type UpdatePersonalizedFeedWithFiltersResponseDtoSpeakerModeEnum = typeof UpdatePersonalizedFeedWithFiltersResponseDtoSpeakerModeEnum[keyof typeof UpdatePersonalizedFeedWithFiltersResponseDtoSpeakerModeEnum];
+
 /**
  * 
  * @export
