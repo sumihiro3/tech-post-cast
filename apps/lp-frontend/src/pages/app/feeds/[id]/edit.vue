@@ -119,7 +119,10 @@ v-container.max-width-container
 
 <script setup lang="ts">
 import { useNuxtApp } from '#app';
-import { PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum } from '@/api';
+import {
+  PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum,
+  PersonalizedFeedWithFiltersDtoSpeakerModeEnum as SpeakerModeEnum,
+} from '@/api';
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 import FeedEditor from '@/components/qiita/FeedEditor.vue';
 import { useDeletePersonalizedFeed } from '@/composables/feeds/useDeletePersonalizedFeed';
@@ -175,6 +178,7 @@ const initialFeedData = reactive<InputPersonalizedFeedData>({
   posts: [],
   totalCount: 0,
   deliveryFrequency: DeliveryFrequencyEnum.Daily,
+  speakerMode: SpeakerModeEnum.Single,
 });
 
 /**
@@ -192,6 +196,7 @@ const currentFeedData = ref<InputPersonalizedFeedData>({
   posts: [],
   totalCount: 0,
   deliveryFrequency: DeliveryFrequencyEnum.Daily,
+  speakerMode: SpeakerModeEnum.Single,
 });
 
 // バリデーション機能を統合
@@ -257,12 +262,16 @@ const hasFormChanges = computed(() => {
   const hasDeliveryFrequencyChanged =
     currentFeedData.value.deliveryFrequency !== initialFeedData.deliveryFrequency;
 
+  // 話者モードに変更があるか
+  const hasSpeakerModeChanged = currentFeedData.value.speakerMode !== initialFeedData.speakerMode;
+
   return (
     hasTitleChanged ||
     hasTagsChanged ||
     hasAuthorsChanged ||
     hasDateRangeChanged ||
-    hasDeliveryFrequencyChanged
+    hasDeliveryFrequencyChanged ||
+    hasSpeakerModeChanged
   );
 });
 
@@ -518,6 +527,7 @@ const fetchPersonalizedFeed = async (id: string): Promise<void> => {
     initialFeedData.filters.dateRange = inputData.filters.dateRange;
     initialFeedData.filters.likesCount = inputData.filters.likesCount;
     initialFeedData.deliveryFrequency = inputData.deliveryFrequency || DeliveryFrequencyEnum.Daily;
+    initialFeedData.speakerMode = inputData.speakerMode || SpeakerModeEnum.Single;
     initialFeedData.posts = [...inputData.posts];
     initialFeedData.totalCount = inputData.totalCount;
 
@@ -533,6 +543,7 @@ const fetchPersonalizedFeed = async (id: string): Promise<void> => {
       posts: [...inputData.posts],
       totalCount: inputData.totalCount,
       deliveryFrequency: inputData.deliveryFrequency || DeliveryFrequencyEnum.Daily,
+      speakerMode: inputData.speakerMode || SpeakerModeEnum.Single,
     };
 
     console.log('Loaded feed data:', result);

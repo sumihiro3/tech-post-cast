@@ -83,7 +83,10 @@ v-container.max-width-container
 
 <script setup lang="ts">
 import { useNuxtApp } from '#app';
-import { PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum } from '@/api';
+import {
+  PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum,
+  PersonalizedFeedWithFiltersDtoSpeakerModeEnum as SpeakerModeEnum,
+} from '@/api';
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 import FeedEditor from '@/components/qiita/FeedEditor.vue';
 import { useCreatePersonalizedFeed } from '@/composables/feeds/useCreatePersonalizedFeed';
@@ -130,6 +133,7 @@ const initialFeedData = reactive<InputPersonalizedFeedData>({
   posts: [],
   totalCount: 0,
   deliveryFrequency: DeliveryFrequencyEnum.Daily,
+  speakerMode: SpeakerModeEnum.Single,
 });
 
 /**
@@ -147,6 +151,7 @@ const currentFeedData = ref<InputPersonalizedFeedData>({
   posts: [],
   totalCount: 0,
   deliveryFrequency: DeliveryFrequencyEnum.Daily,
+  speakerMode: SpeakerModeEnum.Single,
 });
 
 // バリデーション機能を統合
