@@ -12,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiHeader, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { getYesterday, TIME_ZONE_JST } from '@tech-post-cast/commons';
+import { getStartOfDay, TIME_ZONE_JST } from '@tech-post-cast/commons';
 import { Request } from 'express';
 
 @Controller('notifications')
@@ -72,7 +72,7 @@ export class NotificationsController {
     });
 
     try {
-      const targetDate = getYesterday(new Date(), TIME_ZONE_JST);
+      const targetDate = getStartOfDay(new Date(), TIME_ZONE_JST);
       this.logger.log(`通知バッチ処理を開始します`, {
         targetDate,
       });

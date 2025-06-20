@@ -131,4 +131,26 @@ export class AppUsersRepository implements IAppUsersRepository {
       });
     }
   }
+
+  /**
+   * ユーザーの RSS 配信時間を更新する
+   * @param userId 更新するユーザーID
+   */
+  async updateRssDeliveryTime(userId: string): Promise<void> {
+    this.logger.debug('AppUserRepository.updateRssDeliveryTime called', {
+      userId,
+    });
+    try {
+      const client = this.prisma.getClient();
+      await client.appUser.update({
+        where: { id: userId },
+        data: { rssUpdatedAt: new Date() },
+      });
+    } catch (error) {
+      const errorMessage = `ユーザー [${userId}] の RSS 配信時間の更新に失敗しました`;
+      this.logger.error(errorMessage, { error, userId });
+      this.logger.error(error.message, error.stack);
+      throw new AppUserFindError(errorMessage, { cause: error });
+    }
+  }
 }
