@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { DeliveryFrequency } from '@prisma/client';
+import { DeliveryFrequency, SpeakerMode } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
@@ -256,6 +256,19 @@ export class CreatePersonalizedFeedRequestDto {
     message: '配信間隔は有効な値である必要があります',
   })
   deliveryFrequency?: DeliveryFrequency = DeliveryFrequency.WEEKLY;
+
+  @ApiProperty({
+    description: '話者モード（単一話者/複数話者）',
+    required: false,
+    default: SpeakerMode.SINGLE,
+    enum: SpeakerMode,
+    example: SpeakerMode.SINGLE,
+  })
+  @IsOptional()
+  @IsEnum(SpeakerMode, {
+    message: '話者モードは有効な値である必要があります',
+  })
+  speakerMode?: SpeakerMode = SpeakerMode.SINGLE;
 
   @ApiProperty({
     description: 'フィルターグループ一覧',

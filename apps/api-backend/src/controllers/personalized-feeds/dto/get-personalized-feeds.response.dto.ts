@@ -9,7 +9,11 @@ import {
   TagFilter,
 } from '@/domains/personalized-feeds/personalized-feeds.entity';
 import { ApiProperty } from '@nestjs/swagger';
-import { DeliveryFrequency, LikesCountFilter } from '@prisma/client';
+import {
+  DeliveryFrequency,
+  LikesCountFilter,
+  SpeakerMode,
+} from '@prisma/client';
 import {
   IsArray,
   IsBoolean,
@@ -451,6 +455,17 @@ export class PersonalizedFeedDto {
   deliveryFrequency: DeliveryFrequency;
 
   @ApiProperty({
+    description: '話者モード（単一話者/複数話者）',
+    required: true,
+    enum: SpeakerMode,
+    example: SpeakerMode.SINGLE,
+  })
+  @IsEnum(SpeakerMode, {
+    message: '話者モードは有効な値である必要があります',
+  })
+  speakerMode: SpeakerMode;
+
+  @ApiProperty({
     description: '有効かどうか',
     required: true,
     example: true,
@@ -498,6 +513,7 @@ export class PersonalizedFeedDto {
     dto.filterConfig = entity.filterConfig;
     dto.deliveryConfig = entity.deliveryConfig;
     dto.deliveryFrequency = entity.deliveryFrequency as DeliveryFrequency;
+    dto.speakerMode = entity.speakerMode;
     dto.isActive = entity.isActive;
     dto.createdAt = entity.createdAt.toISOString();
     dto.updatedAt = entity.updatedAt.toISOString();
@@ -534,6 +550,7 @@ export class PersonalizedFeedWithFiltersDto extends PersonalizedFeedDto {
     dto.filterConfig = entity.filterConfig;
     dto.deliveryConfig = entity.deliveryConfig;
     dto.deliveryFrequency = entity.deliveryFrequency as DeliveryFrequency;
+    dto.speakerMode = entity.speakerMode;
     dto.isActive = entity.isActive;
     dto.createdAt = entity.createdAt.toISOString();
     dto.updatedAt = entity.updatedAt.toISOString();

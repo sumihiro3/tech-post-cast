@@ -7,18 +7,35 @@ import {
   HeadlineTopicProgramAudioFilesGenerateCommand,
   HeadlineTopicProgramAudioFilesGenerateResult,
   ITextToSpeechClient,
+  MultiSpeakerPersonalizedProgramAudioFilesGenerateCommand,
   PersonalizedProgramAudioFilesGenerateCommand,
   PersonalizedProgramAudioFilesGenerateResult,
   PersonalizedProgramPostExplanationAudioFilePath,
 } from '@domains/radio-program/text-to-speech.interface';
 import { TextToSpeechClient as TTSClient } from '@google-cloud/text-to-speech';
 import { google } from '@google-cloud/text-to-speech/build/protos/protos';
+import {
+  ContentListUnion,
+  GenerateContentConfig,
+  GoogleGenAI,
+} from '@google/genai';
 import { TermsRepository } from '@infrastructure/database/terms/terms.repository';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Term } from '@prisma/client';
 import { createDir } from '@tech-post-cast/commons';
 import * as fs from 'fs';
 import { setTimeout } from 'timers/promises';
+import * as wav from 'wav';
+
+/**
+ * 話者の種類を表すEnum
+ */
+export const SpeakerType = {
+  POSTEL: 'Postel',
+  JOHN: 'John',
+} as const;
+
+export type SpeakerType = (typeof SpeakerType)[keyof typeof SpeakerType];
 
 /**
  * Text to speech client
@@ -268,6 +285,157 @@ export class TextToSpeechClient implements ITextToSpeechClient {
         userId: command.user.id,
         feedId: command.feed.id,
       });
+      if (!(error instanceof TextToSpeechError)) {
+        error = new TextToSpeechError(errorMessage, { cause: error });
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 複数話者パーソナルプログラムの音声ファイルを生成する（Gemini 2.5 Flash TTS使用）
+   * @param command 生成要求コマンド（script型はanyで仮置き。正しい型が判明したら修正）
+   * @returns パーソナルプログラム音声ファイルの生成結果
+   */
+  async generateMultiSpeakerPersonalizedProgramAudioFiles(
+    command: MultiSpeakerPersonalizedProgramAudioFilesGenerateCommand,
+  ): Promise<PersonalizedProgramAudioFilesGenerateResult> {
+    this.logger.debug(
+      `TextToSpeechClient.generateMultiSpeakerPersonalizedProgramAudioFiles called`,
+      { userId: command.user.id, feedId: command.feed.id },
+    );
+    try {
+      // 出力ディレクトリを作成
+      createDir(command.outputDir);
+      const outputDirPath = `${command.outputDir}/${command.feed.id}/${command.programDate.getTime()}`;
+      createDir(outputDirPath);
+      const tmpDir = `${outputDirPath}/tmp`;
+      createDir(tmpDir);
+
+      // Style instructions
+      const styleInstructions = `スピーカーはエンジニアに役立つ情報を伝えるため優しく丁寧ながらも、明るい番組にするための喋り方をします。`;
+      // const styleInstructions = `このラジオ番組は楽しい雰囲気で、スピーカーは日本のFMラジオのような喋り方をします。「ジョン」は、男性で技術的な背景を分かりやすく説明する専門家です。落ち着いたトーンで話します。「ポステル」は、女性の番組の司会者です。一般の視聴者の視点で、素朴な疑問を投げかける聞き手です。知的で物静かな人物で、エンジニアをリスペクトしています。口調は優しく丁寧です。`;
+
+      // オープニング部分の音声ファイルを生成
+      const openingText = new ScriptContent(command.script.opening).asString();
+      const openingSegments = this.splitScriptBySpeakerAndLength(
+        openingText,
+        styleInstructions,
+      );
+      const openingAudioFiles: string[] = [];
+      for (let i = 0; i < openingSegments.length; i++) {
+        const audioFilePath = `${tmpDir}/opening_${i}.mp3`;
+        await this.generateGeminiTTSAudio(openingSegments[i], audioFilePath);
+        openingAudioFiles.push(audioFilePath);
+      }
+      const openingAudioFilePath = `${outputDirPath}/opening.mp3`;
+      await this.programFileMaker.mergeAudioFilesSegments(
+        openingAudioFiles,
+        openingAudioFilePath,
+      );
+
+      // 記事解説の音声ファイルを生成
+      const postExplanationAudioFilePaths: PersonalizedProgramPostExplanationAudioFilePath[] =
+        [];
+      for (
+        let postIndex = 0;
+        postIndex < command.script.posts.length;
+        postIndex++
+      ) {
+        const post = command.script.posts[postIndex];
+        // 導入
+        const introText = new ScriptContent(post.intro).asString();
+        const introSegments = this.splitScriptBySpeakerAndLength(
+          introText,
+          styleInstructions,
+        );
+        const introAudioFiles: string[] = [];
+        for (let i = 0; i < introSegments.length; i++) {
+          const audioFilePath = `${tmpDir}/post-${postIndex + 1}_intro_${i}.mp3`;
+          await this.generateGeminiTTSAudio(introSegments[i], audioFilePath);
+          introAudioFiles.push(audioFilePath);
+        }
+        const introAudioFilePath = `${outputDirPath}/post-${postIndex + 1}_intro.mp3`;
+        await this.programFileMaker.mergeAudioFilesSegments(
+          introAudioFiles,
+          introAudioFilePath,
+        );
+        // 解説
+        const explanationText = new ScriptContent(post.explanation).asString();
+        const explanationSegments = this.splitScriptBySpeakerAndLength(
+          explanationText,
+          styleInstructions,
+        );
+        const explanationAudioFiles: string[] = [];
+        for (let i = 0; i < explanationSegments.length; i++) {
+          const audioFilePath = `${tmpDir}/post-${postIndex + 1}_explanation_${i}.mp3`;
+          await this.generateGeminiTTSAudio(
+            explanationSegments[i],
+            audioFilePath,
+          );
+          explanationAudioFiles.push(audioFilePath);
+        }
+        const explanationAudioFilePath = `${outputDirPath}/post-${postIndex + 1}_explanation.mp3`;
+        await this.programFileMaker.mergeAudioFilesSegments(
+          explanationAudioFiles,
+          explanationAudioFilePath,
+        );
+        // まとめ
+        const summaryText = new ScriptContent(post.summary).asString();
+        const summarySegments = this.splitScriptBySpeakerAndLength(
+          summaryText,
+          styleInstructions,
+        );
+        const summaryAudioFiles: string[] = [];
+        for (let i = 0; i < summarySegments.length; i++) {
+          const audioFilePath = `${tmpDir}/post-${postIndex + 1}_summary_${i}.mp3`;
+          await this.generateGeminiTTSAudio(summarySegments[i], audioFilePath);
+          summaryAudioFiles.push(audioFilePath);
+        }
+        const summaryAudioFilePath = `${outputDirPath}/post-${postIndex + 1}_summary.mp3`;
+        await this.programFileMaker.mergeAudioFilesSegments(
+          summaryAudioFiles,
+          summaryAudioFilePath,
+        );
+        postExplanationAudioFilePaths.push({
+          introAudioFilePath,
+          explanationAudioFilePath,
+          summaryAudioFilePath,
+        });
+      }
+
+      // エンディング部分の音声ファイルを生成
+      const endingText = new ScriptContent(command.script.ending).asString();
+      const endingSegments = this.splitScriptBySpeakerAndLength(
+        endingText,
+        styleInstructions,
+      );
+      const endingAudioFiles: string[] = [];
+      for (let i = 0; i < endingSegments.length; i++) {
+        const audioFilePath = `${tmpDir}/ending_${i}.mp3`;
+        await this.generateGeminiTTSAudio(endingSegments[i], audioFilePath);
+        endingAudioFiles.push(audioFilePath);
+      }
+      const endingAudioFilePath = `${outputDirPath}/ending.mp3`;
+      await this.programFileMaker.mergeAudioFilesSegments(
+        endingAudioFiles,
+        endingAudioFilePath,
+      );
+
+      // 生成結果を返す
+      const result: PersonalizedProgramAudioFilesGenerateResult = {
+        openingAudioFilePath,
+        postExplanationAudioFilePaths,
+        endingAudioFilePath,
+      };
+      this.logger.log(
+        `複数話者パーソナルプログラムの音声ファイルを生成しました`,
+        { result },
+      );
+      return result;
+    } catch (error) {
+      const errorMessage = `複数話者パーソナルプログラムの音声ファイル生成に失敗しました`;
+      this.logger.error(errorMessage, error.message, error.stack);
       if (!(error instanceof TextToSpeechError)) {
         error = new TextToSpeechError(errorMessage, { cause: error });
       }
@@ -602,6 +770,181 @@ export class TextToSpeechClient implements ITextToSpeechClient {
 
     return segments;
   }
+
+  /**
+   * 話者と文字数制限を考慮してスクリプトを分割する
+   * @param script 分割するスクリプト
+   * @param styleInstructions Style instructions
+   * @returns 分割されたスクリプトの配列
+   */
+  private splitScriptBySpeakerAndLength(
+    script: string,
+    styleInstructions: string,
+  ): string[] {
+    const maxLength = 2000 - styleInstructions.length - 1; // Style instructions + 改行分を除く
+    const segments: string[] = [];
+    // 話者ごとに分割
+    const lines = script.split('\n').filter((line) => line.trim());
+    let currentSegment = '';
+    for (const line of lines) {
+      const testSegment = currentSegment ? `${currentSegment}\n${line}` : line;
+      if (testSegment.length <= maxLength) {
+        currentSegment = testSegment;
+      } else {
+        if (currentSegment) {
+          segments.push(`${styleInstructions}\n${currentSegment}`);
+        }
+        currentSegment = line;
+      }
+    }
+    if (currentSegment) {
+      segments.push(`${styleInstructions}\n${currentSegment}`);
+    }
+    if (segments.length > 0) {
+      this.logger.debug(`${segments.length} にセグメント分割しました。`, {
+        segments,
+      });
+    }
+    return segments;
+  }
+
+  /**
+   * Gemini 2.5 Flash TTSを使用して音声ファイルを生成する
+   * @param text 音声化するテキスト（Style instructions含む）
+   * @param outputFilePath 出力ファイルパス
+   */
+  private async generateGeminiTTSAudio(
+    text: string,
+    outputFilePath: string,
+  ): Promise<void> {
+    this.logger.debug(`TextToSpeechClient.generateGeminiTTSAudio called`, {
+      outputFilePath,
+      text,
+      textLength: text.length,
+    });
+    const maxRetries = 5;
+    const retryDelayMs = 2000; // 2秒
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const apiKey = this.appConfig.GoogleGenAiApiKey;
+        const ai = new GoogleGenAI({ apiKey });
+        const contents: ContentListUnion = {
+          parts: [
+            {
+              text,
+            },
+          ],
+        };
+        const config: GenerateContentConfig = {
+          responseModalities: ['AUDIO'],
+          speechConfig: {
+            multiSpeakerVoiceConfig: {
+              speakerVoiceConfigs: [
+                {
+                  speaker: SpeakerType.POSTEL,
+                  voiceConfig: {
+                    prebuiltVoiceConfig: { voiceName: 'Kore' },
+                  },
+                },
+                {
+                  speaker: SpeakerType.JOHN,
+                  voiceConfig: {
+                    prebuiltVoiceConfig: { voiceName: 'Sadaltager' },
+                  },
+                },
+              ],
+            },
+          },
+        };
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash-preview-tts',
+          contents,
+          config,
+        });
+        const data = response.data;
+        if (data) {
+          const audioBuffer = Buffer.from(data, 'base64');
+          await this.saveAudioFile(outputFilePath, audioBuffer);
+          return; // 成功したら終了
+        } else {
+          this.logger.warn(
+            `Gemini TTS API から音声データを取得できませんでした (試行 ${attempt}/${maxRetries})`,
+            { response },
+          );
+          if (attempt === maxRetries) {
+            throw new TextToSpeechError(
+              'Gemini TTS API から音声データを取得できませんでした（最大リトライ回数に達しました）',
+            );
+          }
+          this.logger.debug(`${retryDelayMs}ms 待機してリトライします`, {
+            attempt,
+          });
+          await setTimeout(retryDelayMs);
+        }
+      } catch (error) {
+        const errorMessage = `Gemini TTS API 呼び出し中にエラーが発生しました (試行 ${attempt}/${maxRetries})`;
+        this.logger.error(errorMessage, { error, attempt, maxRetries });
+        if (attempt === maxRetries) {
+          if (!(error instanceof TextToSpeechError)) {
+            error = new TextToSpeechError(
+              `Gemini TTSでの音声ファイル生成に失敗しました（最大リトライ回数に達しました）`,
+              { cause: error },
+            );
+          }
+          throw error;
+        }
+        // リトライ前に待機（エラーの場合は少し長めに待機）
+        const errorRetryDelayMs = retryDelayMs;
+        this.logger.debug(`${errorRetryDelayMs}ms 待機してリトライします`, {
+          attempt,
+          error: error.message,
+        });
+        await setTimeout(errorRetryDelayMs);
+      }
+    }
+  }
+
+  /**
+   * 音声ファイルを保存する
+   * @param filename ファイル名
+   * @param audioBuffer 音声データ
+   */
+  async saveAudioFile(filename: string, audioBuffer: Buffer): Promise<void> {
+    const waveFilePath = `${filename}.wav`;
+    await this.saveWaveFile(waveFilePath, audioBuffer);
+    await this.programFileMaker.convertWavToMp3(waveFilePath, filename);
+    // await setTimeout(3 * 1000);
+  }
+
+  /**
+   * 音声ファイルを保存する
+   * @param filename ファイル名
+   * @param pcmData 音声データ
+   * @param channels チャンネル数
+   * @param rate サンプリングレート
+   * @param sampleWidth サンプル幅
+   */
+  async saveWaveFile(
+    filename,
+    pcmData,
+    channels = 1,
+    rate = 24000,
+    sampleWidth = 2,
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const writer = new wav.FileWriter(filename, {
+        channels,
+        sampleRate: rate,
+        bitDepth: sampleWidth * 8,
+      });
+
+      writer.on('finish', resolve);
+      writer.on('error', reject);
+
+      writer.write(pcmData);
+      writer.end();
+    });
+  }
 }
 
 /**
@@ -656,4 +999,23 @@ interface PersonalizedProgramSsml {
    * エンディング部の SSML
    */
   ending: string[];
+}
+
+/**
+ * 台本テキストの整形・正規化用クラス
+ */
+export class ScriptContent {
+  private readonly text: string;
+
+  constructor(text: string) {
+    this.text = text ?? '';
+  }
+
+  /**
+   * 余分な空白や改行を除去し、正規化した文字列を返す
+   */
+  asString(): string {
+    // 連続する空白・改行を1つにまとめ、前後をトリム
+    return this.text.replace(/\s+/g, ' ').trim();
+  }
 }

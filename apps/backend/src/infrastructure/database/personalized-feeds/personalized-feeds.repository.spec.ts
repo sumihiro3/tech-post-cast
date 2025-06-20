@@ -34,6 +34,8 @@ const mockAppUser: AppUser = {
   rssEnabled: false,
   rssCreatedAt: null,
   rssUpdatedAt: null,
+  // パーソナルプログラム関連フィールド
+  personalizedProgramDialogueEnabled: false,
 };
 
 const mockSubscription: Subscription = {

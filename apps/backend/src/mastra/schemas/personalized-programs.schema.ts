@@ -40,3 +40,24 @@ export const personalizedProgramScriptSchema = z
 export type PersonalizedProgramScript = z.infer<
   typeof personalizedProgramScriptSchema
 >;
+
+/**
+ * 複数話者パーソナルプログラム中で紹介する記事の解説文を表す型
+ */
+export interface MultiSpeakerProgramPostDescription {
+  id: string;
+  title: string;
+  intro: string; // Postel: ... 形式のセリフ
+  explanation: string; // Postel: ... / John: ... の対話形式
+  summary: string; // Postel: ... / John: ... の対話形式
+}
+
+/**
+ * 複数話者パーソナルプログラムの台本を表す型
+ */
+export interface MultiSpeakerProgramScript {
+  title: string;
+  opening: string; // Postel: ... / John: ... の対話形式
+  posts: MultiSpeakerProgramPostDescription[];
+  ending: string; // Postel: ... / John: ... の対話形式
+}

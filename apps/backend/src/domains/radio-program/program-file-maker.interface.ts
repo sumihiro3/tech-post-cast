@@ -143,6 +143,13 @@ export interface IProgramFileMaker {
   getAudioDuration(filePath: string): Promise<number>;
 
   /**
+   * WAV ファイルを MP3 ファイルに変換する
+   * @param waveFilePath WAV ファイルパス
+   * @param mp3FilePath MP3 ファイルパス
+   */
+  convertWavToMp3(waveFilePath: string, mp3FilePath: string): Promise<void>;
+
+  /**
    * 番組の音声ファイルを生成する
    * @param command 番組音声ファイル生成要求コマンド
    * @returns 番組音声ファイル生成結果

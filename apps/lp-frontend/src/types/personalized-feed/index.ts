@@ -4,6 +4,7 @@ import type {
   FilterGroupDto,
   GetPersonalizedFeedWithFiltersResponseDto,
   PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum,
+  PersonalizedFeedWithFiltersDtoSpeakerModeEnum,
   QiitaPostDto,
   TagFilterDto,
   UpdatePersonalizedFeedRequestDto,
@@ -23,6 +24,7 @@ export interface InputPersonalizedFeedData {
   posts: QiitaPostDto[];
   totalCount: number;
   deliveryFrequency?: PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum; // 配信間隔
+  speakerMode?: PersonalizedFeedWithFiltersDtoSpeakerModeEnum; // 話者モード
 }
 
 /**
@@ -96,6 +98,7 @@ export function convertApiResponseToInputData(
     posts: [], // APIレスポンスには記事データは含まれていないので空配列
     totalCount: 0, // APIレスポンスには記事の総数は含まれていないのでゼロ
     deliveryFrequency: feedData.deliveryFrequency, // 配信間隔
+    speakerMode: feedData.speakerMode, // 話者モード
   };
 }
 
@@ -172,6 +175,7 @@ export function convertInputDataToCreateDto(
     deliveryFrequency: inputData.deliveryFrequency || 'DAILY', // 配信間隔
     filterGroups: [filterGroup],
     isActive: true,
+    speakerMode: inputData.speakerMode, // 話者モード
   };
 }
 
@@ -249,6 +253,7 @@ export function convertInputDataToUpdateDto(
     filterConfig,
     deliveryFrequency: inputData.deliveryFrequency, // 配信間隔
     filterGroups: [filterGroup],
+    speakerMode: inputData.speakerMode, // 話者モード
   };
 }
 

@@ -29,6 +29,7 @@ export class AppUserFactory {
       rssEnabled: false,
       rssCreatedAt: null,
       rssUpdatedAt: null,
+      personalizedProgramDialogueEnabled: false,
       ...overrides,
     };
   }

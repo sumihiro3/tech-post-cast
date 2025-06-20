@@ -1,4 +1,4 @@
-import { DeliveryFrequency } from '@prisma/client';
+import { DeliveryFrequency, SpeakerMode } from '@prisma/client';
 import {
   PersonalizedFeed,
   PersonalizedFeedWithFilters,
@@ -101,6 +101,7 @@ export interface UpdateFeedParams {
   filterConfig?: Record<string, any>;
   deliveryConfig?: Record<string, any>;
   deliveryFrequency?: DeliveryFrequency;
+  speakerMode?: SpeakerMode;
   isActive?: boolean;
 }
 

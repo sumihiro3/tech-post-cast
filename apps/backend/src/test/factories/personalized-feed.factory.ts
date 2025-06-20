@@ -11,7 +11,9 @@ export class PersonalizedFeedFactory {
    * @param overrides 上書きするプロパティ
    * @returns PersonalizedFeedWithFilters
    */
-  static createPersonalizedFeed(overrides: Partial<PersonalizedFeedWithFilters> = {}): PersonalizedFeedWithFilters {
+  static createPersonalizedFeed(
+    overrides: Partial<PersonalizedFeedWithFilters> = {},
+  ): PersonalizedFeedWithFilters {
     return {
       id: 'feed-1',
       userId: 'user-1',
@@ -52,7 +54,9 @@ export class PersonalizedFeedFactory {
    * @param overrides 上書きするプロパティ
    * @returns PersonalizedFeedProgram
    */
-  static createPersonalizedFeedProgram(overrides: Partial<PersonalizedFeedProgram> = {}): PersonalizedFeedProgram {
+  static createPersonalizedFeedProgram(
+    overrides: Partial<PersonalizedFeedProgram> = {},
+  ): PersonalizedFeedProgram {
     return {
       id: 'program-1',
       userId: 'user-1',

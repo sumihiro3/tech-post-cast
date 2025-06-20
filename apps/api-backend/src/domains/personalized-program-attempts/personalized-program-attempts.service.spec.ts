@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { DeliveryFrequency } from '@prisma/client';
+import { DeliveryFrequency, SpeakerMode } from '@prisma/client';
 import { PersonalizedProgramAttemptFactory } from '../../test/factories/personalized-program-attempt.factory';
 import {
   restoreLogOutput,
@@ -20,10 +20,11 @@ describe('PersonalizedProgramAttemptsService', () => {
     id: 'feed-1',
     userId: 'user-1',
     name: 'テストフィード',
-    dataSource: 'test-source',
+    dataSource: 'qiita',
     filterConfig: {},
     deliveryConfig: {},
     deliveryFrequency: 'DAILY' as DeliveryFrequency,
+    speakerMode: SpeakerMode.SINGLE,
     isActive: true,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),

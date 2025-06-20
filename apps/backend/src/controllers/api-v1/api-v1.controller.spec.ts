@@ -1,4 +1,7 @@
-import { InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import {
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MockFunctionMetadata, ModuleMocker } from 'jest-mock';
 import { ApiV1Controller } from './api-v1.controller';
@@ -56,7 +59,9 @@ describe('ApiV1Controller', () => {
   describe('getHeadlineTopicProgramsCounts', () => {
     it('should return the count of headline topic programs', async () => {
       const mockCount = 42;
-      jest.spyOn(service, 'getHeadlineTopicProgramsCounts').mockResolvedValue(mockCount);
+      jest
+        .spyOn(service, 'getHeadlineTopicProgramsCounts')
+        .mockResolvedValue(mockCount);
 
       const result = await controller.getHeadlineTopicProgramsCounts();
 
@@ -66,9 +71,13 @@ describe('ApiV1Controller', () => {
 
     it('should throw InternalServerErrorException when service throws an error', async () => {
       const mockError = new Error('Service error');
-      jest.spyOn(service, 'getHeadlineTopicProgramsCounts').mockRejectedValue(mockError);
+      jest
+        .spyOn(service, 'getHeadlineTopicProgramsCounts')
+        .mockRejectedValue(mockError);
 
-      await expect(controller.getHeadlineTopicProgramsCounts()).rejects.toThrow(InternalServerErrorException);
+      await expect(controller.getHeadlineTopicProgramsCounts()).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 
@@ -86,7 +95,12 @@ describe('ApiV1Controller', () => {
           updatedAt: new Date(),
           audioUrl: 'https://example.com/audio1.mp3',
           audioDuration: 1000,
-          script: JSON.stringify({ title: 'Test', intro: 'Intro', posts: [], ending: 'Ending' }),
+          script: JSON.stringify({
+            title: 'Test',
+            intro: 'Intro',
+            posts: [],
+            ending: 'Ending',
+          }),
           chapters: JSON.stringify([]),
           videoUrl: 'https://example.com/video1.mp4',
           imageUrl: 'https://example.com/image1.jpg',
@@ -105,8 +119,8 @@ describe('ApiV1Controller', () => {
               refreshedAt: new Date(),
               summary: 'Test summary 1',
               headlineTopicProgramId: 'test-id-1',
-              tags: []
-            }
+              tags: [],
+            },
           ],
         },
         {
@@ -116,7 +130,12 @@ describe('ApiV1Controller', () => {
           updatedAt: new Date(),
           audioUrl: 'https://example.com/audio2.mp3',
           audioDuration: 2000,
-          script: JSON.stringify({ title: 'Test', intro: 'Intro', posts: [], ending: 'Ending' }),
+          script: JSON.stringify({
+            title: 'Test',
+            intro: 'Intro',
+            posts: [],
+            ending: 'Ending',
+          }),
           chapters: JSON.stringify([]),
           videoUrl: 'https://example.com/video2.mp4',
           imageUrl: 'https://example.com/image2.jpg',
@@ -135,44 +154,50 @@ describe('ApiV1Controller', () => {
               refreshedAt: new Date(),
               summary: 'Test summary 2',
               headlineTopicProgramId: 'test-id-2',
-              tags: []
-            }
+              tags: [],
+            },
           ],
         },
       ];
 
-      jest.spyOn(service, 'getHeadlineTopicPrograms').mockResolvedValue(mockPrograms);
-      jest.spyOn(HeadlineTopicProgramDto, 'createFromEntity').mockImplementation((entity) => {
-        const dto = new HeadlineTopicProgramDto();
-        dto.id = entity.id;
-        dto.title = entity.title;
-        dto.createdAt = entity.createdAt;
-        dto.updatedAt = entity.updatedAt;
-        dto.audioUrl = entity.audioUrl;
-        dto.audioDuration = entity.audioDuration;
-        
-        const scriptDto = new HeadlineTopicProgramScriptDto();
-        scriptDto.title = 'Test Title';
-        scriptDto.intro = 'Test Intro';
-        scriptDto.posts = [];
-        scriptDto.ending = 'Test Ending';
-        dto.script = scriptDto;
-        
-        dto.chapters = [];
-        
-        dto.posts = entity.posts ? entity.posts.map(post => {
-          const postDto = new QiitaPostDto();
-          postDto.id = post.id;
-          postDto.title = post.title;
-          postDto.url = post.url;
-          postDto.createdAt = post.createdAt;
-          postDto.authorName = post.authorName;
-          postDto.authorId = post.authorId;
-          return postDto;
-        }) : [];
-        
-        return dto;
-      });
+      jest
+        .spyOn(service, 'getHeadlineTopicPrograms')
+        .mockResolvedValue(mockPrograms);
+      jest
+        .spyOn(HeadlineTopicProgramDto, 'createFromEntity')
+        .mockImplementation((entity) => {
+          const dto = new HeadlineTopicProgramDto();
+          dto.id = entity.id;
+          dto.title = entity.title;
+          dto.createdAt = entity.createdAt;
+          dto.updatedAt = entity.updatedAt;
+          dto.audioUrl = entity.audioUrl;
+          dto.audioDuration = entity.audioDuration;
+
+          const scriptDto = new HeadlineTopicProgramScriptDto();
+          scriptDto.title = 'Test Title';
+          scriptDto.intro = 'Test Intro';
+          scriptDto.posts = [];
+          scriptDto.ending = 'Test Ending';
+          dto.script = scriptDto;
+
+          dto.chapters = [];
+
+          dto.posts = entity.posts
+            ? entity.posts.map((post) => {
+                const postDto = new QiitaPostDto();
+                postDto.id = post.id;
+                postDto.title = post.title;
+                postDto.url = post.url;
+                postDto.createdAt = post.createdAt;
+                postDto.authorName = post.authorName;
+                postDto.authorId = post.authorId;
+                return postDto;
+              })
+            : [];
+
+          return dto;
+        });
 
       const result = await controller.getHeadlineTopicPrograms(dto);
 
@@ -188,16 +213,22 @@ describe('ApiV1Controller', () => {
       dto.page = 1;
 
       const mockError = new Error('Service error');
-      jest.spyOn(service, 'getHeadlineTopicPrograms').mockRejectedValue(mockError);
+      jest
+        .spyOn(service, 'getHeadlineTopicPrograms')
+        .mockRejectedValue(mockError);
 
-      await expect(controller.getHeadlineTopicPrograms(dto)).rejects.toThrow(InternalServerErrorException);
+      await expect(controller.getHeadlineTopicPrograms(dto)).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 
   describe('getHeadlineTopicProgramIds', () => {
     it('should return a list of headline topic program ids', async () => {
       const mockIds = ['id-1', 'id-2', 'id-3'];
-      jest.spyOn(service, 'getHeadlineTopicProgramIds').mockResolvedValue(mockIds);
+      jest
+        .spyOn(service, 'getHeadlineTopicProgramIds')
+        .mockResolvedValue(mockIds);
 
       const result = await controller.getHeadlineTopicProgramIds();
 
@@ -207,9 +238,13 @@ describe('ApiV1Controller', () => {
 
     it('should throw InternalServerErrorException when service throws an error', async () => {
       const mockError = new Error('Service error');
-      jest.spyOn(service, 'getHeadlineTopicProgramIds').mockRejectedValue(mockError);
+      jest
+        .spyOn(service, 'getHeadlineTopicProgramIds')
+        .mockRejectedValue(mockError);
 
-      await expect(controller.getHeadlineTopicProgramIds()).rejects.toThrow(InternalServerErrorException);
+      await expect(controller.getHeadlineTopicProgramIds()).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 
@@ -225,7 +260,12 @@ describe('ApiV1Controller', () => {
           updatedAt: new Date(),
           audioUrl: 'https://example.com/audio-prev.mp3',
           audioDuration: 1000,
-          script: JSON.stringify({ title: 'Test', intro: 'Intro', posts: [], ending: 'Ending' }),
+          script: JSON.stringify({
+            title: 'Test',
+            intro: 'Intro',
+            posts: [],
+            ending: 'Ending',
+          }),
           chapters: JSON.stringify([]),
           videoUrl: 'https://example.com/video-prev.mp4',
           imageUrl: 'https://example.com/image-prev.jpg',
@@ -244,8 +284,8 @@ describe('ApiV1Controller', () => {
               refreshedAt: new Date(),
               summary: 'Previous summary',
               headlineTopicProgramId: 'prev-id',
-              tags: []
-            }
+              tags: [],
+            },
           ],
         },
         target: {
@@ -255,7 +295,12 @@ describe('ApiV1Controller', () => {
           updatedAt: new Date(),
           audioUrl: 'https://example.com/audio.mp3',
           audioDuration: 1500,
-          script: JSON.stringify({ title: 'Test', intro: 'Intro', posts: [], ending: 'Ending' }),
+          script: JSON.stringify({
+            title: 'Test',
+            intro: 'Intro',
+            posts: [],
+            ending: 'Ending',
+          }),
           chapters: JSON.stringify([]),
           videoUrl: 'https://example.com/video.mp4',
           imageUrl: 'https://example.com/image.jpg',
@@ -274,8 +319,8 @@ describe('ApiV1Controller', () => {
               refreshedAt: new Date(),
               summary: 'Target summary',
               headlineTopicProgramId: 'test-id',
-              tags: []
-            }
+              tags: [],
+            },
           ],
         },
         next: {
@@ -285,7 +330,12 @@ describe('ApiV1Controller', () => {
           updatedAt: new Date(),
           audioUrl: 'https://example.com/audio-next.mp3',
           audioDuration: 2000,
-          script: JSON.stringify({ title: 'Test', intro: 'Intro', posts: [], ending: 'Ending' }),
+          script: JSON.stringify({
+            title: 'Test',
+            intro: 'Intro',
+            posts: [],
+            ending: 'Ending',
+          }),
           chapters: JSON.stringify([]),
           videoUrl: 'https://example.com/video-next.mp4',
           imageUrl: 'https://example.com/image-next.jpg',
@@ -304,28 +354,40 @@ describe('ApiV1Controller', () => {
               refreshedAt: new Date(),
               summary: 'Next summary',
               headlineTopicProgramId: 'next-id',
-              tags: []
-            }
+              tags: [],
+            },
           ],
         },
       };
 
-      jest.spyOn(service, 'getHeadlineTopicProgramWithSimilarAndNeighbors').mockResolvedValue(mockResult);
-      jest.spyOn(HeadlineTopicProgramWithSimilarAndNeighborsDto, 'createFromEntity').mockImplementation(() => {
-        const dto = new HeadlineTopicProgramWithSimilarAndNeighborsDto();
-        dto.similar = [];
-        dto.previous = new HeadlineTopicProgramDto();
-        dto.previous.id = 'prev-id';
-        dto.target = new HeadlineTopicProgramDto();
-        dto.target.id = 'test-id';
-        dto.next = new HeadlineTopicProgramDto();
-        dto.next.id = 'next-id';
-        return dto;
-      });
+      jest
+        .spyOn(service, 'getHeadlineTopicProgramWithSimilarAndNeighbors')
+        .mockResolvedValue(mockResult);
+      jest
+        .spyOn(
+          HeadlineTopicProgramWithSimilarAndNeighborsDto,
+          'createFromEntity',
+        )
+        .mockImplementation(() => {
+          const dto = new HeadlineTopicProgramWithSimilarAndNeighborsDto();
+          dto.similar = [];
+          dto.previous = new HeadlineTopicProgramDto();
+          dto.previous.id = 'prev-id';
+          dto.target = new HeadlineTopicProgramDto();
+          dto.target.id = 'test-id';
+          dto.next = new HeadlineTopicProgramDto();
+          dto.next.id = 'next-id';
+          return dto;
+        });
 
-      const result = await controller.getHeadlineTopicProgramWithSimilarAndNeighbors(programId);
+      const result =
+        await controller.getHeadlineTopicProgramWithSimilarAndNeighbors(
+          programId,
+        );
 
-      expect(service.getHeadlineTopicProgramWithSimilarAndNeighbors).toHaveBeenCalledWith(programId);
+      expect(
+        service.getHeadlineTopicProgramWithSimilarAndNeighbors,
+      ).toHaveBeenCalledWith(programId);
       expect(result.target.id).toBe('test-id');
       expect(result.previous.id).toBe('prev-id');
       expect(result.next.id).toBe('next-id');
@@ -334,9 +396,13 @@ describe('ApiV1Controller', () => {
     it('should throw InternalServerErrorException when service throws an error', async () => {
       const programId = 'test-id';
       const mockError = new Error('Service error');
-      jest.spyOn(service, 'getHeadlineTopicProgramWithSimilarAndNeighbors').mockRejectedValue(mockError);
+      jest
+        .spyOn(service, 'getHeadlineTopicProgramWithSimilarAndNeighbors')
+        .mockRejectedValue(mockError);
 
-      await expect(controller.getHeadlineTopicProgramWithSimilarAndNeighbors(programId)).rejects.toThrow(InternalServerErrorException);
+      await expect(
+        controller.getHeadlineTopicProgramWithSimilarAndNeighbors(programId),
+      ).rejects.toThrow(InternalServerErrorException);
     });
   });
 
@@ -350,7 +416,12 @@ describe('ApiV1Controller', () => {
         updatedAt: new Date(),
         audioUrl: 'https://example.com/audio.mp3',
         audioDuration: 1500,
-        script: JSON.stringify({ title: 'Test', intro: 'Intro', posts: [], ending: 'Ending' }),
+        script: JSON.stringify({
+          title: 'Test',
+          intro: 'Intro',
+          posts: [],
+          ending: 'Ending',
+        }),
         chapters: JSON.stringify([]),
         videoUrl: 'https://example.com/video.mp4',
         imageUrl: 'https://example.com/image.jpg',
@@ -369,43 +440,49 @@ describe('ApiV1Controller', () => {
             refreshedAt: new Date(),
             summary: 'Single post summary',
             headlineTopicProgramId: 'test-id',
-            tags: []
-          }
+            tags: [],
+          },
         ],
       };
 
-      jest.spyOn(service, 'getHeadlineTopicProgram').mockResolvedValue(mockProgram);
-      jest.spyOn(HeadlineTopicProgramDto, 'createFromEntity').mockImplementation((entity) => {
-        const dto = new HeadlineTopicProgramDto();
-        dto.id = entity.id;
-        dto.title = entity.title;
-        dto.createdAt = entity.createdAt;
-        dto.updatedAt = entity.updatedAt;
-        dto.audioUrl = entity.audioUrl;
-        dto.audioDuration = entity.audioDuration;
-        
-        const scriptDto = new HeadlineTopicProgramScriptDto();
-        scriptDto.title = 'Test Title';
-        scriptDto.intro = 'Test Intro';
-        scriptDto.posts = [];
-        scriptDto.ending = 'Test Ending';
-        dto.script = scriptDto;
-        
-        dto.chapters = [];
-        
-        dto.posts = entity.posts ? entity.posts.map(post => {
-          const postDto = new QiitaPostDto();
-          postDto.id = post.id;
-          postDto.title = post.title;
-          postDto.url = post.url;
-          postDto.createdAt = post.createdAt;
-          postDto.authorName = post.authorName;
-          postDto.authorId = post.authorId;
-          return postDto;
-        }) : [];
-        
-        return dto;
-      });
+      jest
+        .spyOn(service, 'getHeadlineTopicProgram')
+        .mockResolvedValue(mockProgram);
+      jest
+        .spyOn(HeadlineTopicProgramDto, 'createFromEntity')
+        .mockImplementation((entity) => {
+          const dto = new HeadlineTopicProgramDto();
+          dto.id = entity.id;
+          dto.title = entity.title;
+          dto.createdAt = entity.createdAt;
+          dto.updatedAt = entity.updatedAt;
+          dto.audioUrl = entity.audioUrl;
+          dto.audioDuration = entity.audioDuration;
+
+          const scriptDto = new HeadlineTopicProgramScriptDto();
+          scriptDto.title = 'Test Title';
+          scriptDto.intro = 'Test Intro';
+          scriptDto.posts = [];
+          scriptDto.ending = 'Test Ending';
+          dto.script = scriptDto;
+
+          dto.chapters = [];
+
+          dto.posts = entity.posts
+            ? entity.posts.map((post) => {
+                const postDto = new QiitaPostDto();
+                postDto.id = post.id;
+                postDto.title = post.title;
+                postDto.url = post.url;
+                postDto.createdAt = post.createdAt;
+                postDto.authorName = post.authorName;
+                postDto.authorId = post.authorId;
+                return postDto;
+              })
+            : [];
+
+          return dto;
+        });
 
       const result = await controller.getHeadlineTopicProgram(programId);
 
@@ -418,15 +495,21 @@ describe('ApiV1Controller', () => {
       const programId = 'non-existent-id';
       jest.spyOn(service, 'getHeadlineTopicProgram').mockResolvedValue(null);
 
-      await expect(controller.getHeadlineTopicProgram(programId)).rejects.toThrow(InternalServerErrorException);
+      await expect(
+        controller.getHeadlineTopicProgram(programId),
+      ).rejects.toThrow(InternalServerErrorException);
     });
 
     it('should throw InternalServerErrorException when service throws an error', async () => {
       const programId = 'test-id';
       const mockError = new Error('Service error');
-      jest.spyOn(service, 'getHeadlineTopicProgram').mockRejectedValue(mockError);
+      jest
+        .spyOn(service, 'getHeadlineTopicProgram')
+        .mockRejectedValue(mockError);
 
-      await expect(controller.getHeadlineTopicProgram(programId)).rejects.toThrow(InternalServerErrorException);
+      await expect(
+        controller.getHeadlineTopicProgram(programId),
+      ).rejects.toThrow(InternalServerErrorException);
     });
   });
 });

@@ -68,6 +68,48 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
   }
 
   /**
+   * WAV ファイルを MP3 ファイルに変換する
+   * @param waveFilePath WAV ファイルパス
+   * @param mp3FilePath MP3 ファイルパス
+   */
+  async convertWavToMp3(
+    waveFilePath: string,
+    mp3FilePath: string,
+  ): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      ffmpeg()
+        .input(waveFilePath)
+        .outputOptions([
+          '-acodec libmp3lame', // MP3 エンコーダー
+          '-ar 44100', // サンプルレート 44.1KHz
+          '-ac 2', // ステレオチャンネル
+          '-y', // 上書き許可
+        ])
+        .output(mp3FilePath)
+        .on('start', (commandLine) => {
+          this.logger.log(`WAV ファイルを MP3 ファイルに変換します`);
+          this.logger.debug(
+            `WAV ファイルを MP3 ファイルに変換するコマンド: ${commandLine}`,
+          );
+        })
+        .on('end', () => {
+          this.logger.log(`WAV ファイルを MP3 ファイルに変換しました`);
+          resolve();
+        })
+        .on('error', (error) => {
+          this.logger.error(
+            `WAV ファイルを MP3 ファイルに変換中にエラーが発生しました`,
+            {
+              error,
+            },
+          );
+          reject(error);
+        })
+        .run();
+    });
+  }
+
+  /**
    * 番組の音声ファイルを生成する
    * @param command 番組音声ファイル生成要求コマンド
    */
@@ -474,6 +516,9 @@ title=${chapter.title}
       }
 
       if (inputFiles.length === 1) {
+        this.logger.debug(
+          `入力ファイルが1つのためファイルをコピーします: ${inputFiles[0]}`,
+        );
         // 入力ファイルが1つの場合はコピーするだけ
         fs.copyFileSync(inputFiles[0], outputFile);
         return outputFile;

@@ -225,6 +225,7 @@ export class PersonalizedFeedsService {
             filterConfig: params.filterConfig,
             deliveryConfig: params.deliveryConfig,
             deliveryFrequency: params.deliveryFrequency,
+            speakerMode: params.speakerMode,
             isActive: params.isActive ?? true,
           },
           filterGroup: filterGroup
@@ -344,6 +345,7 @@ export class PersonalizedFeedsService {
             filterConfig: params.filterConfig,
             deliveryConfig: params.deliveryConfig,
             deliveryFrequency: params.deliveryFrequency,
+            speakerMode: params.speakerMode,
             isActive: params.isActive,
           },
           filterGroup: filterGroup

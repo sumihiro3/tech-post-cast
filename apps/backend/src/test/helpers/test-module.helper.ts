@@ -33,7 +33,7 @@ export async function createTestingModuleWithMockPrisma(
         provide: PrismaService,
         useValue: mockPrismaService,
       },
-      ...metadata.providers || [],
+      ...(metadata.providers || []),
     ],
     imports: metadata.imports || [],
     controllers: metadata.controllers || [],
@@ -51,8 +51,7 @@ export async function createTestingModuleWithMockPrisma(
 export async function createTestingModuleWithMockPrismaManager(
   metadata: ModuleMetadata,
 ): Promise<[TestingModule, jest.Mocked<PrismaClientManager>]> {
-  const mockClient = {
-  };
+  const mockClient = {};
 
   const mockPrismaClientManager = {
     getClient: jest.fn().mockReturnValue(mockClient),
@@ -65,7 +64,7 @@ export async function createTestingModuleWithMockPrismaManager(
         provide: PrismaClientManager,
         useValue: mockPrismaClientManager,
       },
-      ...metadata.providers || [],
+      ...(metadata.providers || []),
     ],
     imports: metadata.imports || [],
     controllers: metadata.controllers || [],

@@ -2106,6 +2106,15 @@
             ],
             "example": "WEEKLY"
           },
+          "speakerMode": {
+            "type": "string",
+            "description": "話者モード（単一話者/複数話者）",
+            "enum": [
+              "SINGLE",
+              "MULTI"
+            ],
+            "example": "SINGLE"
+          },
           "isActive": {
             "type": "boolean",
             "description": "有効かどうか",
@@ -2138,6 +2147,7 @@
           "filterConfig",
           "deliveryConfig",
           "deliveryFrequency",
+          "speakerMode",
           "isActive",
           "createdAt",
           "updatedAt"
@@ -2313,6 +2323,16 @@
             ],
             "example": "WEEKLY"
           },
+          "speakerMode": {
+            "type": "string",
+            "description": "話者モード（単一話者/複数話者）",
+            "default": "SINGLE",
+            "enum": [
+              "SINGLE",
+              "MULTI"
+            ],
+            "example": "SINGLE"
+          },
           "filterGroups": {
             "description": "フィルターグループ一覧",
             "type": "array",
@@ -2376,6 +2396,15 @@
               "time": "08:00"
             }
           },
+          "speakerMode": {
+            "type": "string",
+            "description": "話者モード（単一話者/複数話者）",
+            "enum": [
+              "SINGLE",
+              "MULTI"
+            ],
+            "example": "SINGLE"
+          },
           "isActive": {
             "type": "boolean",
             "description": "有効かどうか",
@@ -2408,6 +2437,7 @@
           "dataSource",
           "filterConfig",
           "deliveryConfig",
+          "speakerMode",
           "isActive",
           "createdAt",
           "updatedAt",
@@ -2471,6 +2501,15 @@
               "WEEKLY"
             ],
             "example": "WEEKLY"
+          },
+          "speakerMode": {
+            "type": "string",
+            "description": "話者モード（単一話者/複数話者）",
+            "enum": [
+              "SINGLE",
+              "MULTI"
+            ],
+            "example": "SINGLE"
           },
           "filterGroups": {
             "description": "フィルターグループ一覧",
@@ -3325,6 +3364,11 @@
             "description": "RSS配信URL（RSS機能が有効な場合のみ）",
             "example": "https://rss.techpostcast.com/u/550e8400-e29b-41d4-a716-446655440000/rss.xml"
           },
+          "personalizedProgramDialogueEnabled": {
+            "type": "boolean",
+            "description": "複数話者モードでのパーソナルプログラムを作成できるかどうかを表すフラグ",
+            "example": false
+          },
           "updatedAt": {
             "format": "date-time",
             "type": "string",
@@ -3337,6 +3381,7 @@
           "displayName",
           "notificationEnabled",
           "rssEnabled",
+          "personalizedProgramDialogueEnabled",
           "updatedAt"
         ]
       },

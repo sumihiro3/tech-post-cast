@@ -1,5 +1,6 @@
 import { Step } from '@mastra/core';
 import { Workflow } from '@mastra/core/workflows';
+import { SpeakerMode } from '@prisma/client';
 import { z } from 'zod';
 import { isMastra } from '.';
 import {
@@ -55,6 +56,9 @@ export const createPersonalizedProgramScriptGenerationWorkflow = new Step({
     const userName = context?.triggerData.userName as string;
     const programDate = context?.triggerData.programDate as Date;
     const feedName = context?.triggerData.personalizedFeedName as string;
+    const speakerMode =
+      (context?.triggerData.speakerMode as SpeakerMode) || SpeakerMode.SINGLE;
+
     logger.debug(
       JSON.stringify({
         posts: posts.map((post) => ({
@@ -65,8 +69,13 @@ export const createPersonalizedProgramScriptGenerationWorkflow = new Step({
         userName,
         programDate,
         feedName,
+        speakerMode,
       }),
     );
+
+    // 話者モードに応じてスキーマを選択
+    const resultSchema = personalizedProgramScriptSchema;
+
     const workflow = new Workflow({
       name: PERSONALIZED_PROGRAM_SCRIPT_GENERATION_WORKFLOW,
       triggerSchema: z.object({
@@ -74,7 +83,7 @@ export const createPersonalizedProgramScriptGenerationWorkflow = new Step({
       }),
       mastra: mastra,
       result: {
-        schema: personalizedProgramScriptSchema,
+        schema: resultSchema,
       },
     });
     logger.info(`番組台本生成ワークフローの生成を開始します`);
@@ -90,7 +99,9 @@ export const createPersonalizedProgramScriptGenerationWorkflow = new Step({
     // 各記事の要約が終了するのを待つ
     workflow.after(summarizeSteps);
     // 要約が終わったら、台本生成のステップを定義
-    workflow.step(createScriptStep(userName, programDate, feedName));
+    workflow.step(
+      createScriptStep(userName, programDate, feedName, speakerMode),
+    );
     // 動的ワークフローを構築してコミット
     workflow.commit();
     logger.info(
@@ -173,16 +184,21 @@ const createSummarizeStep = (index: number, post: QiitaPost) => {
  * @param userName ユーザー名
  * @param programDate 番組日
  * @param feedName パーソナルフィード名
+ * @param speakerMode 話者モード
  */
 const createScriptStep = (
   userName: string,
   programDate: Date,
   feedName: string,
+  speakerMode: SpeakerMode,
 ) => {
+  // 常に基本スキーマを使用（文字列ベース）
+  const outputSchema = personalizedProgramScriptSchema;
+
   const scriptStep = new Step({
     id: GENERATE_SCRIPT_STEP,
     description: '番組の台本を生成するステップ',
-    outputSchema: personalizedProgramScriptSchema,
+    outputSchema,
     execute: async ({ context, mastra }) => {
       const logger = mastra.getLogger();
       logger.info(`記事の台本生成を開始します`);
@@ -214,20 +230,28 @@ const createScriptStep = (
         programDate,
         userName,
         feedName,
+        speakerMode,
       );
       logger.debug(`${agent.name} Instructions: ${instructions}`);
       agent.__updateInstructions(instructions);
       const result = await agent.generate(
         `指定の Instructions に従ってラジオ番組の台本を生成してください。なお、出力構造は output で指定したスキーマに従って出力してください。`,
         {
-          output: personalizedProgramScriptSchema,
+          output: outputSchema,
         },
       );
       logger.info(`記事の台本生成が完了しました`, {
         result,
       });
-      const script = result.object as PersonalizedProgramScript;
-      return script;
+
+      // 基本スキーマで生成された台本を取得
+      const basicScript = result.object as PersonalizedProgramScript;
+
+      // 常に基本スキーマ形式で返す（文字列ベース）
+      // 複数話者の場合、プロンプトで「Postel: 内容」形式の文字列が生成されているので
+      // そのまま文字列として返す
+      logger.debug(`台本生成完了`, { basicScript });
+      return basicScript;
     },
   });
   return scriptStep;

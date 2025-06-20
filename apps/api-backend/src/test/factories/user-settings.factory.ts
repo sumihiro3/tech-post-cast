@@ -19,6 +19,7 @@ export class UserSettingsFactory {
       notificationEnabled: false,
       rssEnabled: false,
       rssCreatedAt: undefined,
+      personalizedProgramDialogueEnabled: false,
       updatedAt: new Date('2023-01-01'),
       ...overrides,
     };
@@ -97,6 +98,34 @@ export class UserSettingsFactory {
     return this.createUserSettings({
       rssEnabled: false,
       rssCreatedAt: undefined,
+      ...overrides,
+    });
+  }
+
+  /**
+   * 複数話者モード有効のユーザー設定を作成する
+   * @param overrides 上書きするプロパティ
+   * @returns UserSettings
+   */
+  static createUserSettingsWithDialogueEnabled(
+    overrides: Partial<UserSettings> = {},
+  ): UserSettings {
+    return this.createUserSettings({
+      personalizedProgramDialogueEnabled: true,
+      ...overrides,
+    });
+  }
+
+  /**
+   * 複数話者モード無効のユーザー設定を作成する
+   * @param overrides 上書きするプロパティ
+   * @returns UserSettings
+   */
+  static createUserSettingsWithDialogueDisabled(
+    overrides: Partial<UserSettings> = {},
+  ): UserSettings {
+    return this.createUserSettings({
+      personalizedProgramDialogueEnabled: false,
       ...overrides,
     });
   }

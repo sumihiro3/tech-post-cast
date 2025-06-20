@@ -36,6 +36,22 @@ enum DeliveryFrequency {
   WEEKLY
 }
 
+/**
+ * 話者モード
+ */
+enum SpeakerMode {
+  /**
+   * 単一話者
+   * 1人（ポステル）による解説
+   */
+  SINGLE
+  /**
+   * 複数話者
+   * 2人（ポステル + ジョン）による対話形式解説
+   */
+  MULTI
+}
+
 // ヘッドライントピック番組
 model HeadlineTopicProgram {
   // 今日のヘッドライントピックの一意なID
@@ -261,6 +277,10 @@ model AppUser {
   // RSS設定の最終更新日時
   rssUpdatedAt DateTime? @map("rss_updated_at")
 
+  // パーソナルプログラム関連フィールド
+  // 複数話者モードでのパーソナルプログラムを作成できるかどうかを表すフラグ
+  personalizedProgramDialogueEnabled Boolean @default(false) @map("personalized_program_dialogue_enabled")
+
   // リレーション
   personalizedProgramFilters  PersonalizedFeed[]
   personalizedPrograms        PersonalizedFeedProgram[]
@@ -387,6 +407,7 @@ model PersonalizedFeed {
   filterConfig      Json              @map("filter_config")
   deliveryConfig    Json              @map("delivery_config")
   deliveryFrequency DeliveryFrequency @default(WEEKLY) @map("delivery_frequency")
+  speakerMode       SpeakerMode       @default(SINGLE) @map("speaker_mode") // 話者モード（単一話者/複数話者）
   isActive          Boolean           @default(true) @map("is_active")
   createdAt         DateTime          @default(now()) @map("created_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")

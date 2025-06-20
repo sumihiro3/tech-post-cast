@@ -6,17 +6,31 @@ import { Logger } from '@nestjs/common';
  */
 export function suppressLogOutput(): jest.SpyInstance[] {
   const logSpies: jest.SpyInstance[] = [];
-  
-  logSpies.push(jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined));
-  logSpies.push(jest.spyOn(Logger.prototype, 'debug').mockImplementation(() => undefined));
-  logSpies.push(jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined));
-  logSpies.push(jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined));
-  
+
+  logSpies.push(
+    jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined),
+  );
+  logSpies.push(
+    jest.spyOn(Logger.prototype, 'debug').mockImplementation(() => undefined),
+  );
+  logSpies.push(
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined),
+  );
+  logSpies.push(
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined),
+  );
+
   logSpies.push(jest.spyOn(console, 'log').mockImplementation(() => undefined));
-  logSpies.push(jest.spyOn(console, 'debug').mockImplementation(() => undefined));
-  logSpies.push(jest.spyOn(console, 'warn').mockImplementation(() => undefined));
-  logSpies.push(jest.spyOn(console, 'error').mockImplementation(() => undefined));
-  
+  logSpies.push(
+    jest.spyOn(console, 'debug').mockImplementation(() => undefined),
+  );
+  logSpies.push(
+    jest.spyOn(console, 'warn').mockImplementation(() => undefined),
+  );
+  logSpies.push(
+    jest.spyOn(console, 'error').mockImplementation(() => undefined),
+  );
+
   return logSpies;
 }
 
@@ -25,5 +39,5 @@ export function suppressLogOutput(): jest.SpyInstance[] {
  * @param logSpies suppressLogOutput()で取得したスパイオブジェクト配列
  */
 export function restoreLogOutput(logSpies: jest.SpyInstance[]): void {
-  logSpies.forEach(spy => spy.mockRestore());
+  logSpies.forEach((spy) => spy.mockRestore());
 }

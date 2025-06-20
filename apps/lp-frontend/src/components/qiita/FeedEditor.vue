@@ -52,6 +52,36 @@ div
               :value="option.value"
             )
 
+        //- 話者モード選択
+        .mb-3
+          .d-flex.align-center.mb-2
+            v-icon(size="small" class="mr-1") mdi-account-voice
+            span.font-weight-medium 話者モード
+          v-radio-group(
+            v-model="speakerMode"
+            inline
+            density="compact"
+            :error-messages="getFieldErrors('speakerMode')"
+            :error="hasFieldError('speakerMode')"
+            :disabled="!canUseMultiSpeakerMode"
+          )
+            v-radio(
+              v-for="option in speakerModeOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+              :disabled="option.value === SpeakerModeEnum.Multi && !canUseMultiSpeakerMode"
+            )
+
+          //- 複数話者モード無効時の説明
+          v-alert(
+            v-if="!canUseMultiSpeakerMode"
+            type="info"
+            density="compact"
+            class="mt-2"
+          )
+            | 複数話者モード（対話形式）は現在ご利用いただけません。単一話者モード（ナレーション形式）で番組を作成します。
+
       v-divider
       //- フィルターオプション
       .my-4
@@ -245,11 +275,15 @@ div
 </template>
 
 <script setup lang="ts">
-import type { QiitaPostDto } from '@/api';
-import { PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum } from '@/api';
+import {
+  PersonalizedFeedWithFiltersDtoDeliveryFrequencyEnum as DeliveryFrequencyEnum,
+  PersonalizedFeedWithFiltersDtoSpeakerModeEnum as SpeakerModeEnum,
+  type QiitaPostDto,
+} from '@/api';
+import { useUserSettings } from '@/composables/dashboard/useUserSettings';
 import { useGetQiitaPosts } from '@/composables/qiita-api/useGetQiitaPosts';
 import { useFeedValidation } from '@/composables/validation/useFeedValidation';
-import { computed, defineEmits, defineProps, reactive, ref, watch } from 'vue';
+import { computed, defineEmits, defineProps, onMounted, reactive, ref, watch } from 'vue';
 import type { InputPersonalizedFeedData } from '~/types/personalized-feed';
 
 /** 記事公開日の範囲のデフォルト値 */
@@ -321,6 +355,26 @@ const deliveryFrequency = ref<DeliveryFrequencyEnum>(
 );
 const deliveryFrequencyOptions = [{ value: DeliveryFrequencyEnum.Daily, label: '毎日' }];
 
+// 話者モード選択
+const speakerMode = ref<SpeakerModeEnum>(props.initialData.speakerMode || SpeakerModeEnum.Single);
+const speakerModeOptions = [
+  { value: SpeakerModeEnum.Single, label: '単一話者モード' },
+  { value: SpeakerModeEnum.Multi, label: '複数話者モード' },
+];
+
+// ユーザー設定から複数話者モードの利用可否を取得
+const { settings, fetchSettings } = useUserSettings();
+const canUseMultiSpeakerMode = computed(() => settings.value.personalizedProgramDialogueEnabled);
+
+// コンポーネント初期化時にユーザー設定を取得
+onMounted(async () => {
+  try {
+    await fetchSettings();
+  } catch (error) {
+    console.error('Failed to fetch user settings:', error);
+  }
+});
+
 // 絞り込み条件の型
 interface IFilters {
   authors: string[];
@@ -359,6 +413,7 @@ const feedData = computed<InputPersonalizedFeedData>(() => ({
     likesCount: filters.likesCount,
   },
   deliveryFrequency: deliveryFrequency.value,
+  speakerMode: speakerMode.value,
   posts: filteredQiitaPosts.value,
   totalCount: filteredQiitaPostsTotalCount.value,
 }));
@@ -432,6 +487,11 @@ watch(
       deliveryFrequency.value = newInitialData.deliveryFrequency as DeliveryFrequencyEnum;
     }
 
+    // 話者モードを更新
+    if (newInitialData.speakerMode) {
+      speakerMode.value = newInitialData.speakerMode as SpeakerModeEnum;
+    }
+
     // フィルター条件を更新
     filters.authors = [...newInitialData.filters.authors];
     filters.tags = [...newInitialData.filters.tags];
@@ -467,6 +527,11 @@ watch(programTitle, () => {
 
 // 配信間隔が変更されたときに親コンポーネントへ通知
 watch(deliveryFrequency, () => {
+  emitFeedData();
+});
+
+// 話者モードが変更されたときに親コンポーネントへ通知
+watch(speakerMode, () => {
   emitFeedData();
 });
 
@@ -568,6 +633,14 @@ if (isAuthorOrTagSelected()) {
 const handleActionButtonClick = (): void => {
   emit('actionButtonClick');
 };
+
+// 複数話者モードの利用可否が変更された場合の処理
+watch(canUseMultiSpeakerMode, (newCanUse) => {
+  // 複数話者モードが無効になった場合は単一話者モードに強制変更
+  if (!newCanUse && speakerMode.value === SpeakerModeEnum.Multi) {
+    speakerMode.value = SpeakerModeEnum.Single;
+  }
+});
 </script>
 
 <style scoped>

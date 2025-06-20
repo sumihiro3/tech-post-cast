@@ -1,5 +1,9 @@
 import { QiitaPost } from '@prisma/client';
-import { QiitaPostApiResponse, QiitaTagApiResponse, QiitaUserApiResponse } from '@/domains/qiita-posts/qiita-posts.entity';
+import {
+  QiitaPostApiResponse,
+  QiitaTagApiResponse,
+  QiitaUserApiResponse,
+} from '@/domains/qiita-posts/qiita-posts.entity';
 
 /**
  * Qiita記事のモックデータを作成するファクトリークラス
@@ -54,7 +58,9 @@ export class QiitaPostFactory {
    * @param overrides 上書きするプロパティ
    * @returns QiitaUserApiResponse
    */
-  static createQiitaUser(overrides: Partial<QiitaUserApiResponse> = {}): QiitaUserApiResponse {
+  static createQiitaUser(
+    overrides: Partial<QiitaUserApiResponse> = {},
+  ): QiitaUserApiResponse {
     return {
       id: 'test-user-id',
       followees_count: 0,
@@ -73,7 +79,10 @@ export class QiitaPostFactory {
    * @param versions バージョン情報
    * @returns QiitaTagApiResponse
    */
-  static createQiitaTag(name: string = 'test-tag', versions: string[] = []): QiitaTagApiResponse {
+  static createQiitaTag(
+    name: string = 'test-tag',
+    versions: string[] = [],
+  ): QiitaTagApiResponse {
     return {
       name,
       versions,
@@ -85,7 +94,9 @@ export class QiitaPostFactory {
    * @param overrides 上書きするプロパティ
    * @returns QiitaPostApiResponse
    */
-  static createQiitaPostApiResponse(overrides: Partial<QiitaPostApiResponse> = {}): QiitaPostApiResponse {
+  static createQiitaPostApiResponse(
+    overrides: Partial<QiitaPostApiResponse> = {},
+  ): QiitaPostApiResponse {
     const response = {
       id: 'test-post-id',
       title: 'テスト記事タイトル',
@@ -100,9 +111,7 @@ export class QiitaPostFactory {
       reactions_count: 0,
       stocks_count: 5,
       private: false,
-      tags: [
-        this.createQiitaTag(),
-      ],
+      tags: [this.createQiitaTag()],
       coediting: false,
       group: {
         created_at: '2023-01-01T00:00:00+09:00',
@@ -118,7 +127,7 @@ export class QiitaPostFactory {
       slide: false,
       ...overrides,
     };
-    
+
     return new QiitaPostApiResponse(response);
   }
 

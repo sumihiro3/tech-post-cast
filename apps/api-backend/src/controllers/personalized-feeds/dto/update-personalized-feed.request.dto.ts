@@ -1,6 +1,6 @@
 // filepath: /Users/sumihiro/projects/TechPostCast/tech-post-cast/apps/api-backend/src/controllers/personalized-feeds/dto/update-personalized-feed.request.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
-import { DeliveryFrequency } from '@prisma/client';
+import { DeliveryFrequency, SpeakerMode } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
@@ -76,6 +76,18 @@ export class UpdatePersonalizedFeedRequestDto {
     message: '配信間隔は有効な値である必要があります',
   })
   deliveryFrequency?: DeliveryFrequency;
+
+  @ApiProperty({
+    description: '話者モード（単一話者/複数話者）',
+    required: false,
+    enum: SpeakerMode,
+    example: SpeakerMode.SINGLE,
+  })
+  @IsOptional()
+  @IsEnum(SpeakerMode, {
+    message: '話者モードは有効な値である必要があります',
+  })
+  speakerMode?: SpeakerMode;
 
   @ApiProperty({
     description: 'フィルターグループ一覧',

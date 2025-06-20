@@ -18,7 +18,7 @@ describe('AppController', () => {
         // Service の各メソッドを Mock 化する
         if (token === AppService) {
           return {
-            getHello: jest.fn().mockReturnValue('Hello World!')
+            getHello: jest.fn().mockReturnValue('Hello World!'),
           };
         }
         if (typeof token === 'function') {

@@ -30,6 +30,8 @@ export interface UserSettings {
   rssToken?: string;
   /** RSS URL - RSS配信URL（RSS機能が有効な場合のみ） */
   rssUrl?: string;
+  /** 複数話者モード有効フラグ - 複数話者モードでのパーソナルプログラムを作成できるかどうかを示すフラグ */
+  personalizedProgramDialogueEnabled: boolean;
 }
 
 /**
@@ -78,6 +80,7 @@ export const useUserSettings = (): UseUserSettingsReturn => {
     rssEnabled: false,
     rssToken: undefined,
     rssUrl: undefined,
+    personalizedProgramDialogueEnabled: false,
   });
 
   const originalSettings = ref<UserSettings>({
@@ -87,6 +90,7 @@ export const useUserSettings = (): UseUserSettingsReturn => {
     rssEnabled: false,
     rssToken: undefined,
     rssUrl: undefined,
+    personalizedProgramDialogueEnabled: false,
   });
 
   const loading = ref<boolean>(false);
@@ -123,6 +127,7 @@ export const useUserSettings = (): UseUserSettingsReturn => {
         rssEnabled: response.data.rssEnabled,
         rssToken: response.data.rssToken,
         rssUrl: response.data.rssUrl,
+        personalizedProgramDialogueEnabled: response.data.personalizedProgramDialogueEnabled,
       };
 
       settings.value = { ...fetchedSettings };
@@ -191,6 +196,7 @@ export const useUserSettings = (): UseUserSettingsReturn => {
         rssEnabled: response.data.rssEnabled,
         rssToken: response.data.rssToken,
         rssUrl: response.data.rssUrl,
+        personalizedProgramDialogueEnabled: response.data.personalizedProgramDialogueEnabled,
       };
 
       settings.value = { ...updatedSettings };

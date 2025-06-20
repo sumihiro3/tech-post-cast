@@ -349,3 +349,68 @@ model AppUser {
 - **ORM**: Prisma
 - **マイグレーション**: Prisma Migrate
 - **テーブル**: AppUser拡張
+
+## PersonalizedFeed テーブルへの SpeakerMode 追加 (2025-06-14)
+
+### 背景と課題
+
+TPC-125「複数話者での記事解説に対応する」機能実装のため、PersonalizedFeedテーブルに話者モード（単一話者/複数話者）を選択できるフィールドを追加する必要があった。
+
+### 検討したアプローチ
+
+1. **ENUMタイプの使用**: `SpeakerMode` ENUMを新規作成し、`SINGLE`と`MULTI`の値を定義
+2. **既存テーブルへのカラム追加**: `PersonalizedFeed`テーブルに`speakerMode`フィールドを追加
+3. **デフォルト値の設定**: 既存データとの互換性を保つため、デフォルト値を`SINGLE`に設定
+
+### 決定事項と理由
+
+- **ENUMタイプ採用**: 型安全性と可読性を重視し、`SpeakerMode` ENUMを作成
+- **デフォルト値**: 既存の1人解説機能との互換性を保つため`SINGLE`をデフォルトに設定
+- **カラム名**: `speaker_mode`（スネークケース）でデータベースに格納、Prismaでは`speakerMode`（キャメルケース）でマッピング
+
+### 学んだ教訓 - KEY INSIGHT
+
+**プロジェクト固有のワークフロー遵守の重要性**:
+
+- ユーザーから「yarnを使用する」「Prismaスクリプトはルートのpackage.jsonに準備済み」という指示を**複数回**受けた
+- 初回の作業で適切なスクリプトを確認せず、間違ったコマンドを提案してしまった
+- **教訓**: 新しいプロジェクトでは必ず最初にpackage.jsonのscriptsセクションを確認し、プロジェクト固有のワークフローを把握する
+
+**正しいPrismaワークフロー**:
+
+1. `yarn format-prisma` - スキーマファイルのフォーマット
+2. `yarn generate-prisma` - Prismaクライアントの再生成
+3. `yarn create-migration-prisma` - マイグレーションファイルの作成
+4. `yarn deploy-migration-prisma` - マイグレーションの適用
+
+### 実装詳細
+
+```sql
+-- 作成されたマイグレーション内容
+CREATE TYPE "SpeakerMode" AS ENUM ('SINGLE', 'MULTI');
+ALTER TABLE "personalized_feeds" ADD COLUMN "speaker_mode" "SpeakerMode" NOT NULL DEFAULT 'SINGLE';
+```
+
+```prisma
+// Prismaスキーマ追加内容
+enum SpeakerMode {
+  SINGLE  // 単一話者（ポステル）による解説
+  MULTI   // 複数話者（ポステル + ジョン）による対話形式解説
+}
+
+model PersonalizedFeed {
+  // ... 既存フィールド
+  speakerMode SpeakerMode @default(SINGLE) @map("speaker_mode")
+  // ... 既存フィールド
+}
+```
+
+### 関連タスク
+
+- TPC-125: 複数話者での記事解説に対応する
+- Phase 1: データベース・API基盤（完了: スキーマ変更、マイグレーション作成・適用）
+
+### 次のステップへの示唆
+
+- API Backend のDTO更新時も、プロジェクト固有の命名規則やパターンを事前確認する
+- 既存のPersonalizedFeed関連のDTO構造を把握してから変更を実施する

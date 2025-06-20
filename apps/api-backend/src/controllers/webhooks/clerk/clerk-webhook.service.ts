@@ -77,6 +77,7 @@ export class ClerkWebhookService {
         rssEnabled: false,
         rssCreatedAt: null,
         rssUpdatedAt: null,
+        personalizedProgramDialogueEnabled: false,
         createdAt: new Date(userJson.created_at),
         updatedAt: new Date(userJson.updated_at),
       });
@@ -125,10 +126,12 @@ export class ClerkWebhookService {
         rssEnabled: appUser.rssEnabled,
         rssCreatedAt: appUser.rssCreatedAt,
         rssUpdatedAt: appUser.rssUpdatedAt,
+        personalizedProgramDialogueEnabled:
+          appUser.personalizedProgramDialogueEnabled,
         createdAt: new Date(userJson.created_at),
         updatedAt: new Date(userJson.updated_at),
       });
-      this.logger.log(`ユーザー [${appUser.id}] を更新しました`);
+      this.logger.log(`ユーザー [${updatedUser.id}] を更新しました`);
     } catch (error) {
       const errorMessage = `ユーザーの更新に失敗しました`;
       this.logger.error(errorMessage, {

@@ -230,6 +230,7 @@ export class AppConfigService {
       LpDeployHookUrl: this.LpDeployHookUrl,
       LpBaseUrl: this.LpBaseUrl,
       GoogleCloudCredentialsFilePath: this.GoogleCloudCredentialsFilePath,
+      GoogleGenAiApiKey: this.GoogleGenAiApiKey,
       SlackIncomingWebhookUrl: this.SlackIncomingWebhookUrl,
       PostToX: this.PostToX,
       XApiKey: this.XApiKey,
@@ -477,6 +478,13 @@ export class AppConfigService {
    */
   get GoogleCloudCredentialsFilePath(): string {
     return this.config.get<string>('GCP_CREDENTIALS_FILE_PATH');
+  }
+
+  /**
+   * Google Generative AI API Key
+   */
+  get GoogleGenAiApiKey(): string {
+    return this.config.get<string>('GOOGLE_GENERATIVE_AI_API_KEY');
   }
 
   /**

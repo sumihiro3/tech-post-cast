@@ -1,4 +1,7 @@
-import { PersonalizedProgramScript } from '@/mastra/schemas';
+import {
+  MultiSpeakerProgramScript,
+  PersonalizedProgramScript,
+} from '@/mastra/schemas';
 import { AppUser } from '@prisma/client';
 import { PersonalizedFeedWithFilters } from '@tech-post-cast/database';
 import { HeadlineTopicProgramScript } from './headline-topic-program';
@@ -99,6 +102,22 @@ export interface PersonalizedProgramAudioFilesGenerateResult {
 }
 
 /**
+ * 複数話者パーソナルプログラムの音声ファイル群生成要求コマンド
+ */
+export interface MultiSpeakerPersonalizedProgramAudioFilesGenerateCommand {
+  /** ユーザ ID */
+  user: AppUser;
+  /** パーソナルフィード */
+  feed: PersonalizedFeedWithFilters;
+  /** 番組日付 */
+  programDate: Date;
+  /** 番組台本 */
+  script: MultiSpeakerProgramScript;
+  /** 出力先ディレクトリ */
+  outputDir: string;
+}
+
+/**
  * Text to speech interface
  */
 export interface ITextToSpeechClient {
@@ -118,5 +137,14 @@ export interface ITextToSpeechClient {
    */
   generatePersonalizedProgramAudioFiles(
     command: PersonalizedProgramAudioFilesGenerateCommand,
+  ): Promise<PersonalizedProgramAudioFilesGenerateResult>;
+
+  /**
+   * 複数話者パーソナルプログラムの音声ファイルを生成する（Gemini 2.5 Flash TTS用）
+   * @param command 生成要求コマンド（型はanyで仮置き）
+   * @returns パーソナルプログラム音声ファイルの生成結果
+   */
+  generateMultiSpeakerPersonalizedProgramAudioFiles(
+    command: MultiSpeakerPersonalizedProgramAudioFilesGenerateCommand,
   ): Promise<PersonalizedProgramAudioFilesGenerateResult>;
 }

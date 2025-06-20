@@ -92,11 +92,11 @@ v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-white(flat, rounded='lg')
     //- 番組の台本
     v-tabs-window-item(v-if='showScript', value='script')
       //- オープニング
-      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1(
+      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1.script-content(
         v-if='scriptData.opening'
         :class='{ "active-chapter-script": currentChapterIndex === 1 }'
       )
-        | {{ scriptData.opening }}
+        | {{ formatScriptForDisplay(scriptData.opening) }}
 
       //- 記事の要約
       div.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1(
@@ -104,32 +104,32 @@ v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-white(flat, rounded='lg')
         :key='index'
       )
         //- intro
-        p.mb-2(
+        p.mb-2.script-content(
           v-if='post.intro'
           :class='{ "active-chapter-script": currentChapterIndex === index + 2 }'
         )
-          | {{ post.intro }}
+          | {{ formatScriptForDisplay(post.intro) }}
 
         //- explanation
-        p.mb-2(
+        p.mb-2.script-content(
           v-if='post.explanation'
           :class='{ "active-chapter-script": currentChapterIndex === index + 2 }'
         )
-          | {{ post.explanation }}
+          | {{ formatScriptForDisplay(post.explanation) }}
 
         //- summary
-        p.mb-2(
+        p.mb-2.script-content(
           v-if='post.summary'
           :class='{ "active-chapter-script": currentChapterIndex === index + 2 }'
         )
-          | {{ post.summary }}
+          | {{ formatScriptForDisplay(post.summary) }}
 
       //- エンディング
-      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1(
+      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1.script-content(
         v-if='scriptData.ending'
         :class='{ "active-chapter-script": currentChapterIndex === scriptData.posts.length + 2 }'
       )
-        | {{ scriptData.ending }}
+        | {{ formatScriptForDisplay(scriptData.ending) }}
 </template>
 
 <script lang="ts" setup>
@@ -265,6 +265,20 @@ const seekTo = (time: number): void => {
 };
 
 /**
+ * 台本テキストを複数話者用にフォーマットする
+ * Postel: や John: などの話者名で改行し、見やすく表示する
+ */
+const formatScriptForDisplay = (text: string | null): string => {
+  if (!text) return '';
+
+  // 話者名のパターン（Postel:, John: など）
+  const speakerPattern = /(Postel:|John:)/g;
+
+  // 話者名の前で改行
+  return text.replace(speakerPattern, '\n$1').trim();
+};
+
+/**
  * 再生時間を監視して現在のチャプターを更新する
  */
 const updateCurrentChapter = (): void => {
@@ -345,5 +359,10 @@ p.active-chapter-script {
 .v-card-subtitle a:hover {
   color: rgb(var(--v-theme-secondary-darken-1));
   text-decoration: underline !important;
+}
+
+/* 台本表示で改行を有効にする */
+.script-content {
+  white-space: pre-line;
 }
 </style>
