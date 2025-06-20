@@ -2,7 +2,7 @@ import { AppConfigService } from '@/app-config/app-config.service';
 import { IPersonalizedProgramAttemptsRepository } from '@domains/radio-program/personalized-feed/personalized-program-attempts.repository.interface';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
-  getYesterday,
+  getStartOfDay,
   SlackNotificationService,
   TIME_ZONE_JST,
 } from '@tech-post-cast/commons';
@@ -51,13 +51,13 @@ export class NotificationBatchService {
 
   /**
    * 指定日の未通知レコードに対して通知を送信する
-   * デフォルトでは前日分を処理する
-   * @param targetDate 対象日（省略時は前日）
+   * デフォルトでは当日分を処理する
+   * @param targetDate 対象日（省略時は当日）
    * @returns 処理結果
    */
   async sendNotifications(targetDate?: Date): Promise<NotificationBatchResult> {
     const startedAt = new Date();
-    const processDate = targetDate || getYesterday(new Date(), TIME_ZONE_JST);
+    const processDate = targetDate || getStartOfDay(new Date(), TIME_ZONE_JST);
 
     this.logger.log('通知バッチ処理を開始します', {
       targetDate: processDate,
