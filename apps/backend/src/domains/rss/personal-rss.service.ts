@@ -248,6 +248,9 @@ export class PersonalRssService {
       // RSSファイルアップロード
       const uploadResult = await this.uploadRssFile(generationResult, appUser);
 
+      // ユーザーの RSS 配信時間を更新する
+      await this.appUsersRepository.updateRssDeliveryTime(userId);
+
       this.logger.log(`RSSファイル生成・アップロード完了: ${userId}`);
 
       return uploadResult;

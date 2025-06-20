@@ -24,4 +24,10 @@ export interface IAppUsersRepository {
    * @returns RSS機能が有効なユーザー一覧
    */
   findRssEnabledUsers(): Promise<AppUser[]>;
+
+  /**
+   * ユーザーの RSS 配信時間を更新する
+   * @param userId 更新するユーザーID
+   */
+  updateRssDeliveryTime(userId: string): Promise<void>;
 }
