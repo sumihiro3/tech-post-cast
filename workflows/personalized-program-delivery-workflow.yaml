@@ -92,8 +92,7 @@ main:
                   severity: INFO
             - updateNotificationCounters:
                 assign:
-                  - notificationSuccessCount: ${notificationResult.body.successCount}
-                  - failedNotificationUserIds: ${notificationResult.body.failedUserIds}
+                  - notificationSuccessCount: ${notificationResult.body.successUsers}
         except:
           as: e
           steps:
