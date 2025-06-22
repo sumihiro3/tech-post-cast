@@ -1,5 +1,5 @@
 <template lang="pug">
-v-card.ma-1.pa-3.pa-md-4.mb-6.mb-md-8.bg-white(flat, rounded='lg', elevation='2')
+v-card.ma-1.pa-1.pa-sm-2.pa-md-3.pa-lg-4.mb-6.mb-md-8.bg-white(flat, rounded='lg', elevation='2')
   // 1. 番組タイトル（詳細画面へのリンク）
   v-card-title.text-h6.text-md-h5.font-weight-black.pb-2
     a.text-decoration-none.text-inherit(

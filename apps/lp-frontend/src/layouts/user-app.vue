@@ -7,10 +7,10 @@
         app
         color="white"
         :width="240"
-        :mini-variant="!drawer"
+        :temporary="$vuetify.display.mobile"
+        :permanent="!$vuetify.display.mobile"
+        :mini-variant="$vuetify.display.mobile ? false : !drawer"
         mini-variant-width="56"
-        :temporary="false"
-        :permanent="true"
       )
         v-list(nav dense)
           v-list-item(
@@ -26,13 +26,14 @@
         // サーバーサイドレンダリング時のフォールバック
         div
     v-main
-      v-container(fluid :class="{'pl-0 pr-0': $vuetify.display.mdAndUp && drawer}")
+      v-container(fluid :class="{'pl-0 pr-0': $vuetify.display.mdAndUp && drawer && !$vuetify.display.mobile}")
         slot.ma-0.pa-0
     Footer.mt-10
 </template>
 
 <script setup lang="ts">
 import { useRoute } from 'vue-router';
+import { useDisplay } from 'vuetify';
 
 useHead({
   link: [
@@ -48,7 +49,9 @@ useHead({
   ],
 });
 
-const drawer = ref(true);
+// レスポンシブ対応：モバイルでは初期状態で閉じる
+const { mobile } = useDisplay();
+const drawer = ref(!mobile.value);
 const route = useRoute();
 
 interface MenuItem {

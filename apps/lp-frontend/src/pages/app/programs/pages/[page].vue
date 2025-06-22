@@ -1,10 +1,10 @@
 <template lang="pug">
 v-container(class="max-width-container")
-  v-container(fluid class="pa-6")
+  v-container(fluid class="pa-2 pa-sm-4 pa-md-6")
     // ページタイトル
     .d-flex.align-center.mb-6
-      v-icon.mr-3(color="primary" size="large") mdi-podcast
-      h1.text-h4.font-weight-bold パーソナルプログラム一覧
+      v-icon.mr-3(color="primary" :size="$vuetify.display.mobile ? 'default' : 'large'") mdi-podcast
+      h1.text-h5.text-sm-h4.font-weight-bold パーソナルプログラム一覧
 
     // ページネーション（上部）
     Pagination.mb-4(

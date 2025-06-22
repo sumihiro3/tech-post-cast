@@ -2,8 +2,8 @@
 v-card.subscription-card(elevation="2")
   v-card-title.d-flex.align-center.justify-space-between
     .d-flex.align-center
-      v-icon.mr-2(color="primary") mdi-crown
-      span サブスクリプション情報
+      v-icon.mr-2(color="primary" :size="$vuetify.display.mobile ? 'default' : 'large'") mdi-crown
+      span.text-subtitle-1.text-sm-h6 サブスクリプション情報
     v-chip(
       v-if="subscription"
       :color="planColorClass"
@@ -11,7 +11,7 @@ v-card.subscription-card(elevation="2")
       size="small"
     ) {{ planDisplayName }}
 
-  v-card-text
+  v-card-text.pa-2.pa-sm-3.pa-md-4
     // ローディング状態
     v-skeleton-loader(
       v-if="loading"

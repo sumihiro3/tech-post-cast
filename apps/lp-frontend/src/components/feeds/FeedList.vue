@@ -3,7 +3,7 @@ div
   //- ヘッダー部分
   .d-flex.align-center.justify-space-between.mb-6
     .d-flex.align-center
-      h1.text-h4.mr-4 パーソナライズフィード設定
+      h1.text-h5.text-sm-h4.mr-4 パーソナライズフィード設定
       v-chip(
         color="primary"
         variant="tonal"
@@ -16,7 +16,7 @@ div
     v-btn(
       color="primary"
       variant="elevated"
-      size="large"
+      :size="$vuetify.display.mobile ? 'default' : 'large'"
       to="/app/feeds/create"
       prepend-icon="mdi-plus"
     ) 新規フィード作成

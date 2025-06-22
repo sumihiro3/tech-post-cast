@@ -3,11 +3,11 @@
 v-card
   v-card-title.d-flex.align-center.justify-space-between
     .d-flex.align-center
-      v-icon.me-2 mdi-history
-      | パーソナルプログラム生成履歴
+      v-icon.me-2(:size="$vuetify.display.mobile ? 'default' : 'large'") mdi-history
+      span.text-subtitle-1.text-sm-h6 パーソナルプログラム生成履歴
 
   //- フィルター（パーソナルフィードが2件以上の場合のみ表示）
-  v-card-text(v-if="shouldShowFilter")
+  v-card-text.pa-2.pa-sm-3.pa-md-4(v-if="shouldShowFilter")
     v-row
       v-col(cols="12" md="6")
         v-select(
@@ -119,9 +119,9 @@ v-card
 <script setup lang="ts">
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { computed, onMounted } from 'vue';
+import type { ProgramGenerationHistoryDto } from '~/api';
 import { useDashboardFeeds } from '~/composables/dashboard/useDashboardFeeds';
 import { useDashboardProgramGenerationHistory } from '~/composables/dashboard/useDashboardProgramGenerationHistory';
-import type { ProgramGenerationHistoryDto } from '~/api';
 
 // コンポーザブル関数
 const {

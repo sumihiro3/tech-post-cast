@@ -2,14 +2,14 @@
 v-card(
   :color="color"
   dark
-  class="text-center pa-4 stats-card"
+  class="text-center pa-2 pa-sm-3 pa-md-4 stats-card"
   elevation="4"
   :class="{ 'cursor-pointer': clickable }"
   @click="handleClick"
 )
-  v-icon(size="48" class="mb-2") {{ icon }}
-  .text-h4.font-weight-bold.mb-1 {{ value }}
-  .text-subtitle-1 {{ title }}
+  v-icon(:size="$vuetify.display.mobile ? 36 : 48" class="mb-2") {{ icon }}
+  .text-h5.text-sm-h4.font-weight-bold.mb-1 {{ value }}
+  .text-body-1.text-sm-subtitle-1 {{ title }}
   .text-caption(v-if="subtitle") {{ subtitle }}
 </template>
 

@@ -1,8 +1,8 @@
 <template lang="pug">
 v-card.mb-6(elevation="2")
   v-card-title.d-flex.align-center
-    v-icon.mr-3(color="primary") mdi-slack
-    | Slack通知設定
+    v-icon.mr-3(color="primary" :size="$vuetify.display.mobile ? 'default' : 'large'") mdi-slack
+    span.text-subtitle-1.text-sm-h6 Slack通知設定
   v-card-text
     p.text-body-2.text-medium-emphasis.mb-4
       | 番組生成完了時にSlackに通知を送信するためのWebhook URLを設定してください。
@@ -353,12 +353,36 @@ const clearTestResult = (): void => {
 }
 
 .v-card-title {
-  padding: 20px 24px 16px;
+  padding: 12px 12px 8px;
   font-weight: 600;
 }
 
+@media (min-width: 600px) {
+  .v-card-title {
+    padding: 16px 20px 12px;
+  }
+}
+
+@media (min-width: 960px) {
+  .v-card-title {
+    padding: 20px 24px 16px;
+  }
+}
+
 .v-card-text {
-  padding: 0 24px 24px;
+  padding: 0 12px 12px;
+}
+
+@media (min-width: 600px) {
+  .v-card-text {
+    padding: 0 20px 20px;
+  }
+}
+
+@media (min-width: 960px) {
+  .v-card-text {
+    padding: 0 24px 24px;
+  }
 }
 
 .v-switch {

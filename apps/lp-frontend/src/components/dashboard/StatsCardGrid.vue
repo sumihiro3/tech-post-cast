@@ -6,6 +6,7 @@ v-row.mb-6
     cols="12"
     sm="4"
     md="4"
+    class="pa-1 pa-sm-2 pa-md-3"
   )
     // ローディング中はスケルトンローダーを表示
     v-skeleton-loader(

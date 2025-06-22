@@ -2,8 +2,8 @@
 v-card.program-list-card(elevation="2")
   v-card-title.d-flex.align-center.justify-space-between
     .d-flex.align-center
-      v-icon.mr-2(color="primary") mdi-podcast
-      span 最新のパーソナルプログラム
+      v-icon.mr-2(color="primary" :size="$vuetify.display.mobile ? 'default' : 'large'") mdi-podcast
+      span.text-subtitle-1.text-sm-h6 最新のパーソナルプログラム
     v-chip(
       v-if="totalCount > 0"
       color="primary"
@@ -11,7 +11,7 @@ v-card.program-list-card(elevation="2")
       size="small"
     ) {{ totalCount }}件
 
-  v-card-text
+  v-card-text.pa-2.pa-sm-3.pa-md-4
     // ローディング状態
     v-skeleton-loader(
       v-if="loading && programs.length === 0"
@@ -36,7 +36,7 @@ v-card.program-list-card(elevation="2")
             class="program-item"
             @click="handleProgramClick(program)"
           )
-            template(#prepend)
+            template(v-if="!$vuetify.display.mobile" #prepend)
               v-avatar(
                 v-if="program.imageUrl"
                 :image="program.imageUrl"

@@ -2,8 +2,8 @@
 v-card.feed-list-card(elevation="2")
   v-card-title.d-flex.align-center.justify-space-between
     .d-flex.align-center
-      v-icon.mr-2(color="primary") mdi-rss
-      span パーソナルフィード
+      v-icon.mr-2(color="primary" :size="$vuetify.display.mobile ? 'default' : 'large'") mdi-rss
+      span.text-subtitle-1.text-sm-h6 パーソナルフィード
     v-chip(
       v-if="feeds.length > 0"
       color="primary"
@@ -11,7 +11,7 @@ v-card.feed-list-card(elevation="2")
       size="small"
     ) {{ feeds.length }}件
 
-  v-card-text
+  v-card-text.pa-2.pa-sm-3.pa-md-4
     // ローディング状態
     v-skeleton-loader(
       v-if="loading && feeds.length === 0"
@@ -39,11 +39,12 @@ v-card.feed-list-card(elevation="2")
             template(#prepend)
               v-avatar(
                 :color="feed.isActive ? 'success' : 'grey'"
-                size="56"
+                :size="$vuetify.display.mobile ? 40 : 56"
               )
                 v-icon(
                   :icon="feed.isActive ? 'mdi-rss' : 'mdi-rss-off'"
                   color="white"
+                  :size="$vuetify.display.mobile ? 'small' : 'default'"
                 )
 
             template(#append)

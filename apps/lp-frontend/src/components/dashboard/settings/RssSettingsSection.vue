@@ -1,8 +1,8 @@
 <template lang="pug">
 v-card.mb-6(elevation="2")
   v-card-title.d-flex.align-center
-    v-icon.mr-3(color="primary") mdi-rss
-    | RSS設定
+    v-icon.mr-3(color="primary" :size="$vuetify.display.mobile ? 'default' : 'large'") mdi-rss
+    span.text-subtitle-1.text-sm-h6 RSS設定
   v-card-text
     p.text-body-2.text-medium-emphasis.mb-4
       | パーソナルプログラムをポッドキャストアプリで聴くためのRSS配信設定です。
@@ -260,8 +260,8 @@ const handleRegenerateToken = async (): Promise<void> => {
   // 確認ダイアログを表示
   const confirmed = confirm(
     'RSS URLを再生成すると、現在のRSS URLが無効になります。\n' +
-    'ポッドキャストアプリに登録済みの場合は、新しいURLで再登録が必要です。\n\n' +
-    '続行しますか？',
+      'ポッドキャストアプリに登録済みの場合は、新しいURLで再登録が必要です。\n\n' +
+      '続行しますか？',
   );
 
   if (!confirmed) return;
@@ -294,12 +294,36 @@ const handleRegenerateToken = async (): Promise<void> => {
 }
 
 .v-card-title {
-  padding: 20px 24px 16px;
+  padding: 12px 12px 8px;
   font-weight: 600;
 }
 
+@media (min-width: 600px) {
+  .v-card-title {
+    padding: 16px 20px 12px;
+  }
+}
+
+@media (min-width: 960px) {
+  .v-card-title {
+    padding: 20px 24px 16px;
+  }
+}
+
 .v-card-text {
-  padding: 0 24px 24px;
+  padding: 0 12px 12px;
+}
+
+@media (min-width: 600px) {
+  .v-card-text {
+    padding: 0 20px 20px;
+  }
+}
+
+@media (min-width: 960px) {
+  .v-card-text {
+    padding: 0 24px 24px;
+  }
 }
 
 .v-chip {

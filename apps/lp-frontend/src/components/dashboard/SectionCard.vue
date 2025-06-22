@@ -1,9 +1,9 @@
 <template lang="pug">
 v-card(elevation="2" class="section-card")
   v-card-title.d-flex.align-center(v-if="title || $slots.title")
-    v-icon.mr-2(v-if="icon") {{ icon }}
+    v-icon.mr-2(v-if="icon" :size="$vuetify.display.mobile ? 'default' : 'large'") {{ icon }}
     slot(name="title")
-      | {{ title }}
+      span.text-subtitle-1.text-sm-h6 {{ title }}
     v-spacer
     slot(name="actions")
   v-divider(v-if="showDivider")
