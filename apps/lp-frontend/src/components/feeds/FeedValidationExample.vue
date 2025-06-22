@@ -132,11 +132,11 @@ const maxAuthors = ref(5);
 
 // 日付範囲オプション
 const dateRangeOptions = [
-  { title: '1日以内', value: 1 },
-  { title: '3日以内', value: 3 },
   { title: '1週間以内', value: 7 },
-  { title: '2週間以内', value: 14 },
   { title: '1ヶ月以内', value: 30 },
+  { title: '3ヶ月以内', value: 90 },
+  { title: '6ヶ月以内', value: 180 },
+  { title: '1年以内', value: 365 },
 ];
 
 // フィードデータ
@@ -148,6 +148,8 @@ const feedData = reactive<InputPersonalizedFeedData>({
     likesCount: 0,
     dateRange: 7,
   },
+  posts: [],
+  totalCount: 0,
 });
 
 // バリデーション
