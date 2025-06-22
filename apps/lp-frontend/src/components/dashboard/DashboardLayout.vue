@@ -1,10 +1,10 @@
 <template lang="pug">
 v-container(class="max-width-container")
-  v-container(fluid class="pa-6 dashboard-content" :class="{ 'with-player': hasFooterContent }")
+  v-container(fluid class="pa-2 pa-sm-4 pa-md-6 dashboard-content" :class="{ 'with-player': hasFooterContent }")
     // ページタイトル
     .d-flex.align-center.mb-6
-      v-icon.mr-3(color="primary" size="large") mdi-view-dashboard
-      h1.text-h4.font-weight-bold ダッシュボード
+      v-icon.mr-3(color="primary" :size="$vuetify.display.mobile ? 'default' : 'large'") mdi-view-dashboard
+      h1.text-h5.text-sm-h4.font-weight-bold ダッシュボード
 
     // 統計カードセクション
     slot(name="stats")

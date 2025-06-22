@@ -1,5 +1,5 @@
 <template lang="pug">
-v-container.max-width-container
+v-container.max-width-container.pa-2.pa-sm-4.pa-md-6
   //-キャンセルボタン
   v-row(justify="start")
     v-col(cols="12" sm="6" md="4")
@@ -12,7 +12,7 @@ v-container.max-width-container
   //- タイトル
   v-row(justify="center")
     v-col(cols="12")
-      .text-center.text-h4.font-weight-bold.mb-6 パーソナルフィード設定の新規作成
+      .text-center.text-h5.text-sm-h4.font-weight-bold.mb-6 パーソナルフィード設定の新規作成
 
   //- FeedEditorコンポーネントを使用
   FeedEditor(

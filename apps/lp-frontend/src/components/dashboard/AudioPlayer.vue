@@ -6,19 +6,19 @@ v-footer(
   class="border-t player-footer"
   height="80"
 )
-  v-container(fluid class="pa-2")
+  v-container(fluid class="pa-1 pa-sm-2")
     .d-flex.align-center
       v-btn(
         icon
         class="mr-3"
         color="white"
-        size="large"
+        :size="$vuetify.display.mobile ? 'default' : 'large'"
         @click="handleTogglePlay"
       )
         v-icon {{ isPlaying ? 'mdi-pause' : 'mdi-play' }}
 
       .flex-grow-1.mr-3
-        .text-subtitle-2.font-weight-medium.text-white {{ currentProgram.title }}
+        .text-body-2.text-sm-subtitle-2.font-weight-medium.text-white {{ currentProgram.title }}
         .text-caption.text-grey-lighten-2 {{ currentProgram.feedName }}
 
       .d-flex.align-center(style="min-width: 200px;")

@@ -1,6 +1,6 @@
 <template lang="pug">
 v-container(class="max-width-container")
-  v-container(fluid class="pa-6")
+  v-container(fluid class="pa-2 pa-sm-4 pa-md-6")
     // 戻るリンク
     .d-flex.align-center.mb-6
       v-btn(

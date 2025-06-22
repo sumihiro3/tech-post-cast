@@ -1,12 +1,12 @@
 <template lang="pug">
-v-container(fluid class="settings-page")
+v-container(fluid class="settings-page pa-2 pa-sm-4 pa-md-6")
   v-row(justify="center")
     v-col(cols="12" md="10" lg="8" xl="6")
       // ページヘッダー
       .d-flex.align-center.mb-6
         v-icon.mr-3(color="primary" size="large") mdi-cog
         div
-          h1.text-h4.font-weight-bold ユーザー設定
+          h1.text-h5.text-sm-h4.font-weight-bold ユーザー設定
           p.text-body-1.text-medium-emphasis.mt-1
             | アカウント情報と通知設定を管理できます
 
@@ -59,7 +59,7 @@ v-container(fluid class="settings-page")
 </template>
 
 <script setup lang="ts">
-import type { TestSlackWebhookResponseDto, RegenerateRssTokenResponseDto } from '@/api';
+import type { RegenerateRssTokenResponseDto, TestSlackWebhookResponseDto } from '@/api';
 import { useUserSettings } from '@/composables/dashboard/useUserSettings';
 import { useUIState } from '@/composables/useUIState';
 
