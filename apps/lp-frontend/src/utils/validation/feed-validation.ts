@@ -184,17 +184,17 @@ export const validateDateRangeFilter = (dateRange: number): FieldValidationResul
   if (dateRange === undefined || dateRange === null) {
     errors.push('記事公開日の範囲を選択してください');
   } else {
-    // 範囲チェック
-    const validRanges = [1, 3, 7, 14, 30];
+    // 範囲チェック - FeedEditorコンポーネントで提供される選択肢と一致させる
+    const validRanges = [7, 30, 90, 180, 365];
     if (!validRanges.includes(dateRange)) {
       errors.push('記事公開日の範囲は指定された選択肢から選んでください');
     }
 
     // 推奨事項
-    if (dateRange > 30) {
+    if (dateRange > 365) {
       warnings.push('日付範囲が長すぎると古い記事が含まれる可能性があります');
     }
-    if (dateRange < 3) {
+    if (dateRange < 7) {
       warnings.push('日付範囲が短すぎると記事が見つからない可能性があります');
     }
   }
@@ -241,9 +241,9 @@ export const validateFilterCombination = (
     );
   }
 
-  // 条件が緩すぎる場合の警告
+  // 条件が緩すぎる場合の警告 - 日付範囲の基準を180日に調整
   const hasLooseConditions =
-    (tags.length === 0 && authors.length === 0) || (likesCount === 0 && dateRange > 30);
+    (tags.length === 0 && authors.length === 0) || (likesCount === 0 && dateRange > 180);
 
   if (hasLooseConditions && tags.length > 0 && authors.length > 0) {
     warnings.push(
