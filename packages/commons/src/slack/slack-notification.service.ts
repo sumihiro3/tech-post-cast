@@ -149,18 +149,17 @@ export class SlackNotificationService {
 
       if (attempt.status === 'SUCCESS' && attempt.program) {
         // 成功時：リッチなプログラム表示
-        const programUrl = `${lpBaseUrl}/headline-topic-programs/${attempt.program.id}`;
-        const audioUrl = `${audioFileBaseUrl}/${attempt.program.audioUrl}`;
+        const programUrl = `${lpBaseUrl}/apps/programs/${attempt.program.id}`;
 
         const programBlock: SlackBlock = {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `${statusEmoji} パーソナルフィード *「${attempt.feedName}」* で新しい番組が生成されました！\n\n*${attempt.program.title}*\n\n<${audioUrl}|🎧 音声を聞く> | <${programUrl}|📄 番組詳細> | 📰 紹介記事数: ${attempt.postCount}件`,
+            text: `${statusEmoji} パーソナルフィード *「${attempt.feedName}」* で新しい番組が配信されました！\n\n*${attempt.program.title}*\n\n<${programUrl}|📄 番組詳細> | 📰 紹介記事数: ${attempt.postCount}件`,
           },
           accessory: {
             type: 'image',
-            image_url: `${audioFileBaseUrl}/ogp_image.png`,
+            image_url: `${audioFileBaseUrl}/TechPostCast_Main_gradation.png`,
             alt_text: 'Tech Post Cast',
           },
         };
