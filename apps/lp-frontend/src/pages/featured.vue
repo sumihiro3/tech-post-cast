@@ -13,7 +13,7 @@
               br
               | あなただけのパーソナルラジオ、ついに配信スタート！
             .d-flex.flex-column.flex-sm-row.gap-4.justify-center.align-center.mb-8
-              v-chip(variant="outlined", color="white", size="large", class="px-4 py-2") 2025年7月上旬リリース予定
+              v-chip(variant="outlined", color="white", size="large", class="px-4 py-2") 2025年7月リリース予定
               //- v-chip(color="white", size="large", class="px-4 py-2") 先行ユーザー招待開始
             v-btn(
               size="x-large",
@@ -189,7 +189,7 @@ definePageMeta({
 // SEO設定
 const title = 'Tech Post Cast - 事前登録 | 話題のQiita記事をAIラジオで毎日配信';
 const description =
-  '2025年7月上旬リリース予定！Qiitaの人気IT技術記事をAIのMC「ポステル」が解説するラジオ番組を毎日配信。事前登録でベータ版招待をいち早くお届けします。';
+  '2025年7月リリース予定！Qiitaの人気IT技術記事をAIのMC「ポステル」が解説するラジオ番組を毎日配信。事前登録でベータ版招待をいち早くお届けします。';
 
 useSeoMeta({
   title,
