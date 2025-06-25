@@ -1,5 +1,8 @@
 import { AppConfigService } from '@/app-config/app-config.service';
-import { IPersonalizedProgramAttemptsRepository } from '@domains/radio-program/personalized-feed/personalized-program-attempts.repository.interface';
+import {
+  IPersonalizedProgramAttemptsRepository,
+  UserNotificationData,
+} from '@domains/radio-program/personalized-feed/personalized-program-attempts.repository.interface';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   getStartOfDay,
@@ -66,12 +69,12 @@ export class NotificationBatchService {
 
     try {
       // 未通知レコードをユーザーごとに取得
-      const userNotificationData =
+      const userNotificationDataList: UserNotificationData[] =
         await this.personalizedProgramAttemptsRepository.findUnnotifiedDataByUser(
           processDate,
         );
 
-      if (userNotificationData.length === 0) {
+      if (userNotificationDataList.length === 0) {
         this.logger.log('通知対象のレコードが見つかりませんでした', {
           targetDate: processDate,
         });
@@ -86,8 +89,8 @@ export class NotificationBatchService {
       }
 
       this.logger.log('通知対象データを取得しました', {
-        userCount: userNotificationData.length,
-        totalAttempts: userNotificationData.reduce(
+        userCount: userNotificationDataList.length,
+        totalAttempts: userNotificationDataList.reduce(
           (sum, user) => sum + user.attempts.length,
           0,
         ),
@@ -95,7 +98,7 @@ export class NotificationBatchService {
 
       // 各ユーザーに対して通知を送信
       const notificationResults: UserNotificationResult[] = [];
-      for (const userData of userNotificationData) {
+      for (const userData of userNotificationDataList) {
         const result = await this.sendUserNotification(userData);
         notificationResults.push(result);
       }
@@ -109,7 +112,7 @@ export class NotificationBatchService {
         0,
       );
       const result: NotificationBatchResult = {
-        totalUsers: userNotificationData.length,
+        totalUsers: userNotificationDataList.length,
         successUsers,
         failedUsers,
         totalAttempts,
@@ -131,12 +134,12 @@ export class NotificationBatchService {
    * @returns 通知結果
    */
   private async sendUserNotification(
-    userData: any,
+    userData: UserNotificationData,
   ): Promise<UserNotificationResult> {
-    const { user, attempts } = userData;
+    const { userId, user, attempts } = userData;
     const attemptIds = attempts.map((attempt: any) => attempt.id);
     this.logger.debug('ユーザーへの通知処理を開始します', {
-      userId: user.id,
+      userId,
       displayName: user.displayName,
       attemptCount: attempts.length,
     });
@@ -182,18 +185,18 @@ export class NotificationBatchService {
       );
 
       this.logger.log('ユーザー通知が成功しました', {
-        userId: user.id,
+        userId,
         attemptCount: attempts.length,
         responseTime: result.responseTime,
       });
 
       return {
-        userId: user.id,
+        userId,
         success: true,
         attemptIds,
       };
     } catch (error) {
-      const errorMessage = `ユーザー [${user.id}] への通知送信に失敗しました`;
+      const errorMessage = `ユーザー [${userId}] への通知送信に失敗しました`;
       this.logger.error(
         errorMessage,
         {
@@ -213,7 +216,7 @@ export class NotificationBatchService {
       );
 
       return {
-        userId: user.id,
+        userId,
         success: false,
         error: error.message,
         attemptIds,

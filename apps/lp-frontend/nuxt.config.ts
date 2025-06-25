@@ -68,11 +68,15 @@ export default defineNuxtConfig({
     '/headline-topic-programs/**': { prerender: true },
 
     // ログインページ: SPA (クライアントサイドのみ)
-    '/login': { ssr: false },
+    '/login': {
+      ssr: false,
+      prerender: false,
+    },
 
     // アプリページ: SPA (クライアントサイドのみ)
     '/app/**': {
       ssr: false,
+      prerender: false,
       headers: { 'cache-control': 'no-cache' },
     },
 
@@ -99,8 +103,9 @@ export default defineNuxtConfig({
     prerender: {
       crawlLinks: true,
       failOnError: true,
+      routes: ['/'], // 最低限のルートを明示的に指定
     },
-    // SPAフォールバック設定を追加
+    // SPAフォールバック設定を強化
     experimental: {
       wasm: true,
     },
@@ -110,12 +115,14 @@ export default defineNuxtConfig({
         driver: 'memory',
       },
     },
-    // 開発環境でのルーティング設定
+    // 静的ホスティング向けのルート設定
     routeRules: {
       '/app/**': {
         headers: {
           'cache-control': 'no-cache',
         },
+        // SPAフォールバック用の設定
+        prerender: false,
       },
     },
     hooks: {
@@ -137,15 +144,39 @@ export default defineNuxtConfig({
         const fs = await import('fs');
         const path = await import('path');
 
-        // index.htmlを200.htmlとしてコピー（SPAフォールバック用）
         const publicDir = nitro.options.output?.publicDir;
         if (publicDir) {
           const indexPath = path.join(publicDir, 'index.html');
           const fallbackPath = path.join(publicDir, '200.html');
 
+          // index.htmlが存在する場合のみ処理
           if (fs.existsSync(indexPath)) {
+            // 200.htmlを作成（SPAフォールバック用）
             fs.copyFileSync(indexPath, fallbackPath);
             console.log('Created 200.html for SPA fallback');
+
+            // /app/ 配下へのアクセス用に app/200.html も作成
+            const appDir = path.join(publicDir, 'app');
+            if (!fs.existsSync(appDir)) {
+              fs.mkdirSync(appDir, { recursive: true });
+            }
+            const appFallbackPath = path.join(appDir, '200.html');
+            fs.copyFileSync(indexPath, appFallbackPath);
+            console.log('Created app/200.html for SPA fallback');
+
+            // 静的ホスティング用の _redirects ファイルを生成
+            const redirectsPath = path.join(publicDir, '_redirects');
+            const redirectsContent = [
+              '# SPA fallback for /app routes',
+              '/app/* /200.html 200',
+              '',
+              '# Default fallback',
+              '/* /index.html 200',
+            ].join('\n');
+            fs.writeFileSync(redirectsPath, redirectsContent);
+            console.log('Created _redirects file for static hosting');
+          } else {
+            console.warn('index.html not found, skipping SPA fallback creation');
           }
         }
       },

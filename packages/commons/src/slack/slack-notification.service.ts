@@ -3,6 +3,8 @@
  * Slack Webhook URLを使用した通知送信の共通処理を提供
  */
 
+import { formatDate, TIME_ZONE_JST } from '../date.util';
+
 export interface SlackBlock {
   type: string;
   [key: string]: any;
@@ -199,19 +201,13 @@ export class SlackNotificationService {
     });
 
     // 詳細なフッター
+    const dt = formatDate(new Date(), 'YYYY年M月D日 HH:mm', TIME_ZONE_JST);
     const footerBlock: SlackBlock = {
       type: 'context',
       elements: [
         {
           type: 'mrkdwn',
-          text: `📅 ${new Date().toLocaleString('ja-JP', {
-            timeZone: 'Asia/Tokyo',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })} | <${lpBaseUrl}|TechPostCast>`,
+          text: `📅 ${dt} | <${lpBaseUrl}|TechPostCast>`,
         },
       ],
     };
