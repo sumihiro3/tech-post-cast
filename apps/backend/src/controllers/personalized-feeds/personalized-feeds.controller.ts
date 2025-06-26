@@ -479,7 +479,6 @@ export class PersonalizedFeedsController {
       await fetch(slackIncomingWebhookUrl, {
         method: 'POST',
         body: JSON.stringify({
-          icon_emoji: ':rss:',
           blocks: [
             {
               type: 'rich_text',
