@@ -115,16 +115,6 @@ export default defineNuxtConfig({
         driver: 'memory',
       },
     },
-    // 静的ホスティング向けのルート設定
-    routeRules: {
-      '/app/**': {
-        headers: {
-          'cache-control': 'no-cache',
-        },
-        // SPAフォールバック用の設定
-        prerender: false,
-      },
-    },
     hooks: {
       'prerender:config': async (nitroConfig: NitroConfig) => {
         console.log('Nitro hook [prerender:config] called');

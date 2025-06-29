@@ -65,16 +65,16 @@ v-card.subscription-card(elevation="2")
               | {{ warning.label }}: {{ Math.round(warning.percentage) }}%
 
         // アップグレードボタン（警告表示の直下）
-        v-btn(
-          v-if="subscription.showUpgradeButton && usageWarnings.length > 0"
-          color="primary"
-          variant="elevated"
-          block
-          class="mb-3"
-          @click="handleUpgrade"
-        )
-          v-icon.mr-2 mdi-arrow-up-bold
-          | プランをアップグレード
+        //- v-btn(
+        //-   v-if="subscription.showUpgradeButton && usageWarnings.length > 0"
+        //-   color="primary"
+        //-   variant="elevated"
+        //-   block
+        //-   class="mb-3"
+        //-   @click="handleUpgrade"
+        //- )
+        //-   v-icon.mr-2 mdi-arrow-up-bold
+        //-   | プランをアップグレード
 
         .usage-items
           .usage-item(
@@ -93,15 +93,15 @@ v-card.subscription-card(elevation="2")
             )
 
       // アップグレードボタン（警告がない場合）
-      v-btn(
-        v-if="subscription.showUpgradeButton && usageWarnings.length === 0"
-        color="primary"
-        variant="elevated"
-        block
-        @click="handleUpgrade"
-      )
-        v-icon.mr-2 mdi-arrow-up-bold
-        | プランをアップグレード
+      //- v-btn(
+      //-   v-if="subscription.showUpgradeButton && usageWarnings.length === 0"
+      //-   color="primary"
+      //-   variant="elevated"
+      //-   block
+      //-   @click="handleUpgrade"
+      //- )
+      //-   v-icon.mr-2 mdi-arrow-up-bold
+      //-   | プランをアップグレード
 
     // データなし状態
     v-alert(

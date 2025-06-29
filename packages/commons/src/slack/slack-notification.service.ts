@@ -151,7 +151,7 @@ export class SlackNotificationService {
 
       if (attempt.status === 'SUCCESS' && attempt.program) {
         // 成功時：リッチなプログラム表示
-        const programUrl = `${lpBaseUrl}/apps/programs/${attempt.program.id}`;
+        const programUrl = `${lpBaseUrl}/app/programs/${attempt.program.id}`;
 
         const programBlock: SlackBlock = {
           type: 'section',
