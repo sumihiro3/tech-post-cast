@@ -34,7 +34,7 @@ v-container(class="max-width-container")
               size="64"
             )
         v-col(cols='0', lg='1')
-    div(v-else-if='error')
+    div(v-else-if='errorMessage')
       v-row(align='center')
         v-col(cols='0', lg='1')
         v-col(cols='12', lg='10')
@@ -43,13 +43,11 @@ v-container(class="max-width-container")
             variant="tonal"
             class="ma-4"
           )
-            | {{ error }}
+            | {{ errorMessage }}
         v-col(cols='0', lg='1')
 </template>
 
 <script setup lang="ts">
-import { useDashboardProgramDetail } from '@/composables/dashboard/useDashboardProgramDetail';
-
 // レイアウトをuser-appにする
 definePageMeta({
   layout: 'user-app',
@@ -58,15 +56,63 @@ definePageMeta({
 const route = useRoute();
 const programId = route.params.id as string;
 
-// コンポーザブルの使用
-const { programDetail, isLoading, error, fetchProgramDetail } = useDashboardProgramDetail();
+// 認証状態を確認
+const { userId, isLoaded } = useAuth();
 
-// ページ読み込み時にデータを取得
-onMounted(async () => {
-  if (programId) {
-    await fetchProgramDetail(programId);
+// プログラム詳細データを取得
+const { data, error, pending } = await useAsyncData(`program-detail-${programId}`, async () => {
+  if (!programId) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'プログラムIDが指定されていません',
+    });
+  }
+
+  // 認証の初期化を待つ
+  while (!isLoaded.value) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+
+  // 認証されていない場合
+  if (!userId.value) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: '認証が必要です',
+    });
+  }
+
+  try {
+    const { $dashboardApi } = useNuxtApp();
+    const response = await $dashboardApi.getPersonalizedProgramDetail(programId);
+    return response.data;
+  } catch (err: unknown) {
+    console.error('パーソナルプログラム詳細の取得に失敗しました:', err);
+
+    if (err && typeof err === 'object' && 'response' in err) {
+      const errorResponse = err as { response?: { status?: number } };
+      if (errorResponse.response?.status === 404) {
+        throw createError({
+          statusCode: 404,
+          statusMessage: 'プログラムが見つかりません',
+        });
+      } else if (errorResponse.response?.status === 401) {
+        throw createError({
+          statusCode: 401,
+          statusMessage: '認証が必要です',
+        });
+      }
+    }
+
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'プログラム詳細の取得に失敗しました',
+    });
   }
 });
+
+const programDetail = computed(() => data.value);
+const isLoading = computed(() => pending.value);
+const errorMessage = computed(() => error.value?.statusMessage || null);
 
 // 一覧に戻る処理
 const goBackToList = (): void => {
