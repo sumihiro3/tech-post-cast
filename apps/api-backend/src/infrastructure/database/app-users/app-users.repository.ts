@@ -8,6 +8,7 @@ import {
 } from '@/types/errors/app-user.error';
 import { Injectable, Logger } from '@nestjs/common';
 import { AppUser } from '@prisma/client';
+import { addDays } from '@tech-post-cast/commons';
 import {
   PrismaClientManager,
   SubscriptionStatus,
@@ -69,10 +70,13 @@ export class AppUsersRepository implements IAppUsersRepository {
       const result = await this.prisma.transaction(async () => {
         const client = this.prisma.getClient();
         const now = new Date();
+        const subscriptionEndDate = addDays(now, 365);
 
         const createdUser = await client.appUser.create({
           data: {
             ...appUser,
+            // TODO ハッカソンの審査中のみデフォルトで複数話者モードを有効にする
+            personalizedProgramDialogueEnabled: true,
             createdAt: now,
             updatedAt: now,
           },
@@ -82,9 +86,10 @@ export class AppUsersRepository implements IAppUsersRepository {
           data: {
             userId: createdUser.id,
             planId: this.appConfigService.FreePlanId,
-            startDate: now,
             isActive: true,
             status: SubscriptionStatus.ACTIVE,
+            startDate: now,
+            endDate: subscriptionEndDate,
             createdAt: now,
             updatedAt: now,
           },
@@ -148,21 +153,33 @@ export class AppUsersRepository implements IAppUsersRepository {
     this.logger.debug('AppUserRepository.delete called', { userId });
 
     try {
-      const client = this.prisma.getClient();
-      const user = await this.findOne(userId);
-      if (!user) {
-        const errorMessage = `削除対象ユーザー [${userId}] は登録されていません`;
-        throw new AppUserDeleteError(errorMessage);
-      }
-
-      await client.appUser.update({
-        where: { id: userId },
-        data: { isActive: false },
+      // ユーザーの削除時にユーザーのパーソナルフィードをすべて無効にする
+      // ユーザーのサブスクリプションをすべて無効にする
+      // TODO Stripeのサブスクリプションをキャンセルする
+      await this.prisma.transaction(async () => {
+        const client = this.prisma.getClient();
+        const user = await this.findOne(userId);
+        if (!user) {
+          const errorMessage = `削除対象ユーザー [${userId}] は登録されていません`;
+          throw new AppUserDeleteError(errorMessage);
+        }
+        // ユーザーを論理削除
+        await client.appUser.update({
+          where: { id: userId },
+          data: { isActive: false },
+        });
+        // ユーザーのパーソナルフィードをすべて無効にする
+        await client.personalizedFeed.updateMany({
+          where: { userId: userId, isActive: true },
+          data: { isActive: false },
+        });
+        // ユーザーのサブスクリプションをすべて無効にする
+        await client.subscription.updateMany({
+          where: { userId: userId, isActive: true },
+          data: { isActive: false },
+        });
+        // TODO Stripeのサブスクリプションをキャンセルする
       });
-
-      // TODO ユーザーのサブスクリプションをキャンセルする
-      // データベースのサブスクリプションのステータスを更新する
-      // Stripeのサブスクリプションをキャンセルする
 
       this.logger.debug('AppUserRepository.delete succeeded', { userId });
     } catch (error) {
