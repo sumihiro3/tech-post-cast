@@ -1,5 +1,6 @@
 import { AppConfigService } from '@/app-config/app-config.service';
 import { AppUserFindError } from '@/types/errors/app-user.error';
+import { addDays } from '@tech-post-cast/commons';
 import { PrismaClientManager } from '@tech-post-cast/database';
 import {
   restoreLogOutput,
@@ -132,6 +133,7 @@ describe('AppUsersRepository', () => {
         userId: userData.id,
         planId: 'free-plan-id',
         startDate: expect.any(Date),
+        endDate: expect(addDays(new Date(), 365)),
         isActive: true,
         status: 'ACTIVE',
         createdAt: expect.any(Date),
@@ -266,15 +268,47 @@ describe('AppUsersRepository', () => {
       const mockUser = {
         id: userId,
         email: 'user@example.com',
-        name: 'Test User',
+        displayName: 'Test User',
+        firstName: 'Test',
+        lastName: 'User',
+        imageUrl: null,
+        isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
+        lastSignInAt: null,
+        stripeCustomerId: null,
+        defaultPaymentMethodId: null,
+        slackWebhookUrl: null,
+        notificationEnabled: false,
+        rssToken: null,
+        rssEnabled: false,
+        rssCreatedAt: null,
+        rssUpdatedAt: null,
+        personalizedProgramDialogueEnabled: false,
+      };
+
+      // トランザクション内で使用されるモックを追加
+      mockPrismaClient.personalizedFeed = {
+        updateMany: jest.fn(),
+      };
+      mockPrismaClient.subscription = {
+        ...mockPrismaClient.subscription,
+        updateMany: jest.fn(),
       };
 
       mockPrismaClient.appUser.findUnique.mockResolvedValue(mockUser);
       mockPrismaClient.appUser.update.mockResolvedValue({
         ...mockUser,
         isActive: false,
+      });
+      mockPrismaClient.personalizedFeed.updateMany.mockResolvedValue({
+        count: 2,
+      });
+      mockPrismaClient.subscription.updateMany.mockResolvedValue({ count: 1 });
+
+      // トランザクションのモックを更新して、実際のコールバック関数を実行する
+      prismaClientManager.transaction.mockImplementation(async (callback) => {
+        return await callback();
       });
 
       await repository.delete(userId);
@@ -283,6 +317,26 @@ describe('AppUsersRepository', () => {
         where: { id: userId },
         data: { isActive: false },
       });
+      expect(mockPrismaClient.personalizedFeed.updateMany).toHaveBeenCalledWith(
+        {
+          where: { userId: userId, isActive: true },
+          data: { isActive: false },
+        },
+      );
+      expect(mockPrismaClient.subscription.updateMany).toHaveBeenCalledWith({
+        where: { userId: userId, isActive: true },
+        data: { isActive: false },
+      });
+    });
+
+    it('存在しないユーザーを削除しようとするとエラーをスローすること', async () => {
+      const userId = 'non-existent-user';
+
+      mockPrismaClient.appUser.findUnique.mockResolvedValue(null);
+
+      await expect(repository.delete(userId)).rejects.toThrow(
+        'ユーザー [non-existent-user] の削除に失敗しました',
+      );
     });
   });
 
