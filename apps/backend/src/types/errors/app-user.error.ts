@@ -30,3 +30,13 @@ export class AppUserNotFoundError extends AppUserError {
     super(message, options);
   }
 }
+
+/**
+ * アプリケーションユーザーに有効なサブスクリプションがない場合のエラー
+ */
+export class AppUserNoActiveSubscriptionError extends AppUserError {
+  override name = 'AppUserNoActiveSubscriptionError';
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}

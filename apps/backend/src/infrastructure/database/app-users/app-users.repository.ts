@@ -1,4 +1,7 @@
-import { AppUserFindError } from '@/types/errors';
+import {
+  AppUserFindError,
+  AppUserNoActiveSubscriptionError,
+} from '@/types/errors';
 import { IAppUsersRepository } from '@domains/app-user/app-users.repository.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import { AppUser } from '@prisma/client';
@@ -82,8 +85,8 @@ export class AppUsersRepository implements IAppUsersRepository {
         throw new AppUserFindError(errorMessage);
       }
       if (user.subscriptions.length === 0) {
-        throw new AppUserFindError(
-          `ユーザー [${userId}] はサブスクリプションがありません`,
+        throw new AppUserNoActiveSubscriptionError(
+          `ユーザー [${userId}] には有効なサブスクリプションがありません`,
         );
       }
       return user;

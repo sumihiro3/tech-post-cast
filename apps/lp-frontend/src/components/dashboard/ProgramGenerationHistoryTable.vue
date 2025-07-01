@@ -214,12 +214,9 @@ const formatDate = (dateString: string): string => {
 const getReasonText = (reason: string): string => {
   const reasonMap: Record<string, string> = {
     NOT_ENOUGH_POSTS: '記事数不足',
-    NO_POSTS_FOUND: '記事が見つかりません',
-    GENERATION_FAILED: '生成に失敗しました',
-    INVALID_FEED_CONFIG: 'フィード設定が無効です',
-    API_ERROR: 'API エラー',
-    TIMEOUT: 'タイムアウト',
-    UNKNOWN_ERROR: '不明なエラー',
+    UPLOAD_ERROR: 'アップロードエラー',
+    PERSISTENCE_ERROR: '永続化エラー',
+    NO_ACTIVE_SUBSCRIPTION: 'サブスクリプションが有効ではありません',
     OTHER: 'その他エラー',
   };
 
