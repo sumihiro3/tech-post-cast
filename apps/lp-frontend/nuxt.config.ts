@@ -161,11 +161,11 @@ export default defineNuxtConfig({
             // 静的ホスティング用の _redirects ファイルを生成
             const redirectsPath = path.join(publicDir, '_redirects');
             const redirectsContent = [
-              '# SPA fallback for /app routes - preserve original URL with force flag',
-              '/app/* /200.html 200!',
+              '# SPA fallback for /app routes - use index.html to ensure consistency',
+              '/app/* /index.html 200!',
               '',
-              '# Login page fallback - preserve original URL with force flag',
-              '/login /200.html 200!',
+              '# Login page fallback - use index.html to ensure consistency', 
+              '/login /index.html 200!',
               '',
               '# Default fallback for other routes',
               '/* /index.html 200',
