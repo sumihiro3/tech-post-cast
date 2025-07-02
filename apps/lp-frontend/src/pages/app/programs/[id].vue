@@ -69,19 +69,19 @@ const { data, error, pending } = await useAsyncData(`program-detail-${programId}
 
   // 統一された認証チェックを使用
   const { ensureAuthenticated } = useAuthGuard();
-  
+
   try {
     const authResult = await ensureAuthenticated({
-      maxWaitTime: 5000,    // ページレベルでは5秒タイムアウト
+      maxWaitTime: 5000, // ページレベルでは5秒タイムアウト
       pollInterval: 100,
-      showLoading: true,    // ページレベルではローディング表示
-      showError: true,      // エラーメッセージも表示
+      showLoading: true, // ページレベルではローディング表示
+      showError: true, // エラーメッセージも表示
     });
 
     // 認証エラーの場合
     if (authResult.error) {
       console.error('認証エラー in program detail page:', authResult.error);
-      
+
       if (authResult.error.code === 'INITIALIZATION_TIMEOUT') {
         throw createError({
           statusCode: 408,
@@ -112,7 +112,6 @@ const { data, error, pending } = await useAsyncData(`program-detail-${programId}
       userId: authResult.userId,
       programId,
     });
-
   } catch (authError) {
     console.error('認証チェックで予期しないエラー:', authError);
     throw createError({
