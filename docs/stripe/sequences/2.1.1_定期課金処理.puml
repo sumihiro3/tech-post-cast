@@ -1,0 +1,202 @@
+@startuml 定期課金処理
+title 2.1.1 定期課金処理
+
+actor "ユーザー" as User
+
+box "Tech Post Cast" #TECHNOLOGY
+  participant "API Backend\n(NestJS)" as Backend
+  participant "データベース\n(PostgreSQL)" as DB
+  participant "Webhook\nエンドポイント" as Webhook
+  participant "通知サービス" as Notification
+end box
+
+participant "Stripe API" as Stripe
+
+== 1. 請求サイクル到達（Stripe自動処理） ==
+
+note over Stripe: 月次/年次請求サイクル到達\n(currentPeriodEnd日時)
+
+activate Stripe
+Stripe -> Stripe: 請求書作成
+note right: stripe internal:\n- Invoice生成\n- LineItems計算\n- 税額計算\n- 顧客への送付準備
+
+Stripe -> Webhook: invoice.created
+deactivate Stripe
+activate Webhook
+note right: イベントデータ:\n- invoice object\n- subscription object\n- customer object\n- amount_due
+
+Webhook -> Webhook: Webhook署名検証
+
+Webhook -> DB: StripeWebhookEvent 記録
+activate DB
+deactivate DB
+
+Webhook -> DB: Invoice レコード作成
+activate DB
+note right: Invoice テーブル:\n- userId\n- subscriptionId\n- stripeInvoiceId\n- stripePaymentIntentId\n- amount\n- currency: 'jpy'\n- status: 'open'\n- paidAt: null
+deactivate DB
+
+deactivate Webhook
+
+== 2. 支払い実行 ==
+
+activate Stripe
+Stripe -> Stripe: 支払い処理実行
+note right: stripe internal:\n- デフォルト支払い方法で課金\n- PaymentIntent処理\n- 支払い結果判定
+
+alt 支払い成功の場合
+
+    == 2A. 支払い成功処理 ==
+
+    Stripe -> Webhook: invoice.payment_succeeded
+    activate Webhook
+    note right: イベントデータ:\n- invoice object (paid)\n- payment_intent object\n- subscription object\n- charge object
+
+    Webhook -> Webhook: Webhook署名検証
+
+    Webhook -> DB: StripeWebhookEvent 記録
+    activate DB
+    deactivate DB
+
+    Webhook -> DB: Invoice ステータス更新
+    activate DB
+    note right: Invoice テーブル更新:\n- status: 'paid'\n- paidAt: current_timestamp\n- stripePaymentIntentId
+    deactivate DB
+
+    == 2A-1. サブスクリプション期間延長 ==
+
+    Stripe -> Webhook: customer.subscription.updated
+    activate Webhook
+    note right: イベントデータ:\n- subscription object\n- current_period_start/end更新\n- latest_invoice情報
+
+    Webhook -> DB: Subscription レコード更新
+    activate DB
+    note right: Subscription テーブル更新:\n- currentPeriodStart (新期間)\n- currentPeriodEnd (新期間)\n- status: 'ACTIVE'\n- 最新請求書情報
+    deactivate DB
+
+    Webhook -> DB: SubscriptionHistory レコード作成
+    activate DB
+    note right: SubscriptionHistory テーブル:\n- subscriptionId\n- userId\n- planId\n- status: 'RENEWED'\n- stripeEventId\n- stripeEventType: 'customer.subscription.updated'\n- currentPeriodStart/End
+    deactivate DB
+
+    deactivate Webhook
+
+    == 2A-2. ユーザー権限継続確認 ==
+
+    Webhook -> DB: AppUser権限確認・更新
+    activate Webhook
+    activate DB
+    note right: プラン制限の継続適用確認:\n- maxFeeds\n- maxAuthors\n- maxTags\n- personalizedProgramDialogueEnabled
+    deactivate DB
+
+    Webhook -> Webhook: Clerkユーザーメタデータ更新
+    note right: Clerk publicMetadata:\n- subscriptionStatus: 'ACTIVE'\n- lastStatusChange: timestamp
+
+    == 2A-3. 支払い完了通知 ==
+
+    Webhook -> Notification: 支払い完了通知
+    activate Notification
+    activate User
+    Notification -> User: 支払い完了メール送信
+    note right: メール内容:\n- 支払い完了\n- 請求金額\n- 請求書PDF\n- 次回請求予定日\n- サービス継続確認
+    |||
+    deactivate User
+    deactivate Notification
+
+    deactivate Webhook
+
+else 支払い失敗の場合
+
+    == 2B. 支払い失敗処理 ==
+
+    Stripe -> Webhook: invoice.payment_failed
+    activate Webhook
+    note right: イベントデータ:\n- invoice object (open)\n- payment_intent object (failed)\n- subscription object\n- attempt_count\n- next_payment_attempt
+
+    Webhook -> Webhook: Webhook署名検証
+
+    Webhook -> DB: StripeWebhookEvent 記録
+    activate DB
+    deactivate DB
+
+    Webhook -> DB: Invoice ステータス更新
+    activate DB
+    note right: Invoice テーブル更新:\n- status: 'payment_failed'\n- paymentFailedAt: current_timestamp\n- failureReason
+    deactivate DB
+
+    == 2B-1. サブスクリプション状態更新 ==
+
+    Stripe -> Webhook: customer.subscription.updated
+    activate Webhook
+    note right: イベントデータ:\n- subscription object\n- status: 'past_due'\n- latest_invoice (未払い)
+
+    Webhook -> DB: Subscription レコード更新
+    activate DB
+    note right: Subscription テーブル更新:\n- status: 'PAST_DUE'\n- 期間は延長されない\n- 失敗回数記録
+    deactivate DB
+
+    Webhook -> DB: SubscriptionHistory レコード作成
+    activate DB
+    note right: SubscriptionHistory テーブル:\n- status: 'PAST_DUE'\n- stripeEventType: 'customer.subscription.updated'\n- failureInfo記録
+    deactivate DB
+
+    deactivate Webhook
+
+    == 2B-2. Free Planへの一時移行 ==
+
+    Webhook -> DB: AppUser権限をFree Planに移行
+    activate Webhook
+    activate DB
+    note right: Free Plan制限値を適用:\n- maxFeeds: 1\n- maxAuthors: 1\n- maxTags: 1\n- personalizedProgramDialogueEnabled: false\n- 既存コンテンツは閲覧可能\n- 支払い方法更新は可能
+    deactivate DB
+
+    Webhook -> Webhook: Clerkユーザーメタデータ更新
+    note right: Clerk publicMetadata:\n- subscriptionStatus: 'PAST_DUE'\n- lastStatusChange: timestamp
+
+    == 2B-3. 支払い失敗通知 ==
+
+    Webhook -> Notification: 支払い失敗通知
+    activate Notification
+    activate User
+    Notification -> User: 支払い失敗アラートメール送信
+    note right: メール内容:\n- 支払い失敗通知\n- 失敗理由\n- 支払い方法更新案内\n- 機能制限の説明\n- 復旧手順\n- 次回リトライ予定
+    |||
+    deactivate User
+    deactivate Notification
+
+    deactivate Webhook
+
+    == 2B-4. Smart Retry設定 ==
+
+    note over Stripe: Stripe Smart Retry機能\n自動リトライスケジュール設定
+
+    Stripe -> Stripe: 次回リトライ予約
+    note right: Smart Retry Logic:\n- 1回目: 3日後\n- 2回目: 5日後\n- 3回目: 7日後\n- 最終: 23日後で完全失敗
+    deactivate Stripe
+
+end
+
+== 3. 管理者向け監視 ==
+
+alt 重要なイベント（失敗・異常）の場合
+    Webhook -> Notification: 管理者アラート
+    activate Webhook
+    activate Notification
+    note right: 管理者通知:\n- 支払い失敗件数\n- 異常パターン検知\n- システムエラー\n- 要対応案件
+    deactivate Notification
+    deactivate Webhook
+end
+
+== 4. 月次処理完了確認 ==
+
+note over Stripe, DB: 請求サイクル完了
+
+Backend -> DB: 月次請求処理サマリー作成
+activate Backend
+activate DB
+note right: 処理サマリー:\n- 成功件数\n- 失敗件数\n- 収益情報\n- エラー分析
+DB -> Backend: サマリーデータ
+deactivate DB
+deactivate Backend
+
+@enduml

@@ -1,0 +1,213 @@
+@startuml 支払い方法変更
+title 1.2.2 支払い方法変更
+
+actor "ユーザー" as User
+
+box "Tech Post Cast" #TECHNOLOGY
+  participant "フロントエンド\n(Nuxt3)" as Frontend
+  participant "API Backend\n(NestJS)" as Backend
+  participant "データベース\n(PostgreSQL)" as DB
+  participant "Webhook\nエンドポイント" as Webhook
+  participant "通知サービス" as Notification
+end box
+
+participant "Stripe API" as Stripe
+
+== 1. 支払い方法管理画面へのアクセス ==
+
+User -> Frontend: ダッシュボードから支払い方法管理を選択
+activate User
+activate Frontend
+
+Frontend -> Backend: GET /api/payment-methods
+activate Backend
+
+Backend -> DB: ユーザーのStripe Customer ID取得
+activate DB
+DB -> Backend: AppUser データ
+deactivate DB
+
+Backend -> Stripe: 支払い方法一覧取得
+activate Stripe
+note right: stripe.paymentMethods.list({\n  customer: stripeCustomerId,\n  type: 'card'\n})
+Stripe -> Backend: PaymentMethod一覧
+deactivate Stripe
+
+Backend -> Frontend: { paymentMethods, defaultPaymentMethodId }
+deactivate Backend
+
+Frontend -> User: 現在の支払い方法一覧表示
+User -> Frontend: 「新しい支払い方法を追加」または「Customer Portalで管理」を選択
+
+== 2A. 新しい支払い方法追加（アプリ内） ==
+
+alt アプリ内で支払い方法追加の場合
+    Frontend -> Backend: POST /api/payment-methods/setup-intent
+    activate Backend
+    
+    Backend -> Stripe: Setup Intent作成
+    activate Stripe
+    note right: stripe.setupIntents.create({\n  customer: stripeCustomerId,\n  payment_method_types: ['card'],\n  usage: 'off_session'\n})
+    Stripe -> Backend: Setup Intent with client_secret
+    deactivate Stripe
+    
+    Backend -> Frontend: { clientSecret }
+    deactivate Backend
+    
+    Frontend -> User: Stripe Elements支払い方法入力画面表示
+    User -> Frontend: カード情報入力・確認
+    
+    Frontend -> Stripe: Setup Intent確認
+    activate Stripe
+    note right: stripe.confirmCardSetup(\n  clientSecret,\n  paymentMethodData\n)
+    Stripe -> Frontend: Setup Intent成功
+    deactivate Stripe
+    
+    == 2A-1. 支払い方法追加Webhook処理 ==
+    
+    Stripe -> Webhook: payment_method.attached
+    activate Webhook
+    note right: イベントデータ:\n- payment_method object\n- customer object
+    
+    Webhook -> Webhook: Webhook署名検証
+    
+    Webhook -> DB: StripeWebhookEvent 記録
+    activate DB
+    deactivate DB
+    
+    Webhook -> DB: PaymentMethod レコード作成
+    activate DB
+    note right: PaymentMethod テーブル:\n- userId\n- stripeMethodId\n- type: 'card'\n- last4\n- brand\n- expiryMonth/Year\n- isDefault: false\n- isActive: true
+    deactivate DB
+    
+    deactivate Webhook
+    
+    Frontend -> User: 支払い方法追加完了画面表示
+end
+
+== 2B. Customer Portal経由での管理 ==
+
+alt Customer Portal利用の場合
+    Frontend -> Backend: POST /api/billing/customer-portal
+    activate Backend
+    
+    Backend -> Stripe: Customer Portal Session作成
+    activate Stripe
+    note right: stripe.billingPortal.sessions.create({\n  customer: stripeCustomerId,\n  return_url: appReturnUrl\n})
+    Stripe -> Backend: Portal Session URL
+    deactivate Stripe
+    
+    Backend -> Frontend: { portalUrl }
+    deactivate Backend
+    
+    Frontend -> User: Customer Portalへリダイレクト
+    deactivate Frontend
+    
+    User -> Stripe: Customer Portalで支払い方法管理
+    activate Stripe
+    note right: ユーザー操作:\n- 新しいカード追加\n- 既存カード削除\n- デフォルト変更
+    
+    == 2B-1. Customer Portal内での変更処理 ==
+    
+    alt 新しい支払い方法追加の場合
+        Stripe -> Webhook: payment_method.attached
+        activate Webhook
+        
+        Webhook -> DB: PaymentMethod レコード作成
+        activate DB
+        deactivate DB
+        deactivate Webhook
+    end
+    
+    alt 支払い方法削除の場合
+        Stripe -> Webhook: payment_method.detached
+        activate Webhook
+        
+        Webhook -> DB: PaymentMethod レコード無効化
+        activate DB
+        note right: PaymentMethod更新:\n- isActive: false\n- detachedAt
+        deactivate DB
+        deactivate Webhook
+    end
+    
+    alt デフォルト支払い方法変更の場合
+        Stripe -> Webhook: customer.updated
+        activate Webhook
+        note right: invoice_settings.default_payment_method\n変更を検知
+        
+        Webhook -> DB: AppUser デフォルト支払い方法更新
+        activate DB
+        note right: AppUser更新:\n- defaultPaymentMethodId
+        deactivate DB
+        
+        Webhook -> DB: PaymentMethod デフォルト設定更新
+        activate DB
+        note right: 全PaymentMethodの\nisDefault値を更新
+        deactivate DB
+        deactivate Webhook
+    end
+    
+    User -> Stripe: Customer Portal操作完了
+    Stripe -> User: アプリケーションへのリダイレクト
+    deactivate Stripe
+    
+    User -> Frontend: アプリケーション復帰
+    activate Frontend
+end
+
+== 3. 変更後の確認処理 ==
+
+Frontend -> Backend: GET /api/payment-methods
+activate Backend
+
+Backend -> DB: 最新の支払い方法一覧取得
+activate DB
+DB -> Backend: PaymentMethod一覧
+deactivate DB
+
+Backend -> Stripe: Stripe側の支払い方法確認
+activate Stripe
+Stripe -> Backend: 最新PaymentMethod一覧
+deactivate Stripe
+
+Backend -> Frontend: { paymentMethods, defaultPaymentMethodId }
+deactivate Backend
+
+Frontend -> User: 更新された支払い方法一覧表示
+deactivate Frontend
+
+== 4. 通知処理 ==
+
+alt 重要な変更（デフォルト変更、削除）の場合
+    Webhook -> Notification: 支払い方法変更通知
+    activate Webhook
+    activate Notification
+    activate User
+    Notification -> User: 支払い方法変更完了メール送信
+    note right: メール内容:\n- 変更内容（追加/削除/デフォルト変更）\n- 新しいデフォルト支払い方法\n- 次回請求予定日\n- セキュリティに関する注意事項
+    |||
+    deactivate User
+    deactivate Notification
+    deactivate Webhook
+end
+
+== 5. 次回請求への反映確認 ==
+
+alt デフォルト支払い方法が変更された場合
+    Backend -> DB: アクティブなサブスクリプション確認
+    activate Backend
+    activate DB
+    DB -> Backend: Subscription一覧
+    deactivate DB
+    
+    Backend -> Stripe: サブスクリプションのデフォルト支払い方法確認
+    activate Stripe
+    note right: 次回請求時に新しい\nデフォルト支払い方法が\n使用されることを確認
+    Stripe -> Backend: 確認完了
+    deactivate Stripe
+    deactivate Backend
+end
+
+deactivate User
+
+@enduml

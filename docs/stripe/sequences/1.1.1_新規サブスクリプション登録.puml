@@ -1,0 +1,189 @@
+@startuml 新規サブスクリプション登録
+title 1.1.1 新規サブスクリプション登録
+
+actor "ユーザー" as User
+
+box "Tech Post Cast" #TECHNOLOGY
+  participant "フロントエンド\n(Nuxt3)" as Frontend
+  participant "API Backend\n(NestJS)" as Backend
+  participant "データベース\n(PostgreSQL)" as DB
+  participant "Webhook\nエンドポイント" as Webhook
+  participant "通知サービス" as Notification
+end box
+
+participant "Stripe API" as Stripe
+
+== 1. プラン選択と決済開始 ==
+
+User -> Frontend: プラン選択画面でプランを選択
+activate User
+activate Frontend
+User -> Frontend: 決済ボタンをクリック
+
+Frontend -> Backend: POST /api/subscriptions/checkout-session
+note right: リクエスト内容:\n- planId\n- userId (from Clerk)\n- successUrl\n- cancelUrl
+
+activate Backend
+Backend -> DB: ユーザー情報取得
+activate DB
+DB -> Backend: AppUser データ
+deactivate DB
+
+Backend -> DB: プラン情報取得
+activate DB
+DB -> Backend: Plan データ
+deactivate DB
+
+alt Stripe Customer が未作成の場合
+    Backend -> Stripe: Customer 作成
+    activate Stripe
+    note right: stripe.customers.create({\n  email: user.email,\n  name: user.displayName,\n  metadata: { userId: user.id }\n})
+    Stripe -> Backend: Customer オブジェクト
+    deactivate Stripe
+
+    Backend -> DB: stripeCustomerId を更新
+    activate DB
+    deactivate DB
+end
+
+Backend -> Stripe: Checkout Session 作成
+activate Stripe
+note right: stripe.checkout.sessions.create({\n  customer: stripeCustomerId,\n  payment_method_types: ['card'],\n  line_items: [{\n    price: plan.stripePriceId,\n    quantity: 1\n  }],\n  mode: 'subscription',\n  success_url: successUrl,\n  cancel_url: cancelUrl,\n  subscription_data: {\n    metadata: {\n      userId: user.id,\n      planId: plan.id\n    }\n  }\n})
+
+Stripe -> Backend: Checkout Session URL
+deactivate Stripe
+
+Backend -> DB: セッション情報を一時保存
+activate DB
+note right: CheckoutSession テーブル:\n- sessionId\n- userId\n- planId\n- status: 'pending'\n- createdAt
+deactivate DB
+
+Backend -> Frontend: { checkoutUrl }
+deactivate Backend
+
+Frontend -> User: Stripe決済画面へリダイレクト
+deactivate Frontend
+deactivate User
+
+== 2. Stripe決済処理 ==
+User -> Stripe: 支払い情報入力・確認
+activate User
+activate Stripe
+Stripe -> User: 決済処理実行
+deactivate User
+
+alt 決済成功の場合
+    Stripe -> Stripe: Subscription作成
+    Stripe -> Stripe: Invoice作成・決済実行
+
+    == 3. Webhook通知処理 ==
+    Stripe -> Webhook: customer.subscription.created
+    activate Webhook
+    note right: イベントデータ:\n- subscription object\n- customer object\n- invoice object
+
+    Webhook -> Webhook: Webhook署名検証
+
+    Webhook -> DB: StripeWebhookEvent 記録
+    activate DB
+    deactivate DB
+
+    Webhook -> DB: Subscription レコード作成
+    activate DB
+    note right: Subscription テーブル:\n- userId\n- planId\n- stripeSubscriptionId\n- status: 'ACTIVE'\n- currentPeriodStart\n- currentPeriodEnd\n- trialStart (null)\n- trialEnd (null)
+    deactivate DB
+
+    Webhook -> DB: SubscriptionHistory レコード作成
+    activate DB
+    note right: SubscriptionHistory テーブル:\n- subscriptionId\n- userId\n- planId\n- status: 'ACTIVE'\n- stripeEventId\n- stripeEventType: 'customer.subscription.created'
+    deactivate DB
+
+    Webhook -> DB: AppUser権限更新
+    activate DB
+    note right: プラン制限値を適用:\n- maxFeeds\n- maxAuthors\n- maxTags
+    deactivate DB
+
+    Webhook -> Notification: サブスクリプション開始通知
+    activate Notification
+    activate User
+    Notification -> User: 登録完了メール送信
+    |||
+    deactivate User
+    deactivate Notification
+
+    Webhook -> Webhook: Clerkユーザーメタデータ更新
+    note right: Clerk metadata:\n- subscriptionStatus: 'ACTIVE'\n- planName: plan.name\n- subscriptionId
+    deactivate Webhook
+
+    == 4. 決済完了処理 ==
+    Stripe -> User: 決済完了画面表示
+    activate User
+    deactivate Stripe
+
+    User -> Frontend: Success URLへリダイレクト
+    activate Frontend
+
+    Frontend -> Backend: GET /api/subscriptions/verify-session?session_id=xxx
+    activate Backend
+
+    Backend -> Stripe: Checkout Session確認
+    activate Stripe
+    Stripe -> Backend: Session詳細
+    deactivate Stripe
+
+    Backend -> DB: セッション状態更新
+    activate DB
+    deactivate DB
+
+    Backend -> DB: サブスクリプション状態確認
+    activate DB
+    deactivate DB
+
+    Backend -> Frontend: { success: true, subscription }
+    deactivate Backend
+
+    Frontend -> User: 登録完了画面表示
+    deactivate Frontend
+
+else 決済失敗の場合
+    Stripe -> User: エラー画面表示
+    deactivate Stripe
+
+    User -> Frontend: Cancel URLへリダイレクト
+    activate Frontend
+
+    Frontend -> Backend: GET /api/subscriptions/cancel-session?session_id=xxx
+    activate Backend
+
+    Backend -> DB: セッション状態更新 (cancelled)
+    activate DB
+    deactivate DB
+
+    Backend -> Frontend: { success: false, error }
+    deactivate Backend
+
+    Frontend -> User: 決済キャンセル画面表示
+    deactivate Frontend
+    deactivate User
+end
+
+== 5. 追加Webhook処理 ==
+Stripe -> Webhook: invoice.payment_succeeded
+activate Webhook
+note right: 初回課金成功通知
+
+Webhook -> DB: Invoice レコード作成
+activate DB
+note right: Invoice テーブル:\n- userId\n- subscriptionId\n- stripeInvoiceId\n- amount\n- status: 'paid'\n- paidAt
+deactivate DB
+
+Webhook -> Notification: 支払い完了通知
+activate Notification
+deactivate Webhook
+
+Notification -> User: 初回課金完了メール送信
+activate User
+deactivate Notification
+|||
+deactivate User
+
+@enduml
