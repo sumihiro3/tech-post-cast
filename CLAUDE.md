@@ -190,3 +190,9 @@ src/
 - Authentication is handled via Clerk across all applications
 - Repository pattern implementation is mandatory for all data access
 - Test factory usage is mandatory - no inline test data objects
+
+## Backlog MCP Server利用時の考慮事項
+
+Backlog MCP Serverを使用する際は、以下のプロジェクトキーのプロジェクトの情報を利用すること
+- TPC
+課題（チケット）、Wikiという文脈から利用を判断すること
