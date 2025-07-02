@@ -77,7 +77,11 @@ export default defineNuxtConfig({
     '/app/**': {
       ssr: false,
       prerender: false,
-      headers: { 'cache-control': 'no-cache' },
+      headers: {
+        'cache-control': 'no-cache, no-store, must-revalidate',
+        'pragma': 'no-cache',
+        'expires': '0',
+      },
     },
 
     // API関連: SSRなし、キャッシュなし

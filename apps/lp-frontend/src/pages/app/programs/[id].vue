@@ -48,6 +48,8 @@ v-container(class="max-width-container")
 </template>
 
 <script setup lang="ts">
+import { useAuthGuard } from '~/composables/useAuthGuard';
+
 // レイアウトをuser-appにする
 definePageMeta({
   layout: 'user-app',
@@ -55,9 +57,6 @@ definePageMeta({
 
 const route = useRoute();
 const programId = route.params.id as string;
-
-// 認証状態を確認
-const { userId, isLoaded } = useAuth();
 
 // プログラム詳細データを取得
 const { data, error, pending } = await useAsyncData(`program-detail-${programId}`, async () => {
@@ -68,16 +67,56 @@ const { data, error, pending } = await useAsyncData(`program-detail-${programId}
     });
   }
 
-  // 認証の初期化を待つ
-  while (!isLoaded.value) {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
+  // 統一された認証チェックを使用
+  const { ensureAuthenticated } = useAuthGuard();
 
-  // 認証されていない場合
-  if (!userId.value) {
+  try {
+    const authResult = await ensureAuthenticated({
+      maxWaitTime: 5000, // ページレベルでは5秒タイムアウト
+      pollInterval: 100,
+      showLoading: true, // ページレベルではローディング表示
+      showError: true, // エラーメッセージも表示
+    });
+
+    // 認証エラーの場合
+    if (authResult.error) {
+      console.error('認証エラー in program detail page:', authResult.error);
+
+      if (authResult.error.code === 'INITIALIZATION_TIMEOUT') {
+        throw createError({
+          statusCode: 408,
+          statusMessage: '認証の初期化がタイムアウトしました。ページを再読み込みしてください。',
+        });
+      } else if (authResult.error.code === 'INITIALIZATION_FAILED') {
+        throw createError({
+          statusCode: 500,
+          statusMessage: '認証の初期化に失敗しました。しばらく待ってから再試行してください。',
+        });
+      } else if (authResult.error.code === 'AUTHENTICATION_REQUIRED') {
+        throw createError({
+          statusCode: 401,
+          statusMessage: '認証が必要です',
+        });
+      }
+    }
+
+    // 認証されていない場合
+    if (!authResult.isAuthenticated) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: '認証が必要です',
+      });
+    }
+
+    console.log('Program detail page - authentication successful:', {
+      userId: authResult.userId,
+      programId,
+    });
+  } catch (authError) {
+    console.error('認証チェックで予期しないエラー:', authError);
     throw createError({
-      statusCode: 401,
-      statusMessage: '認証が必要です',
+      statusCode: 500,
+      statusMessage: '認証チェックに失敗しました',
     });
   }
 
@@ -99,6 +138,11 @@ const { data, error, pending } = await useAsyncData(`program-detail-${programId}
         throw createError({
           statusCode: 401,
           statusMessage: '認証が必要です',
+        });
+      } else if (errorResponse.response?.status === 403) {
+        throw createError({
+          statusCode: 403,
+          statusMessage: 'このプログラムにアクセスする権限がありません',
         });
       }
     }
