@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__backlog__get_issue",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(npx eslint:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": []
+  }
+}
