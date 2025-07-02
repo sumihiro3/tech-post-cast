@@ -35,6 +35,10 @@ export enum PersonalizedProgramAttemptFailureReason {
    */
   PERSISTENCE_ERROR = 'PERSISTENCE_ERROR',
   /**
+   * 有効なサブスクリプションがない
+   */
+  NO_ACTIVE_SUBSCRIPTION = 'NO_ACTIVE_SUBSCRIPTION',
+  /**
    * その他
    */
   OTHER = 'OTHER',

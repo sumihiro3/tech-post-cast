@@ -12,6 +12,7 @@ import {
   createPersonalizedProgramScriptGenerationWorkflow,
 } from '@/mastra/workflows';
 import {
+  AppUserNoActiveSubscriptionError,
   AppUserNotFoundError,
   InsufficientPostsError,
   PersonalizeProgramError,
@@ -360,7 +361,7 @@ export class PersonalizedFeedsBuilder {
       };
     } catch (error) {
       const errorMessage = `ユーザー [${user.id}] のアクティブなパーソナルフィードに基づいた番組の生成中にエラーが発生しました`;
-      this.logger.error(errorMessage, { error }, error.stack);
+      this.logger.error(errorMessage, error.message, error.stack, { error });
 
       // エラー種別に応じて適切なエラーをスローする
       let reason = FailureReason.OTHER;
@@ -389,6 +390,10 @@ export class PersonalizedFeedsBuilder {
         );
         // エラーをスローする
         throw error;
+      } else if (error instanceof AppUserNoActiveSubscriptionError) {
+        // 有効なサブスクリプションがないエラー
+        reason = FailureReason.NO_ACTIVE_SUBSCRIPTION;
+        error = new PersonalizeProgramError(errorMessage, { cause: error });
       } else {
         // 不明なエラー
         reason = FailureReason.OTHER;
