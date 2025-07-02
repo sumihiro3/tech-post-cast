@@ -1,0 +1,174 @@
+@startuml プラン変更（アップグレード・ダウングレード）
+title 1.2.1 プラン変更（アップグレード・ダウングレード）
+
+actor "ユーザー" as User
+
+box "Tech Post Cast" #TECHNOLOGY
+  participant "フロントエンド\n(Nuxt3)" as Frontend
+  participant "API Backend\n(NestJS)" as Backend
+  participant "データベース\n(PostgreSQL)" as DB
+  participant "Webhook\nエンドポイント" as Webhook
+  participant "通知サービス" as Notification
+end box
+
+participant "Stripe API" as Stripe
+
+== 1. プラン変更開始 ==
+
+User -> Frontend: ダッシュボードまたはCustomer Portalでプラン変更選択
+activate User
+activate Frontend
+
+Frontend -> Backend: GET /api/subscriptions/current
+activate Backend
+
+Backend -> DB: 現在のサブスクリプション取得
+activate DB
+DB -> Backend: Subscription データ
+deactivate DB
+
+Backend -> Frontend: { currentSubscription, availablePlans }
+deactivate Backend
+
+Frontend -> User: プラン選択画面表示
+User -> Frontend: 新しいプランを選択・確認
+
+== 2. プラン変更処理 ==
+
+Frontend -> Backend: PUT /api/subscriptions/change-plan
+note right: リクエスト内容:\n- newPlanId\n- changeType: 'immediate' | 'end_of_period'\n- prorationBehavior
+
+activate Backend
+
+Backend -> DB: ユーザーとサブスクリプション確認
+activate DB
+DB -> Backend: AppUser & Subscription データ
+deactivate DB
+
+Backend -> DB: 新プラン情報取得
+activate DB
+DB -> Backend: New Plan データ
+deactivate DB
+
+Backend -> Stripe: サブスクリプション変更実行
+activate Stripe
+note right: stripe.subscriptions.update(\n  subscriptionId,\n  {\n    items: [{\n      id: subscriptionItemId,\n      price: newPlan.stripePriceId\n    }],\n    proration_behavior: 'create_prorations' | 'none',\n    billing_cycle_anchor: 'now' | 'unchanged'\n  }\n)
+
+Stripe -> Backend: Updated Subscription オブジェクト
+deactivate Stripe
+
+Backend -> DB: プラン変更予約記録
+activate DB
+note right: PlanChangeRequest テーブル:\n- userId\n- oldPlanId\n- newPlanId\n- changeType\n- requestedAt\n- status: 'pending'
+deactivate DB
+
+Backend -> Frontend: { success: true, subscription }
+deactivate Backend
+
+Frontend -> User: プラン変更処理中画面表示
+deactivate Frontend
+deactivate User
+
+== 3. Stripe Webhook処理 ==
+
+Stripe -> Webhook: customer.subscription.updated
+activate Webhook
+note right: イベントデータ:\n- subscription object\n- previous_attributes\n- プラン変更情報
+
+Webhook -> Webhook: Webhook署名検証
+
+Webhook -> DB: StripeWebhookEvent 記録
+activate DB
+deactivate DB
+
+Webhook -> DB: Subscription レコード更新
+activate DB
+note right: Subscription テーブル更新:\n- planId (新プラン)\n- stripePriceId\n- currentPeriodStart/End\n- status確認
+deactivate DB
+
+Webhook -> DB: SubscriptionHistory レコード作成
+activate DB
+note right: SubscriptionHistory テーブル:\n- subscriptionId\n- userId\n- planId (新プラン)\n- status\n- stripeEventId\n- stripeEventType: 'customer.subscription.updated'
+deactivate DB
+
+Webhook -> DB: プラン変更リクエスト完了
+activate DB
+note right: PlanChangeRequest 更新:\n- status: 'completed'\n- completedAt
+deactivate DB
+
+== 4. ユーザー権限とメタデータ更新 ==
+
+Webhook -> DB: AppUser権限更新
+activate DB
+note right: 新プラン制限値を適用:\n- maxFeeds\n- maxAuthors\n- maxTags\n- programDuration
+deactivate DB
+
+Webhook -> Webhook: Clerkユーザーメタデータ更新
+note right: Clerk metadata:\n- subscriptionStatus\n- planName (新プラン名)\n- planId\n- 制限値情報
+
+Webhook -> Notification: プラン変更完了通知
+activate Notification
+activate User
+Notification -> User: プラン変更完了メール送信
+note right: メール内容:\n- 旧プラン → 新プラン\n- 料金変更情報\n- 次回請求日\n- 新機能利用方法
+|||
+deactivate User
+deactivate Notification
+
+deactivate Webhook
+
+== 5. Proration Invoice処理 (アップグレード時) ==
+
+alt アップグレードでProration発生の場合
+    Stripe -> Webhook: invoice.created
+    activate Webhook
+    note right: Proration Invoice:\n- 日割り計算された差額請求
+
+    Webhook -> DB: Invoice レコード作成
+    activate DB
+    note right: Invoice テーブル:\n- userId\n- subscriptionId\n- stripeInvoiceId\n- amount (差額)\n- status: 'open'\n- invoiceType: 'proration'
+    deactivate DB
+    deactivate Webhook
+
+    Stripe -> Webhook: invoice.payment_succeeded
+    activate Webhook
+    note right: Proration支払い完了
+
+    Webhook -> DB: Invoice ステータス更新
+    activate DB
+    note right: Invoice更新:\n- status: 'paid'\n- paidAt
+    deactivate DB
+
+    Webhook -> Notification: 追加請求完了通知
+    activate Notification
+    activate User
+    Notification -> User: 追加請求完了メール送信
+    note right: メール内容:\n- プラン変更に伴う追加請求\n- 請求金額\n- 請求書PDF
+    |||
+    deactivate User
+    deactivate Notification
+    deactivate Webhook
+end
+
+== 6. ユーザー確認 ==
+
+User -> Frontend: ダッシュボードで変更確認
+activate User
+activate Frontend
+
+Frontend -> Backend: GET /api/subscriptions/current
+activate Backend
+
+Backend -> DB: 最新サブスクリプション取得
+activate DB
+DB -> Backend: Updated Subscription データ
+deactivate DB
+
+Backend -> Frontend: { subscription, planLimits }
+deactivate Backend
+
+Frontend -> User: 新プラン情報とアップデート済み制限値表示
+deactivate Frontend
+deactivate User
+
+@enduml

@@ -1,0 +1,153 @@
+@startuml 最終的な支払い失敗
+title 2.2.2 最終的な支払い失敗
+
+actor "ユーザー" as User
+
+box "Tech Post Cast" #TECHNOLOGY
+  participant "API Backend\n(NestJS)" as Backend
+  participant "データベース\n(PostgreSQL)" as DB
+  participant "Webhook\nエンドポイント" as Webhook
+  participant "通知サービス" as Notification
+end box
+
+participant "Stripe API" as Stripe
+
+== 1. Smart Retry期間完了（Stripe自動処理） ==
+
+note over Stripe: Smart Retry最終試行失敗\n(23日間のリトライ期間完了)
+
+activate Stripe
+Stripe -> Stripe: 最終支払い試行
+note right: stripe internal:\n- 最後のリトライ実行\n- 支払い方法への課金試行\n- 失敗確定判定
+
+Stripe -> Webhook: invoice.payment_failed
+activate Webhook
+note right: イベントデータ:\n- invoice object (final attempt)\n- payment_intent object (failed)\n- subscription object\n- attempt_count: max\n- next_payment_attempt: null
+
+Webhook -> Webhook: Webhook署名検証
+
+Webhook -> DB: StripeWebhookEvent 記録
+activate DB
+deactivate DB
+
+Webhook -> DB: Invoice 最終失敗記録
+activate DB
+note right: Invoice テーブル更新:\n- status: 'uncollectible'\n- finalFailureAt: current_timestamp\n- attemptCount: max_attempts\n- failureReason: 'max_retries_exceeded'
+deactivate DB
+
+deactivate Webhook
+
+== 2. サブスクリプション自動キャンセル ==
+
+Stripe -> Webhook: customer.subscription.updated
+activate Webhook
+note right: イベントデータ:\n- subscription object\n- status: 'unpaid'\n- latest_invoice (uncollectible)\n- cancel_at_period_end: true
+
+Webhook -> DB: Subscription レコード更新
+activate DB
+note right: Subscription テーブル更新:\n- status: 'UNPAID'\n- cancelAt: period_end\n- finalFailureAt: current_timestamp\n- autoCancel: true
+deactivate DB
+
+Webhook -> DB: SubscriptionHistory レコード作成
+activate DB
+note right: SubscriptionHistory テーブル:\n- subscriptionId\n- userId\n- planId\n- status: 'UNPAID'\n- stripeEventId\n- stripeEventType: 'customer.subscription.updated'\n- reason: 'payment_failed_final'
+deactivate DB
+
+deactivate Webhook
+
+== 3. アカウント状態の最終変更 ==
+
+Webhook -> DB: AppUser権限を完全にFree Planに移行
+activate Webhook
+activate DB
+note right: Free Plan完全移行:\n- maxFeeds: 1\n- maxAuthors: 1\n- maxTags: 1\n- personalizedProgramDialogueEnabled: false\n- paymentRetryEnabled: false\n- アカウント状態: 'payment_failed'
+deactivate DB
+
+Webhook -> Webhook: Clerkユーザーメタデータ更新
+note right: Clerk publicMetadata:\n- subscriptionStatus: 'UNPAID'\n- lastStatusChange: timestamp\n- accountStatus: 'payment_failed'
+
+== 4. 最終失敗通知 ==
+
+Webhook -> Notification: 最終支払い失敗通知
+activate Notification
+activate User
+Notification -> User: 最終支払い失敗メール送信
+note right: メール内容:\n- 最終支払い失敗通知\n- サブスクリプション自動キャンセル\n- Free Planへの完全移行\n- データ保持期間の説明\n- 再開手続きの詳細案内\n- サポート連絡先
+|||
+deactivate User
+deactivate Notification
+
+deactivate Webhook
+
+== 5. 期間終了時のサブスクリプション削除 ==
+
+note over Stripe: 現在の請求期間終了日到達
+
+Stripe -> Webhook: customer.subscription.deleted
+activate Webhook
+note right: イベントデータ:\n- subscription object\n- canceled_at: current_timestamp\n- status: 'canceled'\n- cancellation_reason: 'payment_failed'
+
+Webhook -> DB: Subscription 最終状態更新
+activate DB
+note right: Subscription テーブル更新:\n- status: 'CANCELED'\n- canceledAt: current_timestamp\n- endDate: current_timestamp\n- cancellationReason: 'payment_failed'\n- isActive: false
+deactivate DB
+
+Webhook -> DB: SubscriptionHistory レコード作成
+activate DB
+note right: SubscriptionHistory テーブル:\n- status: 'CANCELED'\n- stripeEventType: 'customer.subscription.deleted'\n- endDate: current_timestamp\n- reason: 'payment_failed_final'
+deactivate DB
+
+== 6. データ保持期間の設定 ==
+
+Webhook -> DB: データ保持ポリシー適用
+activate DB
+note right: データ保持設定:\n- personalizedFeeds: 90日間保持\n- personalizedPrograms: 30日間保持\n- subscriptionHistory: 永続保持\n- paymentHistory: 永続保持\n- userData: アカウント削除まで保持
+deactivate DB
+
+deactivate Webhook
+
+== 7. アカウント完全移行完了通知 ==
+
+Webhook -> Notification: アカウント移行完了通知
+activate Webhook
+activate Notification
+activate User
+Notification -> User: Free Planアカウント移行完了メール
+note right: メール内容:\n- Free Planへの完全移行完了\n- 利用可能な機能説明\n- データ保持期間\n- 有料プラン再開方法\n- 新規決済方法の設定案内\n- フィードバック収集\n- カスタマーサポート
+|||
+deactivate User
+deactivate Notification
+deactivate Webhook
+
+== 8. 管理者向けアラート ==
+
+Webhook -> Notification: 管理者向け最終失敗レポート
+activate Webhook
+activate Notification
+note right: 管理者通知:\n- 最終支払い失敗件数\n- 解約理由分析\n- 収益影響レポート\n- 顧客復帰施策の提案\n- システム改善点
+deactivate Notification
+deactivate Webhook
+
+== 9. Free Planでの継続利用 ==
+
+note over User, DB: 支払い失敗後もFree Planで\nサービス継続利用可能
+
+User -> Frontend: ダッシュボードでFree Plan機能を利用
+activate User
+activate Frontend
+
+Frontend -> User: Free Plan機能画面表示
+note right: 利用可能機能:\n- 基本的なコンテンツ閲覧\n- 制限付きフィード機能\n- 有料プラン案内\n- 新規サブスクリプション登録ボタン
+
+alt ユーザーが有料プラン再開を希望する場合
+    User -> Frontend: 「有料プランに登録」ボタンクリック
+    
+    Frontend -> User: 通常のプラン選択画面へリダイレクト
+    note right: 新規サブスクリプション登録フローへ移行:\n- 1.1.1 新規サブスクリプション登録\n- 通常の決済フロー\n- 新しい支払い方法での登録
+    deactivate Frontend
+    deactivate User
+end
+
+deactivate Stripe
+
+@enduml

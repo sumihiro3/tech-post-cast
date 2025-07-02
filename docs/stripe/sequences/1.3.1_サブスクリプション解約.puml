@@ -1,0 +1,222 @@
+@startuml サブスクリプション解約
+title 1.3.1 サブスクリプション解約
+
+actor "ユーザー" as User
+
+box "Tech Post Cast" #TECHNOLOGY
+  participant "フロントエンド\n(Nuxt3)" as Frontend
+  participant "API Backend\n(NestJS)" as Backend
+  participant "データベース\n(PostgreSQL)" as DB
+  participant "Webhook\nエンドポイント" as Webhook
+  participant "通知サービス" as Notification
+end box
+
+participant "Stripe API" as Stripe
+
+== 1. 解約手続き開始 ==
+
+User -> Frontend: ダッシュボードから「解約」を選択
+activate User
+activate Frontend
+
+Frontend -> Backend: GET /api/subscriptions/cancellation-info
+activate Backend
+
+Backend -> DB: 現在のサブスクリプション情報取得
+activate DB
+DB -> Backend: Subscription データ
+deactivate DB
+
+Backend -> Stripe: サブスクリプション詳細確認
+activate Stripe
+note right: stripe.subscriptions.retrieve(\n  subscriptionId\n)
+Stripe -> Backend: Subscription オブジェクト
+deactivate Stripe
+
+Backend -> Frontend: { subscription, currentPeriodEnd, refundInfo }
+note right: レスポンス内容:\n- 現在のプラン情報\n- 請求期間終了日\n- 返金対象期間\n- 解約オプション
+deactivate Backend
+
+Frontend -> User: 解約確認画面表示
+note right: 画面内容:\n- 解約後のサービス停止日\n- 残り利用可能期間\n- 解約理由選択\n- 継続利用の代替案提示
+
+User -> Frontend: 解約理由選択・最終確認
+User -> Frontend: 「解約を確定」ボタンクリック
+
+== 2. 解約処理実行 ==
+
+Frontend -> Backend: POST /api/subscriptions/cancel
+note right: リクエスト内容:\n- cancellationReason\n- cancelAt: 'period_end' | 'now'\n- feedback (optional)
+
+activate Backend
+
+Backend -> DB: 解約リクエスト記録
+activate DB
+note right: CancellationRequest テーブル:\n- userId\n- subscriptionId\n- reason\n- requestedAt\n- cancelAt\n- status: 'pending'
+deactivate DB
+
+Backend -> Stripe: サブスクリプション解約実行
+activate Stripe
+note right: stripe.subscriptions.update(\n  subscriptionId,\n  {\n    cancel_at_period_end: true,\n    cancellation_details: {\n      comment: cancellationReason,\n      feedback: userFeedback\n    }\n  }\n)
+Stripe -> Backend: Updated Subscription オブジェクト
+deactivate Stripe
+
+Backend -> Frontend: { success: true, cancelAt, subscription }
+deactivate Backend
+
+Frontend -> User: 解約手続き完了画面表示
+note right: 表示内容:\n- 解約完了メッセージ\n- サービス停止予定日\n- データエクスポート案内\n- 再開手続きの案内
+deactivate Frontend
+deactivate User
+
+== 3. Stripe Webhook処理 ==
+
+Stripe -> Webhook: customer.subscription.updated
+activate Webhook
+note right: イベントデータ:\n- subscription object\n- cancel_at_period_end: true\n- canceled_at: null\n- cancel_at: period_end_timestamp
+
+Webhook -> Webhook: Webhook署名検証
+
+Webhook -> DB: StripeWebhookEvent 記録
+activate DB
+deactivate DB
+
+Webhook -> DB: Subscription レコード更新
+activate DB
+note right: Subscription テーブル更新:\n- status: 'ACTIVE' (まだアクティブ)\n- cancelAt: period_end_date\n- canceledAt: null\n- isActive: true (期間終了まで)
+deactivate DB
+
+Webhook -> DB: SubscriptionHistory レコード作成
+activate DB
+note right: SubscriptionHistory テーブル:\n- subscriptionId\n- userId\n- planId\n- status: 'CANCEL_SCHEDULED'\n- stripeEventId\n- stripeEventType: 'customer.subscription.updated'\n- cancelAt
+deactivate DB
+
+Webhook -> DB: 解約リクエスト状態更新
+activate DB
+note right: CancellationRequest更新:\n- status: 'scheduled'\n- scheduledAt
+deactivate DB
+
+== 4. 解約確認通知 ==
+
+Webhook -> Notification: 解約確認通知
+activate Notification
+activate User
+Notification -> User: 解約確認メール送信
+note right: メール内容:\n- 解約手続き完了\n- サービス停止予定日\n- 残り利用可能期間\n- データエクスポート方法\n- 解約取り消し方法\n- アンケート依頼
+|||
+deactivate User
+deactivate Notification
+
+deactivate Webhook
+
+== 5. 解約取り消し処理 (オプション) ==
+
+alt ユーザーが解約取り消しを希望する場合
+    User -> Frontend: 「解約を取り消す」を選択
+    activate User
+    activate Frontend
+    
+    Frontend -> Backend: POST /api/subscriptions/reactivate
+    activate Backend
+    
+    Backend -> Stripe: 解約予約取り消し
+    activate Stripe
+    note right: stripe.subscriptions.update(\n  subscriptionId,\n  {\n    cancel_at_period_end: false\n  }\n)
+    Stripe -> Backend: Updated Subscription オブジェクト
+    deactivate Stripe
+    
+    Backend -> DB: 解約リクエスト取り消し記録
+    activate DB
+    note right: CancellationRequest更新:\n- status: 'cancelled'\n- cancelledAt
+    deactivate DB
+    
+    Backend -> Frontend: { success: true, subscription }
+    deactivate Backend
+    
+    Frontend -> User: 解約取り消し完了画面表示
+    deactivate Frontend
+    
+    == 5-1. 解約取り消しWebhook ==
+    
+    Stripe -> Webhook: customer.subscription.updated
+    activate Webhook
+    note right: cancel_at_period_end: false
+    
+    Webhook -> DB: Subscription レコード更新
+    activate DB
+    note right: Subscription更新:\n- cancelAt: null\n- status: 'ACTIVE'
+    deactivate DB
+    
+    Webhook -> Notification: 解約取り消し通知
+    activate Notification
+    Notification -> User: 解約取り消し完了メール
+    |||
+    deactivate User
+    deactivate Notification
+    deactivate Webhook
+end
+
+== 6. 期間終了時の自動処理 ==
+
+note over Stripe: 請求期間終了日到達
+
+Stripe -> Webhook: customer.subscription.deleted
+activate Webhook
+note right: イベントデータ:\n- subscription object\n- canceled_at: current_timestamp\n- status: 'canceled'
+
+Webhook -> DB: Subscription レコード最終更新
+activate DB
+note right: Subscription テーブル更新:\n- status: 'CANCELED'\n- canceledAt: current_timestamp\n- isActive: false\n- endDate: current_timestamp
+deactivate DB
+
+Webhook -> DB: SubscriptionHistory レコード作成
+activate DB
+note right: SubscriptionHistory テーブル:\n- status: 'CANCELED'\n- stripeEventType: 'customer.subscription.deleted'\n- endDate
+deactivate DB
+
+== 7. 機能アクセス無効化 ==
+
+Webhook -> DB: AppUser権限無効化
+activate DB
+note right: ユーザー権限更新:\n- プレミアム機能無効化\n- 制限値をFreeプランに変更\n- データ保持期間設定
+deactivate DB
+
+Webhook -> Webhook: Clerkユーザーメタデータ更新
+note right: Clerk metadata:\n- subscriptionStatus: 'CANCELED'\n- planName: 'Free'\n- 機能制限情報更新
+
+== 8. 解約完了通知 ==
+
+Webhook -> Notification: 解約完了通知
+activate Notification
+activate User
+Notification -> User: 解約完了メール送信
+note right: メール内容:\n- サービス停止完了\n- データ保持期間\n- 再開手続き方法\n- フィードバック依頼\n- 今後のお知らせ設定
+|||
+deactivate User
+deactivate Notification
+
+deactivate Webhook
+
+== 9. ユーザー最終確認 ==
+
+User -> Frontend: ダッシュボードアクセス
+activate User
+activate Frontend
+
+Frontend -> Backend: GET /api/subscriptions/current
+activate Backend
+
+Backend -> DB: サブスクリプション状態確認
+activate DB
+DB -> Backend: Canceled Subscription データ
+deactivate DB
+
+Backend -> Frontend: { subscription: null, freeAccountInfo }
+deactivate Backend
+
+Frontend -> User: 無料アカウント画面表示
+note right: 表示内容:\n- 解約完了状態\n- 利用可能な無料機能\n- 再開プラン案内\n- データエクスポート\n- サポート連絡先
+deactivate Frontend
+deactivate User
+
+@enduml
