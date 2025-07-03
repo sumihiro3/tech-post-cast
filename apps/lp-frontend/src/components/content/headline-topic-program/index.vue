@@ -63,20 +63,20 @@ v-card.ma-1.pa-1.pa-md-2.mb-6.mb-md-10.bg-white(flat, rounded='lg')
             ) mdi-volume-high
     //- 番組の台本
     v-tabs-window-item(v-if='showScript', value='script')
-      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1(
+      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1.script-content(
         :class='{ "active-chapter-script": currentChapterIndex === 1 }'
       )
-        | {{ program.script.intro }}
-      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1(
+        | {{ formatScriptForDisplay(program.script.intro) }}
+      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1.script-content(
         v-for='(post, index) in program.script.posts',
         :key='index'
         :class='{ "active-chapter-script": currentChapterIndex === index + 2 }'
       )
-        | {{ post.summary }}
-      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1(
+        | {{ formatScriptForDisplay(post.summary) }}
+      p.mt-4.ml-2.ml-md-6.text-body-2.text-md-body-1.script-content(
         :class='{ "active-chapter-script": currentChapterIndex === program.script.posts.length + 2 }'
       )
-        | {{ program.script.ending }}
+        | {{ formatScriptForDisplay(program.script.ending) }}
 
   //- 番組詳細ページへのボタン（表示制御付き）
   v-card-actions.pt-2.pb-2(v-if='showDetailButton')
@@ -148,6 +148,20 @@ const seekTo = (time: number): void => {
 };
 
 /**
+ * 台本テキストを複数話者用にフォーマットする
+ * Postel: や John: などの話者名で改行し、見やすく表示する
+ */
+const formatScriptForDisplay = (text: string | null): string => {
+  if (!text) return '';
+
+  // 話者名のパターン（Postel:, John: など）
+  const speakerPattern = /(Postel:|John:)/g;
+
+  // 話者名の前で改行
+  return text.replace(speakerPattern, '\n$1').trim();
+};
+
+/**
  * 再生時間を監視して現在のチャプターを更新する
  */
 const updateCurrentChapter = (): void => {
@@ -183,5 +197,10 @@ li.active-chapter,
 p.active-chapter-script {
   background-color: #edeeee;
   font-weight: bold;
+}
+
+/* 台本表示で改行を有効にする */
+.script-content {
+  white-space: pre-line;
 }
 </style>
