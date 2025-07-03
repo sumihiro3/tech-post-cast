@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { SpeakerMode } from '@prisma/client';
 import { HeadlineTopicProgramWithQiitaPosts } from '@tech-post-cast/database';
 import { AppConfigService } from '../../../app-config/app-config.service';
 import { HeadlineTopicProgramsRepository } from '../../../infrastructure/database/headline-topic-programs/headline-topic-programs.repository';
@@ -38,6 +39,12 @@ describe('HeadlineTopicProgramBuilder', () => {
       HeadlineTopicProgramTargetDir: '/tmp/test',
       OpenAiApiKey: 'test-api-key',
       OpenAiModel: 'gpt-4',
+      HeadlineTopicProgramBgmFilePath: '/tmp/bgm.mp3',
+      HeadlineTopicProgramOpeningFilePath: '/tmp/opening.mp3',
+      HeadlineTopicProgramEndingFilePath: '/tmp/ending.mp3',
+      HeadlineTopicProgramSeShortFilePath: '/tmp/se_short.mp3',
+      HeadlineTopicProgramSeLongFilePath: '/tmp/se_long.mp3',
+      ProgramAudioBucketName: 'test-bucket',
       get: jest.fn(),
     } as unknown as jest.Mocked<AppConfigService>;
 
@@ -156,16 +163,11 @@ describe('HeadlineTopicProgramBuilder', () => {
         ending: 'エンディング',
       };
       const mockAudioFiles = {
-        openingAudioFilePath: '/tmp/opening.mp3',
-        postAudioFilePaths: [
+        introAudioFilePath: '/tmp/intro.mp3',
+        postIntroductionAudioFilePaths: [
           '/tmp/post1.mp3',
           '/tmp/post2.mp3',
           '/tmp/post3.mp3',
-        ],
-        postIntroductionAudioFilePaths: [
-          '/tmp/intro1.mp3',
-          '/tmp/intro2.mp3',
-          '/tmp/intro3.mp3',
         ],
         endingAudioFilePath: '/tmp/ending.mp3',
       };
@@ -179,14 +181,11 @@ describe('HeadlineTopicProgramBuilder', () => {
       // Mock the necessary repository methods
       listenerLettersRepository.findUnintroduced.mockResolvedValue(null);
 
-      jest.spyOn(builder, 'summarizePosts').mockResolvedValue(mockPosts);
+      // generateScriptメソッドをモック
+      jest.spyOn(builder, 'generateScript').mockResolvedValue(mockScript);
 
-      openAiApiClient.generateHeadlineTopicProgramScript.mockResolvedValue(
-        mockScript,
-      );
-      textToSpeechClient.generateHeadlineTopicProgramAudioFiles.mockResolvedValue(
-        mockAudioFiles,
-      );
+      textToSpeechClient.generateMultiSpeakerHeadlineTopicProgramAudioFiles =
+        jest.fn().mockResolvedValue(mockAudioFiles);
       programFileMaker.generateProgramAudioFile.mockResolvedValue(
         mockGenerateResult,
       );
@@ -196,16 +195,17 @@ describe('HeadlineTopicProgramBuilder', () => {
         mockProgram1,
       );
 
-      const result = await builder.buildProgram(new Date(), mockPosts);
+      const result = await builder.buildProgram(
+        new Date(),
+        mockPosts,
+        SpeakerMode.MULTI,
+      );
 
       expect(result).toBeDefined();
       expect(result).toEqual(mockProgram1);
-      expect(builder.summarizePosts).toHaveBeenCalledWith(mockPosts);
+      expect(builder.generateScript).toHaveBeenCalled();
       expect(
-        openAiApiClient.generateHeadlineTopicProgramScript,
-      ).toHaveBeenCalled();
-      expect(
-        textToSpeechClient.generateHeadlineTopicProgramAudioFiles,
+        textToSpeechClient.generateMultiSpeakerHeadlineTopicProgramAudioFiles,
       ).toHaveBeenCalled();
       expect(programFileMaker.generateProgramAudioFile).toHaveBeenCalled();
       expect(programFileUploader.upload).toHaveBeenCalled();
@@ -219,14 +219,16 @@ describe('HeadlineTopicProgramBuilder', () => {
       const error = new Error('記事取得エラー');
       const mockPosts = QiitaPostFactory.createQiitaPostApiResponses(3);
 
-      jest
-        .spyOn(builder, 'summarizePosts')
-        .mockRejectedValue(new HeadlineTopicProgramError('記事要約エラー'));
+      listenerLettersRepository.findUnintroduced.mockResolvedValue(null);
 
-      await expect(builder.buildProgram(new Date(), mockPosts)).rejects.toThrow(
-        HeadlineTopicProgramError,
-      );
-      expect(builder.summarizePosts).toHaveBeenCalledWith(mockPosts);
+      jest
+        .spyOn(builder, 'generateScript')
+        .mockRejectedValue(new HeadlineTopicProgramError('台本生成エラー'));
+
+      await expect(
+        builder.buildProgram(new Date(), mockPosts, SpeakerMode.MULTI),
+      ).rejects.toThrow(HeadlineTopicProgramError);
+      expect(builder.generateScript).toHaveBeenCalled();
     });
   });
 
@@ -245,16 +247,11 @@ describe('HeadlineTopicProgramBuilder', () => {
         ending: 'エンディング',
       };
       const mockAudioFiles = {
-        openingAudioFilePath: '/tmp/opening.mp3',
-        postAudioFilePaths: [
+        introAudioFilePath: '/tmp/intro.mp3',
+        postIntroductionAudioFilePaths: [
           '/tmp/post1.mp3',
           '/tmp/post2.mp3',
           '/tmp/post3.mp3',
-        ],
-        postIntroductionAudioFilePaths: [
-          '/tmp/intro1.mp3',
-          '/tmp/intro2.mp3',
-          '/tmp/intro3.mp3',
         ],
         endingAudioFilePath: '/tmp/ending.mp3',
       };
@@ -269,14 +266,10 @@ describe('HeadlineTopicProgramBuilder', () => {
       qiitaPostsRepository.findWithBodyByIds.mockResolvedValue(mockPosts);
       listenerLettersRepository.findIntroduced.mockResolvedValue(null);
 
-      jest.spyOn(builder, 'summarizePosts').mockResolvedValue(mockPosts);
+      jest.spyOn(builder, 'generateScript').mockResolvedValue(mockScript);
 
-      openAiApiClient.generateHeadlineTopicProgramScript.mockResolvedValue(
-        mockScript,
-      );
-      textToSpeechClient.generateHeadlineTopicProgramAudioFiles.mockResolvedValue(
-        mockAudioFiles,
-      );
+      textToSpeechClient.generateMultiSpeakerHeadlineTopicProgramAudioFiles =
+        jest.fn().mockResolvedValue(mockAudioFiles);
       programFileMaker.generateProgramAudioFile.mockResolvedValue(
         mockGenerateResult,
       );
@@ -304,12 +297,9 @@ describe('HeadlineTopicProgramBuilder', () => {
       expect(result).toBeDefined();
       expect(result).toEqual(mockProgram2);
       expect(qiitaPostsRepository.findWithBodyByIds).toHaveBeenCalled();
-      expect(builder.summarizePosts).toHaveBeenCalled();
+      expect(builder.generateScript).toHaveBeenCalled();
       expect(
-        openAiApiClient.generateHeadlineTopicProgramScript,
-      ).toHaveBeenCalled();
-      expect(
-        textToSpeechClient.generateHeadlineTopicProgramAudioFiles,
+        textToSpeechClient.generateMultiSpeakerHeadlineTopicProgramAudioFiles,
       ).toHaveBeenCalled();
       expect(programFileMaker.generateProgramAudioFile).toHaveBeenCalled();
       expect(programFileUploader.upload).toHaveBeenCalled();
@@ -341,23 +331,10 @@ describe('HeadlineTopicProgramBuilder', () => {
   describe('summarizePosts', () => {
     it('記事を正常に要約できること', async () => {
       const mockPosts = QiitaPostFactory.createQiitaPostApiResponses(3);
-      const mockScript: HeadlineTopicProgramScript = {
-        title: 'テスト番組',
-        intro: 'イントロダクション',
-        posts: mockPosts.map((post) => ({
-          postId: post.id,
-          title: post.title,
-          summary: `${post.title}のまとめ`,
-        })),
-        ending: 'エンディング',
-      };
 
       openAiApiClient.summarizePost = jest.fn().mockImplementation((post) => {
         return { summary: `${post.title}のまとめ` };
       });
-      openAiApiClient.generateHeadlineTopicProgramScript.mockResolvedValue(
-        mockScript,
-      );
 
       const result = await builder.summarizePosts(mockPosts);
 
@@ -380,32 +357,53 @@ describe('HeadlineTopicProgramBuilder', () => {
         ending: 'エンディング',
       };
 
-      qiitaPostsApiClient.findQiitaPostsByTags.mockResolvedValue({
-        posts: mockPosts,
-        maxPage: 1,
-        rateRemaining: 100,
-        rateReset: Date.now(),
-      });
-      openAiApiClient.summarizePost = jest.fn().mockImplementation((post) => {
-        return { summary: `${post.title}のまとめ` };
-      });
-      openAiApiClient.generateHeadlineTopicProgramScript.mockResolvedValue(
-        mockScript,
-      );
+      // Mastraワークフローの実行結果をモック
+      const mockMastraWorkflowResult = {
+        results: {
+          createHeadlineTopicProgramScriptGenerationWorkflow: {
+            status: 'success',
+            output: {
+              scriptGenerationWorkflowResult: {
+                title: 'テスト番組',
+                opening: 'イントロダクション',
+                posts: mockPosts.map((post) => ({
+                  id: post.id,
+                  title: post.title,
+                  intro: `${post.title}のイントロ`,
+                  explanation: `${post.title}の説明`,
+                  summary: `${post.title}のまとめ`,
+                })),
+                ending: 'エンディング',
+              },
+            },
+          },
+        },
+      };
 
-      jest.spyOn(builder, 'summarizePosts').mockResolvedValue(mockPosts);
+      // Mastraワークフローをモック
+      const mockWorkflow = {
+        createRun: jest.fn().mockReturnValue({
+          start: jest.fn().mockResolvedValue(mockMastraWorkflowResult),
+        }),
+      };
+
+      // builderのmastraインスタンスをモック
+      jest
+        .spyOn(builder['mastra'], 'getWorkflow')
+        .mockReturnValue(mockWorkflow as any);
 
       const result = await builder.generateScript(
         new Date(),
+        SpeakerMode.MULTI,
         mockPosts,
         undefined,
       );
 
       expect(result).toBeDefined();
-      expect(result).toEqual(mockScript);
-      expect(
-        openAiApiClient.generateHeadlineTopicProgramScript,
-      ).toHaveBeenCalled();
+      expect(result.title).toBe('テスト番組');
+      expect(result.intro).toBe('イントロダクション');
+      expect(result.ending).toBe('エンディング');
+      expect(result.posts).toHaveLength(3);
     });
   });
 });

@@ -4,6 +4,7 @@ import {
   headlineTopicProgramInputSchema,
   headlineTopicProgramScriptSchema,
   HeadlineTopicProgramScript as MastraHeadlineTopicProgramScript,
+  QiitaPost as MastraQiitaPost,
 } from '@/mastra/schemas';
 import {
   CREATE_HEADLINE_TOPIC_PROGRAM_SCRIPT_WORKFLOW,
@@ -33,7 +34,7 @@ import {
   QiitaPost,
   SpeakerMode,
 } from '@prisma/client';
-import { formatDate } from '@tech-post-cast/commons';
+import { formatDate, TIME_ZONE_JST } from '@tech-post-cast/commons';
 import {
   HeadlineTopicProgramWithQiitaPosts,
   parseHeadlineTopicProgramScript,
@@ -228,14 +229,25 @@ export class HeadlineTopicProgramBuilder {
         const postsWithBody =
           await this.qiitaPostsRepository.findWithBodyByIds(postIds);
 
-        // 対象の記事を要約する
-        const summarizedPosts = await this.summarizePosts(postsWithBody);
+        // MastraQiitaPost に変換する
+        const posts: MastraQiitaPost[] = postsWithBody.map((post) => ({
+          id: post.id,
+          title: post.title,
+          content: post.body,
+          author: post.authorId,
+          tags: [],
+          createdAt: formatDate(
+            post.createdAt,
+            'YYYY-MM-DD HH:mm:ss',
+            TIME_ZONE_JST,
+          ),
+        }));
 
         // ヘッドライントピック番組の台本を生成する
         script = await this.generateScript(
           programDate,
           speakerMode,
-          summarizedPosts,
+          posts,
           letter,
         );
       } else {
@@ -325,7 +337,7 @@ export class HeadlineTopicProgramBuilder {
   async generateScript(
     programDate: Date,
     speakerMode: SpeakerMode,
-    posts: QiitaPostApiResponse[],
+    posts: QiitaPostApiResponse[] | MastraQiitaPost[],
     letter?: ListenerLetter,
   ): Promise<HeadlineTopicProgramScript> {
     this.logger.debug(`HeadlineTopicProgramMaker.generateScript called`, {
@@ -341,7 +353,12 @@ export class HeadlineTopicProgramBuilder {
       const run = workflow.createRun();
 
       // QiitaPostApiResponseをQiitaPost形式に変換
-      const programPosts = posts.map((post) => this.convertToQiitaPost(post));
+      const programPosts = posts.map((post) => {
+        if (post instanceof QiitaPostApiResponse) {
+          return this.convertToQiitaPost(post);
+        }
+        return post;
+      });
 
       // リスナーお便りをワークフロー用の形式に変換
       const listenerLetters = letter
@@ -412,12 +429,12 @@ export class HeadlineTopicProgramBuilder {
    * @param post QiitaPostApiResponse
    * @returns QiitaPost
    */
-  private convertToQiitaPost(post: QiitaPostApiResponse): any {
+  private convertToQiitaPost(post: QiitaPostApiResponse): MastraQiitaPost {
     return {
       id: post.id,
       title: post.title,
       content: post.body,
-      author: post.user.id,
+      author: post.user.name,
       tags: post.tags.map((tag) => tag.name),
       createdAt: post.created_at,
     };
