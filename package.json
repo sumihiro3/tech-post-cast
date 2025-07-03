@@ -1,6 +1,6 @@
 {
   "name": "tech-post-cast",
-  "version": "0.0.1",
+  "version": "2.0.0-beta.1",
   "author": "sumihiro3",
   "license": "MIT",
   "private": true,
@@ -51,6 +51,7 @@
     "generate-prisma": "yarn workspace @tech-post-cast/database run prisma:generate",
     "create-migration-prisma": "yarn workspace @tech-post-cast/database run prisma:create-migration",
     "deploy-migration-prisma": "yarn workspace @tech-post-cast/database run prisma:deploy-migration",
+    "seed-prisma": "yarn workspace @tech-post-cast/database run prisma:seed",
     "generate:api-spec": "yarn generate:api-spec:backend && yarn generate:api-spec:line-bot",
     "generate:api-spec:backend": "yarn workspace @tech-post-cast/backend generate:api-spec",
     "generate:api-spec:for-frontend": "yarn workspace @tech-post-cast/api-backend generate:api-spec",
@@ -65,5 +66,6 @@
   "packageManager": "yarn@1.22.19+sha1.4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447",
   "dependencies": {
     "@openapitools/openapi-generator-cli": "^2.15.3"
-  }
+  },
+  "devDependencies": {}
 }

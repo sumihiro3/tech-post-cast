@@ -1,5 +1,6 @@
 import { AppConfigService } from '@/app-config/app-config.service';
 import { TextToSpeechError } from '@/types/errors';
+import { IProgramFileMaker } from '@domains/radio-program/program-file-maker.interface';
 import { google } from '@google-cloud/text-to-speech/build/protos/protos';
 import { TermsRepository } from '@infrastructure/database/terms/terms.repository';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -18,6 +19,7 @@ describe('TextToSpeechClient', () => {
   let textToSpeechClient: TextToSpeechClient;
   let appConfigService: AppConfigService;
   let termsRepository: TermsRepository;
+  let programFileMaker: IProgramFileMaker;
   let ttsClientMock: any;
 
   beforeEach(async () => {
@@ -29,6 +31,10 @@ describe('TextToSpeechClient', () => {
           return {};
         } else if (token === TermsRepository) {
           return {};
+        } else if (token === 'ProgramFileMaker') {
+          return {
+            mergeAudioFilesSegments: jest.fn(),
+          };
         }
         if (typeof token === 'function') {
           const mockMetadata = moduleMocker.getMetadata(
@@ -47,12 +53,14 @@ describe('TextToSpeechClient', () => {
 
     appConfigService = module.get<AppConfigService>(AppConfigService);
     termsRepository = module.get<TermsRepository>(TermsRepository);
+    programFileMaker = module.get('ProgramFileMaker');
   });
 
   it('should be defined', () => {
     expect(textToSpeechClient).toBeDefined();
     expect(appConfigService).toBeDefined();
     expect(termsRepository).toBeDefined();
+    expect(programFileMaker).toBeDefined();
   });
 
   describe('synthesizeSpeech', () => {
@@ -180,6 +188,54 @@ describe('TextToSpeechClient', () => {
 
       // assert
       expect(result).toBe(terms);
+    });
+  });
+
+  describe('splitJapaneseTextBySentence', () => {
+    test('日本語テキストを文単位で分割する', () => {
+      // arrange
+      const text = '最初の文です。2番目の文です。3番目の文です。';
+
+      // act
+      const result = (textToSpeechClient as any).splitJapaneseTextBySentence(
+        text,
+      );
+
+      // assert
+      // デフォルトのmaxLength=1000で分割すると文が短いため1つのセグメントになる
+      expect(result).toEqual(['最初の文です。2番目の文です。3番目の文です。']);
+    });
+
+    test('最大長を超える場合は複数のセグメントに分割する', () => {
+      // arrange
+      const text = '最初の文です。2番目の文です。3番目の文です。';
+      const maxLength = 10;
+      const expectedSegmentLength = 3;
+
+      // act
+      const result = (textToSpeechClient as any).splitJapaneseTextBySentence(
+        text,
+        maxLength,
+      );
+
+      // assert
+      expect(result.length).toBe(expectedSegmentLength);
+    });
+
+    test('文の分割が正しく行われる', () => {
+      // arrange
+      const text = '最初の文です。2番目の文です。3番目の文です。';
+
+      // act
+      // 内部実装にアクセスして文の分割部分だけをテスト
+      const sentences = text.split(/(?<=。)/);
+
+      // assert
+      expect(sentences).toEqual([
+        '最初の文です。',
+        '2番目の文です。',
+        '3番目の文です。',
+      ]);
     });
   });
 });

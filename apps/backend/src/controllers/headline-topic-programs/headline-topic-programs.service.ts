@@ -8,14 +8,16 @@ import { QiitaPostsRepository } from '@infrastructure/database/qiita-posts/qiita
 import { QiitaPostsApiClient } from '@infrastructure/external-api/qiita-api/qiita-posts.api.client';
 import { TwitterApiClient } from '@infrastructure/external-api/x/twitter-api.client';
 import { Injectable, Logger } from '@nestjs/common';
-import { HeadlineTopicProgram } from '@prisma/client';
+import { HeadlineTopicProgram, SpeakerMode } from '@prisma/client';
 import { getYesterday, subtractDays } from '@tech-post-cast/commons';
 import axios, { AxiosError, isAxiosError } from 'axios';
 
 // ヘッドライントピック番組に含める記事の期間
 const DATE_RANGE = 3;
-// ヘッドライントピック番組に含める記事数
-const POPULAR_POSTS_COUNT = 5;
+// ヘッドライントピック番組に含める記事数（話者モードが SINGLE の場合）
+const POPULAR_POSTS_COUNT_FOR_SINGLE_SPEAKER = 5;
+// ヘッドライントピック番組に含める記事数（話者モードが MULTI の場合）
+const POPULAR_POSTS_COUNT_FOR_MULTI_SPEAKER = 3;
 
 @Injectable()
 export class HeadlineTopicProgramsService {
@@ -25,7 +27,7 @@ export class HeadlineTopicProgramsService {
     private readonly appConfig: AppConfigService,
     private readonly qiitaPostsRepository: QiitaPostsRepository,
     private readonly qiitaPostsApiClient: QiitaPostsApiClient,
-    private readonly headlineTopicProgramMaker: HeadlineTopicProgramBuilder,
+    private readonly headlineTopicProgramBuilder: HeadlineTopicProgramBuilder,
     private readonly headlineTopicProgramsRepository: HeadlineTopicProgramsRepository,
     private readonly twitterApiClient: TwitterApiClient,
   ) {}
@@ -55,6 +57,8 @@ export class HeadlineTopicProgramsService {
         from: from,
         to: to,
       });
+      // 話者モードを取得
+      const speakerMode: SpeakerMode = SpeakerMode.MULTI;
       // Qiita 記事を API で取得
       this.logger.log(`Qiita 記事の取得を開始します`);
       const posts = await this.qiitaPostsApiClient.findQiitaPostsByDateRange(
@@ -65,19 +69,24 @@ export class HeadlineTopicProgramsService {
       // DB に登録されていない記事を取得
       const notExistsPosts =
         await this.qiitaPostsRepository.findNotExistsPosts(posts);
+      const popularPostsCount =
+        speakerMode === SpeakerMode.MULTI
+          ? POPULAR_POSTS_COUNT_FOR_MULTI_SPEAKER
+          : POPULAR_POSTS_COUNT_FOR_SINGLE_SPEAKER;
       // 公開済みかつ、いいね数が多い記事を取得
       const popularPosts = await this.findPopularPosts(
         notExistsPosts,
-        POPULAR_POSTS_COUNT,
+        popularPostsCount,
       );
       this.logger.log(`いいね数が多い記事を取得しました`, {
         postIds: popularPosts.map((post) => post.id),
       });
       // ヘッドライントピック番組を生成する
       this.logger.log(`ヘッドライントピック番組のファイル生成を開始します`);
-      const program = await this.headlineTopicProgramMaker.buildProgram(
+      const program = await this.headlineTopicProgramBuilder.buildProgram(
         programDate,
         popularPosts,
+        speakerMode,
       );
       this.logger.debug(`ヘッドライントピック番組を生成しました`, {
         program,
@@ -132,7 +141,7 @@ export class HeadlineTopicProgramsService {
     }
     // 番組を再生成する
     const regeneratedProgram =
-      await this.headlineTopicProgramMaker.regenerateProgram(
+      await this.headlineTopicProgramBuilder.regenerateProgram(
         program,
         regenerationType,
       );
@@ -223,9 +232,57 @@ export class HeadlineTopicProgramsService {
       );
     }
     // 台本のベクトル化を行う
-    await this.headlineTopicProgramMaker.vectorizeProgram(program);
+    await this.headlineTopicProgramBuilder.vectorizeProgram(program);
     this.logger.log(
       `ヘッドライントピック番組 [${id}] 台本のベクトル化が完了しました！`,
     );
+  }
+
+  /**
+   * ヘッドライントピック番組の生成完了を通知する
+   * @param program 番組
+   */
+  async notifyHeadlineTopicProgramGenerationComplete(
+    program: HeadlineTopicProgram,
+  ): Promise<void> {
+    this.logger.debug(
+      `HeadlineTopicProgramsService.notifyHeadlineTopicProgramGenerationComplete called`,
+      { id: program.id },
+    );
+    // ヘッドライントピック番組の生成完了を通知する
+    const slackIncomingWebhookUrl = this.appConfig.SlackIncomingWebhookUrl;
+    if (!slackIncomingWebhookUrl) {
+      this.logger.warn('Slack Incoming Webhook URL が設定されていません');
+      return;
+    }
+    // Slack に通知する
+    await fetch(slackIncomingWebhookUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        blocks: [
+          {
+            type: 'rich_text',
+            elements: [
+              {
+                type: 'rich_text_section',
+                elements: [
+                  {
+                    type: 'emoji',
+                    name: 'confetti_ball',
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `<!channel> ヘッドライントピック番組の生成が完了しました \n- ID: ${program.id} \n- タイトル: ${program.title}`,
+            },
+          },
+        ],
+      }),
+    });
   }
 }

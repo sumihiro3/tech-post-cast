@@ -48,12 +48,19 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devServer: {
     port: 3333,
+    // SPAモードでのフォールバック処理を有効化
+    https: false,
   },
   devtools: { enabled: true },
   build: {
     transpile: ['vuetify'],
   },
+  // SSRを有効にして、routeRulesで個別制御
   ssr: true,
+  // SSRハイドレーション問題を軽減
+  experimental: {
+    payloadExtraction: false,
+  },
   // ルート別のレンダリング戦略
   routeRules: {
     // パブリックページ: SSG
@@ -61,10 +68,21 @@ export default defineNuxtConfig({
     '/headline-topic-programs/**': { prerender: true },
 
     // ログインページ: SPA (クライアントサイドのみ)
-    '/login': { ssr: false },
+    '/login': {
+      ssr: false,
+      prerender: false,
+    },
 
     // アプリページ: SPA (クライアントサイドのみ)
-    '/app/**': { ssr: false },
+    '/app/**': {
+      ssr: false,
+      prerender: false,
+      headers: {
+        'cache-control': 'no-cache, no-store, must-revalidate',
+        'pragma': 'no-cache',
+        'expires': '0',
+      },
+    },
 
     // API関連: SSRなし、キャッシュなし
     '/api/**': { ssr: false, cache: false },
@@ -89,6 +107,17 @@ export default defineNuxtConfig({
     prerender: {
       crawlLinks: true,
       failOnError: true,
+      routes: ['/'], // 最低限のルートを明示的に指定
+    },
+    // SPAフォールバック設定を強化
+    experimental: {
+      wasm: true,
+    },
+    // SSGビルドでのSPAフォールバック設定
+    storage: {
+      redis: {
+        driver: 'memory',
+      },
     },
     hooks: {
       'prerender:config': async (nitroConfig: NitroConfig) => {
@@ -104,6 +133,49 @@ export default defineNuxtConfig({
         await generateSpotifyRssFeed(nitro);
         // 各番組ページ用の oEmbed JSON ファイルを生成する
         await generateOembedJsonFiles(nitro);
+
+        // SSGビルド後にSPAフォールバック用の200.htmlを生成
+        const fs = await import('fs');
+        const path = await import('path');
+
+        const publicDir = nitro.options.output?.publicDir;
+        if (publicDir) {
+          const indexPath = path.join(publicDir, 'index.html');
+          const fallbackPath = path.join(publicDir, '200.html');
+
+          // index.htmlが存在する場合のみ処理
+          if (fs.existsSync(indexPath)) {
+            // 200.htmlを作成（SPAフォールバック用）
+            fs.copyFileSync(indexPath, fallbackPath);
+            console.log('Created 200.html for SPA fallback');
+
+            // /app/ 配下へのアクセス用に app/200.html も作成
+            const appDir = path.join(publicDir, 'app');
+            if (!fs.existsSync(appDir)) {
+              fs.mkdirSync(appDir, { recursive: true });
+            }
+            const appFallbackPath = path.join(appDir, '200.html');
+            fs.copyFileSync(indexPath, appFallbackPath);
+            console.log('Created app/200.html for SPA fallback');
+
+            // 静的ホスティング用の _redirects ファイルを生成
+            const redirectsPath = path.join(publicDir, '_redirects');
+            const redirectsContent = [
+              '# SPA fallback for /app routes - use index.html to ensure consistency',
+              '/app/* /index.html 200!',
+              '',
+              '# Login page fallback - use index.html to ensure consistency', 
+              '/login /index.html 200!',
+              '',
+              '# Default fallback for other routes',
+              '/* /index.html 200',
+            ].join('\n');
+            fs.writeFileSync(redirectsPath, redirectsContent);
+            console.log('Created _redirects file for static hosting');
+          } else {
+            console.warn('index.html not found, skipping SPA fallback creation');
+          }
+        }
       },
     },
   },
@@ -192,6 +264,14 @@ export default defineNuxtConfig({
       template: {
         transformAssetUrls,
       },
+    },
+    // 開発サーバーでのSPAフォールバック設定
+    server: {
+      fs: {
+        allow: ['..'],
+      },
+      // SPAルートのフォールバック処理
+      middlewareMode: false,
     },
   },
 });

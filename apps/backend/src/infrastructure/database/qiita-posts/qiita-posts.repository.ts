@@ -125,6 +125,74 @@ export class QiitaPostsRepository implements IQiitaPostsRepository {
   }
 
   /**
+   * 指定のQiita記事一覧から、指定のパーソナルフィードを基にしたパーソナルプログラムに紐づいていない Qiita 記事を取得する
+   * @param personalizedFeedId パーソナルフィード ID
+   * @param posts Qiita 記事一覧
+   * @returns 指定のパーソナルフィードを基にしたパーソナルプログラムに紐づいていない Qiita 記事一覧
+   */
+  async findNotExistsPostsByPersonalizedFeedId(
+    personalizedFeedId: string,
+    posts: QiitaPostApiResponse[],
+  ): Promise<QiitaPostApiResponse[]> {
+    this.logger.verbose(
+      `QiitaPostsRepository.findNotExistsPostsByPersonalizedFeedId called`,
+      { personalizedFeedId, posts },
+    );
+
+    try {
+      // 記事 ID 一覧を取得する
+      const postIds = posts.map((item) => item.id);
+
+      // 指定のパーソナライズフィードに紐づくパーソナルプログラム内の記事IDを取得
+      const existingProgramPosts =
+        await this.prisma.personalizedFeedProgram.findMany({
+          where: {
+            feedId: personalizedFeedId,
+          },
+          include: {
+            posts: {
+              select: {
+                id: true,
+              },
+            },
+          },
+        });
+
+      // 既存のプログラムに含まれる記事IDリスト
+      const existingPostIds = existingProgramPosts
+        .map((item) => item.posts.map((post) => post.id).flat())
+        .flat();
+      // 重複を排除
+      const uniqueExistingPostIds = Array.from(new Set(existingPostIds));
+
+      // 存在しない記事一覧に絞り込む
+      const result = posts.filter(
+        (item) => !uniqueExistingPostIds.includes(item.id),
+      );
+
+      this.logger.debug(
+        `指定のパーソナルフィードプログラムに含まれていない記事一覧を取得しました`,
+        {
+          personalizedFeedId,
+          totalCount: posts.length,
+          filteredCount: result.length,
+          existingCount: existingPostIds.length,
+        },
+      );
+
+      return result;
+    } catch (error) {
+      const errorMessage = `パーソナルフィードプログラムに含まれていない記事一覧の取得に失敗しました`;
+      this.logger.error(errorMessage, {
+        error,
+        personalizedFeedId,
+        postsCount: posts.length,
+      });
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
    * Qiita 記事の新規登録または更新クエリを生成する
    * @param post Qiita 記事 API レスポンス
    * @returns Qiita 記事の新規登録または更新クエリ

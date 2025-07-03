@@ -23,5 +23,7 @@
       "@domains/*": ["src/domains/*"],
       "@infrastructure/*": ["src/infrastructure/*"]
     }
-  }
+  },
+  "include": ["src/**/*", "tools/**/*"],
+  "files": ["src/custom.d.ts"]
 }

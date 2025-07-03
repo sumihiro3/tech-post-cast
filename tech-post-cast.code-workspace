@@ -2,51 +2,55 @@
   "folders": [
     {
       "name": "root",
-      "path": "."
+      "path": ".",
     },
     {
       "name": "api-backend",
-      "path": "apps/api-backend"
+      "path": "apps/api-backend",
     },
     {
       "name": "backend",
-      "path": "apps/backend"
+      "path": "apps/backend",
     },
     {
       "name": "infra",
-      "path": "apps/infra"
+      "path": "apps/infra",
     },
     {
       "name": "line-bot",
-      "path": "apps/line-bot"
+      "path": "apps/line-bot",
     },
     {
       "name": "liff-frontend",
-      "path": "apps/liff-frontend"
+      "path": "apps/liff-frontend",
     },
     {
       "name": "lp-frontend",
-      "path": "apps/lp-frontend"
+      "path": "apps/lp-frontend",
     },
     {
       "name": "commons",
-      "path": "packages/commons"
+      "path": "packages/commons",
     },
     {
       "name": "database",
-      "path": "packages/database"
-    }
+      "path": "packages/database",
+    },
   ],
   "settings": {
     "chat.agent.enabled": true,
     "jest.runMode": "on-demand",
     "jest.jestCommandLine": "yarn test",
-    "jest.disabledWorkspaceFolders": [
-      "root"
-    ],
+    "jest.disabledWorkspaceFolders": ["root"],
     "markdown-preview-enhanced.hideDefaultVSCodeMarkdownPreviewButtons": false,
-    "markdown.marp.themes": [
-      "docs/slides/styles/custom.css"
-    ]
-  }
+    "markdown.marp.themes": ["docs/slides/styles/custom.css"],
+    "editor.gotoLocation.multipleDefinitions": "goto",
+    "editor.indentSize": "tabSize",
+    "[markdown]": {
+      "editor.formatOnSave": true,
+      "editor.formatOnPaste": true,
+      "editor.defaultFormatter": "DavidAnson.vscode-markdownlint",
+      "editor.tabSize": 4,
+    },
+  },
 }

@@ -16,19 +16,13 @@ export const useDateUtil = () => {
    * @param format dayjs で定めるフォーマット https://day.js.org/docs/en/display/format
    * @returns 日付文字列
    */
-  const timestampToDateTimeString = (
-    timestamp: number,
-    format?: string,
-  ): string => {
-    console.debug(
-      `useDateUtil.timestampToDateTimeString called!: [${timestamp}] [${format}]`,
-    );
+  const timestampToDateTimeString = (timestamp: number, format?: string): string => {
+    console.debug(`useDateUtil.timestampToDateTimeString called!: [${timestamp}] [${format}]`);
     try {
       const d = dayjs(timestamp).tz('Asia/Tokyo');
       return d.format(format ? format : DATE_TIME_FORMAT);
-    }
-    catch (error) {
-      console.error(`タイムスタンプの変換処理に失敗しました`, error);
+    } catch (error) {
+      console.error('タイムスタンプの変換処理に失敗しました', error);
       return dayjs(timestamp).toString();
     }
   };
@@ -42,9 +36,8 @@ export const useDateUtil = () => {
     try {
       const d = dayjs.utc(dateString).tz('Asia/Tokyo');
       return d.format(format ? format : DATE_FORMAT);
-    }
-    catch (error) {
-      console.error(`UTC の日付文字列の変換処理に失敗しました`, error);
+    } catch (error) {
+      console.error('UTC の日付文字列の変換処理に失敗しました', error);
       return dayjs.utc(dateString).toString();
     }
   };

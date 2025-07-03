@@ -1,4 +1,6 @@
+import { ClerkJwtGuard } from '@/auth/guards/clerk-jwt.guard';
 import { QiitaPostsService } from '@/domains/qiita-posts/qiita-posts.service';
+import { CanActivate } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { SearchQiitaPostsRequestDto, SearchQiitaPostsResponseDto } from './dto';
 import { QiitaPostsController } from './qiita-posts.controller';
@@ -32,6 +34,7 @@ describe('QiitaPostsController', () => {
   };
 
   beforeEach(async () => {
+    const mockGuard: CanActivate = { canActivate: jest.fn(() => true) };
     // モックサービスの作成
     const mockQiitaPostsService = {
       findQiitaPosts: jest.fn().mockResolvedValue(mockQiitaPostsResult),
@@ -45,7 +48,11 @@ describe('QiitaPostsController', () => {
           useValue: mockQiitaPostsService,
         },
       ],
-    }).compile();
+    }) // Guard は Mock を使うように設定
+      // @see https://github.com/nestjs/nest/issues/4717
+      .overrideGuard(ClerkJwtGuard)
+      .useValue(mockGuard)
+      .compile();
 
     controller = module.get<QiitaPostsController>(QiitaPostsController);
     service = module.get<QiitaPostsService>(QiitaPostsService);
@@ -57,6 +64,8 @@ describe('QiitaPostsController', () => {
 
   describe('searchQiitaPosts', () => {
     it('正常にQiita記事を検索できること', async () => {
+      // arrange
+      const userId = 'test-user-id';
       // リクエストDTOの作成
       const requestDto = new SearchQiitaPostsRequestDto();
       requestDto.authors = ['testauthor'];
@@ -65,7 +74,7 @@ describe('QiitaPostsController', () => {
       requestDto.perPage = 20;
 
       // コントローラーを呼び出し
-      const result = await controller.searchQiitaPosts(requestDto);
+      const result = await controller.searchQiitaPosts(requestDto, userId);
 
       // サービスが正しいパラメータで呼び出されたことを検証
       expect(service.findQiitaPosts).toHaveBeenCalledWith(
@@ -85,13 +94,15 @@ describe('QiitaPostsController', () => {
     });
 
     it('日付パラメータありで正常に検索できること', async () => {
+      // arrange
+      const userId = 'test-user-id';
       // リクエストDTOの作成
       const requestDto = new SearchQiitaPostsRequestDto();
       requestDto.authors = ['testauthor'];
       requestDto.minPublishedAt = new Date('2023-01-01');
 
       // コントローラーを呼び出し
-      await controller.searchQiitaPosts(requestDto);
+      await controller.searchQiitaPosts(requestDto, userId);
 
       // サービスが正しいパラメータで呼び出されたことを検証
       expect(service.findQiitaPosts).toHaveBeenCalledWith(

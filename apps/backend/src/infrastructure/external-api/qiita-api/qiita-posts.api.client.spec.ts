@@ -226,4 +226,389 @@ describe('QiitaPostsApiClient', () => {
       });
     });
   });
+
+  describe('findQiitaPostsByPersonalizedFeed', () => {
+    it('日付範囲フィルターを使用して投稿を取得できること', async () => {
+      // Arrange - モックレスポンスの設定
+      const mockResponse = {
+        data: [mockQiitaPost],
+        headers: {
+          'total-count': '1',
+        },
+      };
+
+      const apiClient = service.getApiClient();
+      (apiClient.get as jest.Mock).mockResolvedValueOnce(mockResponse);
+
+      // Act - パーソナライズフィード検索の実行
+      const result = await service.findQiitaPostsByPersonalizedFeed({
+        dateRangeFilter: {
+          from: new Date('2024-03-20'),
+          to: new Date('2024-03-21'),
+        },
+        targetDate: new Date('2024-05-04'),
+      });
+
+      // Assert - 結果の検証
+      expect(result.posts).toHaveLength(1);
+      expect(result.posts[0].title).toBe('テスト記事');
+      expect(apiClient.get).toHaveBeenCalledWith('/items', {
+        params: {
+          query: 'created:>=2024-03-20 created:<=2024-03-21',
+          page: 1,
+          per_page: 100,
+        },
+      });
+    });
+
+    it('daysAgoパラメータを使用して投稿を取得できること', async () => {
+      // Arrange - モックレスポンスの設定
+      const mockResponse = {
+        data: [mockQiitaPost],
+        headers: {
+          'total-count': '1',
+        },
+      };
+
+      const apiClient = service.getApiClient();
+      (apiClient.get as jest.Mock).mockResolvedValueOnce(mockResponse);
+
+      // 現在日時を固定
+      const realDate = global.Date;
+      const mockDate = new Date('2024-05-04');
+      global.Date = jest.fn(() => mockDate) as any;
+
+      // Act - パーソナライズフィード検索の実行（daysAgo指定）
+      const result = await service.findQiitaPostsByPersonalizedFeed({
+        dateRangeFilter: {
+          daysAgo: 7,
+        },
+        targetDate: mockDate,
+      });
+
+      // Dateをリセット
+      global.Date = realDate;
+
+      // Assert - 結果の検証
+      expect(result.posts).toHaveLength(1);
+      expect(apiClient.get).toHaveBeenCalledWith('/items', {
+        params: {
+          query: 'created:>=2024-04-27 created:<=2024-05-04',
+          page: 1,
+          per_page: 100,
+        },
+      });
+    });
+
+    it('タグフィルターを使用して投稿を取得できること（OR条件）', async () => {
+      // Arrange - モックレスポンスの設定
+      const mockResponse = {
+        data: [mockQiitaPost],
+        headers: {
+          'total-count': '1',
+        },
+      };
+
+      const apiClient = service.getApiClient();
+      (apiClient.get as jest.Mock).mockResolvedValueOnce(mockResponse);
+
+      // Act - パーソナライズフィード検索の実行
+      const result = await service.findQiitaPostsByPersonalizedFeed({
+        tagFilters: [
+          {
+            tagNames: ['javascript', 'typescript'],
+            logicType: 'OR',
+          },
+        ],
+      });
+
+      // Assert - 結果の検証
+      expect(result.posts).toHaveLength(1);
+      expect(apiClient.get).toHaveBeenCalledWith('/items', {
+        params: {
+          query: 'tag:javascript,typescript',
+          page: 1,
+          per_page: 100,
+        },
+      });
+    });
+
+    it('タグフィルターを使用して投稿を取得できること（AND条件）', async () => {
+      // Arrange - モックレスポンスの設定
+      const mockResponse = {
+        data: [mockQiitaPost],
+        headers: {
+          'total-count': '1',
+        },
+      };
+
+      const apiClient = service.getApiClient();
+      (apiClient.get as jest.Mock).mockResolvedValueOnce(mockResponse);
+
+      // Act - パーソナライズフィード検索の実行（論理演算子は無視される）
+      const result = await service.findQiitaPostsByPersonalizedFeed({
+        tagFilters: [
+          {
+            tagNames: ['javascript', 'typescript'],
+            logicType: 'AND',
+          },
+        ],
+      });
+
+      // Assert - 結果の検証
+      expect(result.posts).toHaveLength(1);
+      expect(apiClient.get).toHaveBeenCalledWith('/items', {
+        params: {
+          query: 'tag:javascript,typescript',
+          page: 1,
+          per_page: 100,
+        },
+      });
+    });
+
+    it('著者フィルターを使用して投稿を取得できること', async () => {
+      // Arrange - モックレスポンスの設定
+      const mockResponse = {
+        data: [mockQiitaPost],
+        headers: {
+          'total-count': '1',
+        },
+      };
+
+      const apiClient = service.getApiClient();
+      (apiClient.get as jest.Mock).mockResolvedValueOnce(mockResponse);
+
+      // Act - パーソナライズフィード検索の実行
+      const result = await service.findQiitaPostsByPersonalizedFeed({
+        authorFilters: [
+          {
+            authorIds: ['user1', 'user2'],
+            logicType: 'OR',
+          },
+        ],
+      });
+
+      // Assert - 結果の検証
+      expect(result.posts).toHaveLength(1);
+      expect(apiClient.get).toHaveBeenCalledWith('/items', {
+        params: {
+          query: 'user:user1,user2',
+          page: 1,
+          per_page: 100,
+        },
+      });
+    });
+
+    it('複数のフィルター条件を組み合わせて投稿を取得できること', async () => {
+      // Arrange - モックレスポンスの設定
+      const mockResponse = {
+        data: [mockQiitaPost],
+        headers: {
+          'total-count': '1',
+        },
+      };
+
+      const apiClient = service.getApiClient();
+      (apiClient.get as jest.Mock).mockResolvedValueOnce(mockResponse);
+
+      // Act - パーソナライズフィード検索の実行
+      const result = await service.findQiitaPostsByPersonalizedFeed({
+        dateRangeFilter: {
+          from: new Date('2024-03-20'),
+          to: new Date('2024-03-21'),
+        },
+        tagFilters: [
+          {
+            tagNames: ['javascript', 'typescript'],
+            logicType: 'OR',
+          },
+        ],
+        authorFilters: [
+          {
+            authorIds: ['user1'],
+            logicType: 'OR',
+          },
+        ],
+      });
+
+      // Assert - 結果の検証
+      expect(result.posts).toHaveLength(1);
+      expect(apiClient.get).toHaveBeenCalledWith('/items', {
+        params: {
+          query:
+            'created:>=2024-03-20 created:<=2024-03-21 tag:javascript,typescript user:user1',
+          page: 1,
+          per_page: 100,
+        },
+      });
+    });
+
+    it('フィルター条件がない場合は空の配列を返すこと', async () => {
+      // Act - 空のオプションでパーソナライズフィード検索の実行
+      const result = await service.findQiitaPostsByPersonalizedFeed({});
+
+      // Assert - 結果の検証
+      expect(result.posts).toHaveLength(0);
+      expect(service.getApiClient().get).not.toHaveBeenCalled();
+    });
+
+    it('ページネーションパラメータを適切に処理できること', async () => {
+      // Arrange - 複数ページのモックレスポンスを設定
+      const mockResponse1 = {
+        data: [mockQiitaPost],
+        headers: {
+          'total-count': '3',
+        },
+      };
+      const mockResponse2 = {
+        data: [{ ...mockQiitaPost, id: 'test-post-id-2' }],
+        headers: {
+          'total-count': '3',
+        },
+      };
+      const mockResponse3 = {
+        data: [{ ...mockQiitaPost, id: 'test-post-id-3' }],
+        headers: {
+          'total-count': '3',
+        },
+      };
+
+      const apiClient = service.getApiClient();
+      (apiClient.get as jest.Mock)
+        .mockResolvedValueOnce(mockResponse1)
+        .mockResolvedValueOnce(mockResponse2)
+        .mockResolvedValueOnce(mockResponse3);
+
+      // Act - パーソナライズフィード検索の実行（ページサイズ1指定）
+      const result = await service.findQiitaPostsByPersonalizedFeed({
+        tagFilters: [{ tagNames: ['javascript'], logicType: 'OR' }],
+        perPage: 1,
+      });
+
+      // Assert - 結果の検証
+      expect(result.posts).toHaveLength(3);
+      expect(apiClient.get).toHaveBeenCalledTimes(3);
+      expect(apiClient.get).toHaveBeenNthCalledWith(1, '/items', {
+        params: {
+          query: 'tag:javascript',
+          page: 1,
+          per_page: 1,
+        },
+      });
+      expect(apiClient.get).toHaveBeenNthCalledWith(2, '/items', {
+        params: {
+          query: 'tag:javascript',
+          page: 2,
+          per_page: 1,
+        },
+      });
+      expect(apiClient.get).toHaveBeenNthCalledWith(3, '/items', {
+        params: {
+          query: 'tag:javascript',
+          page: 3,
+          per_page: 1,
+        },
+      });
+    });
+  });
+
+  describe('findQiitaPostsByTags', () => {
+    it('指定したタグを含む投稿をOR条件で取得できること（デフォルト）', async () => {
+      // Arrange - モックレスポンスの設定
+      const mockResponse = {
+        data: [mockQiitaPost],
+        headers: {
+          'total-count': '1',
+        },
+      };
+
+      const apiClient = service.getApiClient();
+      (apiClient.get as jest.Mock).mockResolvedValueOnce(mockResponse);
+
+      // findQiitaPostsByPersonalizedFeedメソッドをスパイ
+      const spy = jest.spyOn(service, 'findQiitaPostsByPersonalizedFeed');
+
+      // Act - タグ検索の実行
+      const result = await service.findQiitaPostsByTags([
+        'javascript',
+        'typescript',
+      ]);
+
+      // Assert - 結果の検証
+      expect(result.posts).toHaveLength(1);
+      expect(spy).toHaveBeenCalledWith({
+        tagFilters: [
+          {
+            tagNames: ['javascript', 'typescript'],
+            logicType: 'OR',
+          },
+        ],
+      });
+    });
+
+    it('指定したタグを含む投稿をAND条件で取得できること', async () => {
+      // Arrange - モックレスポンスの設定
+      const mockResponse = {
+        data: [mockQiitaPost],
+        headers: {
+          'total-count': '1',
+        },
+      };
+
+      const apiClient = service.getApiClient();
+      (apiClient.get as jest.Mock).mockResolvedValueOnce(mockResponse);
+
+      // findQiitaPostsByPersonalizedFeedメソッドをスパイ
+      const spy = jest.spyOn(service, 'findQiitaPostsByPersonalizedFeed');
+
+      // Act - タグ検索の実行（AND条件）
+      const result = await service.findQiitaPostsByTags(
+        ['javascript', 'typescript'],
+        'AND',
+      );
+
+      // Assert - 結果の検証
+      expect(result.posts).toHaveLength(1);
+      expect(spy).toHaveBeenCalledWith({
+        tagFilters: [
+          {
+            tagNames: ['javascript', 'typescript'],
+            logicType: 'AND',
+          },
+        ],
+      });
+    });
+  });
+
+  describe('findQiitaPostsByAuthors', () => {
+    it('指定した著者の投稿を取得できること', async () => {
+      // Arrange - モックレスポンスの設定
+      const mockResponse = {
+        data: [mockQiitaPost],
+        headers: {
+          'total-count': '1',
+        },
+      };
+
+      const apiClient = service.getApiClient();
+      (apiClient.get as jest.Mock).mockResolvedValueOnce(mockResponse);
+
+      // findQiitaPostsByPersonalizedFeedメソッドをスパイ
+      const spy = jest.spyOn(service, 'findQiitaPostsByPersonalizedFeed');
+
+      // Act - 著者検索の実行
+      const result = await service.findQiitaPostsByAuthors(['user1', 'user2']);
+
+      // Assert - 結果の検証
+      expect(result.posts).toHaveLength(1);
+      expect(spy).toHaveBeenCalledWith({
+        authorFilters: [
+          {
+            authorIds: ['user1', 'user2'],
+            logicType: 'OR',
+          },
+        ],
+      });
+    });
+  });
 });

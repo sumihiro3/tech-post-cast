@@ -19,6 +19,8 @@
 - [共通ルール](/docs/coding-rules/common.md) - すべてのアプリケーションに適用される基本ルール
 - [NestJSバックエンドルール](/docs/coding-rules/api-backend.md) - API BackendとBackendアプリケーション用のルール
 - [Nuxt 3フロントエンドルール](/docs/coding-rules/lp-frontend.md) - LPフロントエンドとLIFF用のルール
+- [LINE Botルール](/docs/coding-rules/line-bot.md) - LINE Bot用のルール
+- [インフラルール](/docs/coding-rules/infra.md) - インフラストラクチャコード用のルール
 
 各アプリケーションディレクトリにはそれぞれのREADME.mdファイルがあり、そのアプリケーション固有の情報やガイドラインを提供しています。
 
@@ -78,12 +80,89 @@ NestJSアプリケーションは以下の層に分けて実装します：
 - テストケースは機能の正常系と異常系の両方をカバーする
 - NestJSのテストはArrange-Act-Assert規約に従う
 - Nuxtのテストはコンポーネントのロジックをcomposablesに分離してテスト可能にする
+- **テストデータは必ずファクトリクラスから取得する**（詳細は各アプリケーションのガイドライン参照）
+- テストユーティリティ（ファクトリー、ログ制御、ヘルパー関数）を活用してテストコードの品質と効率を向上させる
 
 ## コメント
 
 - 複雑なロジックには説明コメントを追加する
 - パブリックAPIには JSDoc スタイルのコメントを使用する
 - TODO コメントには担当者と期限を含める
+
+## テストユーティリティ
+
+このプロジェクトでは、テストの効率化と品質向上のために共通のテストユーティリティを提供しています。
+
+### テストデータファクトリー
+
+各アプリケーションには、モックデータを簡単に作成するためのファクトリークラスが用意されています：
+
+- `apps/api-backend/src/test/factories/` - API Backend用ファクトリー
+- `apps/backend/src/test/factories/` - Backend用ファクトリー
+
+**使用例:**
+
+```typescript
+import { QiitaPostFactory } from '@/test/factories/qiita-post.factory';
+
+// 単一のモックデータを作成
+const post = QiitaPostFactory.createQiitaPost({
+  title: 'カスタムタイトル', // 任意のプロパティを上書き
+});
+
+// 複数のモックデータを作成
+const posts = QiitaPostFactory.createQiitaPosts(5);
+```
+
+### ログ出力制御
+
+テスト実行時のログ出力を制御するための機能を提供しています：
+
+**環境変数による制御:**
+
+```bash
+# ログ出力を有効化（デバッグ時）
+TEST_LOG_ENABLED=true yarn test
+```
+
+**プログラムによる制御:**
+
+```typescript
+import { suppressLogOutput, restoreLogOutput } from '@/test/helpers/logger.helper';
+
+describe('テストスイート', () => {
+  let logSpies: jest.SpyInstance[];
+
+  beforeEach(() => {
+    logSpies = suppressLogOutput();
+  });
+
+  afterEach(() => {
+    restoreLogOutput(logSpies);
+  });
+});
+```
+
+### テストモジュールヘルパー
+
+NestJSテストモジュールの作成を簡素化するためのヘルパー関数を提供しています：
+
+```typescript
+import { createTestingModule, createTestingModuleWithMockPrisma } from '@/test/helpers/test-module.helper';
+
+// 基本的なテストモジュール
+const module = await createTestingModule({
+  controllers: [MyController],
+  providers: [MyService],
+});
+
+// PrismaServiceをモック化したテストモジュール
+const [module, mockPrisma] = await createTestingModuleWithMockPrisma({
+  providers: [MyRepository],
+});
+```
+
+詳細な使用方法については、各アプリケーションの `src/test/README.md` を参照してください。
 
 ## Git管理のベストプラクティス
 
@@ -102,3 +181,18 @@ NestJSアプリケーションは以下の層に分けて実装します：
 ## 詳細な規約
 
 より詳細なコーディング規約については、[/docs/coding-rules/](/docs/coding-rules/)ディレクトリのドキュメントを参照してください。新しいアプリケーションやパッケージを追加する場合は、既存のルールを拡張し、必要に応じて新しいガイドラインドキュメントを作成してください。
+
+## アーキテクチャ原則
+
+### 依存性逆転の原則（NestJSアプリケーション）
+
+- **Repositoryパターン**: データアクセス層は必ずインターフェイスを定義し、ドメイン層とインフラ層を分離する
+    - ドメイン層: `src/domains/{domain-name}/{domain-name}.repository.interface.ts`
+    - インフラ層: `src/infrastructure/database/{domain-name}/{domain-name}.repository.ts`
+    - サービス層: インターフェイスに依存し、DIコンテナーで実装クラスを注入
+
+### クリーンアーキテクチャ
+
+- 各層の責任を明確に分離する
+- 外側の層は内側の層に依存するが、内側の層は外側の層に依存しない
+- ビジネスロジックはドメイン層に集約する

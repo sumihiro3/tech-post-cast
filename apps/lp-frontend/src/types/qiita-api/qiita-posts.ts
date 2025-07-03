@@ -66,9 +66,14 @@ export interface QiitaTeamMembershipApiResponse {
  * Qiita 記事のタグ情報
  */
 export interface QiitaTagApiResponse {
-  /** タグ名 */
-  name: string;
-  versions: string[];
+  /** タグを特定するための一意な名前 */
+  id: string;
+  /** このタグをフォローしているユーザーの数 */
+  followers_count: number;
+  /** このタグに設定されたアイコン画像のURL */
+  icon_url: string;
+  /** このタグが付けられた記事の数 */
+  items_count: number;
 }
 
 /**

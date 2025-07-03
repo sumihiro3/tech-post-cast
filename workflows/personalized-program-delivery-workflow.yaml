@@ -1,0 +1,128 @@
+main:
+  params: [args]
+  steps:
+    - init:
+        assign:
+          # 番組生成バックエンドのURL
+          - apiBaseUrl: ${sys.get_env("API_BASE_URL")}
+          # APIトークン
+          - apiToken: ${"Bearer " + sys.get_env("API_TOKEN")}
+          # RSS生成に成功したユーザー数
+          - rssGenerationSuccessCount: 0
+          # RSS生成に失敗したユーザーID
+          - failedRssUserIds: []
+          # 通知送信に成功したユーザー数
+          - notificationSuccessCount: 0
+          # 通知送信に失敗したユーザーID
+          - failedNotificationUserIds: []
+    - logApiBaseUrl:
+        call: sys.log
+        args:
+          text: ${"API Base URL is " + apiBaseUrl}
+          severity: DEBUG
+    - logDeliveryStart:
+        call: sys.log
+        args:
+          text: 'Starting personalized program delivery process'
+          severity: INFO
+
+    # Step 1: パーソナルプログラムのRSS一括生成
+    - generateAllUserRss:
+        try:
+          steps:
+            - logRssGenerationStart:
+                call: sys.log
+                args:
+                  text: 'Starting RSS generation for all users'
+                  severity: INFO
+            - generateRssRequest:
+                call: http.post
+                args:
+                  url: ${apiBaseUrl + "/personalized-feeds/rss/generate-all"}
+                  headers:
+                    Authorization: ${apiToken}
+                result: rssResult
+            - logRssGenerationResult:
+                call: sys.log
+                args:
+                  text: 'RSS generation completed'
+                  severity: INFO
+            - updateRssCounters:
+                assign:
+                  - rssGenerationSuccessCount: ${rssResult.body.successCount}
+                  - failedRssUserIds: ${rssResult.body.failedUserIds}
+        except:
+          as: e
+          steps:
+            - logRssError:
+                call: sys.log
+                args:
+                  text: 'RSS generation failed'
+                  severity: ERROR
+            - notifyRssError:
+                call: http.post
+                args:
+                  url: ${apiBaseUrl + "/personalized-feeds/notify-error"}
+                  headers:
+                    Authorization: ${apiToken}
+                  body:
+                    operation: 'RSS_GENERATION'
+                    error: ${e}
+
+    # Step 2: 配信通知を有効にしているユーザーへの通知
+    - sendBatchNotifications:
+        try:
+          steps:
+            - logNotificationStart:
+                call: sys.log
+                args:
+                  text: 'Starting batch notifications for delivery-enabled users'
+                  severity: INFO
+            - sendNotificationsRequest:
+                call: http.post
+                args:
+                  url: ${apiBaseUrl + "/notifications/batch"}
+                  headers:
+                    Authorization: ${apiToken}
+                result: notificationResult
+            - logNotificationResult:
+                call: sys.log
+                args:
+                  text: 'Batch notifications completed'
+                  severity: INFO
+            - updateNotificationCounters:
+                assign:
+                  - notificationSuccessCount: ${notificationResult.body.successUsers}
+        except:
+          as: e
+          steps:
+            - logNotificationError:
+                call: sys.log
+                args:
+                  text: 'Batch notifications failed'
+                  severity: ERROR
+            - notifyNotificationError:
+                call: http.post
+                args:
+                  url: ${apiBaseUrl + "/personalized-feeds/notify-error"}
+                  headers:
+                    Authorization: ${apiToken}
+                  body:
+                    operation: 'BATCH_NOTIFICATIONS'
+                    error: ${e}
+
+    # Step 3: 配信処理完了ログ
+    - finalize:
+        steps:
+          - logDeliveryCompletion:
+              call: sys.log
+              args:
+                text: 'Personalized program delivery process completed'
+                severity: INFO
+          - returnResult:
+              return:
+                status: 'completed'
+                rssGenerationSuccessCount: ${rssGenerationSuccessCount}
+                failedRssUserIds: ${failedRssUserIds}
+                notificationSuccessCount: ${notificationSuccessCount}
+                failedNotificationUserIds: ${failedNotificationUserIds}

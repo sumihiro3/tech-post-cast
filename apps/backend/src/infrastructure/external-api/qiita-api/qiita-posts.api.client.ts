@@ -1,6 +1,13 @@
 import { AppConfigService } from '@/app-config/app-config.service';
-import { IQiitaPostsApiClient } from '@/domains/qiita-posts/qiita-posts.api.client.interface';
 import {
+  AuthorFilterCondition,
+  DateRangeFilterCondition,
+  IQiitaPostsApiClient,
+  QiitaFeedFilterOptions,
+  TagFilterCondition,
+} from '@/domains/qiita-posts/qiita-posts.api.client.interface';
+import {
+  FindQiitaPostApiResponseData,
   IQiitaPostApiResponse,
   QiitaPostApiResponse,
 } from '@domains/qiita-posts/qiita-posts.entity';
@@ -20,6 +27,10 @@ type QiitaPostApiResponseData = {
   currentPage: number;
   /** 最大ページ数 */
   maxPage: number;
+  /** API 残り回数 */
+  rateRemaining: number;
+  /** API リセット時間 */
+  rateReset: number;
   /** ページ内の記事一覧 */
   posts: IQiitaPostApiResponse[];
 };
@@ -80,29 +91,178 @@ export class QiitaPostsApiClient implements IQiitaPostsApiClient {
   }
 
   /**
+   * パーソナライズされたフィード条件に基づいて記事を検索する
+   * @param options フィルター条件オプション
+   * @returns 条件に一致する記事一覧
+   */
+  async findQiitaPostsByPersonalizedFeed(
+    options: QiitaFeedFilterOptions,
+  ): Promise<FindQiitaPostApiResponseData> {
+    this.logger.verbose(
+      `QiitaPostsApiClient.findQiitaPostsByPersonalizedFeed`,
+      {
+        options,
+      },
+    );
+
+    // 検索クエリを構築
+    const queryParts: string[] = [];
+
+    // 日付範囲フィルターを追加
+    if (options.dateRangeFilter) {
+      const targetDate = options.targetDate || new Date();
+      const dateQuery = this.buildDateRangeQuery(
+        options.dateRangeFilter,
+        targetDate,
+      );
+      if (dateQuery) {
+        queryParts.push(dateQuery);
+      }
+    }
+
+    // タグフィルターを追加
+    if (options.tagFilters && options.tagFilters.length > 0) {
+      options.tagFilters.forEach((tagFilter) => {
+        const tagQuery = this.buildTagQuery(tagFilter);
+        if (tagQuery) {
+          queryParts.push(tagQuery);
+        }
+      });
+    }
+
+    // 著者フィルターを追加
+    if (options.authorFilters && options.authorFilters.length > 0) {
+      options.authorFilters.forEach((authorFilter) => {
+        const authorQuery = this.buildAuthorQuery(authorFilter);
+        if (authorQuery) {
+          queryParts.push(authorQuery);
+        }
+      });
+    }
+
+    // クエリが空の場合は空の配列を返す
+    if (queryParts.length === 0) {
+      return {
+        maxPage: 0,
+        rateRemaining: 0,
+        rateReset: 0,
+        posts: [],
+      };
+    }
+
+    // 最終的な検索クエリを作成
+    const query = queryParts.join(' ');
+
+    this.logger.debug(`検索クエリを作成しました: ${query}`);
+
+    // ページングの設定
+    const perPage = options.perPage || PER_PAGE_ITEMS;
+    const startPage = options.page || 1;
+
+    // API検索実行
+    let page = startPage;
+    let maxPage = 1;
+    const posts: QiitaPostApiResponse[] = [];
+    let rateRemaining = 0;
+    let rateReset = 0;
+
+    do {
+      const response = await this.findQiitaPostsByPage(query, page, perPage);
+      const responsePosts = response.posts;
+      for (const post of responsePosts) {
+        posts.push(new QiitaPostApiResponse(post));
+      }
+      maxPage = response.maxPage;
+      rateRemaining = response.rateRemaining;
+      rateReset = response.rateReset;
+      page++;
+    } while (page <= maxPage);
+    this.logger.debug(`Qiita API から取得した記事数: ${posts.length} 件`, {
+      rateRemaining,
+      rateReset,
+    });
+    return {
+      maxPage,
+      rateRemaining,
+      rateReset,
+      posts,
+    };
+  }
+
+  /**
+   * 指定されたタグを含む記事を検索する
+   * @param tagNames タグ名のリスト
+   * @param logicType 論理演算子（デフォルトはOR）
+   * @returns 条件に一致する記事一覧
+   */
+  async findQiitaPostsByTags(
+    tagNames: string[],
+    logicType: 'AND' | 'OR' = 'OR',
+  ): Promise<FindQiitaPostApiResponseData> {
+    this.logger.verbose(`QiitaPostsApiClient.findQiitaPostsByTags`, {
+      tagNames,
+      logicType,
+    });
+
+    const tagFilter: TagFilterCondition = {
+      tagNames,
+      logicType,
+    };
+
+    return await this.findQiitaPostsByPersonalizedFeed({
+      tagFilters: [tagFilter],
+    });
+  }
+
+  /**
+   * 指定された著者が投稿した記事を検索する
+   * @param authorIds 著者IDのリスト
+   * @returns 条件に一致する記事一覧
+   */
+  async findQiitaPostsByAuthors(
+    authorIds: string[],
+  ): Promise<FindQiitaPostApiResponseData> {
+    this.logger.verbose(`QiitaPostsApiClient.findQiitaPostsByAuthors`, {
+      authorIds,
+    });
+
+    const authorFilter: AuthorFilterCondition = {
+      authorIds,
+      logicType: 'OR',
+    };
+
+    return this.findQiitaPostsByPersonalizedFeed({
+      authorFilters: [authorFilter],
+    });
+  }
+
+  /**
    * 指定期間内に投稿された記事一覧のうち、指定ページ目の記事一覧を取得する
-   * @param targetYearMonth 収集対象年月
+   * @param query 検索クエリ
    * @param page ページ番号
+   * @param perPage 1ページあたりの記事数
    * @returns 記事一覧
    */
   async findQiitaPostsByPage(
     query: string,
     page: number,
+    perPage: number = PER_PAGE_ITEMS,
   ): Promise<QiitaPostApiResponseData> {
     this.logger.verbose(`QiitaPostsApiRepository.findQiitaPostsByPage`, {
       query,
       page,
+      perPage,
     });
     // Qiita API 実行
-    const params = {
+    const params: { [key: string]: any } = {
       query,
       page,
-      per_page: PER_PAGE_ITEMS,
+      per_page: perPage,
     };
-    this.logger.debug(
-      { params },
-      `Qiita API へ記事一覧取得のリクエストを送信します`,
-    );
+
+    this.logger.debug(`Qiita API へ記事一覧取得のリクエストを送信します`, {
+      params,
+    });
     try {
       const response = await this.getApiClient().get<IQiitaPostApiResponse[]>(
         '/items',
@@ -111,17 +271,18 @@ export class QiitaPostsApiClient implements IQiitaPostsApiClient {
         },
       );
       this.logger.debug(
+        `Qiita API から記事一覧取得のレスポンスを受信しました。`,
         {
           params,
           headers: response.headers,
-          // data: response.data,
         },
-        `Qiita API から記事一覧取得のレスポンスを受信しました。`,
       );
       const totalCount = response.headers['total-count'];
       return {
         currentPage: page,
-        maxPage: Math.ceil(totalCount / PER_PAGE_ITEMS),
+        maxPage: Math.ceil(totalCount / perPage),
+        rateRemaining: parseInt(response.headers['rate-remaining'] || '0'),
+        rateReset: parseInt(response.headers['rate-reset'] || '0'),
         posts: response.data,
       };
     } catch (error) {
@@ -136,5 +297,85 @@ export class QiitaPostsApiClient implements IQiitaPostsApiClient {
       }
       throw error;
     }
+  }
+
+  /**
+   * 日付範囲フィルター条件からクエリを構築する
+   * @param dateRange 日付範囲フィルター条件
+   * @param programDate 番組日
+   * @returns 検索クエリ文字列
+   * @private
+   */
+  private buildDateRangeQuery(
+    dateRange: DateRangeFilterCondition,
+    programDate: Date,
+  ): string {
+    // 日付範囲
+    const conditions: string[] = [];
+
+    // daysAgoが指定されている場合
+    if (dateRange.daysAgo) {
+      const targetDate = dayjs(programDate);
+      const fromDate = targetDate.subtract(dateRange.daysAgo, 'day');
+      conditions.push(`created:>=${fromDate.format(DATE_FORMAT)}`);
+      conditions.push(`created:<=${targetDate.format(DATE_FORMAT)}`);
+      return conditions.join(' ');
+    }
+
+    if (dateRange.from) {
+      const fromText = dayjs(dateRange.from).format(DATE_FORMAT);
+      conditions.push(`created:>=${fromText}`);
+    }
+
+    if (dateRange.to) {
+      const toText = dayjs(dateRange.to).format(DATE_FORMAT);
+      conditions.push(`created:<=${toText}`);
+    }
+
+    return conditions.join(' ');
+  }
+
+  /**
+   * タグフィルター条件からクエリを構築する
+   * @param tagFilter タグフィルター条件
+   * @returns 検索クエリ文字列
+   * @private
+   */
+  private buildTagQuery(tagFilter: TagFilterCondition): string {
+    if (!tagFilter.tagNames || tagFilter.tagNames.length === 0) {
+      return '';
+    }
+
+    // 複数のタグがある場合はカンマ区切りでグルーピング
+    if (tagFilter.tagNames.length > 1) {
+      // タグ名をカンマで連結
+      const tagGroup = tagFilter.tagNames.join(',');
+      return `tag:${tagGroup}`;
+    }
+
+    // 単一タグの場合
+    return `tag:${tagFilter.tagNames[0]}`;
+  }
+
+  /**
+   * 著者フィルター条件からクエリを構築する
+   * @param authorFilter 著者フィルター条件
+   * @returns 検索クエリ文字列
+   * @private
+   */
+  private buildAuthorQuery(authorFilter: AuthorFilterCondition): string {
+    if (!authorFilter.authorIds || authorFilter.authorIds.length === 0) {
+      return '';
+    }
+
+    // 複数の著者がある場合はカンマ区切りでグルーピング
+    if (authorFilter.authorIds.length > 1) {
+      // 著者IDをカンマで連結
+      const authorGroup = authorFilter.authorIds.join(',');
+      return `user:${authorGroup}`;
+    }
+
+    // 単一著者の場合
+    return `user:${authorFilter.authorIds[0]}`;
   }
 }

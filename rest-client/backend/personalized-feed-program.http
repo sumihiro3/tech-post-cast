@@ -1,0 +1,78 @@
+##################################################
+# パーソナルフィード番組生成APIの実行
+##################################################
+
+# ローカル環境
+@baseUrl = {{$dotenv BACKEND_BASE_URL_LOCAL}}
+@apiToken = {{$dotenv BACKEND_API_TOKEN_LOCAL}}
+
+# 開発環境
+# @baseUrl = {{$dotenv BACKEND_BASE_URL_DEV}}
+# @apiToken = {{$dotenv BACKEND_API_TOKEN_DEV}}
+
+# 本番環境
+# @baseUrl = {{$dotenv BACKEND_BASE_URL_PROD}}
+# @apiToken = {{$dotenv BACKEND_API_TOKEN_PROD}}
+
+# Feed ID
+# Test user
+# @feedId = feed_cmaamvdxs00003x3j5ywgcll7
+# sumihiro@gmail.com
+@feedId = feed_cmamcgw9900018p3j62n1293n
+
+# User ID (RSS生成用)
+# Test user
+@userId = user_cmaamvdxs00003x3j5ywgcll7
+# sumihiro@gmail.com
+# @userId = user_cmamcgw9900018p3j62n1293n
+
+##################################################
+# パーソナルフィード番組生成
+##################################################
+
+POST {{baseUrl}}/personalized-feeds/generate-program
+Content-Type: application/json
+Authorization: Bearer {{apiToken}}
+
+{
+  "daysAgo": 3,
+  "feedId": "{{feedId}}"
+}
+
+##################################################
+# パーソナルフィード番組生成の終了通知
+##################################################
+
+POST {{baseUrl}}/personalized-feeds/finalize
+Content-Type: application/json
+Authorization: Bearer {{apiToken}}
+
+{
+  "daysAgo": 3
+}
+
+##################################################
+# RSS一括生成・アップロード
+##################################################
+
+### RSS機能が有効な全ユーザーのRSSを一括生成・アップロード
+POST {{baseUrl}}/personalized-feeds/rss/generate-all
+Content-Type: application/json
+Authorization: Bearer {{apiToken}}
+
+{
+  "force": false
+}
+
+##################################################
+# 個別ユーザーRSS生成・アップロード
+##################################################
+
+### 指定ユーザーのRSSを生成・アップロード
+POST {{baseUrl}}/personalized-feeds/rss/generate-user
+Content-Type: application/json
+Authorization: Bearer {{apiToken}}
+
+{
+  "userId": "{{userId}}"
+}

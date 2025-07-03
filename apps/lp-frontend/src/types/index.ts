@@ -1,4 +1,5 @@
 export * from './headline-topic-programs';
+export * from './personalized-feed';
 export * from './qiita-api';
 
 /**

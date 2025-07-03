@@ -4,6 +4,10 @@ v-container(fluid)
     template(#prepend)
       a(href='/')
         logo
+      v-app-bar-nav-icon.ml-2(
+        v-if="props.showDrawerToggle"
+        @click="emit('toggle-drawer')"
+      )
     //- ClientOnly
     //-   template(#default)
     //-     SignedOut
@@ -16,10 +20,10 @@ v-container(fluid)
     //-       ) ログイン
     //-     SignedIn
     //-       v-menu(location="bottom end")
-    //-         template(#activator="{ props }")
+    //-         template(#activator="{ props: signInProps }")
     //-           v-btn(
     //-             icon
-    //-             v-bind="props"
+    //-             v-bind="signInProps"
     //-             class="ml-2"
     //-           )
     //-             v-avatar
@@ -51,6 +55,14 @@ v-container(fluid)
 <script setup lang="ts">
 // import { SignedIn, SignedOut, useClerk, useUser } from '@clerk/vue';
 
+// // プロパティ定義
+const props = defineProps({
+  showDrawerToggle: {
+    type: Boolean,
+    default: false,
+  },
+});
+
 // const clerk = useClerk();
 // const { user } = useUser();
 
@@ -65,4 +77,7 @@ v-container(fluid)
 // const closeMenu = (): void => {
 //   // メニューを閉じる処理はv-menuコンポーネントが自動的に行います
 // };
+
+// // ドロワー切り替えイベントを定義
+const emit = defineEmits(['toggle-drawer']);
 </script>

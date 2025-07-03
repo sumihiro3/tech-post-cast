@@ -91,6 +91,9 @@ export class OpenAiApiClient {
     } catch (error) {
       const errorMessage = `記事の要約に失敗しました`;
       this.logger.error(errorMessage, { error });
+      if (error instanceof Error) {
+        this.logger.error(errorMessage, error.message, error.stack);
+      }
       throw new SummarizePostError(errorMessage, {
         cause: error,
       });
@@ -179,7 +182,10 @@ export class OpenAiApiClient {
       return script;
     } catch (error) {
       const errorMessage = `ヘッドライントピック番組の台本生成に失敗しました`;
-      this.logger.error(errorMessage, { error }, error.stack);
+      this.logger.error(errorMessage, { error });
+      if (error instanceof Error) {
+        this.logger.error(errorMessage, error.message, error.stack);
+      }
       if (error instanceof OpenAiApiError) {
         throw error;
       }

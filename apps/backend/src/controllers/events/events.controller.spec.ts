@@ -1,7 +1,9 @@
+import { InternalServerErrorException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MockFunctionMetadata, ModuleMocker } from 'jest-mock';
 import { HeadlineTopicProgramsService } from '../headline-topic-programs/headline-topic-programs.service';
 import { EventsController } from './events.controller';
+import { Request } from 'express';
 
 const moduleMocker = new ModuleMocker(global);
 
@@ -17,8 +19,8 @@ describe('EventsController', () => {
         // Service の各メソッドを Mock 化する
         if (token === HeadlineTopicProgramsService) {
           return {
-            // ここに Mock したいメソッドを記述する
-          } as HeadlineTopicProgramsService;
+            createHeadlineTopicProgram: jest.fn(),
+          };
         }
         if (typeof token === 'function') {
           const mockMetadata = moduleMocker.getMetadata(
@@ -39,5 +41,52 @@ describe('EventsController', () => {
   it('should be defined', () => {
     expect(controller).toBeDefined();
     expect(headlineTopicProgramsService).toBeDefined();
+  });
+
+  describe('receiveEvents', () => {
+    it('should receive events and create headline topic program', async () => {
+      const mockDate = new Date();
+      const mockProgram = {
+        id: 'test-id',
+        title: 'Test Program',
+        script: '{}',
+        audioUrl: 'https://example.com/audio.mp3',
+        audioDuration: 1000,
+        chapters: '[]',
+        videoUrl: 'https://example.com/video.mp4',
+        imageUrl: 'https://example.com/image.jpg',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const mockRequest = {
+        body: { source: 'aws.events', detail: {} },
+      } as Request;
+
+      jest
+        .spyOn(headlineTopicProgramsService, 'createHeadlineTopicProgram')
+        .mockResolvedValue(mockProgram);
+
+      await controller.receiveEvents(mockRequest);
+
+      expect(
+        headlineTopicProgramsService.createHeadlineTopicProgram,
+      ).toHaveBeenCalledWith(expect.any(Date));
+    });
+
+    it('should throw InternalServerErrorException when service throws an error', async () => {
+      const mockRequest = {
+        body: { source: 'aws.events', detail: {} },
+      } as Request;
+
+      const mockError = new Error('Service error');
+      jest
+        .spyOn(headlineTopicProgramsService, 'createHeadlineTopicProgram')
+        .mockRejectedValue(mockError);
+
+      await expect(controller.receiveEvents(mockRequest)).rejects.toThrow(
+        InternalServerErrorException,
+      );
+    });
   });
 });

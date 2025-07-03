@@ -50,3 +50,13 @@ export class AppUserDeleteError extends AppUserError {
     super(message, options);
   }
 }
+
+/**
+ * ユーザーが存在しない場合に発生するエラー
+ */
+export class UserNotFoundError extends AppUserError {
+  override name = 'UserNotFoundError';
+  constructor(userId: string, cause?: unknown) {
+    super(`ユーザー [${userId}] は登録されていません`, cause);
+  }
+}

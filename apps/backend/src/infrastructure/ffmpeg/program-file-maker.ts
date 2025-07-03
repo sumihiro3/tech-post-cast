@@ -11,12 +11,15 @@ import {
   ProgramFileMetadata,
 } from '@domains/radio-program/program-file-maker.interface';
 import { Injectable, Logger } from '@nestjs/common';
-import { formatDate } from '@tech-post-cast/commons';
+import { createDir, formatDate } from '@tech-post-cast/commons';
 import * as ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
-import { mkdir, rm } from 'fs/promises';
+import { rm } from 'fs/promises';
 import * as path from 'path';
 import { setTimeout } from 'timers/promises';
+
+/** ファイル出力完了までの待ち時間 */
+const FILE_OUTPUT_WAIT_TIME = 3 * 1000;
 
 /**
  * ffmpeg を利用して番組ファイルを作成するクラス
@@ -30,6 +33,7 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
 
   constructor(private readonly appConfig: AppConfigService) {
     this.outputDir = this.appConfig.ProgramFileGenerationTempDir;
+    createDir(this.outputDir);
   }
 
   /**
@@ -64,6 +68,48 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
   }
 
   /**
+   * WAV ファイルを MP3 ファイルに変換する
+   * @param waveFilePath WAV ファイルパス
+   * @param mp3FilePath MP3 ファイルパス
+   */
+  async convertWavToMp3(
+    waveFilePath: string,
+    mp3FilePath: string,
+  ): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      ffmpeg()
+        .input(waveFilePath)
+        .outputOptions([
+          '-acodec libmp3lame', // MP3 エンコーダー
+          '-ar 44100', // サンプルレート 44.1KHz
+          '-ac 2', // ステレオチャンネル
+          '-y', // 上書き許可
+        ])
+        .output(mp3FilePath)
+        .on('start', (commandLine) => {
+          this.logger.log(`WAV ファイルを MP3 ファイルに変換します`);
+          this.logger.debug(
+            `WAV ファイルを MP3 ファイルに変換するコマンド: ${commandLine}`,
+          );
+        })
+        .on('end', () => {
+          this.logger.log(`WAV ファイルを MP3 ファイルに変換しました`);
+          resolve();
+        })
+        .on('error', (error) => {
+          this.logger.error(
+            `WAV ファイルを MP3 ファイルに変換中にエラーが発生しました`,
+            {
+              error,
+            },
+          );
+          reject(error);
+        })
+        .run();
+    });
+  }
+
+  /**
    * 番組の音声ファイルを生成する
    * @param command 番組音声ファイル生成要求コマンド
    */
@@ -77,7 +123,6 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
       },
     );
     try {
-      await mkdir(this.outputDir, { recursive: true });
       // 1. メイン音声と BGM をマージする
       this.logger.log('1. メイン音声と BGM のマージを開始...');
       const mergedMainWithBgmPath = await this.mergeMainAudioAndBgm(
@@ -277,7 +322,8 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
         .map((file) => `file '${path.resolve(file)}'`)
         .join('\n');
       fs.writeFileSync(listFilePath, fileListContent);
-      await setTimeout(3 * 1000); // 3秒待機
+      // ファイルが正常に結合されるまで待機する
+      await setTimeout(FILE_OUTPUT_WAIT_TIME);
       // メタデータファイルを生成する
       const metadataFilePath = await this.generateProgramMetadataFile(metadata);
       // 音声ファイルを結合する
@@ -296,16 +342,6 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
           '-ac 2', // ステレオ
           '-y', // 上書き許可
         ])
-        // TODO メタデータの指定をファイルで行うようにする
-        // メタデータの埋め込み
-        // .outputOptions('-metadata', `artist=${metadata.artist}`)
-        // .outputOptions('-metadata', `album=${metadata.album}`)
-        // .outputOptions('-metadata', `album_artist=${metadata.albumArtist}`)
-        // .outputOptions('-metadata', `title=${metadata.title}`)
-        // .outputOptions('-metadata', `date=${metadata.date}`)
-        // .outputOptions('-metadata', `genre=${metadata.genre}`)
-        // .outputOptions('-metadata', `language=${metadata.language}`)
-        // .outputOptions('-metadata', `filename=${metadata.filename}`)
         .save(outputPath)
         .on('start', (commandLine) => {
           this.logger.log(`音声ファイルの結合処理を開始します`);
@@ -320,7 +356,6 @@ export class FfmpegProgramFileMaker implements IProgramFileMaker {
           this.logger.log(
             `音声ファイルの結合処理が完了しました: ${outputPath}`,
           );
-          // await rm(listFilePath, { force: true }); // 一時ファイル削除
           resolve();
         })
         .on('error', (error) => {
@@ -379,8 +414,8 @@ title=${chapter.title}
     }
     this.logger.debug(`メタデータファイルの内容: ${metadataString}`);
     fs.writeFileSync(metadataFilePath, metadataString);
-    // 3秒待機
-    await setTimeout(3 * 1000);
+    // ファイルが正常に結合されるまで待機する
+    await setTimeout(FILE_OUTPUT_WAIT_TIME);
     this.logger.log(
       `番組のメタデータファイルを生成しました: ${metadataFilePath}`,
     );
@@ -400,7 +435,6 @@ title=${chapter.title}
         command,
       },
     );
-    await mkdir(this.outputDir, { recursive: true });
     const metadata = command.metadata;
     const videoFilePath = command.outputFilePath;
     // 動画ファイルを生成する
@@ -459,5 +493,95 @@ title=${chapter.title}
         })
         .run();
     });
+  }
+
+  /**
+   * 複数の音声ファイルをシーケンシャルに結合する（セグメント結合）
+   * @param inputFiles 入力音声ファイルのパスの配列
+   * @param outputFile 出力音声ファイルのパス
+   * @returns 結合された音声ファイルのパス
+   */
+  async mergeAudioFilesSegments(
+    inputFiles: string[],
+    outputFile: string,
+  ): Promise<string> {
+    this.logger.debug(`FfmpegProgramFileMaker.mergeAudioFilesSegments called`, {
+      inputFiles,
+      outputFile,
+    });
+
+    try {
+      if (inputFiles.length === 0) {
+        throw new Error('入力ファイルがありません');
+      }
+
+      if (inputFiles.length === 1) {
+        this.logger.debug(
+          `入力ファイルが1つのためファイルをコピーします: ${inputFiles[0]}`,
+        );
+        // 入力ファイルが1つの場合はコピーするだけ
+        fs.copyFileSync(inputFiles[0], outputFile);
+        return outputFile;
+      }
+
+      // 結合する音声ファイルのリストを作成
+      const now = Date.now();
+      const listFilePath = `${this.outputDir}/segment-list_${now}.txt`;
+      await rm(listFilePath, { force: true }); // 残っている場合は削除
+      const fileListContent = inputFiles
+        .map((file) => `file '${path.resolve(file)}'`)
+        .join('\n');
+      fs.writeFileSync(listFilePath, fileListContent);
+      // ファイルが正常に結合されるまで待機する
+      await setTimeout(FILE_OUTPUT_WAIT_TIME);
+
+      // FFmpegを使用して音声ファイルをマージ（シーケンシャル結合）
+      return new Promise<string>((resolve, reject) => {
+        ffmpeg()
+          .input(listFilePath)
+          .inputOptions(['-f concat', '-safe 0']) // ファイルリストから結合
+          .outputOptions([
+            '-c copy', // コーデックはコピー（再エンコードしない）
+            '-acodec libmp3lame', // MP3エンコーダー
+            '-y', // 出力ファイルが存在する場合は上書き
+          ])
+          .save(outputFile)
+          .on('start', (commandLine) => {
+            this.logger.log(`音声ファイルのセグメント結合処理を開始します`);
+            this.logger.debug(
+              `音声ファイルのセグメント結合コマンド: ${commandLine}`,
+            );
+          })
+          .on('end', async () => {
+            this.logger.log(
+              `音声ファイルのセグメント結合処理が完了しました: ${outputFile}`,
+            );
+            resolve(outputFile);
+          })
+          .on('error', (error) => {
+            this.logger.error(
+              `音声ファイルのセグメント結合処理中にエラーが発生しました`,
+              {
+                error,
+              },
+            );
+            reject(
+              new ProgramAudioFileGenerationError(
+                '音声ファイルのセグメント結合に失敗しました',
+                {
+                  cause: error,
+                },
+              ),
+            );
+          })
+          .run();
+      });
+    } catch (error) {
+      const errorMessage = `音声ファイルのセグメント結合に失敗しました`;
+      this.logger.error(errorMessage, error, error.stack);
+      throw new ProgramAudioFileGenerationError(errorMessage, {
+        cause: error,
+      });
+    }
   }
 }

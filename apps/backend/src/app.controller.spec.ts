@@ -18,8 +18,8 @@ describe('AppController', () => {
         // Service の各メソッドを Mock 化する
         if (token === AppService) {
           return {
-            // ここに Mock したいメソッドを記述する
-          } as AppService;
+            getHello: jest.fn().mockReturnValue('Hello World!'),
+          };
         }
         if (typeof token === 'function') {
           const mockMetadata = moduleMocker.getMetadata(
