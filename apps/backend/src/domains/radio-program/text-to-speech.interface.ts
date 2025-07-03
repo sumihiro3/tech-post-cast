@@ -22,6 +22,21 @@ export interface HeadlineTopicProgramAudioFilesGenerateCommand {
 }
 
 /**
+ * 複数話者ヘッドライントピック番組の音声ファイル群生成要求コマンド
+ */
+export interface MultiSpeakerHeadlineTopicProgramAudioFilesGenerateCommand {
+  /**
+   * 台本
+   */
+  script: HeadlineTopicProgramScript;
+
+  /**
+   * 出力先ディレクトリ
+   */
+  outputDir: string;
+}
+
+/**
  * ヘッドライントピック番組の音声ファイル群生成結果
  */
 export interface HeadlineTopicProgramAudioFilesGenerateResult {
@@ -128,6 +143,15 @@ export interface ITextToSpeechClient {
    */
   generateHeadlineTopicProgramAudioFiles(
     command: HeadlineTopicProgramAudioFilesGenerateCommand,
+  ): Promise<HeadlineTopicProgramAudioFilesGenerateResult>;
+
+  /**
+   * 複数話者ヘッドライントピック番組の音声ファイルを生成する
+   * @param command 生成要求コマンド
+   * @returns ヘッドライントピック番組音声ファイルの生成結果
+   */
+  generateMultiSpeakerHeadlineTopicProgramAudioFiles(
+    command: MultiSpeakerHeadlineTopicProgramAudioFilesGenerateCommand,
   ): Promise<HeadlineTopicProgramAudioFilesGenerateResult>;
 
   /**

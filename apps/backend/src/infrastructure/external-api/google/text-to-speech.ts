@@ -7,6 +7,7 @@ import {
   HeadlineTopicProgramAudioFilesGenerateCommand,
   HeadlineTopicProgramAudioFilesGenerateResult,
   ITextToSpeechClient,
+  MultiSpeakerHeadlineTopicProgramAudioFilesGenerateCommand,
   MultiSpeakerPersonalizedProgramAudioFilesGenerateCommand,
   PersonalizedProgramAudioFilesGenerateCommand,
   PersonalizedProgramAudioFilesGenerateResult,
@@ -435,6 +436,114 @@ export class TextToSpeechClient implements ITextToSpeechClient {
       return result;
     } catch (error) {
       const errorMessage = `複数話者パーソナルプログラムの音声ファイル生成に失敗しました`;
+      this.logger.error(errorMessage, error.message, error.stack);
+      if (!(error instanceof TextToSpeechError)) {
+        error = new TextToSpeechError(errorMessage, { cause: error });
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 複数話者ヘッドライントピック番組の音声ファイルを生成する（Gemini 2.5 Flash TTS使用）
+   * @param command 生成要求コマンド
+   * @returns ヘッドライントピック番組音声ファイルの生成結果
+   */
+  async generateMultiSpeakerHeadlineTopicProgramAudioFiles(
+    command: MultiSpeakerHeadlineTopicProgramAudioFilesGenerateCommand,
+  ): Promise<HeadlineTopicProgramAudioFilesGenerateResult> {
+    this.logger.debug(
+      `TextToSpeechClient.generateMultiSpeakerHeadlineTopicProgramAudioFiles called`,
+      { command },
+    );
+    try {
+      // 出力ディレクトリを作成
+      createDir(command.outputDir);
+      const now = Date.now();
+      const tmpDir = `${command.outputDir}/tmp_${now}`;
+      createDir(tmpDir);
+
+      // Style instructions
+      const styleInstructions = `スピーカーはエンジニアに役立つ情報を伝えるため優しく丁寧ながらも、明るい番組にするための喋り方をします。`;
+
+      // イントロ部分の音声ファイルを生成
+      const introText = new ScriptContent(command.script.intro).asString();
+      const introSegments = this.splitScriptBySpeakerAndLength(
+        introText,
+        styleInstructions,
+      );
+      const introAudioFiles: string[] = [];
+      for (let i = 0; i < introSegments.length; i++) {
+        const audioFilePath = `${tmpDir}/intro_${i}.mp3`;
+        await this.generateGeminiTTSAudio(introSegments[i], audioFilePath);
+        introAudioFiles.push(audioFilePath);
+      }
+      const introAudioFilePath = `${command.outputDir}/${now}_intro.mp3`;
+      await this.programFileMaker.mergeAudioFilesSegments(
+        introAudioFiles,
+        introAudioFilePath,
+      );
+
+      // 記事紹介の音声ファイルを生成
+      const postIntroductionAudioFilePaths: string[] = [];
+      for (
+        let postIndex = 0;
+        postIndex < command.script.posts.length;
+        postIndex++
+      ) {
+        const post = command.script.posts[postIndex];
+        const postText = new ScriptContent(post.summary).asString();
+        const postSegments = this.splitScriptBySpeakerAndLength(
+          postText,
+          styleInstructions,
+        );
+        const postAudioFiles: string[] = [];
+        for (let i = 0; i < postSegments.length; i++) {
+          const audioFilePath = `${tmpDir}/post-${postIndex + 1}_${i}.mp3`;
+          await this.generateGeminiTTSAudio(postSegments[i], audioFilePath);
+          postAudioFiles.push(audioFilePath);
+        }
+        const postAudioFilePath = `${command.outputDir}/${now}_post-${postIndex + 1}.mp3`;
+        await this.programFileMaker.mergeAudioFilesSegments(
+          postAudioFiles,
+          postAudioFilePath,
+        );
+        postIntroductionAudioFilePaths.push(postAudioFilePath);
+      }
+
+      // エンディング部分の音声ファイルを生成
+      const endingText = new ScriptContent(command.script.ending).asString();
+      const endingSegments = this.splitScriptBySpeakerAndLength(
+        endingText,
+        styleInstructions,
+      );
+      const endingAudioFiles: string[] = [];
+      for (let i = 0; i < endingSegments.length; i++) {
+        const audioFilePath = `${tmpDir}/ending_${i}.mp3`;
+        await this.generateGeminiTTSAudio(endingSegments[i], audioFilePath);
+        endingAudioFiles.push(audioFilePath);
+      }
+      const endingAudioFilePath = `${command.outputDir}/${now}_ending.mp3`;
+      await this.programFileMaker.mergeAudioFilesSegments(
+        endingAudioFiles,
+        endingAudioFilePath,
+      );
+
+      // 生成結果を返す
+      const result: HeadlineTopicProgramAudioFilesGenerateResult = {
+        introAudioFilePath,
+        postIntroductionAudioFilePaths,
+        endingAudioFilePath,
+      };
+
+      this.logger.log(
+        `複数話者ヘッドライントピック番組の音声ファイルを生成しました`,
+        { result },
+      );
+
+      return result;
+    } catch (error) {
+      const errorMessage = `複数話者ヘッドライントピック番組の音声ファイル生成に失敗しました`;
       this.logger.error(errorMessage, error.message, error.stack);
       if (!(error instanceof TextToSpeechError)) {
         error = new TextToSpeechError(errorMessage, { cause: error });

@@ -1,5 +1,6 @@
 import { Mastra } from '@mastra/core';
 
+export * from './headline-topic-program';
 export * from './personalized-program';
 
 /**

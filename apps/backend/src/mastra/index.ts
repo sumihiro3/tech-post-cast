@@ -5,9 +5,20 @@ import { Workflow } from '@mastra/core/workflows';
 import { SpeakerMode } from '@prisma/client';
 import { LangfuseExporter } from 'langfuse-vercel';
 import { z } from 'zod';
-import { qiitaPostSummarizeAgent } from './agents';
-import { personalizedProgramScriptSchema, qiitaPostSchema } from './schemas';
-import { createPersonalizedProgramScriptGenerationWorkflow } from './workflows';
+import {
+  headlineTopicProgramScriptGenerationAgent,
+  qiitaPostSummarizeAgent,
+} from './agents';
+import {
+  headlineTopicProgramInputSchema,
+  headlineTopicProgramScriptSchema,
+  personalizedProgramScriptSchema,
+  qiitaPostSchema,
+} from './schemas';
+import {
+  createHeadlineTopicProgramScriptGenerationWorkflow,
+  createPersonalizedProgramScriptGenerationWorkflow,
+} from './workflows';
 
 /**
  * LangFuse Exporter の設定
@@ -55,11 +66,34 @@ personalizedProgramWorkflow
   .commit();
 
 /**
+ * ヘッドライントピック番組の台本生成ワークフロー
+ */
+export const headlineTopicProgramWorkflow = new Workflow({
+  name: 'headlineTopicProgramWorkflow',
+  triggerSchema: headlineTopicProgramInputSchema,
+  mastra: new Mastra({
+    telemetry,
+  }),
+  result: {
+    schema: headlineTopicProgramScriptSchema,
+  },
+});
+headlineTopicProgramWorkflow
+  .step(createHeadlineTopicProgramScriptGenerationWorkflow)
+  .commit();
+
+/**
  * Main Mastra インスタンスのエクスポート
  */
 export const mastra = new Mastra({
-  workflows: { personalizedProgramWorkflow },
-  agents: { qiitaPostSummarizeAgent },
+  workflows: {
+    personalizedProgramWorkflow,
+    headlineTopicProgramWorkflow,
+  },
+  agents: {
+    qiitaPostSummarizeAgent,
+    headlineTopicProgramScriptGenerationAgent,
+  },
   logger: createLogger({
     name: 'Mastra',
     level: 'info',
