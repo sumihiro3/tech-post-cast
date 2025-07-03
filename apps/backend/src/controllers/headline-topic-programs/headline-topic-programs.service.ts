@@ -8,14 +8,16 @@ import { QiitaPostsRepository } from '@infrastructure/database/qiita-posts/qiita
 import { QiitaPostsApiClient } from '@infrastructure/external-api/qiita-api/qiita-posts.api.client';
 import { TwitterApiClient } from '@infrastructure/external-api/x/twitter-api.client';
 import { Injectable, Logger } from '@nestjs/common';
-import { HeadlineTopicProgram } from '@prisma/client';
+import { HeadlineTopicProgram, SpeakerMode } from '@prisma/client';
 import { getYesterday, subtractDays } from '@tech-post-cast/commons';
 import axios, { AxiosError, isAxiosError } from 'axios';
 
 // ヘッドライントピック番組に含める記事の期間
 const DATE_RANGE = 3;
-// ヘッドライントピック番組に含める記事数
-const POPULAR_POSTS_COUNT = 5;
+// ヘッドライントピック番組に含める記事数（話者モードが SINGLE の場合）
+const POPULAR_POSTS_COUNT_FOR_SINGLE_SPEAKER = 5;
+// ヘッドライントピック番組に含める記事数（話者モードが MULTI の場合）
+const POPULAR_POSTS_COUNT_FOR_MULTI_SPEAKER = 3;
 
 @Injectable()
 export class HeadlineTopicProgramsService {
@@ -55,6 +57,8 @@ export class HeadlineTopicProgramsService {
         from: from,
         to: to,
       });
+      // 話者モードを取得
+      const speakerMode: SpeakerMode = SpeakerMode.MULTI;
       // Qiita 記事を API で取得
       this.logger.log(`Qiita 記事の取得を開始します`);
       const posts = await this.qiitaPostsApiClient.findQiitaPostsByDateRange(
@@ -65,10 +69,14 @@ export class HeadlineTopicProgramsService {
       // DB に登録されていない記事を取得
       const notExistsPosts =
         await this.qiitaPostsRepository.findNotExistsPosts(posts);
+      const popularPostsCount =
+        speakerMode === SpeakerMode.MULTI
+          ? POPULAR_POSTS_COUNT_FOR_MULTI_SPEAKER
+          : POPULAR_POSTS_COUNT_FOR_SINGLE_SPEAKER;
       // 公開済みかつ、いいね数が多い記事を取得
       const popularPosts = await this.findPopularPosts(
         notExistsPosts,
-        POPULAR_POSTS_COUNT,
+        popularPostsCount,
       );
       this.logger.log(`いいね数が多い記事を取得しました`, {
         postIds: popularPosts.map((post) => post.id),
@@ -78,6 +86,7 @@ export class HeadlineTopicProgramsService {
       const program = await this.headlineTopicProgramBuilder.buildProgram(
         programDate,
         popularPosts,
+        speakerMode,
       );
       this.logger.debug(`ヘッドライントピック番組を生成しました`, {
         program,

@@ -1,4 +1,14 @@
 import { AppConfigService } from '@/app-config/app-config.service';
+import { headlineTopicProgramScriptGenerationAgent } from '@/mastra/agents';
+import {
+  headlineTopicProgramInputSchema,
+  headlineTopicProgramScriptSchema,
+  HeadlineTopicProgramScript as MastraHeadlineTopicProgramScript,
+} from '@/mastra/schemas';
+import {
+  CREATE_HEADLINE_TOPIC_PROGRAM_SCRIPT_WORKFLOW,
+  createHeadlineTopicProgramScriptGenerationWorkflow,
+} from '@/mastra/workflows/headline-topic-program';
 import {
   HeadlineTopicProgramError,
   HeadlineTopicProgramGenerateScriptError,
@@ -13,11 +23,15 @@ import {
 import { HeadlineTopicProgramsRepository } from '@infrastructure/database/headline-topic-programs/headline-topic-programs.repository';
 import { QiitaPostsRepository } from '@infrastructure/database/qiita-posts/qiita-posts.repository';
 import { OpenAiApiClient } from '@infrastructure/external-api/openai-api/openai-api.client';
+import { createLogger } from '@mastra/core/logger';
+import { Mastra } from '@mastra/core/mastra';
+import { Workflow } from '@mastra/core/workflows';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   HeadlineTopicProgram,
   ListenerLetter,
   QiitaPost,
+  SpeakerMode,
 } from '@prisma/client';
 import { formatDate } from '@tech-post-cast/commons';
 import {
@@ -43,11 +57,16 @@ import {
   HeadlineTopicProgramAudioFilesGenerateCommand,
   HeadlineTopicProgramAudioFilesGenerateResult,
   ITextToSpeechClient,
+  MultiSpeakerHeadlineTopicProgramAudioFilesGenerateCommand,
 } from '../text-to-speech.interface';
 
 @Injectable()
 export class HeadlineTopicProgramBuilder {
   private readonly logger = new Logger(HeadlineTopicProgramBuilder.name);
+
+  // Mastra インスタンス
+  private mastra: Mastra;
+
   // 生成したファイルの出力先ディレクトリ
   private readonly outputDir;
 
@@ -66,20 +85,46 @@ export class HeadlineTopicProgramBuilder {
     private readonly textToSpeechClient: ITextToSpeechClient,
   ) {
     this.outputDir = this.appConfig.HeadlineTopicProgramTargetDir;
+
+    // ヘッドライントピック番組台本生成ワークフローの設定
+    const headlineTopicProgramWorkflow = new Workflow({
+      name: 'headlineTopicProgramWorkflow',
+      triggerSchema: headlineTopicProgramInputSchema,
+      mastra: new Mastra(),
+      result: {
+        schema: headlineTopicProgramScriptSchema,
+      },
+    });
+    headlineTopicProgramWorkflow
+      .step(createHeadlineTopicProgramScriptGenerationWorkflow)
+      .commit();
+
+    // Mastra インスタンスの初期化
+    this.mastra = new Mastra({
+      workflows: { headlineTopicProgramWorkflow },
+      agents: { headlineTopicProgramScriptGenerationAgent },
+      logger: createLogger({
+        name: 'TechPostCastBackend',
+        level: 'info',
+      }),
+    });
   }
 
   /**
    * ヘッドライントピック番組を構築する
    * @params programDate 番組日
    * @param posts 番組で紹介する Qiita 記事一覧
+   * @param speakerMode 話者モード
    * @returns ヘッドライントピック番組
    */
   async buildProgram(
     programDate: Date,
     posts: QiitaPostApiResponse[],
+    speakerMode: SpeakerMode,
   ): Promise<HeadlineTopicProgram> {
     this.logger.debug(`HeadlineTopicProgramMaker.buildProgram called`, {
       programDate,
+      speakerMode,
     });
     try {
       // 対象の記事を要約する
@@ -89,12 +134,15 @@ export class HeadlineTopicProgramBuilder {
       // ヘッドライントピック番組の台本を生成する
       const script = await this.generateScript(
         programDate,
+        speakerMode,
         summarizedPosts,
         letter,
       );
       // ヘッドライントピック番組の台本読み上げ音声ファイルを生成する
-      const programAudioFilePaths =
-        await this.generateProgramAudioFiles(script);
+      const programAudioFilePaths = await this.generateProgramAudioFiles(
+        script,
+        speakerMode,
+      );
       // BGM などを組み合わせてヘッドライントピック番組の音声ファイルを生成する
       const generateResult = await this.generateProgramFiles(
         script,
@@ -168,6 +216,7 @@ export class HeadlineTopicProgramBuilder {
     try {
       let script: HeadlineTopicProgramScript;
       const programDate = program.createdAt;
+      const speakerMode = SpeakerMode.MULTI;
       if (regenerationType === 'SCRIPT_AND_AUDIO') {
         // 台本を再生成する場合
         // リスナーからのお便りを取得する
@@ -187,6 +236,7 @@ export class HeadlineTopicProgramBuilder {
         // ヘッドライントピック番組の台本を生成する
         script = await this.generateScript(
           programDate,
+          speakerMode,
           summarizedPosts,
           letter,
         );
@@ -202,7 +252,7 @@ export class HeadlineTopicProgramBuilder {
       }
       // ヘッドライントピック番組の台本読み上げ音声ファイルを生成する
       const programAudioFilesGenerateResult =
-        await this.generateProgramAudioFiles(script);
+        await this.generateProgramAudioFiles(script, speakerMode);
       // BGM などを組み合わせてヘッドライントピック番組の音声ファイルを生成する
       const generateResult = await this.generateProgramFiles(
         script,
@@ -269,53 +319,153 @@ export class HeadlineTopicProgramBuilder {
   /**
    * 台本を生成する
    * @param programDate 番組日
+   * @param speakerMode 話者モード
    * @param posts 要約した記事一覧
    * @param letter リスナーからのお便り
    * @returns 台本
    */
   async generateScript(
     programDate: Date,
+    speakerMode: SpeakerMode,
     posts: QiitaPostApiResponse[],
     letter?: ListenerLetter,
   ): Promise<HeadlineTopicProgramScript> {
     this.logger.debug(`HeadlineTopicProgramMaker.generateScript called`, {
       programDate,
+      speakerMode,
       posts,
       letter,
     });
-    // 台本を生成する
-    const script =
-      await this.openAiApiClient.generateHeadlineTopicProgramScript(
-        programDate,
-        posts,
-        letter,
+
+    try {
+      // ワークフローの取得
+      const workflow = this.mastra.getWorkflow('headlineTopicProgramWorkflow');
+      const run = workflow.createRun();
+
+      // QiitaPostApiResponseをQiitaPost形式に変換
+      const programPosts = posts.map((post) => this.convertToQiitaPost(post));
+
+      // リスナーお便りをワークフロー用の形式に変換
+      const listenerLetters = letter
+        ? [
+            {
+              id: letter.id,
+              penName: letter.penName,
+              body: letter.body,
+            },
+          ]
+        : undefined;
+
+      // ワークフローを実行する
+      const result = await run.start({
+        triggerData: {
+          programName: 'Tech Post Cast',
+          posts: programPosts,
+          programDate,
+          listenerLetters,
+          speakerMode,
+        },
+      });
+
+      this.logger.debug(
+        `ヘッドライントピック番組台本生成ワークフロー実行結果: ${JSON.stringify(result.results)}`,
       );
-    this.logger.debug(`台本を生成しました`, { script });
-    return script;
+
+      const workflowName = CREATE_HEADLINE_TOPIC_PROGRAM_SCRIPT_WORKFLOW;
+      const workflowResultStatus = result.results[workflowName].status;
+      if (workflowResultStatus !== 'success') {
+        const errorMessage = `ヘッドライントピック番組の台本生成ワークフローが失敗しました`;
+        this.logger.error(errorMessage, { result });
+        throw new HeadlineTopicProgramGenerateScriptError(errorMessage);
+      }
+
+      const generatedScript = result.results[workflowName].output
+        ?.scriptGenerationWorkflowResult as MastraHeadlineTopicProgramScript;
+
+      this.logger.debug(`ヘッドライントピック番組の台本生成が完了しました`, {
+        generatedScript,
+      });
+
+      // 新しいスキーマ構造から従来の構造に変換
+      const script: HeadlineTopicProgramScript = {
+        title: generatedScript.title,
+        intro: generatedScript.opening, // opening -> intro
+        posts: generatedScript.posts.map((post) => ({
+          postId: post.id,
+          title: post.title,
+          // intro, explanation, summaryを結合して単一のsummaryフィールドに変換
+          summary: `${post.intro}\n\n${post.explanation}\n\n${post.summary}`,
+        })),
+        ending: generatedScript.ending,
+      };
+
+      return script;
+    } catch (error) {
+      const errorMessage = `ヘッドライントピック番組の台本生成中にエラーが発生しました`;
+      this.logger.error(errorMessage, { error }, error.stack);
+      throw new HeadlineTopicProgramGenerateScriptError(errorMessage, {
+        cause: error,
+      });
+    }
+  }
+
+  /**
+   * QiitaPostApiResponseをQiitaPost形式に変換する
+   * @param post QiitaPostApiResponse
+   * @returns QiitaPost
+   */
+  private convertToQiitaPost(post: QiitaPostApiResponse): any {
+    return {
+      id: post.id,
+      title: post.title,
+      content: post.body,
+      author: post.user.id,
+      tags: post.tags.map((tag) => tag.name),
+      createdAt: post.created_at,
+    };
   }
 
   /**
    * ヘッドライントピック番組の音声ファイルを生成する
    * @param script 台本
+   * @param speakerMode 話者モード
    * @returns ヘッドライントピック番組音声ファイルの生成結果
    */
   async generateProgramAudioFiles(
     script: HeadlineTopicProgramScript,
+    speakerMode: SpeakerMode,
   ): Promise<HeadlineTopicProgramAudioFilesGenerateResult> {
     this.logger.debug(
       `HeadlineTopicProgramMaker.generateProgramAudioFiles called`,
       {
         script,
+        speakerMode,
       },
     );
-    const command: HeadlineTopicProgramAudioFilesGenerateCommand = {
-      script: script,
-      outputDir: this.outputDir,
-    };
-    const result =
-      await this.textToSpeechClient.generateHeadlineTopicProgramAudioFiles(
-        command,
-      );
+
+    // 話者モードに応じて音声ファイルを生成する
+    let result: HeadlineTopicProgramAudioFilesGenerateResult;
+    if (speakerMode === SpeakerMode.SINGLE) {
+      const command: HeadlineTopicProgramAudioFilesGenerateCommand = {
+        script: script,
+        outputDir: this.outputDir,
+      };
+      result =
+        await this.textToSpeechClient.generateHeadlineTopicProgramAudioFiles(
+          command,
+        );
+    } else {
+      const command: MultiSpeakerHeadlineTopicProgramAudioFilesGenerateCommand =
+        {
+          script: script,
+          outputDir: this.outputDir,
+        };
+      result =
+        await this.textToSpeechClient.generateMultiSpeakerHeadlineTopicProgramAudioFiles(
+          command,
+        );
+    }
+
     this.logger.debug(`ヘッドライントピック番組の音声ファイルを生成しました`, {
       result,
     });
