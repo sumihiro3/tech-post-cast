@@ -5,57 +5,62 @@ v-container(fluid)
       a(href='/')
         logo
       v-app-bar-nav-icon.ml-2(
-        v-if="props.showDrawerToggle"
+        v-if="isDevelop && props.showDrawerToggle"
         @click="emit('toggle-drawer')"
       )
-    //- ClientOnly
-    //-   template(#default)
-    //-     SignedOut
-    //-       v-btn(
-    //-         color="primary"
-    //-         variant="elevated"
-    //-         prepend-icon="mdi-login"
-    //-         class="ml-2"
-    //-         @click="signIn"
-    //-       ) ログイン
-    //-     SignedIn
-    //-       v-menu(location="bottom end")
-    //-         template(#activator="{ props: signInProps }")
-    //-           v-btn(
-    //-             icon
-    //-             v-bind="signInProps"
-    //-             class="ml-2"
-    //-           )
-    //-             v-avatar
-    //-               v-img(
-    //-                 :src="user?.imageUrl"
-    //-                 :alt="user?.fullName || 'ユーザーアバター'"
-    //-               )
-    //-         v-list
-    //-           v-list-item(
-    //-             to="/app/dashboard"
-    //-             prepend-icon="mdi-view-dashboard"
-    //-             title="ダッシュボード"
-    //-             @click="closeMenu"
-    //-           )
-    //-           v-list-item(
-    //-             prepend-icon="mdi-logout"
-    //-             title="ログアウト"
-    //-             @click="signOut"
-    //-           )
-    //-   template(#fallback)
-    //-     //- SSGビルド時やクライアントサイド初期化前のフォールバックUI
-    //-     v-btn(
-    //-       color="primary"
-    //-       :loading="true"
-    //-       disabled
-    //-     ) 読み込み中...
+    ClientOnly
+      template(
+        v-if="isDevelop"
+        #default
+      )
+        SignedOut
+          v-btn(
+            color="primary"
+            variant="elevated"
+            prepend-icon="mdi-login"
+            class="ml-2"
+            @click="signIn"
+          ) ログイン
+        SignedIn
+          v-menu(location="bottom end")
+            template(#activator="{ props: signInProps }")
+              v-btn(
+                icon
+                v-bind="signInProps"
+                class="ml-2"
+              )
+                v-avatar
+                  v-img(
+                    :src="user?.imageUrl"
+                    :alt="user?.fullName || 'ユーザーアバター'"
+                  )
+            v-list
+              v-list-item(
+                to="/app/dashboard"
+                prepend-icon="mdi-view-dashboard"
+                title="ダッシュボード"
+                @click="closeMenu"
+              )
+              v-list-item(
+                prepend-icon="mdi-logout"
+                title="ログアウト"
+                @click="signOut"
+              )
+      template(#fallback)
+        //- SSGビルド時やクライアントサイド初期化前のフォールバックUI
+        v-btn(
+          color="primary"
+          :loading="true"
+          disabled
+        ) 読み込み中...
 </template>
 
 <script setup lang="ts">
-// import { SignedIn, SignedOut, useClerk, useUser } from '@clerk/vue';
+import { SignedIn, SignedOut, useClerk, useUser } from '@clerk/vue';
 
-// // プロパティ定義
+const config = useRuntimeConfig();
+
+// プロパティ定義
 const props = defineProps({
   showDrawerToggle: {
     type: Boolean,
@@ -63,21 +68,24 @@ const props = defineProps({
   },
 });
 
-// const clerk = useClerk();
-// const { user } = useUser();
+// Environment === develop の場合にのみログインボタンを表示する
+const isDevelop = config.public.environment === 'develop';
 
-// const signIn = (): void => {
-//   clerk.value?.openSignIn();
-// };
+const clerk = useClerk();
+const { user } = useUser();
 
-// const signOut = (): void => {
-//   clerk.value?.signOut();
-// };
+const signIn = (): void => {
+  clerk.value?.openSignIn();
+};
 
-// const closeMenu = (): void => {
-//   // メニューを閉じる処理はv-menuコンポーネントが自動的に行います
-// };
+const signOut = (): void => {
+  clerk.value?.signOut();
+};
 
-// // ドロワー切り替えイベントを定義
+const closeMenu = (): void => {
+  // メニューを閉じる処理はv-menuコンポーネントが自動的に行います
+};
+
+// ドロワー切り替えイベントを定義
 const emit = defineEmits(['toggle-drawer']);
 </script>
