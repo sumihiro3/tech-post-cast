@@ -127,15 +127,13 @@ export class HeadlineTopicProgramBuilder {
       speakerMode,
     });
     try {
-      // 対象の記事を要約する
-      const summarizedPosts = await this.summarizePosts(posts);
       // 未紹介のお便りを取得する
       const letter = await this.listenerLettersRepository.findUnintroduced();
       // ヘッドライントピック番組の台本を生成する
       const script = await this.generateScript(
         programDate,
         speakerMode,
-        summarizedPosts,
+        posts,
         letter,
       );
       // ヘッドライントピック番組の台本読み上げ音声ファイルを生成する
