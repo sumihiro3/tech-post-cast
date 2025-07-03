@@ -5,11 +5,14 @@ v-container(fluid)
       a(href='/')
         logo
       v-app-bar-nav-icon.ml-2(
-        v-if="props.showDrawerToggle"
+        v-if="isDevelop && props.showDrawerToggle"
         @click="emit('toggle-drawer')"
       )
     ClientOnly
-      template(#default)
+      template(
+        v-if="isDevelop"
+        #default
+      )
         SignedOut
           v-btn(
             color="primary"
@@ -55,13 +58,18 @@ v-container(fluid)
 <script setup lang="ts">
 import { SignedIn, SignedOut, useClerk, useUser } from '@clerk/vue';
 
-// // プロパティ定義
+const config = useRuntimeConfig();
+
+// プロパティ定義
 const props = defineProps({
   showDrawerToggle: {
     type: Boolean,
     default: false,
   },
 });
+
+// Environment === develop の場合にのみログインボタンを表示する
+const isDevelop = config.public.environment === 'develop';
 
 const clerk = useClerk();
 const { user } = useUser();
