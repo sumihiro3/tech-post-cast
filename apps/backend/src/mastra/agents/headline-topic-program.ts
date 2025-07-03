@@ -10,7 +10,6 @@ import { QiitaPostWithSummaryAndKeyPoints } from '../schemas';
 export const headlineTopicProgramScriptGenerationAgent = new Agent({
   name: 'headlineTopicProgramScriptGenerationAgent',
   instructions: '', // Instructions は getHeadlineTopicProgramScriptGenerationInstructions で生成すること
-  // model: openai('gpt-4o'),
   model: google('gemini-2.0-flash-exp'),
 });
 
@@ -62,9 +61,9 @@ ${speakerInstructions}
 
 ${getHeadlineOpeningInstructions(speakerMode, posts.length)}
 
-${getHeadlinePostExplanationInstructions(speakerMode, posts.length)}
-
 ${getHeadlineListenerLettersInstructions(speakerMode, listenerLetters)}
+
+${getHeadlinePostExplanationInstructions(speakerMode, posts.length)}
 
 ${getHeadlineEndingInstructions(speakerMode, posts.length)}
 
@@ -175,6 +174,47 @@ function getHeadlineOpeningInstructions(
 }
 
 /**
+ * ヘッドライントピック番組のリスナーお便り部分の指示を生成
+ */
+function getHeadlineListenerLettersInstructions(
+  speakerMode: SpeakerMode,
+  listenerLetters?: Array<{
+    id: string;
+    penName: string;
+    body: string;
+  }>,
+): string {
+  if (!listenerLetters || listenerLetters.length === 0) {
+    return '';
+  }
+
+  if (speakerMode === SpeakerMode.MULTI) {
+    return `
+#### リスナーからのお便り
+
+- オープニングの中で、リスナーからのお便りを紹介します
+- お便りの紹介では、以下の流れで進めてください
+    - ポステルがお便りの紹介を始めます
+    - ペンネームと内容を読み上げます
+    - ポステルとジョンで内容について話し合い、丁寧に回答します
+    - お便りへの感謝を伝えます
+- お便りの内容に応じて、技術的な質問には詳しく回答し、感想には共感を示してください
+- お便りの紹介は自然な対話形式で行ってください`;
+  } else {
+    return `
+#### リスナーからのお便り
+
+- オープニングの中で、リスナーからのお便りを紹介します
+- お便りの紹介では、以下の流れで進めてください
+    - お便りの紹介を始めます
+    - ペンネームと内容を読み上げます
+    - 内容について丁寧に回答します
+    - お便りへの感謝を伝えます
+- お便りの内容に応じて、技術的な質問には詳しく回答し、感想には共感を示してください`;
+  }
+}
+
+/**
  * ヘッドライントピック番組の記事解説部分の指示を生成
  */
 function getHeadlinePostExplanationInstructions(
@@ -192,13 +232,14 @@ function getHeadlinePostExplanationInstructions(
 - 紹介する技術記事の要約と要点です
     - この内容を元に、要点を漏らさずに記事を解説してください
     - 記事の解説は番組用の話し言葉の台本として生成してください
-    - 記事の解説は「導入」「ポイントごとの解説」「まとめ」の3部構成とし、5分以内になるように構成を考えてください
+    - 記事の解説は「導入」「ポイントごとの解説」「まとめ」の3部構成とし、ひとつの記事の解説は5分以内になるように構成を考えてください
         - 「導入」では、ポステルが記事のタイトルと著者名を紹介します
             - 記事の冒頭は「最初の記事は 『{記事のタイトル}』 です。」のように始めてください
                 - 必ず記事のタイトルを伝えます
                 - 何番目の記事であるか、最後の記事であるかが分かるようにしてください
             - 必ず著者名を伝えます
         - 「ポイントごとの解説」では、ポステルとジョンの対話形式で記事の内容を解説してください
+            - 「ポイントごとの解説」内では、記事名の紹介は含めないでください
             - ポステルは質問や確認を行い、ジョンが技術的な詳細を分かりやすく解説します
             - テクニカルな内容もやさしく噛み砕いて解説してください
             - ただし、要点はそのまま読み上げないでください
@@ -226,13 +267,14 @@ function getHeadlinePostExplanationInstructions(
 - 紹介する技術記事の要約と要点です
     - この内容を元に、要点を漏らさずに記事を解説してください
     - 記事の解説は番組用の話し言葉の台本として生成してください
-    - 記事の解説は「導入」「ポイントごとの解説」「まとめ」の3部構成とし、5分以内になるように構成を考えてください
+    - 記事の解説は「導入」「ポイントごとの解説」「まとめ」の3部構成とし、ひとつの記事の解説は5分以内になるように構成を考えてください
         - 「導入」では、記事のタイトルと著者名を伝えます
             - 記事の冒頭は「最初の記事は 『{記事のタイトル}』 です。」のように始めてください
                 - 必ず記事のタイトルを伝えます
                 - 何番目の記事であるか、最後の記事であるかが分かるようにしてください
             - 必ず著者名を伝えます
         - 「ポイントごとの解説」では、記事の要点を元に、記事の内容を解説してください
+            - 「ポイントごとの解説」内では、記事名の紹介は含めないでください
             - テクニカルな内容もやさしく噛み砕いて解説してください
             - ただし、要点はそのまま読み上げないでください
             - 必要に応じて例え話や比喩を使って分かりやすく説明してください
@@ -247,47 +289,6 @@ function getHeadlinePostExplanationInstructions(
     - 必ず 「This request contains sentences that are too long. Consider splitting up long sentences with sentence ending punctuation e.g. periods.」 というエラーが出ないようにしてください
     - 文章の長さは、音声合成時にエラーとならないように調整してください
     - 記事の解説には markdown の記法やコード、改行コード、URL は含めないでください`;
-  }
-}
-
-/**
- * ヘッドライントピック番組のリスナーお便り部分の指示を生成
- */
-function getHeadlineListenerLettersInstructions(
-  speakerMode: SpeakerMode,
-  listenerLetters?: Array<{
-    id: string;
-    penName: string;
-    body: string;
-  }>,
-): string {
-  if (!listenerLetters || listenerLetters.length === 0) {
-    return '';
-  }
-
-  if (speakerMode === SpeakerMode.MULTI) {
-    return `
-### リスナーからのお便り
-
-- 記事解説の後に、リスナーからのお便りを紹介します
-- お便りの紹介では、以下の流れで進めてください
-    - ポステルがお便りの紹介を始めます
-    - ペンネームと内容を読み上げます
-    - ポステルとジョンで内容について話し合い、丁寧に回答します
-    - お便りへの感謝を伝えます
-- お便りの内容に応じて、技術的な質問には詳しく回答し、感想には共感を示してください
-- お便りの紹介は自然な対話形式で行ってください`;
-  } else {
-    return `
-### リスナーからのお便り
-
-- 記事解説の後に、リスナーからのお便りを紹介します
-- お便りの紹介では、以下の流れで進めてください
-    - お便りの紹介を始めます
-    - ペンネームと内容を読み上げます
-    - 内容について丁寧に回答します
-    - お便りへの感謝を伝えます
-- お便りの内容に応じて、技術的な質問には詳しく回答し、感想には共感を示してください`;
   }
 }
 
@@ -337,7 +338,7 @@ function getHeadlineScriptConstraints(speakerMode: SpeakerMode): string {
 - 「Qiita」は「キータ」と読みます
     - 文中に「Qiita」「qiita」が出てきた場合は「キータ」と読みます
 - 難しい漢字は読み手が間違えないように、ひらがなで書きます
-- 読み上げ用の原稿なので、URL や Markdown の記法、改行コード（\n など）、バックスラッシュやクオート文字を含めないは含めないでください
+- 読み上げ用の原稿なので、URL や Markdown の記法、改行コード（\n など）、絵文字、バックスラッシュやクオート文字を含めないは含めないでください
 - 出力する文字数の下限は3000文字（この文字数は遵守してください）にしてください
 - 出力する文字数の上限は4500文字（この文字数は遵守してください）にしてください`;
 
