@@ -73,6 +73,29 @@ export class StageConfig {
     return process.env.PROGRAM_AUDIO_FILE_URL_PREFIX || '';
   }
 
+  /** RSS ファイルを保存する バケット名 */
+  get rssFileBucketName(): string {
+    return process.env.RSS_BUCKET_NAME || '';
+  }
+  /** RSS ファイルを公開する URL prefix */
+  get rssFileUrlPrefix(): string {
+    return process.env.RSS_URL_PREFIX || '';
+  }
+
+  /** Podcast の画像 URL */
+  get podcastImageUrl(): string {
+    return process.env.PODCAST_IMAGE_URL || '';
+  }
+  /** Podcast の作者メールアドレス */
+  get podcastAuthorEmail(): string {
+    return process.env.PODCAST_AUTHOR_EMAIL || '';
+  }
+
+  /** Podcast の作者名 */
+  get podcastAuthorName(): string {
+    return process.env.PODCAST_AUTHOR_NAME || '';
+  }
+
   /** LP 再生成の Deploy Hook URL */
   get lpDeployHookUrl(): string {
     return process.env.LP_DEPLOY_HOOK_URL || '';
@@ -140,6 +163,20 @@ export class StageConfig {
   }
 
   /**
+   * 無料プランID
+   */
+  get freePlanId(): string {
+    return process.env.FREE_PLAN_ID || '';
+  }
+
+  /**
+   * 有料プランID
+   */
+  get proPlanId(): string {
+    return process.env.PRO_PLAN_ID || '';
+  }
+
+  /**
    * 環境が本番環境かどうかを判定する
    * 本番環境の場合は true を返す
    * @returns 環境が本番環境かどうか
@@ -203,11 +240,18 @@ export class StageConfig {
       CLOUDFLARE_R2_ENDPOINT: this.cloudflareR2Endpoint,
       PROGRAM_AUDIO_BUCKET_NAME: this.programFileBucketName,
       PROGRAM_AUDIO_FILE_URL_PREFIX: this.programFileUrlPrefix,
+      RSS_BUCKET_NAME: this.rssFileBucketName,
+      RSS_URL_PREFIX: this.rssFileUrlPrefix,
+      PODCAST_IMAGE_URL: this.podcastImageUrl,
+      PODCAST_AUTHOR_EMAIL: this.podcastAuthorEmail,
+      PODCAST_AUTHOR_NAME: this.podcastAuthorName,
       LP_DEPLOY_HOOK_URL: this.lpDeployHookUrl,
       GCP_CREDENTIALS_FILE_PATH: this.gcpCredentialsFilePath,
       AWS_CHATBOT_SLACK_WORKSPACE_ID: this.awsChatbotSlackWorkspaceId,
       SLACK_CHANNEL_ID: this.slackChannelId,
       SLACK_INCOMING_WEBHOOK_URL: this.slackIncomingWebhookUrl,
+      FREE_PLAN_ID: this.freePlanId,
+      PRO_PLAN_ID: this.proPlanId,
     });
   }
 }

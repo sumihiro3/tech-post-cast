@@ -6,8 +6,6 @@ import * as chatbot from 'aws-cdk-lib/aws-chatbot';
 import * as cloudWatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as cloudWatchActions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
-import * as events from 'aws-cdk-lib/aws-events';
-import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as cloudWatchLogs from 'aws-cdk-lib/aws-logs';
@@ -91,6 +89,12 @@ export class TechPostCastBackendStack extends cdk.Stack {
         CLOUDFLARE_ACCESS_KEY_ID: stage.cloudflareAccessKeyId,
         CLOUDFLARE_SECRET_ACCESS_KEY: stage.cloudflareSecretAccessKey,
         CLOUDFLARE_R2_ENDPOINT: stage.cloudflareR2Endpoint,
+        RSS_BUCKET_NAME: stage.rssFileBucketName,
+        RSS_URL_PREFIX: stage.rssFileUrlPrefix,
+        // Podcast
+        PODCAST_IMAGE_URL: stage.podcastImageUrl,
+        PODCAST_AUTHOR_EMAIL: stage.podcastAuthorEmail,
+        PODCAST_AUTHOR_NAME: stage.podcastAuthorName,
         // LP 再生成実行用の Deploy Hook URL
         LP_DEPLOY_HOOK_URL: stage.lpDeployHookUrl,
         // LP のベース URL
@@ -105,6 +109,9 @@ export class TechPostCastBackendStack extends cdk.Stack {
         X_API_ACCESS_TOKEN: stage.xApiAccessToken,
         X_API_ACCESS_SECRET: stage.xApiAccessSecret,
         SLACK_INCOMING_WEBHOOK_URL: stage.slackIncomingWebhookUrl,
+        // Plan
+        FREE_PLAN_ID: stage.freePlanId,
+        PRO_PLAN_ID: stage.proPlanId,
       },
     });
     // Lambda 実行ロール
@@ -184,23 +191,23 @@ export class TechPostCastBackendStack extends cdk.Stack {
     // EventBridge
     // EventBridge から BackendLambda へイベント送信する
     // BackendLambda では、イベントを受けてヘッドライントピック番組を作成する
-    if (stage.isProduction()) {
-      // 本番環境の場合は、毎日 6:55 (JST) に実行する
-      const ruleName = `TechPostCastCreateHeadlineTopicProgramRule${stage.suffixLarge}`;
-      const rule = new events.Rule(this, `TechPostCastCreateHeadlineTopicProgramRule`, {
-        ruleName: ruleName,
-        // JST 6:55 に実行
-        schedule: events.Schedule.cron({
-          minute: '55',
-          hour: '21',
-          day: '*',
-        }),
-        targets: [new targets.LambdaFunction(backendLambda, { retryAttempts: 3 })],
-      });
-      new cdk.CfnOutput(this, `${ruleName}Arn`, {
-        value: rule.ruleArn,
-        exportName: `${ruleName}Arn`,
-      });
-    }
+    // if (stage.isProduction()) {
+    //   // 本番環境の場合は、毎日 6:55 (JST) に実行する
+    //   const ruleName = `TechPostCastCreateHeadlineTopicProgramRule${stage.suffixLarge}`;
+    //   const rule = new events.Rule(this, `TechPostCastCreateHeadlineTopicProgramRule`, {
+    //     ruleName: ruleName,
+    //     // JST 6:55 に実行
+    //     schedule: events.Schedule.cron({
+    //       minute: '55',
+    //       hour: '21',
+    //       day: '*',
+    //     }),
+    //     targets: [new targets.LambdaFunction(backendLambda, { retryAttempts: 3 })],
+    //   });
+    //   new cdk.CfnOutput(this, `${ruleName}Arn`, {
+    //     value: rule.ruleArn,
+    //     exportName: `${ruleName}Arn`,
+    //   });
+    // }
   }
 }
